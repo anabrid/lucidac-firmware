@@ -46,9 +46,15 @@ void setup() {
     }
     delay(100);
 
-    Serial.println("Configuring Transaction");
+    /*
+     * Transaction / Timer configuration
+     */
+
+    Serial.println("Configuring timer / transaction");
     Serial.flush();
-    flex_spi.beginTransaction(FlexIOSPISettings(1000000, MSBFIRST, SPI_MODE0));
+    uint32_t clock_divider = 42/2;
+    uint8_t num_of_bits = 8;
+    flex_spi._pflex->port().TIMCMP[flex_spi._timer] = clock_divider | (num_of_bits * 2 - 1) << 8;
     delay(100);
 
     /*
@@ -58,7 +64,7 @@ void setup() {
     Serial.println("Transferring data");
     Serial.flush();
     //
-    flex_spi._pflex->port().SHIFTBUFBIS[flex_spi._tx_shifter] = B10101010 << (32-8);
+    flex_spi._pflex->port().SHIFTBUFBIS[flex_spi._tx_shifter] = B10101011 << (32-8);
 
     Serial.println("Ending Transaction");
     Serial.flush();
