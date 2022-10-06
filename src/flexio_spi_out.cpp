@@ -47,15 +47,11 @@ void setup() {
     // Use FlexIO 1 in this example!
     auto flexio = FlexIOHandler::flexIOHandler_list[0];
 
-    FlexIOSPI flex_spi(2, 3, 4, -1); // Setup on (int mosiPin, int sckPin, int misoPin, int csPin=-1) :
-    if (!flex_spi.begin()) {
-        Serial.println("SPIFlex Begin Failed");
-    }
+    uint8_t _timer = flexio->requestTimers(1);
+    uint8_t _tx_shifter = flexio->requestShifter();
 
-    uint8_t _timer = flex_spi._timer;
-    uint8_t _tx_shifter = flex_spi._tx_shifter;
-    uint8_t _mosi_flex_pin = flex_spi._mosi_flex_pin;
-    uint8_t _sck_flex_pin = flex_spi._sck_flex_pin;
+    uint8_t _mosi_flex_pin = flexio->mapIOPinToFlexPin(PIN_MOSI);
+    uint8_t _sck_flex_pin = flexio->mapIOPinToFlexPin(PIN_CLK);
 
     flexio->port().SHIFTCFG[_tx_shifter] = 0; // Start/stop disabled;
     flexio->port().SHIFTCTL[_tx_shifter] = FLEXIO_SHIFTCTL_TIMPOL | FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_SMOD(2) |
@@ -93,7 +89,7 @@ void setup() {
     Serial.flush();
     uint32_t clock_divider = 42/2;
     uint8_t num_of_bits = 8;
-    flexio->port().TIMCMP[flex_spi._timer] = clock_divider | (num_of_bits * 2 - 1) << 8;
+    flexio->port().TIMCMP[_timer] = clock_divider | (num_of_bits * 2 - 1) << 8;
     delay(100);
 
     /*
@@ -103,15 +99,18 @@ void setup() {
     Serial.println("Transferring data");
     Serial.flush();
     //
-    flexio->port().SHIFTBUFBIS[flex_spi._tx_shifter] = B10101011 << (32-8);
+    flexio->port().SHIFTBUFBIS[_tx_shifter] = B10101011 << (32-8);
 
     Serial.println("Ending Transaction");
     Serial.flush();
-    flex_spi.endTransaction();
+    //flex_spi.endTransaction();
 
     Serial.println("Deconfiguring FlexIO");
     Serial.flush();
-    flex_spi.end();
+    flexio->freeTimers(_timer);
+    _timer = 0xff;
+    flexio->freeShifter(_tx_shifter);
+    _tx_shifter = 0xff;
 
     /*
     // Use FlexIO2
