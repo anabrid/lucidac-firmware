@@ -24,6 +24,7 @@
 // ANABRID_END_LICENSE
 
 #include <Arduino.h>
+#include <FlexIOSPI.h>
 #include <FlexIO_t4.h>
 
 
@@ -37,6 +38,32 @@ void setup() {
     Serial.begin(512000);
     digitalWriteFast(13, true);
 
+    Serial.println("Configuring FlexIO");
+    Serial.flush();
+    FlexIOSPI flex_spi(2, 3, 4, -1); // Setup on (int mosiPin, int sckPin, int misoPin, int csPin=-1) :
+    if (!flex_spi.begin()) {
+        Serial.println("SPIFlex Begin Failed");
+    }
+    delay(100);
+
+    Serial.println("Configuring Transaction");
+    Serial.flush();
+    flex_spi.beginTransaction(FlexIOSPISettings(1000000, MSBFIRST, SPI_MODE0));
+    delay(100);
+
+    Serial.println("Transferring data");
+    Serial.flush();
+    flex_spi.transfer(B10101010);
+
+    Serial.println("Ending Transaction");
+    Serial.flush();
+    flex_spi.endTransaction();
+
+    Serial.println("Deconfiguring FlexIO");
+    Serial.flush();
+    flex_spi.end();
+
+    /*
     // Use FlexIO2
     Serial.println("Getting FlexIO handler");
     Serial.flush();
@@ -130,7 +157,7 @@ void setup() {
 
     // Send data once
     flexio->port().SHIFTBUF[tx_shifter] = 0xFFFFFFFF;
-
+    */
 }
 
 
