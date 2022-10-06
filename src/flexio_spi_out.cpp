@@ -38,6 +38,9 @@ void setup() {
     Serial.begin(512000);
     digitalWriteFast(13, true);
 
+    constexpr uint8_t PIN_CLK=4;
+    constexpr uint8_t PIN_MOSI=2;
+
     Serial.println("Configuring FlexIO");
     Serial.flush();
 
@@ -48,6 +51,38 @@ void setup() {
     if (!flex_spi.begin()) {
         Serial.println("SPIFlex Begin Failed");
     }
+
+    uint8_t _timer = flex_spi._timer;
+    uint8_t _tx_shifter = flex_spi._tx_shifter;
+    uint8_t _mosi_flex_pin = flex_spi._mosi_flex_pin;
+    uint8_t _sck_flex_pin = flex_spi._sck_flex_pin;
+
+    flexio->port().SHIFTCFG[_tx_shifter] = 0; // Start/stop disabled;
+    flexio->port().SHIFTCTL[_tx_shifter] = FLEXIO_SHIFTCTL_TIMPOL | FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_SMOD(2) |
+                               FLEXIO_SHIFTCTL_TIMSEL(_timer) | FLEXIO_SHIFTCTL_PINSEL(_mosi_flex_pin); // 0x0003_0002;
+
+    flexio->port().TIMCMP[_timer] = 0x0f01; // (8 bits?)0x3f01; // ???0xf00 | baud_div; //0xF01; //0x0000_0F01;		//
+
+    flexio->port().TIMCTL[_timer] =  FLEXIO_TIMCTL_TRGSEL(1) | FLEXIO_TIMCTL_TRGPOL | FLEXIO_TIMCTL_TRGSRC
+                         | FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(_sck_flex_pin)| FLEXIO_TIMCTL_TIMOD(1);  // 0x01C0_0001;
+
+
+    flexio->port().TIMCFG[_timer] = FLEXIO_TIMCFG_TIMOUT(1) | FLEXIO_TIMCFG_TIMDIS(2) | FLEXIO_TIMCFG_TIMENA(2);
+
+    // Enable this FlexIO
+    flexio->port().CTRL = FLEXIO_CTRL_FLEXEN;
+
+    // Set the IO pins into FLEXIO mode
+    flexio->setIOPinToFlexMode(PIN_MOSI);
+    flexio->setIOPinToFlexMode(PIN_CLK);
+    // Wonder if we should cofigure the port config registers like SPI does?
+    uint32_t fastio = IOMUXC_PAD_DSE(7) | IOMUXC_PAD_SPEED(2);
+    //uint32_t fastio = IOMUXC_PAD_DSE(6) | IOMUXC_PAD_SPEED(1);
+    //uint32_t fastio = IOMUXC_PAD_DSE(3) | IOMUXC_PAD_SPEED(3);
+    //Serial.printf("SPI MISO: %d MOSI: %d, SCK: %d\n", hardware().miso_pin[miso_pin_index], hardware().mosi_pin[mosi_pin_index], hardware().sck_pin[sck_pin_index]);
+    *(portControlRegister(PIN_MOSI)) = fastio;
+    *(portControlRegister(PIN_CLK)) = fastio;
+
     delay(100);
 
     /*
