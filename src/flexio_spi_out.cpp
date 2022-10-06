@@ -51,9 +51,14 @@ void setup() {
     flex_spi.beginTransaction(FlexIOSPISettings(1000000, MSBFIRST, SPI_MODE0));
     delay(100);
 
+    /*
+     * Data Transfer
+     */
+
     Serial.println("Transferring data");
     Serial.flush();
-    flex_spi.transfer(B10101010);
+    //
+    flex_spi._pflex->port().SHIFTBUFBIS[flex_spi._tx_shifter] = B10101010 << (32-8);
 
     Serial.println("Ending Transaction");
     Serial.flush();
