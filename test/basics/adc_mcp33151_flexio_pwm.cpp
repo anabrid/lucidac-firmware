@@ -17,7 +17,7 @@ constexpr uint8_t PIN_LED = 13;
 
 #define PWMHZ 50000
 
-FlexIOHandler* flexio;
+FlexIOHandler *flexio;
 uint8_t _miso_shifter_idx;
 
 void setup() {
@@ -69,7 +69,7 @@ void setup() {
     // Configure timer (https://www.pjrc.com/teensy/IMXRT1060RM_rev3.pdf p.3002)
     flexio->port().TIMCFG[_clk_timer_idx] = FLEXIO_TIMCFG_TIMOUT(1) | FLEXIO_TIMCFG_TIMDIS(2) | FLEXIO_TIMCFG_TIMENA(6);
     // Dual 8-bit counter baud mode: [ 16 bit reserved ][ 8 bit number of bits * 2 - 1 ][ 8 bit clock divider ]
-    flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'20'00;
+    flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'80'00;
 
     flexio->setIOPinToFlexMode(PIN_CLK);
 
@@ -79,9 +79,12 @@ void setup() {
      */
 
     pinMode(PIN_MISO, INPUT);
+    flexio->setIOPinToFlexMode(PIN_MISO);
 
-    // Shifter 3 is one supporting parallel receive
-    _miso_shifter_idx = 3;
+    // Shifter 7 is one supporting parallel receive
+    _miso_shifter_idx = 7;
+    // Add additional shifters for more than 32 bit data width (currently 1 -> 64bit = 4*16bit)
+    uint8_t _miso_shifter_chain_count = 1;
     if (!flexio->claimShifter(_miso_shifter_idx)) ERROR
 
     // Control shifter (https://www.pjrc.com/teensy/IMXRT1060RM_rev3.pdf p.2992)
@@ -102,7 +105,15 @@ void setup() {
     // SSTART=0 (=default) shifter start bit
     flexio->port().SHIFTCFG[_miso_shifter_idx] = 0;
 
-    flexio->setIOPinToFlexMode(PIN_MISO);
+    // Chain a few more shift buffers to this one
+    for (decltype(_miso_shifter_chain_count) chain_idx = 1; chain_idx < _miso_shifter_chain_count + 1; chain_idx++) {
+        // Shiftbuffers are chained N -> N-1, N-1 -> N-2, ...
+        auto _idx = _miso_shifter_idx - chain_idx;
+        if (!flexio->claimShifter(_idx)) ERROR
+        flexio->port().SHIFTCTL[_idx] =
+                FLEXIO_SHIFTCTL_TIMSEL(_clk_timer_idx) | FLEXIO_SHIFTCTL_TIMPOL | FLEXIO_SHIFTCTL_SMOD(1);
+        flexio->port().SHIFTCFG[_idx] = FLEXIO_SHIFTCFG_INSRC;
+    }
 
 
     /*
@@ -121,8 +132,10 @@ void loop() {
 
     // Check if data is there and read
     if (flexio->port().SHIFTSTAT) {
-        auto shiftbuf = flexio->port().SHIFTBUFBIS[_miso_shifter_idx];
-        PRINT_REG(shiftbuf);
-        Serial.println(shiftbuf);
+        for (auto _idx: {0, -1}) {
+            auto shiftbuf = flexio->port().SHIFTBUFBIS[_miso_shifter_idx + _idx];
+            PRINT_REG(shiftbuf);
+            Serial.println(shiftbuf);
+        }
     }
 }
