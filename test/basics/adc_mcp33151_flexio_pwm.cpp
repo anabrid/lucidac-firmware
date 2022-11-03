@@ -5,6 +5,8 @@
 
 #include <Arduino.h>
 #include <FlexIO_t4.h>
+#include <string>
+#include <bitset>
 
 #define ERROR while (true) { digitalToggleFast(PIN_LED); delay(50);}
 
@@ -69,7 +71,7 @@ void setup() {
     // Configure timer (https://www.pjrc.com/teensy/IMXRT1060RM_rev3.pdf p.3002)
     flexio->port().TIMCFG[_clk_timer_idx] = FLEXIO_TIMCFG_TIMOUT(1) | FLEXIO_TIMCFG_TIMDIS(2) | FLEXIO_TIMCFG_TIMENA(6);
     // Dual 8-bit counter baud mode: [ 16 bit reserved ][ 8 bit number of bits * 2 - 1 ][ 8 bit clock divider ]
-    flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'80'00;
+    flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'20'00;
 
     flexio->setIOPinToFlexMode(PIN_CLK);
 
@@ -103,7 +105,7 @@ void setup() {
     // INSRC=0 (=default) input from pin, not from other shifter
     // SSTOP=0 (=default) shifter stop bit
     // SSTART=0 (=default) shifter start bit
-    flexio->port().SHIFTCFG[_miso_shifter_idx] = 0;
+    flexio->port().SHIFTCFG[_miso_shifter_idx] = FLEXIO_SHIFTCFG_PWIDTH(3);
 
     // Chain a few more shift buffers to this one
     for (decltype(_miso_shifter_chain_count) chain_idx = 1; chain_idx < _miso_shifter_chain_count + 1; chain_idx++) {
@@ -112,7 +114,7 @@ void setup() {
         if (!flexio->claimShifter(_idx)) ERROR
         flexio->port().SHIFTCTL[_idx] =
                 FLEXIO_SHIFTCTL_TIMSEL(_clk_timer_idx) | FLEXIO_SHIFTCTL_TIMPOL | FLEXIO_SHIFTCTL_SMOD(1);
-        flexio->port().SHIFTCFG[_idx] = FLEXIO_SHIFTCFG_INSRC;
+        flexio->port().SHIFTCFG[_idx] = FLEXIO_SHIFTCFG_PWIDTH(3) | FLEXIO_SHIFTCFG_INSRC;
     }
 
 
@@ -127,15 +129,41 @@ void setup() {
 void loop() {
     delay(500);
     digitalToggleFast(PIN_LED);
-    PRINT_REG(flexio->port().SHIFTSTAT);
-    PRINT_REG(flexio->port().SHIFTERR);
+    //PRINT_REG(flexio->port().SHIFTSTAT);
+    //PRINT_REG(flexio->port().SHIFTERR);
 
     // Check if data is there and read
     if (flexio->port().SHIFTSTAT) {
-        for (auto _idx: {0, -1}) {
-            auto shiftbuf = flexio->port().SHIFTBUFBIS[_miso_shifter_idx + _idx];
-            PRINT_REG(shiftbuf);
-            Serial.println(shiftbuf);
-        }
+        auto a = flexio->port().SHIFTBUF[_miso_shifter_idx];
+        auto b = flexio->port().SHIFTBUF[_miso_shifter_idx - 1];
+        //Serial.println(a, BIN);
+        //Serial.println(b, BIN);
+        std::bitset<32> abits(a);
+        std::bitset<32> bbits(b);
+        Serial.println(abits.to_string().c_str());
+        Serial.println(bbits.to_string().c_str());
+
+        // Bit operations are too complicated for me :)
+        std::bitset<16> collected_bits;
+        collected_bits[15] = bbits[0];
+        collected_bits[14] = bbits[4];
+        collected_bits[13] = bbits[8];
+        collected_bits[12] = bbits[12];
+        collected_bits[11] = bbits[16];
+        collected_bits[10] = bbits[20];
+        collected_bits[9] = bbits[24];
+        collected_bits[8] = bbits[28];
+        collected_bits[7] = abits[0];
+        collected_bits[6] = abits[4];
+        collected_bits[5] = abits[8];
+        collected_bits[4] = abits[12];
+        collected_bits[3] = abits[16];
+        collected_bits[2] = abits[20];
+        collected_bits[1] = abits[24];
+        collected_bits[0] = abits[28];
+        Serial.println(collected_bits.to_string().c_str());
+        auto value = collected_bits.to_ulong();
+        Serial.println(value);
+        Serial.println();
     }
 }
