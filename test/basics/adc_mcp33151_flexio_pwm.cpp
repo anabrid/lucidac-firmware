@@ -19,12 +19,15 @@ constexpr uint8_t PIN_LED = 13;
 // DMA Stuff
 DMAChannel dmaChannel;
 constexpr uint16_t DMABUFFER_SIZE = 2048;
-uint32_t dmaBuffer[DMABUFFER_SIZE];
+volatile uint32_t dmaBuffer[DMABUFFER_SIZE];
 
 
 void inputDMAInterrupt()
 {
-    Serial.println(micros());
+    Serial.print(micros());
+    Serial.print("  ");
+    Serial.print(dmaBuffer[0]);
+    Serial.println();
 	dmaChannel.clearInterrupt();	// tell system we processed it.
 	asm("DSB");						// this is a memory barrier
 }
@@ -100,7 +103,7 @@ void setup() {
     // For FlexIO1, Shifter 3-7 support parallel receive, but only 0-3 support DMA
     _miso_shifter_idx = 3;
     // Add additional shifters for more than 32 bit data width (currently 1 -> 64bit = 4*16bit)
-    uint8_t _miso_shifter_chain_count = 1;
+    uint8_t _miso_shifter_chain_count = 0;
     if (!flexio->claimShifter(_miso_shifter_idx)) ERROR
 
     // Control shifter (https://www.pjrc.com/teensy/IMXRT1060RM_rev3.pdf p.2992)
@@ -119,7 +122,7 @@ void setup() {
     // INSRC=0 (=default) input from pin, not from other shifter
     // SSTOP=0 (=default) shifter stop bit
     // SSTART=0 (=default) shifter start bit
-    flexio->port().SHIFTCFG[_miso_shifter_idx] = FLEXIO_SHIFTCFG_PWIDTH(3);
+    flexio->port().SHIFTCFG[_miso_shifter_idx] = FLEXIO_SHIFTCFG_PWIDTH(_miso_shifter_chain_count);
 
     // Chain a few more shift buffers to this one
     for (decltype(_miso_shifter_chain_count) chain_idx = 1; chain_idx < _miso_shifter_chain_count + 1; chain_idx++) {
@@ -128,7 +131,7 @@ void setup() {
         if (!flexio->claimShifter(_idx)) ERROR
         flexio->port().SHIFTCTL[_idx] =
                 FLEXIO_SHIFTCTL_TIMSEL(_clk_timer_idx) | FLEXIO_SHIFTCTL_TIMPOL | FLEXIO_SHIFTCTL_SMOD(1);
-        flexio->port().SHIFTCFG[_idx] = FLEXIO_SHIFTCFG_PWIDTH(3) | FLEXIO_SHIFTCFG_INSRC;
+        flexio->port().SHIFTCFG[_idx] = FLEXIO_SHIFTCFG_PWIDTH(_miso_shifter_chain_count) | FLEXIO_SHIFTCFG_INSRC;
     }
 
 
@@ -139,29 +142,41 @@ void setup() {
     // TODO: Make a simpler test example with just a timer and a shifter shifting zeros or something and triggering DMA
 
     dmaChannel.begin();
+
+    dmaChannel.source(flexio->port().SHIFTBUFBIS[_miso_shifter_idx]);
+    /*
     // TODO: SADDR is wrong
     dmaChannel.TCD->SADDR = &(flexio->port().SHIFTBUF[_miso_shifter_idx]);
-    dmaChannel.TCD->SOFF = 4 /* bytes */;
+    dmaChannel.TCD->SOFF = 4;
     dmaChannel.TCD->ATTR_SRC =
             (5 << 3) | 2;  // See https://forum.pjrc.com/threads/66201-Teensy-4-1-How-to-start-using-FlexIO
     dmaChannel.TCD->SLAST = 0;
+    */
 
+    dmaChannel.destinationCircular(dmaBuffer, DMABUFFER_SIZE);
+    /*
     dmaChannel.TCD->DADDR = dmaBuffer;
     dmaChannel.TCD->DOFF = 4;
     dmaChannel.TCD->ATTR_DST = 2;
     dmaChannel.TCD->DLASTSGA = -DMABUFFER_SIZE * 4;
+     */
 
+    //dmaChannel.transferSize(4);
+    //dmaChannel.transferCount(4);
+
+    /*
     // TODO: NBYTES is wrong (2*32bit buffers = 64bit = 8byte)
     dmaChannel.TCD->NBYTES = 8 * 4;
     // TODO: BITER/CITER is wrong
     dmaChannel.TCD->BITER = DMABUFFER_SIZE / 8;
     dmaChannel.TCD->CITER = DMABUFFER_SIZE / 8;
+    */
 
     dmaChannel.TCD->CSR &= ~(DMA_TCD_CSR_DREQ);                            // do not disable the channel after it completes - so it just keeps going
     dmaChannel.TCD->CSR |=
             DMA_TCD_CSR_INTMAJOR | DMA_TCD_CSR_INTHALF;    // interrupt at completion and at half completion
 
-    dmaChannel.attachInterrupt( inputDMAInterrupt );
+    //dmaChannel.attachInterrupt( inputDMAInterrupt );
 	dmaChannel.triggerAtHardwareEvent( flexio->shiftersDMAChannel(_miso_shifter_idx-_miso_shifter_chain_count) );
     flexio->port().SHIFTSDEN |= 1 << (_miso_shifter_idx - _miso_shifter_chain_count);
 
@@ -189,13 +204,26 @@ void loop() {
     // Check if data is there and read
     // Since DMA handles data transfer now, SHIFTSTAT is cleared by DMA reads, thus if (true) ...
     if (true) { // (flexio->port().SHIFTSTAT) {
-        auto a = flexio->port().SHIFTBUF[_miso_shifter_idx];
+        auto a = flexio->port().SHIFTBUFBIS[_miso_shifter_idx];
         auto b = flexio->port().SHIFTBUF[_miso_shifter_idx - 1];
         //Serial.println(a, BIN);
         //Serial.println(b, BIN);
         std::bitset<32> abits(a);
         std::bitset<32> bbits(b);
-        Serial.println(abits.to_string().c_str());
+        Serial.print("SHIFTBUF: ");
+        Serial.print(abits.to_string().c_str());
+        Serial.print("  ");
+        Serial.print(a);
+        Serial.println();
+
+        Serial.print("DMABUF  : ");
+        Serial.print(std::bitset<32>(dmaBuffer[0]).to_string().c_str());
+        Serial.print("  ");
+        Serial.print(dmaBuffer[0]);
+        Serial.println();
+
+        Serial.println();
+        /*
         Serial.println(bbits.to_string().c_str());
 
         // Bit operations are too complicated for me :)
@@ -220,5 +248,6 @@ void loop() {
         auto value = collected_bits.to_ulong();
         Serial.println(value);
         Serial.println();
+         */
     }
 }
