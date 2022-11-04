@@ -4,6 +4,7 @@
 // flexio2 clock 480 mhz.  pin 12 2:1   TIMER 0   no shifter
 
 #include <Arduino.h>
+#include <DMAChannel.h>
 #include <FlexIO_t4.h>
 #include <string>
 #include <bitset>
@@ -14,6 +15,19 @@ constexpr uint8_t PIN_CNVST = 3;
 constexpr uint8_t PIN_CLK = 4;
 constexpr uint8_t PIN_MISO = 5;
 constexpr uint8_t PIN_LED = 13;
+
+// DMA Stuff
+DMAChannel dmaChannel;
+constexpr uint16_t DMABUFFER_SIZE = 2048;
+uint32_t dmaBuffer[DMABUFFER_SIZE];
+
+
+void inputDMAInterrupt()
+{
+    Serial.println(micros());
+	dmaChannel.clearInterrupt();	// tell system we processed it.
+	asm("DSB");						// this is a memory barrier
+}
 
 #define PRINT_REG(x) Serial.print(#x" 0x"); Serial.println(x,HEX)
 
@@ -83,8 +97,8 @@ void setup() {
     pinMode(PIN_MISO, INPUT);
     flexio->setIOPinToFlexMode(PIN_MISO);
 
-    // Shifter 7 is one supporting parallel receive
-    _miso_shifter_idx = 7;
+    // For FlexIO1, Shifter 3-7 support parallel receive, but only 0-3 support DMA
+    _miso_shifter_idx = 3;
     // Add additional shifters for more than 32 bit data width (currently 1 -> 64bit = 4*16bit)
     uint8_t _miso_shifter_chain_count = 1;
     if (!flexio->claimShifter(_miso_shifter_idx)) ERROR
@@ -119,6 +133,42 @@ void setup() {
 
 
     /*
+     *  Setup DMA
+     */
+
+    // TODO: Make a simpler test example with just a timer and a shifter shifting zeros or something and triggering DMA
+
+    dmaChannel.begin();
+    // TODO: SADDR is wrong
+    dmaChannel.TCD->SADDR = &(flexio->port().SHIFTBUF[_miso_shifter_idx]);
+    dmaChannel.TCD->SOFF = 4 /* bytes */;
+    dmaChannel.TCD->ATTR_SRC =
+            (5 << 3) | 2;  // See https://forum.pjrc.com/threads/66201-Teensy-4-1-How-to-start-using-FlexIO
+    dmaChannel.TCD->SLAST = 0;
+
+    dmaChannel.TCD->DADDR = dmaBuffer;
+    dmaChannel.TCD->DOFF = 4;
+    dmaChannel.TCD->ATTR_DST = 2;
+    dmaChannel.TCD->DLASTSGA = -DMABUFFER_SIZE * 4;
+
+    // TODO: NBYTES is wrong (2*32bit buffers = 64bit = 8byte)
+    dmaChannel.TCD->NBYTES = 8 * 4;
+    // TODO: BITER/CITER is wrong
+    dmaChannel.TCD->BITER = DMABUFFER_SIZE / 8;
+    dmaChannel.TCD->CITER = DMABUFFER_SIZE / 8;
+
+    dmaChannel.TCD->CSR &= ~(DMA_TCD_CSR_DREQ);                            // do not disable the channel after it completes - so it just keeps going
+    dmaChannel.TCD->CSR |=
+            DMA_TCD_CSR_INTMAJOR | DMA_TCD_CSR_INTHALF;    // interrupt at completion and at half completion
+
+    dmaChannel.attachInterrupt( inputDMAInterrupt );
+	dmaChannel.triggerAtHardwareEvent( flexio->shiftersDMAChannel(_miso_shifter_idx-_miso_shifter_chain_count) );
+    flexio->port().SHIFTSDEN |= 1 << (_miso_shifter_idx - _miso_shifter_chain_count);
+
+    dmaChannel.enable();
+
+
+    /*
      *  Enable FlexIO
      */
 
@@ -132,8 +182,13 @@ void loop() {
     //PRINT_REG(flexio->port().SHIFTSTAT);
     //PRINT_REG(flexio->port().SHIFTERR);
 
+    if (dmaChannel.error()) {
+        Serial.println("DMA ERROR");
+    }
+
     // Check if data is there and read
-    if (flexio->port().SHIFTSTAT) {
+    // Since DMA handles data transfer now, SHIFTSTAT is cleared by DMA reads, thus if (true) ...
+    if (true) { // (flexio->port().SHIFTSTAT) {
         auto a = flexio->port().SHIFTBUF[_miso_shifter_idx];
         auto b = flexio->port().SHIFTBUF[_miso_shifter_idx - 1];
         //Serial.println(a, BIN);
