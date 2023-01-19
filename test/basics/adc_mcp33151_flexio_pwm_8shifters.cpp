@@ -20,12 +20,24 @@ constexpr uint8_t PIN_CNVST = 6;
 constexpr uint8_t PIN_CLK = 9;
 constexpr uint8_t PINS_MISO[8] = {10, 12, 11, /* not 13=LED */32, 8, 7, 36, 37};
 
-
+DMAChannel dma(false);
+uint32_t dma_buffer[sizeof(PINS_MISO)] __attribute__ ((used, aligned(32))) = {1, 2, 3, 4, 5, 6, 7, 8};
 constexpr uint8_t PIN_LED = 13;
 
 #define PRINT_REG(x) Serial.print(#x" 0x"); Serial.println(x,HEX)
 
 FlexIOHandler *flexio;
+
+
+void inputDMAInterrupt()
+{
+    digitalToggleFast(PIN_LED);
+
+    // Clear interrupt
+    dma.clearInterrupt();
+    // Memory barrier
+    asm("DSB");
+}
 
 
 void setup() {
@@ -34,9 +46,16 @@ void setup() {
 
     qn::Ethernet.begin();
     if (!qn::Ethernet.waitForLocalIP(10000)) ERROR
+
     qn::stdPrint = &udp;
     udp.beginPacket(client_ip, 8000);
     printf("Hello Client, will send you data soon.\n");
+
+    printf("DMA Buffer content:\n");
+    for (const auto buffer_line: dma_buffer) {
+        printf("%s\n", std::bitset<32>(buffer_line).to_string().c_str());
+    }
+    printf("\n");
 
     uint8_t PIN_FLEX_CNVST;
     flexio = FlexIOHandler::mapIOPinToFlexIOHandler(PIN_CNVST, PIN_FLEX_CNVST);
@@ -102,6 +121,29 @@ void setup() {
     }
 
     /*
+     *  Configure DMA
+     */
+
+    // Select shifter zero to generate DMA events.
+    // Which shifter is selected should not matter, as long as it is used.
+    uint8_t shifter_dma_idx = 0;
+    if (flexio->claimShifter(shifter_dma_idx)) ERROR
+
+    // Set shifter to generate DMA events.
+    flexio->port().SHIFTSDEN = 1 << shifter_dma_idx;
+    // Configure DMA channel
+    dma.begin();
+    dma.sourceCircular(flexio->port().SHIFTBUFBIS, 4);
+    dma.destinationCircular(dma_buffer, 4);
+    // Call an interrupt when done
+    dma.attachInterrupt(inputDMAInterrupt);
+    dma.interruptAtCompletion();
+    // Trigger from "shifter full" DMA event
+    dma.triggerAtHardwareEvent( flexio->shiftersDMAChannel(shifter_dma_idx));
+    // Enable dma channel
+    dma.enable();
+
+    /*
      *  Enable FlexIO
      */
 
@@ -113,12 +155,19 @@ void setup() {
 void loop() {
     yield();
     delay(500);
-    digitalToggleFast(PIN_LED);
+    // Use PIN_LED in DMA interrupt
+    //digitalToggleFast(PIN_LED);
 
     udp.beginPacket(client_ip, 8000);
     for (auto idx: {0, 1, 2, 3, 4, 5, 6, 7}) {
         volatile uint32_t value = flexio->port().SHIFTBUFBIS[idx];
         printf("SHIFTBUF %i: %s = %li\n", idx, std::bitset<32>(value).to_string().c_str(), (value >> 16));
+    }
+    printf("\n");
+
+    printf("DMA Buffer content:\n");
+    for (const auto buffer_line: dma_buffer) {
+        printf("%s\n", std::bitset<32>(buffer_line).to_string().c_str());
     }
     printf("\n");
     udp.endPacket();
