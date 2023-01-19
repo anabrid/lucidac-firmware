@@ -133,8 +133,21 @@ void setup() {
     flexio->port().SHIFTSDEN = 1 << shifter_dma_idx;
     // Configure DMA channel
     dma.begin();
-    dma.sourceCircular(flexio->port().SHIFTBUFBIS, 4);
-    dma.destinationCircular(dma_buffer, 4);
+    //dma.sourceBuffer(flexio->port().SHIFTBUFBIS, 8);
+    //dma.destinationCircular(dma_buffer, 16);
+    dma.TCD->CITER = 1;
+    dma.TCD->BITER = 1;
+
+    dma.TCD->SADDR = flexio->port().SHIFTBUFBIS;
+    dma.TCD->NBYTES = 8;
+    dma.TCD->SOFF = 4;
+    dma.TCD->ATTR_SRC = 2;
+    dma.TCD->SLAST = -8;
+
+    dma.TCD->DADDR = dma_buffer;
+    dma.TCD->DOFF = 4;
+    dma.TCD->ATTR_DST = 2;
+    dma.TCD->DLASTSGA = -8;
     // Call an interrupt when done
     dma.attachInterrupt(inputDMAInterrupt);
     dma.interruptAtCompletion();
