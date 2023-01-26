@@ -21,7 +21,8 @@ constexpr uint8_t PIN_CLK = 9;
 constexpr uint8_t PINS_MISO[8] = {10, 12, 11, /* not 13=LED */32, 8, 7, 36, 37};
 
 DMAChannel dma(false);
-uint32_t dma_buffer[sizeof(PINS_MISO)] __attribute__ ((used, aligned(32))) = {1, 2, 3, 4, 5, 6, 7, 8};
+// Buffer for 8 values, coincidentally = sizeof PINS_MISO
+uint32_t dma_buffer[8] __attribute__ ((used, aligned(32))) = {1, 2, 3, 4, 5, 6, 7, 8};
 constexpr uint8_t PIN_LED = 13;
 
 #define PRINT_REG(x) Serial.print(#x" 0x"); Serial.println(x,HEX)
@@ -135,19 +136,23 @@ void setup() {
     dma.begin();
     //dma.sourceBuffer(flexio->port().SHIFTBUFBIS, 8);
     //dma.destinationCircular(dma_buffer, 16);
-    dma.TCD->CITER = 1;
-    dma.TCD->BITER = 1;
+
+    // One DMA request (SHIFTBUF full) triggers one minor loop
+    // CITER "current major loop iteration count"
+    // *but* is reduced every minor loop. When it reaches zero, major loop is done.
+    dma.TCD->CITER = 2;
+    // BITER "beginning iteration count" = number of minor loops in one major loop
+    dma.TCD->BITER = 2;
 
     dma.TCD->SADDR = flexio->port().SHIFTBUFBIS;
-    dma.TCD->NBYTES = 8;
-    dma.TCD->SOFF = 4;
-    dma.TCD->ATTR_SRC = 2;
-    dma.TCD->SLAST = -8;
+    dma.TCD->NBYTES = 8;  // 64bit total transfer (=2 shift buffer)
+    dma.TCD->SOFF = 4;  // 32bit offset (=1 shift buffer)
+    dma.TCD->ATTR_SRC = B00011010;  // [5bit MOD, 00011=3lower bits may change][3bit SIZE, 010=32bit]
 
     dma.TCD->DADDR = dma_buffer;
     dma.TCD->DOFF = 4;
-    dma.TCD->ATTR_DST = 2;
-    dma.TCD->DLASTSGA = -8;
+    dma.TCD->ATTR_DST = B00101010;  // [5bit MOD, 00101=5lower bits of address may change, 32bytes = 4*2*32bit buffer][3bit SIZE, 010=32bit]
+
     // Call an interrupt when done
     dma.attachInterrupt(inputDMAInterrupt);
     dma.interruptAtCompletion();
@@ -178,7 +183,7 @@ void loop() {
     }
     printf("\n");
 
-    printf("DMA Buffer content:\n");
+    printf("DMA Buffer @%08lX content:\n", (unsigned long)dma_buffer);
     for (const auto buffer_line: dma_buffer) {
         printf("%s\n", std::bitset<32>(buffer_line).to_string().c_str());
     }
