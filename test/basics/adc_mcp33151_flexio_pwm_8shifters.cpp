@@ -14,7 +14,7 @@
 namespace qn = qindesign::network;
 
 qn::EthernetUDP udp;
-IPAddress client_ip{192, 168, 100, 155};
+IPAddress client_ip{192, 168, 100, 58};
 
 constexpr uint8_t PIN_CNVST = 6;
 constexpr uint8_t PIN_CLK = 9;
@@ -22,7 +22,7 @@ constexpr uint8_t PINS_MISO[8] = {10, 12, 11, /* not 13=LED */32, 8, 7, 36, 37};
 
 DMAChannel dma(false);
 // Buffer for 8 values, coincidentally = sizeof PINS_MISO
-uint32_t dma_buffer[8] __attribute__ ((used, aligned(32))) = {1, 2, 3, 4, 5, 6, 7, 8};
+volatile uint32_t dma_buffer[8] __attribute__ ((used, aligned(32))) = {1, 2, 3, 4, 5, 6, 7, 8};
 constexpr uint8_t PIN_LED = 13;
 
 #define PRINT_REG(x) Serial.print(#x" 0x"); Serial.println(x,HEX)
@@ -51,10 +51,12 @@ void setup() {
     qn::stdPrint = &udp;
     udp.beginPacket(client_ip, 8000);
     printf("Hello Client, will send you data soon.\n");
+    udp.endPacket();
 
+    udp.beginPacket(client_ip, 8000);
     printf("DMA Buffer content:\n");
     for (const auto buffer_line: dma_buffer) {
-        printf("%s\n", std::bitset<32>(buffer_line).to_string().c_str());
+        printf("%s\n", std::bitset<8*sizeof dma_buffer[0]>(buffer_line).to_string().c_str());
     }
     printf("\n");
 
@@ -179,13 +181,13 @@ void loop() {
     udp.beginPacket(client_ip, 8000);
     for (auto idx: {0, 1, 2, 3, 4, 5, 6, 7}) {
         volatile uint32_t value = flexio->port().SHIFTBUFBIS[idx];
-        printf("SHIFTBUF %i: %s = %li\n", idx, std::bitset<32>(value).to_string().c_str(), (value >> 16));
+        printf("SHIFTBUF %i: %s = %li\n", idx, std::bitset<32>(value).to_string().c_str(), value);
     }
     printf("\n");
 
     printf("DMA Buffer @%08lX content:\n", (unsigned long)dma_buffer);
     for (const auto buffer_line: dma_buffer) {
-        printf("%s\n", std::bitset<32>(buffer_line).to_string().c_str());
+        printf("%s = %i\n", std::bitset<8*sizeof(dma_buffer[0])>(buffer_line).to_string().c_str(), buffer_line);
     }
     printf("\n");
     udp.endPacket();
