@@ -54,7 +54,7 @@ public:
         //SPI1.begin();
     }
 
-    void hijack_spi() {
+    void manual_hijack_spi() {
         digitalWriteFast(PIN_CLK, HIGH);
         pinMode(PIN_CLK, OUTPUT);
         digitalWriteFast(PIN_MOSI, LOW);
@@ -62,11 +62,11 @@ public:
         pinMode(PIN_MISO, INPUT);
     }
 
-    void set_mosi(bool value) {
+    void manual_set_mosi(bool value) {
         digitalWriteFast(PIN_MOSI, value);
     }
 
-    void set_clk(bool value, bool delay = true, unsigned int delay_ns = 170) {
+    void manual_set_clk(bool value, bool delay = true, unsigned int delay_ns = 150) {
         if (delay)
             delayNanoseconds(delay_ns);
         digitalWriteFast(PIN_CLK, value);
@@ -74,21 +74,50 @@ public:
             delayNanoseconds(delay_ns);
     }
 
-    uint8_t manual_transfer8(uint8_t msb_first_data) {
+    uint8_t sw_manual_transfer8(uint8_t msb_first_data) {
         uint8_t ret = 0;
         for (auto i: {7,6,5,4,3,2,1,0}) {
-            set_mosi(msb_first_data & (1 << i));
-            set_clk(LOW);
-            set_clk(HIGH);
+            manual_set_mosi(msb_first_data & (1 << i));
+            manual_set_clk(LOW);
+            ret |= digitalReadFast(PIN_MISO) << i;
+            manual_set_clk(HIGH);
         }
         return ret;
     }
+
+    uint8_t sw_manual_read_register(const uint8_t address) {
+        // Assumes manual_hijack_spi has been called
+        manual_set_clk(HIGH);
+        manual_set_mosi(LOW);
+        delayNanoseconds(100);
+
+        manual_set_cs(LOW);
+
+        sw_manual_transfer8(B01000000 + address);
+        manual_set_mosi(LOW);
+        sw_manual_transfer8(B00000000);
+        manual_set_mosi(LOW);
+
+        manual_set_cs(HIGH);
+        delayNanoseconds(100);
+        manual_set_cs(LOW);
+
+        sw_manual_transfer8(B01000000 + address);
+        manual_set_mosi(LOW);
+        auto reg = sw_manual_transfer8(B00000000);
+        manual_set_mosi(LOW);
+
+        manual_set_cs(HIGH);
+        return reg;
+    }
+
+    uint8_t sw_manual_register_(uint8_t address, uint8_t value = 0)
 
     void teardown() {
         //SPI1.end();
     }
 
-    void set_cs(bool value) {
+    void manual_set_cs(bool value) {
         // CS is active low, but that's left to the user.
         digitalWriteFast(PIN_CS, value);
     }
@@ -112,6 +141,11 @@ void setup() {
     pinMode(PIN_LED, OUTPUT);
     digitalWriteFast(PIN_LED, HIGH);
 
+    Serial.begin(0);
+    while (!Serial && millis() < 4000) {
+        // Wait for Serial to initialize
+    }
+
     auto adc = AD7606();
     adc.setup();
     delayMicroseconds(1);
@@ -120,28 +154,15 @@ void setup() {
     // Implement one register read by bit-banging, because SDI must be asserted before CS.
     // And I don't think I can do that with default SPI functions.
     // ASSUMING: ADC samples MOSI on falling CLK (datasheet page 11), MISO should be read on rising edge
-    adc.hijack_spi();
-    adc.set_clk(HIGH);
-    adc.set_mosi(LOW);
-    delayNanoseconds(100);
+    adc.manual_hijack_spi();
 
-    adc.set_cs(LOW);
+    auto reg = adc.sw_manual_read_register(0x02);
+    Serial.print("Reg 0x02: ");
+    Serial.println(reg, HEX);
 
-    adc.manual_transfer8(B01000000 + 0x06);
-    adc.set_mosi(LOW);
-    adc.manual_transfer8(B00000000);
-    adc.set_mosi(LOW);
-
-    adc.set_cs(HIGH);
-    delayNanoseconds(100);
-    adc.set_cs(LOW);
-
-    adc.manual_transfer8(B01000000 + 0x06);
-    adc.set_mosi(LOW);
-    adc.manual_transfer8(B00000000);
-    adc.set_mosi(LOW);
-
-    adc.set_cs(HIGH);
+    reg = adc.sw_manual_read_register(0x03);
+    Serial.print("Reg 0x03: ");
+    Serial.println(reg, HEX);
 
     /*
     adc.set_clk(LOW);   // 0
