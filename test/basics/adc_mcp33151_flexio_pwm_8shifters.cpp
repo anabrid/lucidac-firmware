@@ -30,8 +30,7 @@ constexpr uint8_t PIN_LED = 13;
 FlexIOHandler *flexio;
 
 
-void inputDMAInterrupt()
-{
+void inputDMAInterrupt() {
     digitalToggleFast(PIN_LED);
 
     // Clear interrupt
@@ -56,16 +55,32 @@ void setup() {
     udp.beginPacket(client_ip, 8000);
     printf("DMA Buffer content:\n");
     for (const auto buffer_line: dma_buffer) {
-        printf("%s\n", std::bitset<8*sizeof dma_buffer[0]>(buffer_line).to_string().c_str());
+        printf("%s\n", std::bitset<8 * sizeof dma_buffer[0]>(buffer_line).to_string().c_str());
     }
     printf("\n");
+
+    /*
+     *  ADC has the following requirements
+     *  - long enough delay between CNVST rising edge and first CLK pulse
+     *  - ???
+     *
+     *  PWM high and low count together must equal CNVST period time
+     *  PWM high count must be slightly lower than required delay of ADC (because of CLK trigger delay)
+     *  CLK counts are always done as fast as possible, is easiest probably
+     *  PWM low count must be slightly longer than CLK counts
+     *
+     *  Base FlexIO clock has the following possibilities
+     *  - clk_sel selects base clock, which is divided by clk_pred and divided by clk_popdf
+     *  - clk_sel=3 has 480MHz
+     *  Maximum dividers are unclear?
+     */
 
     uint8_t PIN_FLEX_CNVST;
     flexio = FlexIOHandler::mapIOPinToFlexIOHandler(PIN_CNVST, PIN_FLEX_CNVST);
     uint8_t PIN_FLEX_CLK = flexio->mapIOPinToFlexPin(PIN_CLK);
     if (PIN_FLEX_CNVST == 0xff || PIN_FLEX_CLK == 0xff) ERROR
 
-    flexio->setClockSettings(3, 7, 7);
+    flexio->setClockSettings(3, 3, 3);
 
     /*
      *  Configure PWM
@@ -74,7 +89,7 @@ void setup() {
     uint8_t _pwm_timer_idx = flexio->requestTimers(1);
     //flexio->port().TIMCMP[_pwm_timer_idx] = ((locnt - 1) << 8) | (hicnt - 1);
     // PWM [ 16 bit reserved ][ 8 bit low ][ 8 bit high ]
-    flexio->port().TIMCMP[_pwm_timer_idx] = 0x0000'ff'03;
+    flexio->port().TIMCMP[_pwm_timer_idx] = 0x0000'2b'0f;
 
     flexio->port().TIMCTL[_pwm_timer_idx] = FLEXIO_TIMCTL_PINSEL(PIN_FLEX_CNVST) | FLEXIO_TIMCTL_TIMOD(2)
                                             | FLEXIO_TIMCTL_PINCFG(3);
@@ -98,7 +113,7 @@ void setup() {
     // Configure timer (https://www.pjrc.com/teensy/IMXRT1060RM_rev3.pdf p.3002)
     flexio->port().TIMCFG[_clk_timer_idx] = FLEXIO_TIMCFG_TIMOUT(1) | FLEXIO_TIMCFG_TIMDIS(2) | FLEXIO_TIMCFG_TIMENA(6);
     // Dual 8-bit counter baud mode: [ 16 bit reserved ][ 8 bit number of bits * 2 - 1 ][ 8 bit clock divider ]
-    flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'40'00;
+    flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'20'00;
 
     flexio->setIOPinToFlexMode(PIN_CLK);
 
@@ -159,7 +174,7 @@ void setup() {
     dma.attachInterrupt(inputDMAInterrupt);
     dma.interruptAtCompletion();
     // Trigger from "shifter full" DMA event
-    dma.triggerAtHardwareEvent( flexio->shiftersDMAChannel(shifter_dma_idx));
+    dma.triggerAtHardwareEvent(flexio->shiftersDMAChannel(shifter_dma_idx));
     // Enable dma channel
     dma.enable();
 
@@ -185,9 +200,9 @@ void loop() {
     }
     printf("\n");
 
-    printf("DMA Buffer @%08lX content:\n", (unsigned long)dma_buffer);
+    printf("DMA Buffer @%08lX content:\n", (unsigned long) dma_buffer);
     for (const auto buffer_line: dma_buffer) {
-        printf("%s = %i\n", std::bitset<8*sizeof(dma_buffer[0])>(buffer_line).to_string().c_str(), buffer_line);
+        printf("%s = %i\n", std::bitset<8 * sizeof(dma_buffer[0])>(buffer_line).to_string().c_str(), buffer_line);
     }
     printf("\n");
     udp.endPacket();
