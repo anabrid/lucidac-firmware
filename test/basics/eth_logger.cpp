@@ -23,18 +23,26 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
+/*
+ *  CONFIG IN PLATFORMIO:
+ *    build_flags = -std=gnu++17 -DQNETHERNET_ENABLE_CUSTOM_WRITE
+ */
+
 #include <Arduino.h>
 #include "QNEthernet.h"
 
 namespace qn = qindesign::network;
 
 qn::EthernetUDP udp;
-IPAddress client_ip{192, 168, 100, 155};
+IPAddress client_ip{192, 168, 100, 58};
 
 
 void setup() {
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWriteFast(LED_BUILTIN, HIGH);
+
     // Make qnethernet's printf use udp stream
-    qn::stdPrint = &udp;
+    qn::stdoutPrint = &udp;
 
     /*
      * If you use a fixed IP address, the first few UDP packets are lost in my tests.
@@ -54,11 +62,12 @@ void loop() {
     IPAddress ip = qn::Ethernet.localIP();
 
     udp.beginPacket(client_ip, 8000);
-    printf("Iteration = %u\r\n", iteration);
+    printf("Iteration = %lu\r\n", iteration);
     printf("Local IP = %x.%X.%u.%u\r\n", ip[0], ip[1], ip[2], ip[3]);
     udp.endPacket();
 
     iteration++;
+    digitalToggleFast(LED_BUILTIN);
     delay(1000);
     yield();
 }
