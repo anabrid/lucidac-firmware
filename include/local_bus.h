@@ -27,10 +27,14 @@
 
 #include <stdint.h>
 #include <array>
+
 #include <core_pins.h>
+#include <SPI.h>
 
 
 namespace local_bus {
+
+    auto& spi = SPI1;
 
     constexpr std::array<uint8_t, 4> PINS_BADDR = {14, 15, 40, 41};
     constexpr uint8_t PINS_BADDR_BITS_OFFSET = CORE_PIN14_BIT;
@@ -44,6 +48,7 @@ namespace local_bus {
         for (const auto pin: PINS_FADDR) {
             pinMode(pin, OUTPUT);
         }
+        spi.begin();
     }
 
     /**
@@ -87,6 +92,12 @@ namespace local_bus {
         uint32_t mask = (((cluster_idx * 5 + block_idx) & 0xF) << PINS_BADDR_BITS_OFFSET) |
                         ((func_idx & 0x3F) << PINS_FADDR_BITS_OFFSET);
         GPIO6_DR = (GPIO6_DR & ~(0x3FF << PINS_BADDR_BITS_OFFSET)) | mask;
+    }
+
+    void release_address() {
+        // TODO: This is currently arbitrary, should be handled as described in
+        //       https://lab.analogparadigm.com/lucidac/hardware/module-holder/-/issues/6
+        address_function(0, 4, 63);
     }
 
 }
