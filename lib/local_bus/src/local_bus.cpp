@@ -37,6 +37,7 @@ void local_bus::init() {
     pinMode(pin, OUTPUT);
   }
   local_bus::spi.begin();
+  local_bus::spi.setMISO(39);
 }
 
 void local_bus::_change_address_register(uint32_t clear_mask, uint32_t set_mask) {
