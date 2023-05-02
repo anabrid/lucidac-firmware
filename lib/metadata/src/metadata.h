@@ -25,45 +25,37 @@
 
 #pragma once
 
+#include <array>
 #include <cstdint>
 
 #include "local_bus.h"
 
-
 namespace metadata {
 
-    typedef struct __attribute__ ((packed)) MetadataMemoryLayoutV1 {
-        const uint16_t _memory_version_and_size;
-        const uint16_t _entity_class_and_type;
-        const uint8_t entity_variant;
-        const uint8_t entity_version;
-        const uint8_t entity_data[256-14];
-        const uint8_t uuid[8];
+typedef struct __attribute__((packed)) MetadataMemoryLayoutV1 {
+  const uint16_t _memory_version_and_size;
+  const uint16_t _entity_class_and_type;
+  const uint8_t entity_variant;
+  const uint8_t entity_version;
+  const uint8_t entity_data[256 - 14];
+  const uint8_t uuid[8];
 
-        uint8_t get_memory_version() const {
-            return (_memory_version_and_size & 0xE000) >> 13;
-        }
+  uint8_t get_memory_version() const { return (_memory_version_and_size & 0xE000) >> 13; }
 
-        uint16_t get_memory_size() const {
-            return _memory_version_and_size & 0x1FFF;
-        }
-    } MetadataMemoryLayoutV1;
+  uint16_t get_memory_size() const { return _memory_version_and_size & 0x1FFF; }
+} MetadataMemoryLayoutV1;
 
+template <std::size_t dataSize> class MetadataMemory {
+private:
+  std::array<uint8_t, dataSize> data;
 
-    class MetadataMemory {};
+public:
+  const local_bus::addr_t address;
 
+  explicit MetadataMemory(unsigned short address) : data{0}, address{address} {}
 
-    class MetadataMemory74LVC138AD : public MetadataMemory {
-    private:
-        uint8_t data[256]{};
+  virtual size_t read_from_hardware(size_t byte_offset, size_t length, uint8_t *buffer) const = 0;
+  size_t read_from_hardware() { return read_from_hardware(0, data.size(), data.data()); };
+};
 
-    public:
-        const local_bus::addr_t address;
-
-        explicit MetadataMemory74LVC138AD(local_bus::addr_t address);
-
-        size_t read_from_hardware(size_t byte_offset, size_t length, uint8_t* buffer) const;
-        size_t read_from_hardware();
-    };
-
-}
+} // namespace metadata

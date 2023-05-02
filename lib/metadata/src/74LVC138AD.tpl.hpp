@@ -23,11 +23,16 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
+#pragma once
+
 #include "metadata.h"
 
-metadata::MetadataMemory74LVC138AD::MetadataMemory74LVC138AD(const local_bus::addr_t address) : address(address) {}
+class MetadataMemory74LVC138AD : public metadata::MetadataMemory<256> {
+public:
+  using MetadataMemory<256>::MetadataMemory;
+  using MetadataMemory<256>::read_from_hardware;
 
-size_t metadata::MetadataMemory74LVC138AD::read_from_hardware(size_t byte_offset, size_t length, uint8_t *buffer) const {
+  size_t read_from_hardware(size_t byte_offset, size_t length, uint8_t *buffer) const override {
     // Begin SPI transaction and address self
     const SPISettings spi_cfg{4'000'000, MSBFIRST, SPI_MODE0};
     SPI1.beginTransaction(spi_cfg);
@@ -45,8 +50,5 @@ size_t metadata::MetadataMemory74LVC138AD::read_from_hardware(size_t byte_offset
     SPI1.endTransaction();
 
     return length;
-}
-
-size_t metadata::MetadataMemory74LVC138AD::read_from_hardware() {
-    return read_from_hardware(0, sizeof(data), data);
-}
+  }
+};
