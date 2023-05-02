@@ -33,7 +33,7 @@
 
 namespace local_bus {
 
-extern SPIClass& spi;
+extern SPIClass &spi;
 
 using addr_t = uint16_t;
 
@@ -87,5 +87,17 @@ void address_function(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_idx);
 void address_function(addr_t address);
 
 void release_address();
+
+class Function {
+public:
+  const local_bus::addr_t address;
+  const SPISettings spi_settings;
+
+  explicit Function(const addr_t address, const SPISettings spiSettings)
+      : address(address), spi_settings(spiSettings) {}
+
+  void start_communication() const;
+  void end_communication() const;
+};
 
 } // namespace local_bus

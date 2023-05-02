@@ -74,3 +74,13 @@ void local_bus::release_address() {
   //       https://lab.analogparadigm.com/lucidac/hardware/module-holder/-/issues/6
   address_function(0, 4, 63);
 }
+
+void local_bus::Function::start_communication() const {
+  spi.beginTransaction(spi_settings);
+  local_bus::address_function(address);
+}
+
+void local_bus::Function::end_communication() const {
+  local_bus::release_address();
+  spi.endTransaction();
+}

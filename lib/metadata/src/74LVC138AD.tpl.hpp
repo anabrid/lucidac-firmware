@@ -29,25 +29,24 @@
 
 class MetadataMemory74LVC138AD : public metadata::MetadataMemory<256> {
 public:
-  using MetadataMemory<256>::MetadataMemory;
+  explicit MetadataMemory74LVC138AD(local_bus::addr_t address)
+      : metadata::MetadataMemory<256>(address, SPISettings(4'000'000, MSBFIRST, SPI_MODE0)) {}
+
   using MetadataMemory<256>::read_from_hardware;
 
   size_t read_from_hardware(size_t byte_offset, size_t length, uint8_t *buffer) const override {
-    // Begin SPI transaction and address self
-    const SPISettings spi_cfg{4'000'000, MSBFIRST, SPI_MODE0};
-    SPI1.beginTransaction(spi_cfg);
-    local_bus::address_function(address);
+    // Begin SPI communication
+    start_communication();
 
     // Send READ command B00000011
-    SPI1.transfer(0x3);
+    local_bus::spi.transfer(0x3);
     // Send byte offset
-    SPI1.transfer(byte_offset);
+    local_bus::spi.transfer(byte_offset);
     // Read data
-    SPI1.transfer(nullptr, buffer, length);
+    local_bus::spi.transfer(nullptr, buffer, length);
 
     // Release address and stop SPI transaction
-    local_bus::release_address();
-    SPI1.endTransaction();
+    end_communication();
 
     return length;
   }
