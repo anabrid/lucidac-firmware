@@ -28,11 +28,11 @@
 
 #include "74LVC138AD.tpl.hpp"
 
-MetadataMemory74LVC138AD chip{0};
+MetadataMemory74LVC138AD chip{bus::board_function_to_addr(0)};
 
 void setUp() {
   // set stuff up here
-  local_bus::init();
+  bus::init();
 }
 
 void tearDown() {

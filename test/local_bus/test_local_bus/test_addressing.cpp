@@ -28,11 +28,11 @@
 
 #include "local_bus.h"
 
-using namespace local_bus;
+using namespace bus;
 
 void setUp() {
   // set stuff up here
-  local_bus::init();
+  bus::init();
 }
 
 void tearDown() {

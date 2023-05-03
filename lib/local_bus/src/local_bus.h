@@ -31,7 +31,7 @@
 #include <SPI.h>
 #include <core_pins.h>
 
-namespace local_bus {
+namespace bus {
 
 extern SPIClass &spi;
 
@@ -95,7 +95,7 @@ void release_address();
 
 class Function {
 public:
-  const local_bus::addr_t address;
+  const bus::addr_t address;
   const SPISettings spi_settings;
 
   explicit Function(const addr_t address, const SPISettings spiSettings)
