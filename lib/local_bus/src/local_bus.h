@@ -39,26 +39,28 @@ using addr_t = uint16_t;
 
 // Block address definitions and helpers
 constexpr std::array<uint8_t, 4> PINS_BADDR = {14, 15, 40, 41};
-constexpr uint8_t PINS_BADDR_BITS_OFFSET = CORE_PIN14_BIT;
-constexpr uint32_t BADDR_BITS_MASK = 0xF << PINS_BADDR_BITS_OFFSET;
+constexpr uint8_t PINS_BADDR_BIT_SHIFT = CORE_PIN14_BIT;
+constexpr uint32_t BADDR_BITS_MASK = 0xF << PINS_BADDR_BIT_SHIFT;
 // Function address definitions and helpers
 constexpr std::array<uint8_t, 6> PINS_FADDR = {17, 16, 22, 23, 20, 21};
-constexpr uint8_t PINS_FADDR_BITS_OFFSET = CORE_PIN17_BIT;
-constexpr uint32_t FADDR_BITS_MASK = 0x3F << PINS_FADDR_BITS_OFFSET;
+constexpr uint8_t PINS_FADDR_BIT_SHIFT = CORE_PIN17_BIT;
+constexpr uint32_t FADDR_BITS_MASK = 0x3F << PINS_FADDR_BIT_SHIFT;
 // Full address definitions and helpers
-constexpr uint8_t PINS_ADDR_BITS_OFFSET = CORE_PIN14_BIT;
+// Address register GPIO6 is [4bit other][6bit FADDR][4bit BADDR][18bit other]
+constexpr uint8_t PINS_ADDR_BIT_SHIFT = PINS_BADDR_BIT_SHIFT;
 constexpr uint32_t ADDR_BITS_MASK = BADDR_BITS_MASK | FADDR_BITS_MASK;
+// Block indexes
+constexpr uint8_t I_BLOCK_IDX = 0;
+constexpr uint8_t C_BLOCK_IDX = 1;
+constexpr uint8_t U_BLOCK_IDX = 2;
+constexpr uint8_t M1_BLOCK_IDX = 3;
+constexpr uint8_t M2_BLOCK_IDX = 4;
+
+addr_t idx_to_addr(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_idx);
 
 void init();
 
 void _change_address_register(uint32_t clear_mask, uint32_t set_mask);
-
-/**
- * Address an index (0-15) on the local bus.
- * @timing ~25ns (full function call and propagation to final destination)
- * @param idx The index of the block (1-15) or the carrier board (0).
- */
-void address_block_idx(uint8_t idx);
 
 /**
  * Address a block inside a cluster.
@@ -73,7 +75,7 @@ void address_block(uint8_t cluster_idx, uint8_t block_idx);
  * @timing see address_block_idx
  * @param func_idx The index of the function, from 0 to 63.
  */
-void address_function_raw(uint8_t func_idx);
+void address_function_only(uint8_t func_idx);
 
 /**
  * Address a function of a block of a cluster.
@@ -86,6 +88,8 @@ void address_function(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_idx);
 
 void address_function(addr_t address);
 
+void address_board_function(uint8_t func_idx);
+
 void release_address();
 
 class Function {
@@ -96,7 +100,7 @@ public:
   explicit Function(const addr_t address, const SPISettings spiSettings)
       : address(address), spi_settings(spiSettings) {}
 
-  void start_communication() const;
+  void begin_communication() const;
   void end_communication() const;
 };
 
