@@ -35,6 +35,10 @@ local_bus::addr_t local_bus::idx_to_addr(uint8_t cluster_idx, uint8_t block_idx,
   return  ((func_idx & 0x3F) << 4) + ((cluster_idx * 5 + block_idx + 1) & 0xF);
 }
 
+local_bus::addr_t local_bus::board_function_to_addr(uint8_t func_idx) {
+  return func_idx << 4;
+}
+
 void local_bus::init() {
   for (const auto pin : PINS_BADDR) {
     pinMode(pin, OUTPUT);
@@ -78,7 +82,7 @@ void local_bus::release_address() {
 }
 
 void local_bus::address_board_function(uint8_t func_idx) {
-  address_function(func_idx << 4);
+  address_function(board_function_to_addr(func_idx));
 }
 
 void local_bus::Function::begin_communication() const {

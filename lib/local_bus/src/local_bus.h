@@ -57,6 +57,7 @@ constexpr uint8_t M1_BLOCK_IDX = 3;
 constexpr uint8_t M2_BLOCK_IDX = 4;
 
 addr_t idx_to_addr(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_idx);
+addr_t board_function_to_addr(uint8_t func_idx);
 
 void init();
 
