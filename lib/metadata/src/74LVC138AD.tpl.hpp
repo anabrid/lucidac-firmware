@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "local_bus.h"
 #include "metadata.h"
 
 class MetadataMemory74LVC138AD : public metadata::MetadataMemory<256> {

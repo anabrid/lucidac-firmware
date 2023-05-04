@@ -55,6 +55,8 @@ constexpr uint8_t C_BLOCK_IDX = 1;
 constexpr uint8_t U_BLOCK_IDX = 2;
 constexpr uint8_t M1_BLOCK_IDX = 3;
 constexpr uint8_t M2_BLOCK_IDX = 4;
+// Common function indexes
+constexpr uint8_t METADATA_FUNC_IDX = 0;
 
 addr_t idx_to_addr(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_idx);
 addr_t board_function_to_addr(uint8_t func_idx);
@@ -96,13 +98,27 @@ void release_address();
 class Function {
 public:
   const bus::addr_t address;
-  const SPISettings spi_settings;
+  virtual void set_address() const;
+  virtual void release_address() const;
 
-  explicit Function(const addr_t address, const SPISettings spiSettings)
-      : address(address), spi_settings(spiSettings) {}
-
-  void begin_communication() const;
-  void end_communication() const;
+  explicit Function(addr_t address);
 };
 
-} // namespace local_bus
+class TriggerFunction: public Function {
+public:
+  void trigger() const;
+
+  using Function::Function;
+};
+
+class DataFunction : public Function {
+public:
+  void begin_communication() const;
+  void end_communication() const;
+
+  const SPISettings spi_settings;
+
+  DataFunction(addr_t address, const SPISettings &spiSettings);
+};
+
+} // namespace bus

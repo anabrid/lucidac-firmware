@@ -27,17 +27,15 @@
 
 #include "ioregister.h"
 
-SPIClass&bus::spi = SPI1;
+SPIClass &bus::spi = SPI1;
 
 bus::addr_t bus::idx_to_addr(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_idx) {
   // Address 0 is the carrier-board, blocks start at 1
   // Address is [6bit FADDR][4bit BADDR]
-  return  ((func_idx & 0x3F) << 4) + ((cluster_idx * 5 + block_idx + 1) & 0xF);
+  return ((func_idx & 0x3F) << 4) + ((cluster_idx * 5 + block_idx + 1) & 0xF);
 }
 
-bus::addr_t bus::board_function_to_addr(uint8_t func_idx) {
-  return func_idx << 4;
-}
+bus::addr_t bus::board_function_to_addr(uint8_t func_idx) { return func_idx << 4; }
 
 void bus::init() {
   for (const auto pin : PINS_BADDR) {
@@ -81,16 +79,29 @@ void bus::release_address() {
   address_function(0, 4, 63);
 }
 
-void bus::address_board_function(uint8_t func_idx) {
-  address_function(board_function_to_addr(func_idx));
-}
+void bus::address_board_function(uint8_t func_idx) { address_function(board_function_to_addr(func_idx)); }
 
-void bus::Function::begin_communication() const {
+bus::Function::Function(const bus::addr_t address) : address(address) {}
+
+void bus::Function::set_address() const { address_function(address); }
+
+void bus::Function::release_address() const { bus::release_address(); }
+
+void bus::DataFunction::begin_communication() const {
   spi.beginTransaction(spi_settings);
-  bus::address_function(address);
+  set_address();
 }
 
-void bus::Function::end_communication() const {
-  bus::release_address();
+void bus::DataFunction::end_communication() const {
+  release_address();
   spi.endTransaction();
+}
+
+bus::DataFunction::DataFunction(const unsigned short address, const SPISettings &spiSettings)
+    : Function(address), spi_settings(spiSettings) {}
+
+void bus::TriggerFunction::trigger() const {
+  set_address();
+  delayMicroseconds(1);
+  release_address();
 }
