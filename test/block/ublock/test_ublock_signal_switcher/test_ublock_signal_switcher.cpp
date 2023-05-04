@@ -23,53 +23,47 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#pragma once
+#include <Arduino.h>
+#include <unity.h>
 
-#include <array>
-#include <cstdint>
-
+#include "block.h"
 #include "local_bus.h"
 
-namespace blocks {
+blocks::USignalSwitchFunction switcher{bus::idx_to_addr(0, bus::U_BLOCK_IDX, blocks::UBlock::SIGNAL_SWITCHER),
+                                       SPISettings(4'000'000, MSBFIRST, SPI_MODE2)};
 
-class FunctionBlock {};
+bus::TriggerFunction switcher_sync{bus::idx_to_addr(0,bus::U_BLOCK_IDX, blocks::UBlock::SIGNAL_SWITCHER_SYNC)};
 
-class UMatrixFunction : public bus::DataFunction {
-public:
-  static constexpr char number_of_inputs = 16;
-  static constexpr char number_of_outputs = 32;
+void setUp() {
+  // set stuff up here
+  bus::init();
+}
 
-private:
-  std::array<uint8_t, number_of_outputs> outputs{};
+void tearDown() {
+  // clean stuff up here
+}
 
-public:
-  static constexpr uint8_t BYTESTREAM_SIZE = 20;
+void test_communication() {
+  switcher.data = 0b00000000'00000000;
+  switcher.write_to_hardware();
+  switcher_sync.trigger();
 
-  UMatrixFunction(unsigned short address, const SPISettings &spiSettings,
-                  const std::array<uint8_t, number_of_outputs> &outputs);
-  UMatrixFunction(unsigned short address, const SPISettings &spiSettings);
+  delayMicroseconds(1);
+  switcher.data = 0b00000000'00001000;
+  switcher.write_to_hardware();
+  switcher_sync.trigger();
 
-  void sync_to_hardware() const;
-};
+  delayMicroseconds(1);
+  switcher.data = 0b00000011'00011000;
+  // TODO: Currently this leads to HIGH on ACL {0, 4, 5, 9, 10}
+  switcher.write_to_hardware();
+  switcher_sync.trigger();
+}
 
-class USignalSwitchFunction : public bus::DataFunction {
-  // TODO: Add one abstraction layer
-public:
-  uint16_t data{0};
+void setup() {
+  UNITY_BEGIN();
+  RUN_TEST(test_communication);
+  UNITY_END();
+}
 
-  using bus::DataFunction::DataFunction;
-
-  void write_to_hardware() const;
-};
-
-class UBlock : public FunctionBlock {
-public:
-  static constexpr uint8_t UMATRIX_FUNC_IDX = 1;
-  static constexpr uint8_t UMATRIX_SYNC_FUNC_IDX = 2;
-  static constexpr uint8_t UMATRIX_RESET_FUNC_IDX = 3;
-  static constexpr uint8_t SIGNAL_SWITCHER_CLEAR = 8;
-  static constexpr uint8_t SIGNAL_SWITCHER = 9;
-  static constexpr uint8_t SIGNAL_SWITCHER_SYNC = 10;
-};
-
-} // namespace blocks
+void loop() {}
