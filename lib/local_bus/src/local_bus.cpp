@@ -102,6 +102,6 @@ bus::DataFunction::DataFunction(const unsigned short address, const SPISettings 
 
 void bus::TriggerFunction::trigger() const {
   set_address();
-  delayMicroseconds(1);
+  delayNanoseconds(42);
   release_address();
 }
