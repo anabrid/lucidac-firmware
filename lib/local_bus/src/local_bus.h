@@ -112,6 +112,7 @@ public:
 };
 
 class DataFunction : public Function {
+  // TODO: Split in Reading/WritingFunction and ReadWriteFunction
 public:
   void begin_communication() const;
   void end_communication() const;

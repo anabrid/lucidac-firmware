@@ -31,13 +31,14 @@
 
 blocks::UMatrixFunction umatrix{bus::idx_to_addr(0, 2, blocks::UBlock::UMATRIX_FUNC_IDX),
                                 SPISettings(4'000'000, MSBFIRST, SPI_MODE2),
-                                {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-                                 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+                                /*{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                                 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}*/
+                                {16}
 };
 
-bus::TriggerFunction umatrix_reset{bus::idx_to_addr(0, 2, blocks::UBlock::RESET_FUNC_IDX)};
+bus::TriggerFunction umatrix_reset{bus::idx_to_addr(0, 2, blocks::UBlock::UMATRIX_RESET_FUNC_IDX)};
 
-bus::TriggerFunction umatrix_sync{bus::idx_to_addr(0, 2, blocks::UBlock::SYNC_FUNC_IDX)};
+bus::TriggerFunction umatrix_sync{bus::idx_to_addr(0, 2, blocks::UBlock::UMATRIX_SYNC_FUNC_IDX)};
 
 void setUp() {
   // set stuff up here
@@ -48,9 +49,9 @@ void tearDown() {
   // clean stuff up here
 }
 
-void test_umatrix_func_idx() { TEST_ASSERT_EQUAL(1, blocks::UBlock::UMATRIX_FUNC_IDX); }
+void test_func_idx() { TEST_ASSERT_EQUAL(1, blocks::UBlock::UMATRIX_FUNC_IDX); }
 
-void test_umatrix_communication() {
+void test_communication() {
   // umatrix_reset.trigger();
   umatrix.sync_to_hardware();
   umatrix_sync.trigger();
@@ -58,8 +59,8 @@ void test_umatrix_communication() {
 
 void setup() {
   UNITY_BEGIN();
-  RUN_TEST(test_umatrix_func_idx);
-  RUN_TEST(test_umatrix_communication);
+  RUN_TEST(test_func_idx);
+  RUN_TEST(test_communication);
   UNITY_END();
 }
 

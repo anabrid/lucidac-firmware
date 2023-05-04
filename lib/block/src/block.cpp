@@ -85,8 +85,8 @@ void blocks::UMatrixFunction::sync_to_hardware() const {
   }
 
   begin_communication();
-  bus::spi.transfer(buffer, 10);
+  bus::spi.transfer(buffer, sizeof(buffer));
   end_communication();
 
-  // TODO: Trigger sync address
+  // TODO: Trigger sync address, but that happens outside of this function.
 }

@@ -25,8 +25,8 @@
 
 #pragma once
 
-#include <cstdint>
 #include <array>
+#include <cstdint>
 
 #include "local_bus.h"
 
@@ -34,7 +34,7 @@ namespace blocks {
 
 class FunctionBlock {};
 
-class UMatrixFunction: public bus::DataFunction {
+class UMatrixFunction : public bus::DataFunction {
 public:
   static constexpr char number_of_inputs = 16;
   static constexpr char number_of_outputs = 32;
@@ -48,14 +48,18 @@ public:
   UMatrixFunction(unsigned short address, const SPISettings &spiSettings,
                   const std::array<uint8_t, number_of_outputs> &outputs);
   UMatrixFunction(unsigned short address, const SPISettings &spiSettings);
+
   void sync_to_hardware() const;
 };
 
 class UBlock : public FunctionBlock {
 public:
   static constexpr uint8_t UMATRIX_FUNC_IDX = 1;
-  static constexpr uint8_t SYNC_FUNC_IDX = 2;
-  static constexpr uint8_t RESET_FUNC_IDX = 3;
+  static constexpr uint8_t UMATRIX_SYNC_FUNC_IDX = 2;
+  static constexpr uint8_t UMATRIX_RESET_FUNC_IDX = 3;
+  static constexpr uint8_t SIGNAL_SWITCHER_CLEAR = 8;
+  static constexpr uint8_t SIGNAL_SWITCHER = 9;
+  static constexpr uint8_t SIGNAL_SWITCHER_SYNC = 10;
 };
 
 } // namespace blocks
