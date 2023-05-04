@@ -30,7 +30,7 @@
 #include "local_bus.h"
 
 blocks::USignalSwitchFunction switcher{bus::idx_to_addr(0, bus::U_BLOCK_IDX, blocks::UBlock::SIGNAL_SWITCHER),
-                                       SPISettings(4'000'000, MSBFIRST, SPI_MODE2)};
+                                       SPISettings(4'000'000, MSBFIRST, SPI_MODE1)};
 
 bus::TriggerFunction switcher_sync{bus::idx_to_addr(0,bus::U_BLOCK_IDX, blocks::UBlock::SIGNAL_SWITCHER_SYNC)};
 
@@ -54,8 +54,8 @@ void test_communication() {
   switcher_sync.trigger();
 
   delayMicroseconds(1);
-  switcher.data = 0b00000011'00011000;
-  // TODO: Currently this leads to HIGH on ACL {0, 4, 5, 9, 10}
+  // This gives the correct result.
+  switcher.data = 0b10000011'00011001;
   switcher.write_to_hardware();
   switcher_sync.trigger();
 }
