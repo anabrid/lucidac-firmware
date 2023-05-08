@@ -72,4 +72,22 @@ public:
   static constexpr uint8_t SIGNAL_SWITCHER_SYNC = 10;
 };
 
+class CScaleSwitchFunction : public bus::DataFunction {
+public:
+  //! Bits sent to the shift register, least significant bit is SW.0, most significant bit is SW.35.
+  uint32_t data = 0;
+
+  using bus::DataFunction::DataFunction;
+  explicit CScaleSwitchFunction(bus::addr_t address);
+
+  void write_to_hardware() const;
+};
+
+class CBlock : public FunctionBlock {
+public:
+  static constexpr uint8_t SCALE_SWITCHER = 33;
+  static constexpr uint8_t SCALE_SWITCHER_SYNC = 34;
+  static constexpr uint8_t SCALE_SWITCHER_CLEAR = 35;
+};
+
 } // namespace blocks

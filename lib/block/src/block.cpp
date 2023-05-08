@@ -105,3 +105,14 @@ void blocks::USignalSwitchFunction::write_to_hardware() const {
   bus::spi.transfer16(data);
   end_communication();
 }
+
+void blocks::CScaleSwitchFunction::write_to_hardware() const {
+  begin_communication();
+  bus::spi.transfer32(data);
+  end_communication();
+}
+
+blocks::CScaleSwitchFunction::CScaleSwitchFunction(bus::addr_t address)
+    : DataFunction(address, SPISettings(4'000'000, MSBFIRST,
+                                        SPI_MODE3 /* Chip expects MODE0, CLK is inverted on the way */)),
+      data(0) {}
