@@ -32,7 +32,11 @@ SPIClass &bus::spi = SPI1;
 bus::addr_t bus::idx_to_addr(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_idx) {
   // Address 0 is the carrier-board, blocks start at 1
   // Address is [6bit FADDR][4bit BADDR]
-  return ((func_idx & 0x3F) << 4) + ((cluster_idx * 5 + block_idx + 1) & 0xF);
+  return (static_cast<addr_t>(func_idx & 0x3F) << 4) + ((cluster_idx * 5 + block_idx + 1) & 0xF);
+}
+
+bus::addr_t bus::increase_function_idx(bus::addr_t address, uint8_t delta_idx) {
+  return address + (static_cast<addr_t>(delta_idx & 0x3F) << 4);
 }
 
 bus::addr_t bus::board_function_to_addr(uint8_t func_idx) { return func_idx << 4; }

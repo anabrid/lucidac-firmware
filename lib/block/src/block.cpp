@@ -116,3 +116,16 @@ blocks::CScaleSwitchFunction::CScaleSwitchFunction(bus::addr_t address)
     : DataFunction(address, SPISettings(4'000'000, MSBFIRST,
                                         SPI_MODE3 /* Chip expects MODE0, CLK is inverted on the way */)),
       data(0) {}
+
+blocks::CCoeffFunction::CCoeffFunction(bus::addr_t base_address, uint8_t coeff_idx)
+    : DataFunction(bus::increase_function_idx(base_address, coeff_idx),
+                   SPISettings(4'000'000, MSBFIRST, SPI_MODE1)),
+      data{0} {}
+
+void blocks::CCoeffFunction::write_to_hardware() const {
+  begin_communication();
+  // AD5452 expects at least 13ns delay between chip select and data
+  delayNanoseconds(15);
+  bus::spi.transfer16(data);
+  end_communication();
+}

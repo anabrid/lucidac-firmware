@@ -83,8 +83,19 @@ public:
   void write_to_hardware() const;
 };
 
+class CCoeffFunction : public bus::DataFunction {
+public:
+  uint16_t data = 0;
+
+  using bus::DataFunction::DataFunction;
+  CCoeffFunction(bus::addr_t base_address, uint8_t coeff_idx);
+
+  void write_to_hardware() const;
+};
+
 class CBlock : public FunctionBlock {
 public:
+  static constexpr uint8_t COEFF_BASE_FUNC_IDX = 1;
   static constexpr uint8_t SCALE_SWITCHER = 33;
   static constexpr uint8_t SCALE_SWITCHER_SYNC = 34;
   static constexpr uint8_t SCALE_SWITCHER_CLEAR = 35;
