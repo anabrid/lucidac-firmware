@@ -77,7 +77,7 @@ void test_function() {
   // coeff.data = 2047 << 2 should give Vout = 0
 
   // coeff.data = 1024 gives ~-1.01V
-  // but does not work for {1: 0V, 3: -4.8V, 8: -4.8V, 14: -4.8V, 17: -2.1V, 19: -4.8V, 23: 2.7V, 27: 1.47V}
+  // but does not work for {17: -4.8V}
   // at least for coeff@14, the -4.8V are independent of input signal BL_IN.14
 
   for (auto c : coeffs) {
