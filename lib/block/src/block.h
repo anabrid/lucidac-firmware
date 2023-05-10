@@ -28,11 +28,10 @@
 #include <array>
 #include <cstdint>
 
+#include "base_block.h"
 #include "local_bus.h"
 
 namespace blocks {
-
-class FunctionBlock {};
 
 class UMatrixFunction : public bus::DataFunction {
 public:

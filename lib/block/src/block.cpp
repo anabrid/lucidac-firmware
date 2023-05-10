@@ -93,15 +93,6 @@ void blocks::UMatrixFunction::sync_to_hardware() const {
 
 void blocks::USignalSwitchFunction::write_to_hardware() const {
   begin_communication();
-  /*
-   * Bit muster to ALC Signals
-   *  0b00000000'00000000 = ACL {0} HIGH, all others low
-   *  0b00000000'00000001 = ACL {0,1} HIGH, all others low
-   *  0b00000000'00000010 = ACL {0,2} HIGH, all others low
-   *
-   * Seems like ACL0 is always high?
-   *
-   */
   bus::spi.transfer16(data);
   end_communication();
 }
