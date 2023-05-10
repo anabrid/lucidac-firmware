@@ -90,7 +90,7 @@ void blocks::IBlock::write_to_hardware() {
         command |= functions::ICommandRegisterFunction::chip_cmd_word(iidx_two_four, oidx_three_four) << 24;
         actual_data = true;
       } else {
-        command |= (remembered_command & 0xFF0000);
+        command |= (remembered_command & 0xFF000000);
       }
 
       if (actual_data) {
