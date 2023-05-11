@@ -38,6 +38,7 @@ void blocks::utils::shift_5_left(uint8_t *buffer, size_t size) {
 }
 
 const SPISettings blocks::UBlock::UMATRIX_FUNC_SPI_SETTINGS{1'000'000, MSBFIRST, SPI_MODE2};
+const SPISettings blocks::UBlock::ALT_SIGNAL_FUNC_SPI_SETTINGS{4'000'000, MSBFIRST, SPI_MODE1};
 
 blocks::functions::_old_UMatrixFunction::_old_UMatrixFunction(const unsigned short address,
                                                               const SPISettings &spiSettings)
@@ -105,12 +106,12 @@ void blocks::functions::USignalSwitchFunction::write_to_hardware() const {
 blocks::UBlock::UBlock(const uint8_t clusterIdx)
     : FunctionBlock(clusterIdx),
       f_umatrix(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_FUNC_IDX), UMATRIX_FUNC_SPI_SETTINGS),
-      f_umatrix_sync(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_SYNC_FUNC_IDX)), output_input_map{0} {}
-
-void blocks::UBlock::write_to_hardware() const {
-  f_umatrix.transfer(output_input_map);
-  f_umatrix_sync.trigger();
-}
+      f_umatrix_sync(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_SYNC_FUNC_IDX)),
+      f_alt_signal(bus::idx_to_addr(clusterIdx, BLOCK_IDX, ALT_SIGNAL_SWITCHER_FUNC_IDX),
+                   ALT_SIGNAL_FUNC_SPI_SETTINGS),
+      f_alt_signal_clear(bus::idx_to_addr(clusterIdx, BLOCK_IDX, ALT_SIGNAL_SWITCHER_CLEAR_FUNC_IDX)),
+      f_alt_signal_sync(bus::idx_to_addr(clusterIdx, BLOCK_IDX, ALT_SIGNAL_SWITCHER_SYNC_FUNC_IDX)),
+      output_input_map{0}, alt_signals{0} {}
 
 bool blocks::UBlock::connect(uint8_t input, uint8_t output, bool connect) {
   // Sanity check
@@ -146,3 +147,29 @@ bool blocks::UBlock::is_connected(uint8_t input, uint8_t output) {
 
   return output_input_map[output] == input;
 }
+
+void blocks::UBlock::write_matrix_to_hardware() const {
+  f_umatrix.transfer(output_input_map);
+  f_umatrix_sync.trigger();
+}
+
+void blocks::UBlock::write_alt_signal_to_hardware() const {
+  f_alt_signal.transfer16(alt_signals);
+  f_alt_signal_sync.trigger();
+}
+
+void blocks::UBlock::write_to_hardware() const {
+  write_matrix_to_hardware();
+  write_alt_signal_to_hardware();
+}
+
+bool blocks::UBlock::use_alt_signals(uint16_t alt_signal) {
+  if (alt_signal > MAX_ALT_SIGNAL)
+    return false;
+  alt_signals |= alt_signal;
+  return true;
+}
+
+bool blocks::UBlock::is_alt_signal_used(uint16_t alt_signal) const { return alt_signals & alt_signal; }
+
+uint16_t blocks::UBlock::get_alt_signals() const { return alt_signals; }

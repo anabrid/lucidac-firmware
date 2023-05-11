@@ -20,7 +20,7 @@
 // ensure the GNU General Public License version 3 requirements
 // will be met: https://www.gnu.org/licenses/gpl-3.0.html.
 // For Germany, additional rules exist. Please consult /LICENSE.DE
-// for further agreements.
+// for further ublock_signal_switcher.cppagreements.
 // ANABRID_END_LICENSE
 
 #include <Arduino.h>
@@ -29,10 +29,7 @@
 #include "local_bus.h"
 #include "ublock.h"
 
-blocks::functions::USignalSwitchFunction switcher{bus::idx_to_addr(0, bus::U_BLOCK_IDX, blocks::UBlock::SIGNAL_SWITCHER),
-                                       SPISettings(4'000'000, MSBFIRST, SPI_MODE1)};
-
-bus::TriggerFunction switcher_sync{bus::idx_to_addr(0,bus::U_BLOCK_IDX, blocks::UBlock::SIGNAL_SWITCHER_SYNC)};
+using namespace blocks;
 
 void setUp() {
   // set stuff up here
@@ -43,26 +40,24 @@ void tearDown() {
   // clean stuff up here
 }
 
-void test_communication() {
-  switcher.data = 0b00000000'00000000;
-  switcher.write_to_hardware();
-  switcher_sync.trigger();
+void test_function() {
+  UBlock ublock{0};
+  TEST_ASSERT_EQUAL(0, ublock.get_alt_signals());
 
-  delayMicroseconds(1);
-  switcher.data = 0b00000000'00001000;
-  switcher.write_to_hardware();
-  switcher_sync.trigger();
+  TEST_ASSERT(ublock.use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF));
+  TEST_ASSERT_EQUAL(UBlock::ALT_SIGNAL_REF_HALF, ublock.get_alt_signals());
 
-  delayMicroseconds(1);
-  // This gives the correct result.
-  switcher.data = 0b10000011'00011001;
-  switcher.write_to_hardware();
-  switcher_sync.trigger();
+  TEST_ASSERT_FALSE(ublock.use_alt_signals(UBlock::MAX_ALT_SIGNAL + 1));
+
+  TEST_ASSERT(ublock.use_alt_signals(UBlock::ALT_SIGNAL_IN31_ACL7));
+  TEST_ASSERT_EQUAL(UBlock::ALT_SIGNAL_REF_HALF | UBlock::ALT_SIGNAL_IN31_ACL7, ublock.get_alt_signals());
+
+  ublock.write_alt_signal_to_hardware();
 }
 
 void setup() {
   UNITY_BEGIN();
-  RUN_TEST(test_communication);
+  RUN_TEST(test_function);
   UNITY_END();
 }
 
