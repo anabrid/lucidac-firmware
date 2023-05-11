@@ -122,3 +122,24 @@ void bus::DataFunction::end_communication() const {
   release_address();
   spi.endTransaction();
 }
+
+uint8_t bus::DataFunction::transfer(uint8_t data) const {
+  begin_communication();
+  auto ret = bus::spi.transfer(data);
+  end_communication();
+  return ret;
+}
+
+uint16_t bus::DataFunction::transfer16(uint16_t data) const {
+  begin_communication();
+  auto ret = bus::spi.transfer16(data);
+  end_communication();
+  return ret;
+}
+
+uint32_t bus::DataFunction::transfer32(uint32_t data) const {
+  begin_communication();
+  auto ret = bus::spi.transfer32(data);
+  end_communication();
+  return ret;
+}

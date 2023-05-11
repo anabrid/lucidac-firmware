@@ -126,12 +126,16 @@ public:
 
 class DataFunction : public Function {
 public:
-  void begin_communication() const;
-  void end_communication() const;
-
   const SPISettings& spi_settings;
 
   DataFunction(addr_t address, const SPISettings &spiSettings);
+
+  void begin_communication() const;
+  void end_communication() const;
+
+  uint8_t transfer(uint8_t data) const;
+  uint16_t transfer16(uint16_t data) const;
+  uint32_t transfer32(uint32_t data) const;
 };
 
 } // namespace bus
