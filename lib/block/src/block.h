@@ -76,17 +76,17 @@ public:
   //! Bits sent to the shift register, least significant bit is SW.0, most significant bit is SW.35.
   uint32_t data = 0;
 
-  using bus::DataFunction::DataFunction;
+  using bus::_old_DataFunction::_old_DataFunction;
   explicit CScaleSwitchFunction(bus::addr_t address);
 
   void write_to_hardware() const;
 };
 
-class CCoeffFunction : public bus::DataFunction {
+class CCoeffFunction : public bus::_old_DataFunction {
 public:
   uint16_t data = 0;
 
-  using bus::DataFunction::DataFunction;
+  using bus::_old_DataFunction::_old_DataFunction;
   CCoeffFunction(bus::addr_t base_address, uint8_t coeff_idx);
 
   void write_to_hardware() const;

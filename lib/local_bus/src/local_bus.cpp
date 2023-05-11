@@ -91,6 +91,28 @@ void bus::Function::set_address() const { address_function(address); }
 
 void bus::Function::release_address() const { bus::release_address(); }
 
+void bus::_old_DataFunction::begin_communication() const {
+  spi.beginTransaction(spi_settings);
+  set_address();
+}
+
+void bus::_old_DataFunction::end_communication() const {
+  release_address();
+  spi.endTransaction();
+}
+
+bus::_old_DataFunction::_old_DataFunction(const unsigned short address, const SPISettings &spiSettings)
+    : Function(address), spi_settings(spiSettings) {}
+
+void bus::TriggerFunction::trigger() const {
+  set_address();
+  delayNanoseconds(42);
+  release_address();
+}
+
+bus::DataFunction::DataFunction(bus::addr_t address, const SPISettings &spiSettings)
+    : Function(address), spi_settings(spiSettings) {}
+
 void bus::DataFunction::begin_communication() const {
   spi.beginTransaction(spi_settings);
   set_address();
@@ -99,13 +121,4 @@ void bus::DataFunction::begin_communication() const {
 void bus::DataFunction::end_communication() const {
   release_address();
   spi.endTransaction();
-}
-
-bus::DataFunction::DataFunction(const unsigned short address, const SPISettings &spiSettings)
-    : Function(address), spi_settings(spiSettings) {}
-
-void bus::TriggerFunction::trigger() const {
-  set_address();
-  delayNanoseconds(42);
-  release_address();
 }

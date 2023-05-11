@@ -35,14 +35,14 @@ namespace blocks {
 
 namespace functions {
 
-class ICommandRegisterFunction : public bus::DataFunction {
+class ICommandRegisterFunction : public bus::_old_DataFunction {
 public:
   //! Data is [8bit 4_* SR][8bit 3_* SR][8bit 2_* SR][8bit 1_* SR]
   //!      -> [0-15 X 0-07][16-31 X 0-7][0-15 X 8-15][16-31 X 8-15]   [ input X output ] matrix
   //! Each is [DATA Y2 Y1 Y0 X3 X2 X1 X0]
   uint32_t data = 0;
 
-  using bus::DataFunction::DataFunction;
+  using bus::_old_DataFunction::_old_DataFunction;
   explicit ICommandRegisterFunction(bus::addr_t address);
 
   static uint8_t chip_cmd_word(uint8_t chip_input_idx, uint8_t chip_output_idx, bool connect = true);

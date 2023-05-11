@@ -104,12 +104,12 @@ void blocks::CScaleSwitchFunction::write_to_hardware() const {
 }
 
 blocks::CScaleSwitchFunction::CScaleSwitchFunction(bus::addr_t address)
-    : DataFunction(address, SPISettings(4'000'000, MSBFIRST,
+    : _old_DataFunction(address, SPISettings(4'000'000, MSBFIRST,
                                         SPI_MODE3 /* Chip expects MODE0, CLK is inverted on the way */)),
       data(0) {}
 
 blocks::CCoeffFunction::CCoeffFunction(bus::addr_t base_address, uint8_t coeff_idx)
-    : DataFunction(bus::increase_function_idx(base_address, coeff_idx),
+    : _old_DataFunction(bus::increase_function_idx(base_address, coeff_idx),
                    SPISettings(4'000'000, MSBFIRST, SPI_MODE1)),
       data{0} {}
 

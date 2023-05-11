@@ -29,7 +29,7 @@
 #include "block.h"
 #include "local_bus.h"
 
-blocks::UMatrixFunction umatrix{bus::idx_to_addr(0, 2, blocks::UBlock::UMATRIX_FUNC_IDX),
+blocks::functions::_old_UMatrixFunction umatrix{bus::idx_to_addr(0, 2, blocks::UBlock::UMATRIX_FUNC_IDX),
                                 SPISettings(1'000'000, MSBFIRST, SPI_MODE2),
                                 /*{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
                                  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}*/

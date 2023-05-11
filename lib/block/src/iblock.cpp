@@ -31,7 +31,7 @@ void blocks::functions::ICommandRegisterFunction::write_to_hardware() const {
 }
 
 blocks::functions::ICommandRegisterFunction::ICommandRegisterFunction(bus::addr_t address)
-    : DataFunction(address,
+    : _old_DataFunction(address,
                    SPISettings(4'000'000, MSBFIRST,
                                SPI_MODE3 /* chip expects SPI MODE0, but CLK is inverted on the way */)),
       data(0) {}

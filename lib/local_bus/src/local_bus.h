@@ -112,13 +112,24 @@ public:
   using Function::Function;
 };
 
-class DataFunction : public Function {
+class _old_DataFunction : public Function {
   // TODO: Split in Reading/WritingFunction and ReadWriteFunction
 public:
   void begin_communication() const;
   void end_communication() const;
 
   const SPISettings spi_settings;
+
+  _old_DataFunction(addr_t address, const SPISettings &spiSettings);
+};
+
+
+class DataFunction : public Function {
+public:
+  void begin_communication() const;
+  void end_communication() const;
+
+  const SPISettings& spi_settings;
 
   DataFunction(addr_t address, const SPISettings &spiSettings);
 };
