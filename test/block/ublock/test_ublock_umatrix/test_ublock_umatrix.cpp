@@ -28,6 +28,7 @@
 
 #include "block.h"
 #include "local_bus.h"
+#include "ublock.h"
 
 blocks::functions::_old_UMatrixFunction umatrix{bus::idx_to_addr(0, 2, blocks::UBlock::UMATRIX_FUNC_IDX),
                                 SPISettings(1'000'000, MSBFIRST, SPI_MODE2),
@@ -57,10 +58,17 @@ void test_communication() {
   umatrix_sync.trigger();
 }
 
+void test_block() {
+  blocks::UBlock ublock{0};
+  TEST_ASSERT(ublock.connect(0,0));
+  ublock.write_to_hardware();
+}
+
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_func_idx);
-  RUN_TEST(test_communication);
+  //RUN_TEST(test_communication);
+  RUN_TEST(test_block);
   UNITY_END();
 }
 

@@ -26,10 +26,10 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "block.h"
 #include "local_bus.h"
+#include "ublock.h"
 
-blocks::USignalSwitchFunction switcher{bus::idx_to_addr(0, bus::U_BLOCK_IDX, blocks::UBlock::SIGNAL_SWITCHER),
+blocks::functions::USignalSwitchFunction switcher{bus::idx_to_addr(0, bus::U_BLOCK_IDX, blocks::UBlock::SIGNAL_SWITCHER),
                                        SPISettings(4'000'000, MSBFIRST, SPI_MODE1)};
 
 bus::TriggerFunction switcher_sync{bus::idx_to_addr(0,bus::U_BLOCK_IDX, blocks::UBlock::SIGNAL_SWITCHER_SYNC)};
