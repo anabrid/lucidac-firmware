@@ -37,7 +37,7 @@ void blocks::utils::shift_5_left(uint8_t *buffer, size_t size) {
   buffer[size - 1] <<= 5;
 }
 
-const SPISettings blocks::UBlock::UMATRIX_FUNC_SPI_SETTINGS{1'000'000, MSBFIRST, SPI_MODE2};
+const SPISettings blocks::UBlock::UMATRIX_FUNC_SPI_SETTINGS{4'000'000, MSBFIRST, SPI_MODE2};
 const SPISettings blocks::UBlock::ALT_SIGNAL_FUNC_SPI_SETTINGS{4'000'000, MSBFIRST, SPI_MODE1};
 
 blocks::functions::_old_UMatrixFunction::_old_UMatrixFunction(const unsigned short address,
@@ -107,6 +107,7 @@ blocks::UBlock::UBlock(const uint8_t clusterIdx)
     : FunctionBlock(clusterIdx),
       f_umatrix(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_FUNC_IDX), UMATRIX_FUNC_SPI_SETTINGS),
       f_umatrix_sync(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_SYNC_FUNC_IDX)),
+      f_umatrix_reset(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_RESET_FUNC_IDX)),
       f_alt_signal(bus::idx_to_addr(clusterIdx, BLOCK_IDX, ALT_SIGNAL_SWITCHER_FUNC_IDX),
                    ALT_SIGNAL_FUNC_SPI_SETTINGS),
       f_alt_signal_clear(bus::idx_to_addr(clusterIdx, BLOCK_IDX, ALT_SIGNAL_SWITCHER_CLEAR_FUNC_IDX)),
@@ -159,8 +160,8 @@ void blocks::UBlock::write_alt_signal_to_hardware() const {
 }
 
 void blocks::UBlock::write_to_hardware() const {
-  write_matrix_to_hardware();
   write_alt_signal_to_hardware();
+  write_matrix_to_hardware();
 }
 
 bool blocks::UBlock::use_alt_signals(uint16_t alt_signal) {

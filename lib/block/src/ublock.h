@@ -63,6 +63,8 @@ template <std::size_t num_of_outputs> class UMatrixFunction : public bus::DataFu
 public:
   using bus::DataFunction::DataFunction;
 
+  //! Convert an output array to data packets and transfer to chip.
+  //! Timing: ~5microseconds
   void transfer(std::array<uint8_t, num_of_outputs> outputs) const;
 };
 
@@ -109,6 +111,12 @@ public:
 protected:
   const functions::UMatrixFunction<NUM_OF_OUTPUTS> f_umatrix;
   const bus::TriggerFunction f_umatrix_sync;
+  // Reset disables all output, but rest of logic is unchanged according to datasheet.
+  // But I don't really know what that means. Data is still shifted out after a reset
+  // and the enable-bits in the data are still set.
+  // The datasheet calls the RESET pin OUTPUT ENABLE, so it probably is simply that.
+  // Meaning it is completely useless.
+  const bus::TriggerFunction f_umatrix_reset;
   const bus::DataFunction f_alt_signal;
   const bus::TriggerFunction f_alt_signal_clear;
   const bus::TriggerFunction f_alt_signal_sync;

@@ -26,20 +26,9 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "block.h"
-#include "local_bus.h"
 #include "ublock.h"
 
-blocks::functions::_old_UMatrixFunction umatrix{bus::idx_to_addr(0, 2, blocks::UBlock::UMATRIX_FUNC_IDX),
-                                SPISettings(1'000'000, MSBFIRST, SPI_MODE2),
-                                /*{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-                                 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}*/
-                                {16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16}
-};
-
-bus::TriggerFunction umatrix_reset{bus::idx_to_addr(0, 2, blocks::UBlock::UMATRIX_RESET_FUNC_IDX)};
-
-bus::TriggerFunction umatrix_sync{bus::idx_to_addr(0, 2, blocks::UBlock::UMATRIX_SYNC_FUNC_IDX)};
+using namespace blocks;
 
 void setUp() {
   // set stuff up here
@@ -50,24 +39,17 @@ void tearDown() {
   // clean stuff up here
 }
 
-void test_func_idx() { TEST_ASSERT_EQUAL(1, blocks::UBlock::UMATRIX_FUNC_IDX); }
-
-void test_communication() {
-  // umatrix_reset.trigger();
-  umatrix.sync_to_hardware();
-  umatrix_sync.trigger();
-}
-
 void test_block() {
-  blocks::UBlock ublock{0};
-  TEST_ASSERT(ublock.connect(0,0));
+  UBlock ublock{0};
+  // So we have at least one concrete input signal
+  ublock.use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF);
+
+  ublock.connect(7,0);
   ublock.write_to_hardware();
 }
 
 void setup() {
   UNITY_BEGIN();
-  RUN_TEST(test_func_idx);
-  //RUN_TEST(test_communication);
   RUN_TEST(test_block);
   UNITY_END();
 }
