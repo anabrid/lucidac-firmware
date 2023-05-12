@@ -39,6 +39,63 @@ void blocks::utils::shift_5_left(uint8_t *buffer, size_t size) {
 
 const SPISettings blocks::UBlock::UMATRIX_FUNC_SPI_SETTINGS{4'000'000, MSBFIRST, SPI_MODE2};
 const SPISettings blocks::UBlock::ALT_SIGNAL_FUNC_SPI_SETTINGS{4'000'000, MSBFIRST, SPI_MODE1};
+const SPISettings blocks::functions::UOffsetLoader::OFFSETS_FUNC_SPI_SETTINGS{8'000'000, MSBFIRST, SPI_MODE2};
+
+void blocks::functions::UOffsetLoader::trigger_load(uint8_t offset_idx) {
+  if (offset_idx >= blocks::UBlock::NUM_OF_OUTPUTS)
+    return;
+  f_triggers[offset_idx / OUTPUTS_PER_CHIP].trigger();
+}
+
+void blocks::functions::UOffsetLoader::set_offset_and_write_to_hardware(uint8_t offset_idx,
+                                                                        uint16_t offset_raw) {
+  auto cmd = build_cmd_word(offset_idx % OUTPUTS_PER_CHIP, offset_raw);
+  /*
+   * CARE: Offset correction does not have an address, it listens to SPI all the time
+   * It happens that we can address a non-existent function, but if something changes
+   * (e.g. default CLK polarity), this may break.
+   * Then send data without data function or fix hardware :)
+   */
+  f_offsets.transfer16(cmd);
+  trigger_load(offset_idx);
+}
+
+uint16_t blocks::functions::UOffsetLoader::build_cmd_word(uint8_t chip_output_idx, uint16_t offset_raw) {
+  // Offset chips expect 4bit address (output select) and 10bit value.
+  // With REVERSE=LOW, the expected incoming bits are [4bit address LSBFIRST][10bit value MSBFIRST].
+  // Since we send 16bit, we need to prepend 2bits in front that will be discarded.
+
+  // Filter offset_idx, chip does nothing with address=0
+  if (chip_output_idx > MAX_CHIP_OUTPUT_IDX)
+    return 0;
+
+  // Limit offset_raw to MAX_OFFSET_RAW
+  if (offset_raw > MAX_OFFSET_RAW)
+    offset_raw = MAX_OFFSET_RAW;
+
+  // Lookup table to reverse address in final bit positions
+  constexpr std::array<uint16_t, 8> addr_lookup{
+      0b00'1000'0000000000, 0b00'0100'0000000000, 0b00'1100'0000000000, 0b00'0010'0000000000,
+      0b00'1010'0000000000, 0b00'0110'0000000000, 0b00'1110'0000000000, 0b00'0001'0000000000,
+  };
+
+  // Combine the two bit patterns
+  return offset_raw | addr_lookup[chip_output_idx];
+}
+
+blocks::functions::UOffsetLoader::UOffsetLoader(bus::addr_t ublock_address)
+    : f_offsets{bus::replace_function_idx(ublock_address, UBlock::OFFSETS_DATA_FUNC_IDX),
+                OFFSETS_FUNC_SPI_SETTINGS},
+      f_triggers{
+          bus::TriggerFunction{
+              bus::replace_function_idx(ublock_address, UBlock::OFFSETS_LOAD_BASE_FUNC_IDX + 0)},
+          bus::TriggerFunction{
+              bus::replace_function_idx(ublock_address, UBlock::OFFSETS_LOAD_BASE_FUNC_IDX + 1)},
+          bus::TriggerFunction{
+              bus::replace_function_idx(ublock_address, UBlock::OFFSETS_LOAD_BASE_FUNC_IDX + 2)},
+          bus::TriggerFunction{
+              bus::replace_function_idx(ublock_address, UBlock::OFFSETS_LOAD_BASE_FUNC_IDX + 3)},
+      } {}
 
 blocks::functions::_old_UMatrixFunction::_old_UMatrixFunction(const unsigned short address,
                                                               const SPISettings &spiSettings)

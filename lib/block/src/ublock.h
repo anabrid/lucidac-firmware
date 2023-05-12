@@ -78,6 +78,26 @@ public:
   void write_to_hardware() const;
 };
 
+class UOffsetLoader {
+public:
+  static const SPISettings OFFSETS_FUNC_SPI_SETTINGS;
+  static constexpr uint16_t OUTPUTS_PER_CHIP = 8;
+  static constexpr uint16_t MAX_CHIP_OUTPUT_IDX = OUTPUTS_PER_CHIP - 1;
+  static constexpr uint16_t MAX_OFFSET_RAW = 1023;
+
+protected:
+  bus::DataFunction f_offsets;
+  std::array<bus::TriggerFunction, 4> f_triggers;
+
+public:
+  explicit UOffsetLoader(bus::addr_t ublock_address);
+
+  static uint16_t build_cmd_word(uint8_t chip_output_idx, uint16_t offset_raw);
+
+  void set_offset_and_write_to_hardware(uint8_t offset_idx, uint16_t offset_raw);
+  void trigger_load(uint8_t offset_idx);
+};
+
 } // namespace functions
 
 class UBlock : public FunctionBlock {
@@ -90,6 +110,8 @@ public:
   static constexpr uint8_t UMATRIX_FUNC_IDX = 1;
   static constexpr uint8_t UMATRIX_SYNC_FUNC_IDX = 2;
   static constexpr uint8_t UMATRIX_RESET_FUNC_IDX = 3;
+  static constexpr uint8_t OFFSETS_DATA_FUNC_IDX = 63; // Non-existent address
+  static constexpr uint8_t OFFSETS_LOAD_BASE_FUNC_IDX = 4;
   static constexpr uint8_t ALT_SIGNAL_SWITCHER_CLEAR_FUNC_IDX = 8;
   static constexpr uint8_t ALT_SIGNAL_SWITCHER_FUNC_IDX = 9;
   static constexpr uint8_t ALT_SIGNAL_SWITCHER_SYNC_FUNC_IDX = 10;
