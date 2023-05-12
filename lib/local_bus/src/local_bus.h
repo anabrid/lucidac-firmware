@@ -60,7 +60,10 @@ constexpr uint8_t METADATA_FUNC_IDX = 0;
 
 addr_t idx_to_addr(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_idx);
 addr_t increase_function_idx(addr_t address, uint8_t delta_idx);
+addr_t replace_function_idx(addr_t address, uint8_t func_idx);
 addr_t board_function_to_addr(uint8_t func_idx);
+
+addr_t remove_addr_parts(addr_t address, bool block, bool func);
 
 void init();
 

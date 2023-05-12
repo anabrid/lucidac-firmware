@@ -39,6 +39,18 @@ bus::addr_t bus::increase_function_idx(bus::addr_t address, uint8_t delta_idx) {
   return address + (static_cast<addr_t>(delta_idx & 0x3F) << 4);
 }
 
+bus::addr_t bus::replace_function_idx(bus::addr_t address, uint8_t func_idx) {
+  return (address & ~0x3F0) | (static_cast<addr_t>(func_idx & 0x3F) << 4);
+}
+
+bus::addr_t bus::remove_addr_parts(bus::addr_t address, bool block, bool func) {
+  if (block)
+    address &= ~0xF;
+  if (func)
+    address &= ~0x3F0;
+  return address;
+}
+
 bus::addr_t bus::board_function_to_addr(uint8_t func_idx) { return func_idx << 4; }
 
 void bus::init() {

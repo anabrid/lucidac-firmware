@@ -73,10 +73,18 @@ void test_address_register() {
   TEST_ASSERT_BITS(ADDR_BITS_MASK, 0b0000'010001'0000'000000000000000000, GPIO6_DR);
 }
 
+void test_address_mutations() {
+  TEST_ASSERT_EQUAL(0b101010'0110, replace_function_idx(0b000000'0110, 0b101010));
+  TEST_ASSERT_EQUAL(0b011010'0000, remove_addr_parts(0b011010'0110, true, false));
+  TEST_ASSERT_EQUAL(0b000000'0110, remove_addr_parts(0b011010'0110, false, true));
+  TEST_ASSERT_EQUAL(0b000000'0000, remove_addr_parts(0b011010'0110, true, true));
+}
+
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_idx_to_address);
   RUN_TEST(test_address_register);
+  RUN_TEST(test_address_mutations);
   UNITY_END();
 }
 
