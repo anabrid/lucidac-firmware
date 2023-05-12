@@ -129,15 +129,8 @@ bool blocks::UBlock::connect(uint8_t input, uint8_t output, bool connect) {
     }
   }
 
-  // Before connecting, check if input is already used by another output
-  auto output_using_input = std::find_if(std::begin(output_input_map), std::end(output_input_map),
-                                         [&input](const uint8_t input_) { return input_ == input + 1; });
-  if (output_using_input != std::end(output_input_map))
-    return false;
-
   // Connect
   output_input_map[output] = input + 1;
-
   return true;
 }
 

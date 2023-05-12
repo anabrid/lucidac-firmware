@@ -44,7 +44,13 @@ void test_block() {
   // So we have at least one concrete input signal
   ublock.use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF);
 
-  ublock.connect(7,0);
+  TEST_ASSERT(ublock.connect(7,0));
+  TEST_ASSERT(ublock.connect(7,5));
+  TEST_ASSERT(ublock.connect(7,10));
+  TEST_ASSERT(ublock.connect(7,15));
+  TEST_ASSERT(ublock.connect(7,20));
+  TEST_ASSERT(ublock.connect(7,25));
+  TEST_ASSERT(ublock.connect(7,30));
   ublock.write_to_hardware();
 }
 
