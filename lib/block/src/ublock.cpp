@@ -41,14 +41,14 @@ const SPISettings blocks::UBlock::UMATRIX_FUNC_SPI_SETTINGS{4'000'000, MSBFIRST,
 const SPISettings blocks::UBlock::ALT_SIGNAL_FUNC_SPI_SETTINGS{4'000'000, MSBFIRST, SPI_MODE1};
 const SPISettings blocks::functions::UOffsetLoader::OFFSETS_FUNC_SPI_SETTINGS{8'000'000, MSBFIRST, SPI_MODE2};
 
-void blocks::functions::UOffsetLoader::trigger_load(uint8_t offset_idx) {
+void blocks::functions::UOffsetLoader::trigger_load(uint8_t offset_idx) const {
   if (offset_idx >= blocks::UBlock::NUM_OF_OUTPUTS)
     return;
   f_triggers[offset_idx / OUTPUTS_PER_CHIP].trigger();
 }
 
 void blocks::functions::UOffsetLoader::set_offset_and_write_to_hardware(uint8_t offset_idx,
-                                                                        uint16_t offset_raw) {
+                                                                        uint16_t offset_raw) const {
   auto cmd = build_cmd_word(offset_idx % OUTPUTS_PER_CHIP, offset_raw);
   /*
    * CARE: Offset correction does not have an address, it listens to SPI all the time
@@ -58,6 +58,13 @@ void blocks::functions::UOffsetLoader::set_offset_and_write_to_hardware(uint8_t 
    */
   f_offsets.transfer16(cmd);
   trigger_load(offset_idx);
+}
+
+void blocks::functions::UOffsetLoader::set_offsets_and_write_to_hardware(
+    std::array<uint16_t, 32> offsets_raw) const {
+  for (unsigned int offset_idx = 0; offset_idx < offsets_raw.size(); offset_idx++) {
+    set_offset_and_write_to_hardware(offset_idx, offsets_raw[offset_idx]);
+  }
 }
 
 uint16_t blocks::functions::UOffsetLoader::build_cmd_word(uint8_t chip_output_idx, uint16_t offset_raw) {
@@ -96,6 +103,19 @@ blocks::functions::UOffsetLoader::UOffsetLoader(bus::addr_t ublock_address)
           bus::TriggerFunction{
               bus::replace_function_idx(ublock_address, UBlock::OFFSETS_LOAD_BASE_FUNC_IDX + 3)},
       } {}
+
+uint16_t blocks::functions::UOffsetLoader::offset_to_raw(float offset) {
+  // Truncate offset
+  if (offset >= MAX_OFFSET)
+    return MAX_OFFSET_RAW;
+  if (offset <= MIN_OFFSET)
+    return MIN_OFFSET_RAW;
+
+  // Assumes +/- is symmetrical
+  // TODO: Consider MIN_OFFSET_RAW if it's ever non-zero.
+  auto offset_scaled = (offset - MIN_OFFSET) / (MAX_OFFSET - MIN_OFFSET);
+  return static_cast<uint16_t>(offset_scaled * float(MAX_OFFSET_RAW));
+}
 
 blocks::functions::_old_UMatrixFunction::_old_UMatrixFunction(const unsigned short address,
                                                               const SPISettings &spiSettings)
@@ -169,7 +189,10 @@ blocks::UBlock::UBlock(const uint8_t clusterIdx)
                    ALT_SIGNAL_FUNC_SPI_SETTINGS),
       f_alt_signal_clear(bus::idx_to_addr(clusterIdx, BLOCK_IDX, ALT_SIGNAL_SWITCHER_CLEAR_FUNC_IDX)),
       f_alt_signal_sync(bus::idx_to_addr(clusterIdx, BLOCK_IDX, ALT_SIGNAL_SWITCHER_SYNC_FUNC_IDX)),
-      output_input_map{0}, alt_signals{0} {}
+      f_offset_loader(bus::idx_to_addr(clusterIdx, BLOCK_IDX, 0)), output_input_map{0},
+      alt_signals{0}, offsets{0} {
+  offsets.fill(decltype(f_offset_loader)::ZERO_OFFSET_RAW);
+}
 
 bool blocks::UBlock::connect(uint8_t input, uint8_t output, bool connect) {
   // Sanity check
@@ -199,18 +222,23 @@ bool blocks::UBlock::is_connected(uint8_t input, uint8_t output) {
   return output_input_map[output] == input;
 }
 
-void blocks::UBlock::write_matrix_to_hardware() const {
-  f_umatrix.transfer(output_input_map);
-  f_umatrix_sync.trigger();
-}
-
 void blocks::UBlock::write_alt_signal_to_hardware() const {
   f_alt_signal.transfer16(alt_signals);
   f_alt_signal_sync.trigger();
 }
 
+void blocks::UBlock::write_offsets_to_hardware() const {
+  f_offset_loader.set_offsets_and_write_to_hardware(offsets);
+}
+
+void blocks::UBlock::write_matrix_to_hardware() const {
+  f_umatrix.transfer(output_input_map);
+  f_umatrix_sync.trigger();
+}
+
 void blocks::UBlock::write_to_hardware() const {
   write_alt_signal_to_hardware();
+  write_offsets_to_hardware();
   write_matrix_to_hardware();
 }
 
@@ -224,3 +252,24 @@ bool blocks::UBlock::use_alt_signals(uint16_t alt_signal) {
 bool blocks::UBlock::is_alt_signal_used(uint16_t alt_signal) const { return alt_signals & alt_signal; }
 
 uint16_t blocks::UBlock::get_alt_signals() const { return alt_signals; }
+
+void blocks::UBlock::reset_offsets() {
+  for (auto &offset : offsets) {
+    offset = decltype(f_offset_loader)::ZERO_OFFSET_RAW;
+  }
+}
+
+bool blocks::UBlock::set_offset(uint8_t output, uint16_t offset_raw) {
+  if (output >= NUM_OF_OUTPUTS)
+    return false;
+  if ((offset_raw < decltype(f_offset_loader)::MIN_OFFSET_RAW) or
+      (offset_raw > decltype(f_offset_loader)::MAX_OFFSET_RAW))
+    return false;
+  offsets[output] = offset_raw;
+  return true;
+}
+
+bool blocks::UBlock::set_offset(uint8_t output, float offset) {
+  auto offset_raw = decltype(f_offset_loader)::offset_to_raw(offset);
+  return set_offset(output, offset_raw);
+}

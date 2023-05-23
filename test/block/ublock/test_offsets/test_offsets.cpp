@@ -75,11 +75,25 @@ void test_function() {
   offset_loader.set_offset_and_write_to_hardware(2,1023);
 }
 
+void test_offset_from_block() {
+  uBlock.reset_offsets();
+  uBlock.use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF);
+  uBlock.connect(7,3);
+  uBlock.connect(7,4);
+  uBlock.connect(7,5);
+  uBlock.write_to_hardware();
+
+  TEST_ASSERT(uBlock.set_offset(3, 0.0f));
+  //TEST_ASSERT(uBlock.set_offset(3, -0.010f/lucidac::REF_VOLTAGE));
+  //TEST_ASSERT(uBlock.set_offset(3, +0.0481f/lucidac::REF_VOLTAGE));
+  uBlock.write_offsets_to_hardware();
+}
+
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_cmd_word);
-  //RUN_TEST(test_load_trigger);
   RUN_TEST(test_function);
+  RUN_TEST(test_offset_from_block);
   UNITY_END();
 }
 

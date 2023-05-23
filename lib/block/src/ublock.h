@@ -30,6 +30,7 @@
 
 #include "base_block.h"
 #include "local_bus.h"
+#include "lucidac.h"
 
 namespace blocks {
 
@@ -83,7 +84,12 @@ public:
   static const SPISettings OFFSETS_FUNC_SPI_SETTINGS;
   static constexpr uint16_t OUTPUTS_PER_CHIP = 8;
   static constexpr uint16_t MAX_CHIP_OUTPUT_IDX = OUTPUTS_PER_CHIP - 1;
+  // TODO: Min/Max float values may depend on hardware implementation.
+  static constexpr float MIN_OFFSET = -0.080f / lucidac::REF_VOLTAGE;
+  static constexpr float MAX_OFFSET = 0.080f / lucidac::REF_VOLTAGE;
+  static constexpr uint16_t MIN_OFFSET_RAW = 0;
   static constexpr uint16_t MAX_OFFSET_RAW = 1023;
+  static constexpr uint16_t ZERO_OFFSET_RAW = 512;
 
 protected:
   bus::DataFunction f_offsets;
@@ -93,9 +99,11 @@ public:
   explicit UOffsetLoader(bus::addr_t ublock_address);
 
   static uint16_t build_cmd_word(uint8_t chip_output_idx, uint16_t offset_raw);
+  static uint16_t offset_to_raw(float offset);
 
-  void set_offset_and_write_to_hardware(uint8_t offset_idx, uint16_t offset_raw);
-  void trigger_load(uint8_t offset_idx);
+  void set_offsets_and_write_to_hardware(std::array<uint16_t, 32> offsets_raw) const;
+  void set_offset_and_write_to_hardware(uint8_t offset_idx, uint16_t offset_raw) const;
+  void trigger_load(uint8_t offset_idx) const;
 };
 
 } // namespace functions
@@ -116,15 +124,15 @@ public:
   static constexpr uint8_t ALT_SIGNAL_SWITCHER_FUNC_IDX = 9;
   static constexpr uint8_t ALT_SIGNAL_SWITCHER_SYNC_FUNC_IDX = 10;
 
-  static constexpr uint16_t ALT_SIGNAL_IN24_ACL0 = 1 << 0;
-  static constexpr uint16_t ALT_SIGNAL_IN25_ACL1 = 1 << 1;
-  static constexpr uint16_t ALT_SIGNAL_IN26_ACL2 = 1 << 2;
-  static constexpr uint16_t ALT_SIGNAL_IN27_ACL3 = 1 << 3;
-  static constexpr uint16_t ALT_SIGNAL_IN28_ACL4 = 1 << 4;
-  static constexpr uint16_t ALT_SIGNAL_IN29_ACL5 = 1 << 5;
-  static constexpr uint16_t ALT_SIGNAL_IN30_ACL6 = 1 << 6;
-  static constexpr uint16_t ALT_SIGNAL_IN31_ACL7 = 1 << 7;
-  static constexpr uint16_t ALT_SIGNAL_REF_HALF = 1 << 8;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN24_ACL0 = 1 << 0;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN25_ACL1 = 1 << 1;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN26_ACL2 = 1 << 2;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN27_ACL3 = 1 << 3;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN28_ACL4 = 1 << 4;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN29_ACL5 = 1 << 5;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN30_ACL6 = 1 << 6;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN31_ACL7 = 1 << 7;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_REF_HALF = 1 << 8;
   static constexpr uint16_t MAX_ALT_SIGNAL = ALT_SIGNAL_REF_HALF;
 
   static const SPISettings UMATRIX_FUNC_SPI_SETTINGS;
@@ -142,9 +150,11 @@ protected:
   const bus::DataFunction f_alt_signal;
   const bus::TriggerFunction f_alt_signal_clear;
   const bus::TriggerFunction f_alt_signal_sync;
+  const functions::UOffsetLoader f_offset_loader;
 
   std::array<uint8_t, NUM_OF_OUTPUTS> output_input_map;
   uint16_t alt_signals;
+  std::array<uint16_t, NUM_OF_OUTPUTS> offsets;
 
 public:
   explicit UBlock(uint8_t clusterIdx);
@@ -164,8 +174,13 @@ public:
   //! Get bit-wise combination of used alternative signals.
   uint16_t get_alt_signals() const;
 
+  void reset_offsets();
+  bool set_offset(uint8_t output, uint16_t offset_raw);
+  bool set_offset(uint8_t output, float offset);
+
   void write_matrix_to_hardware() const;
   void write_alt_signal_to_hardware() const;
+  void write_offsets_to_hardware() const;
   void write_to_hardware() const;
 };
 
