@@ -70,6 +70,39 @@ daq::FlexIODAQ::FlexIODAQ()
     : flexio(FlexIOHandler::mapIOPinToFlexIOHandler(PIN_CNVST, _flexio_pin_cnvst)),
       _flexio_pin_clk(flexio->mapIOPinToFlexPin(PIN_CLK)) {}
 
-void daq::FlexIODAQ::enable() {
-  flexio->port().CTRL |= FLEXIO_CTRL_FLEXEN;
+void daq::FlexIODAQ::enable() { flexio->port().CTRL |= FLEXIO_CTRL_FLEXEN; }
+
+void daq::OneshotDAQ::init() {
+  pinMode(PIN_CNVST, OUTPUT);
+  digitalWriteFast(PIN_CNVST, LOW);
+  pinMode(PIN_CLK, OUTPUT);
+  digitalWriteFast(PIN_CLK, LOW);
+
+  for (auto pin : PINS_MISO) {
+    // Pull-up is on hardware
+    pinMode(pin, INPUT);
+  }
+}
+
+std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {
+  // Trigger CNVST
+  digitalWriteFast(PIN_CNVST, HIGH);
+  delayNanoseconds(1500);
+  digitalWriteFast(PIN_CNVST, LOW);
+
+  delayNanoseconds(500);
+
+  decltype(sample_raw()) data{0};
+  for (auto clk_i = 0; clk_i < 16; clk_i++) {
+    digitalWriteFast(PIN_CLK, HIGH);
+    // Sample data after rising edge
+    for (unsigned int pin_i = 0; pin_i < data.size(); pin_i++) {
+      data[pin_i] |= digitalReadFast(PINS_MISO[pin_i]) ? (1 << (15 - clk_i)) : 0;
+    }
+    delayNanoseconds(50);
+    digitalWriteFast(PIN_CLK, LOW);
+    delayNanoseconds(250);
+  }
+
+  return data;
 }

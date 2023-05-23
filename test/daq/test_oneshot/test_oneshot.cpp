@@ -24,59 +24,15 @@
 // ANABRID_END_LICENSE
 
 #include <Arduino.h>
-#include <array>
 #include <unity.h>
 
-#include "local_bus.h"
-
-namespace daq {
-
-constexpr uint8_t NUM_CHANNELS = 8;
-constexpr uint8_t PIN_CNVST = 7;
-constexpr uint8_t PIN_CLK = 6;
-constexpr std::array<uint8_t, NUM_CHANNELS> PINS_MISO = {34, 35, 36, 37, 11, 10, 9, 8};
-
-class OneshotDAQ {
-public:
-  void init() {
-    pinMode(PIN_CNVST, OUTPUT);
-    digitalWriteFast(PIN_CNVST, LOW);
-    pinMode(PIN_CLK, OUTPUT);
-    digitalWriteFast(PIN_CLK, LOW);
-
-    for (auto pin : PINS_MISO) {
-      // Pull-up is on hardware
-      pinMode(pin, INPUT);
-    }
-  }
-
-  std::array<uint16_t, NUM_CHANNELS> sample() {
-    // Trigger CNVST
-    digitalWriteFast(PIN_CNVST, HIGH);
-    delayNanoseconds(1500);
-    digitalWriteFast(PIN_CNVST, LOW);
-
-    delayNanoseconds(500);
-
-    for (auto clk_i = 0; clk_i < 16; clk_i++) {
-      digitalWriteFast(PIN_CLK, HIGH);
-      delayNanoseconds(200);
-      digitalWriteFast(PIN_CLK, LOW);
-      delayNanoseconds(200);
-    }
-
-    return {0};
-  }
-};
-
-} // namespace daq
+#include "daq.h"
 
 using namespace daq;
 OneshotDAQ DAQ{};
 
 void setUp() {
   // set stuff up here
-  bus::init();
   DAQ.init();
 }
 
@@ -84,17 +40,30 @@ void tearDown() {
   // clean stuff up here
 }
 
-void test_true() {
-  TEST_ASSERT(true);
+void test_sample_raw() {
+  auto data = DAQ.sample_raw();
+  TEST_ASSERT_EQUAL(daq::NUM_CHANNELS, data.size());
+
+  // Without other blocks, we should be at a certain value.
+  // Not sure which one, but surely not zero :)
+  // TODO: After ADCs are fixed, add correct values.
+  decltype(data) expected{0, 0, 0, 0, 0, 0, 0, 0};
+  decltype(data)::value_type acceptable_delta = 1000;
+  for (unsigned int i_ = 0; i_ < data.size(); i_++) {
+    char buffer[4 + 33] = {' ', ' ', '=', ' '};
+    buffer[0] = '0' + i_;
+    itoa(data[i_], buffer + 4, 2);
+    TEST_MESSAGE(buffer);
+    itoa(data[i_], buffer + 4, 10);
+    TEST_MESSAGE(buffer);
+  }
+  TEST_ASSERT_UINT16_ARRAY_WITHIN(acceptable_delta, expected.data(), data.data(), data.size());
 }
 
 void setup() {
   UNITY_BEGIN();
-  RUN_TEST(test_true);
+  RUN_TEST(test_sample_raw);
   UNITY_END();
 }
 
-void loop() {
-  delayMicroseconds(100);
-  DAQ.sample();
-}
+void loop() {}

@@ -25,8 +25,8 @@
 
 #pragma once
 
-#include "local_bus.h"
 #include <FlexIO_t4.h>
+#include <array>
 
 namespace daq {
 
@@ -51,6 +51,12 @@ public:
   bool _init_cnvst(unsigned int sample_rate);
   void enable();
   bool _init_clk();
+};
+
+class OneshotDAQ {
+public:
+  void init();
+  std::array<uint16_t, NUM_CHANNELS> sample_raw();
 };
 
 }
