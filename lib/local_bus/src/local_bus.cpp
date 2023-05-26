@@ -142,6 +142,12 @@ uint8_t bus::DataFunction::transfer(uint8_t data) const {
   return ret;
 }
 
+void bus::DataFunction::transfer(const void *mosi_buf, void *miso_buf, size_t count) {
+  begin_communication();
+  bus::spi.transfer(mosi_buf, miso_buf, count);
+  end_communication();
+}
+
 uint16_t bus::DataFunction::transfer16(uint16_t data) const {
   begin_communication();
   auto ret = bus::spi.transfer16(data);
@@ -155,3 +161,5 @@ uint32_t bus::DataFunction::transfer32(uint32_t data) const {
   end_communication();
   return ret;
 }
+
+SPIClass &bus::DataFunction::get_raw_spi() { return bus::spi; }

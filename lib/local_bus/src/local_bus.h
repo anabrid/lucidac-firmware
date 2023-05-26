@@ -126,16 +126,19 @@ public:
   _old_DataFunction(addr_t address, const SPISettings &spiSettings);
 };
 
-
 class DataFunction : public Function {
+protected:
+  static SPIClass& get_raw_spi();
+
 public:
-  const SPISettings& spi_settings;
+  const SPISettings &spi_settings;
 
   DataFunction(addr_t address, const SPISettings &spiSettings);
 
   void begin_communication() const;
   void end_communication() const;
 
+  void transfer(const void *mosi_buf, void *miso_buf, size_t count);
   uint8_t transfer(uint8_t data) const;
   uint16_t transfer16(uint16_t data) const;
   uint32_t transfer32(uint32_t data) const;
