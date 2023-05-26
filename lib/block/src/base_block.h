@@ -32,6 +32,8 @@ public:
   const uint8_t cluster_idx;
 
   explicit FunctionBlock(const uint8_t clusterIdx) : cluster_idx(clusterIdx) {}
+
+  virtual void init() {}
 };
 
 } // namespace blocks
