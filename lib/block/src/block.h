@@ -60,6 +60,8 @@ public:
   static constexpr uint8_t SCALE_SWITCHER = 33;
   static constexpr uint8_t SCALE_SWITCHER_SYNC = 34;
   static constexpr uint8_t SCALE_SWITCHER_CLEAR = 35;
+
+  using FunctionBlock::FunctionBlock;
 };
 
 } // namespace blocks
