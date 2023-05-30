@@ -29,30 +29,18 @@
 #include <cstdint>
 
 #include "base_block.h"
-#include "functions.h"
 #include "local_bus.h"
 
 namespace blocks {
 
-class CScaleSwitchFunction : public functions::_old_DataFunction {
+class CBlock : public FunctionBlock {
 public:
-  //! Bits sent to the shift register, least significant bit is SW.0, most significant bit is SW.35.
-  uint32_t data = 0;
+  static constexpr uint8_t COEFF_BASE_FUNC_IDX = 1;
+  static constexpr uint8_t SCALE_SWITCHER = 33;
+  static constexpr uint8_t SCALE_SWITCHER_SYNC = 34;
+  static constexpr uint8_t SCALE_SWITCHER_CLEAR = 35;
 
-  using functions::_old_DataFunction::_old_DataFunction;
-  explicit CScaleSwitchFunction(bus::addr_t address);
-
-  void write_to_hardware() const;
-};
-
-class CCoeffFunction : public functions::_old_DataFunction {
-public:
-  uint16_t data = 0;
-
-  using functions::_old_DataFunction::_old_DataFunction;
-  CCoeffFunction(bus::addr_t base_address, uint8_t coeff_idx);
-
-  void write_to_hardware() const;
+  using FunctionBlock::FunctionBlock;
 };
 
 } // namespace blocks
