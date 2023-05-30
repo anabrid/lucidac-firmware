@@ -42,7 +42,7 @@ void shift_5_left(uint8_t *buffer, size_t size);
 
 namespace functions {
 
-class _old_UMatrixFunction : public bus::_old_DataFunction {
+class _old_UMatrixFunction : public ::functions::_old_DataFunction {
 public:
   static constexpr char number_of_inputs = 16;
   static constexpr char number_of_outputs = 32;
@@ -60,21 +60,21 @@ public:
   void sync_to_hardware() const;
 };
 
-template <std::size_t num_of_outputs> class UMatrixFunction : public bus::DataFunction {
+template <std::size_t num_of_outputs> class UMatrixFunction : public ::functions::DataFunction {
 public:
-  using bus::DataFunction::DataFunction;
+  using ::functions::DataFunction::DataFunction;
 
   //! Convert an output array to data packets and transfer to chip.
   //! Timing: ~5microseconds
   void transfer(std::array<uint8_t, num_of_outputs> outputs) const;
 };
 
-class USignalSwitchFunction : public bus::_old_DataFunction {
+class USignalSwitchFunction : public ::functions::_old_DataFunction {
   // TODO: Add one abstraction layer
 public:
   uint16_t data{0};
 
-  using bus::_old_DataFunction::_old_DataFunction;
+  using ::functions::_old_DataFunction::_old_DataFunction;
 
   void write_to_hardware() const;
 };
@@ -92,8 +92,8 @@ public:
   static constexpr uint16_t ZERO_OFFSET_RAW = 512;
 
 protected:
-  bus::DataFunction f_offsets;
-  std::array<bus::TriggerFunction, 4> f_triggers;
+  ::functions::DataFunction f_offsets;
+  std::array<::functions::TriggerFunction, 4> f_triggers;
 
 public:
   explicit UOffsetLoader(bus::addr_t ublock_address);
@@ -140,16 +140,16 @@ public:
 
 protected:
   const functions::UMatrixFunction<NUM_OF_OUTPUTS> f_umatrix;
-  const bus::TriggerFunction f_umatrix_sync;
+  const ::functions::TriggerFunction f_umatrix_sync;
   // Reset disables all output, but rest of logic is unchanged according to datasheet.
   // But I don't really know what that means. Data is still shifted out after a reset
   // and the enable-bits in the data are still set.
   // The datasheet calls the RESET pin OUTPUT ENABLE, so it probably is simply that.
   // Meaning it is completely useless.
-  const bus::TriggerFunction f_umatrix_reset;
-  const bus::DataFunction f_alt_signal;
-  const bus::TriggerFunction f_alt_signal_clear;
-  const bus::TriggerFunction f_alt_signal_sync;
+  const ::functions::TriggerFunction f_umatrix_reset;
+  const ::functions::DataFunction f_alt_signal;
+  const ::functions::TriggerFunction f_alt_signal_clear;
+  const ::functions::TriggerFunction f_alt_signal_sync;
   const functions::UOffsetLoader f_offset_loader;
 
   std::array<uint8_t, NUM_OF_OUTPUTS> output_input_map;

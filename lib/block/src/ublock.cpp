@@ -25,6 +25,7 @@
 
 #include <algorithm>
 
+#include "functions.h"
 #include "ublock.h"
 
 void blocks::utils::shift_5_left(uint8_t *buffer, size_t size) {
@@ -94,13 +95,13 @@ blocks::functions::UOffsetLoader::UOffsetLoader(bus::addr_t ublock_address)
     : f_offsets{bus::replace_function_idx(ublock_address, UBlock::OFFSETS_DATA_FUNC_IDX),
                 OFFSETS_FUNC_SPI_SETTINGS},
       f_triggers{
-          bus::TriggerFunction{
+          ::functions::TriggerFunction{
               bus::replace_function_idx(ublock_address, UBlock::OFFSETS_LOAD_BASE_FUNC_IDX + 0)},
-          bus::TriggerFunction{
+          ::functions::TriggerFunction{
               bus::replace_function_idx(ublock_address, UBlock::OFFSETS_LOAD_BASE_FUNC_IDX + 1)},
-          bus::TriggerFunction{
+          ::functions::TriggerFunction{
               bus::replace_function_idx(ublock_address, UBlock::OFFSETS_LOAD_BASE_FUNC_IDX + 2)},
-          bus::TriggerFunction{
+          ::functions::TriggerFunction{
               bus::replace_function_idx(ublock_address, UBlock::OFFSETS_LOAD_BASE_FUNC_IDX + 3)},
       } {}
 

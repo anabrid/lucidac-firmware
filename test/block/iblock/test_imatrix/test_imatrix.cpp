@@ -26,6 +26,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#include "functions.h"
 #include "iblock.h"
 #include "local_bus.h"
 
@@ -33,10 +34,10 @@ using namespace bus;
 using namespace blocks;
 using namespace blocks::functions;
 
-TriggerFunction imatrix_reset{idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_RESET_FUNC_IDX)};
-TriggerFunction imatrix_cmd_sr_rest{
+::functions::TriggerFunction imatrix_reset{idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_RESET_FUNC_IDX)};
+::functions::TriggerFunction imatrix_cmd_sr_rest{
     idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_COMMAND_SR_RESET_FUNC_IDX)};
-TriggerFunction imatrix_sync{idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_SYNC_FUNC_IDX)};
+::functions::TriggerFunction imatrix_sync{idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_SYNC_FUNC_IDX)};
 
 ICommandRegisterFunction imatrix_cmd_sr{
     idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_COMMAND_SR_FUNC_IDX)};

@@ -25,11 +25,12 @@
 
 #pragma once
 
+#include "functions.h"
 #include "local_bus.h"
 
 namespace functions {
 
-class DAC60508 : public bus::DataFunction {
+class DAC60508 : public DataFunction {
 public:
   static constexpr uint8_t REG_NOOP = 0;
   static constexpr uint8_t REG_DEVICE_ID = 1;
@@ -49,7 +50,7 @@ public:
   static const SPISettings DEFAULT_SPI_SETTINGS;
   static uint16_t float_to_raw(float value);
 
-  using bus::DataFunction::DataFunction;
+  using DataFunction::DataFunction;
   explicit DAC60508(bus::addr_t address);
 
   uint16_t read_register(uint8_t address) const;

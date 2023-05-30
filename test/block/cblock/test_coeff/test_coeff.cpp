@@ -27,9 +27,13 @@
 #include <unity.h>
 
 #include "block.h"
+#include "cblock.h"
+#include "functions.h"
+#include "lucidac.h"
+#include "mblock.h"
 
-bus::TriggerFunction switcher_sync{bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_SYNC)};
-bus::TriggerFunction switcher_clear{
+functions::TriggerFunction switcher_sync{bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_SYNC)};
+functions::TriggerFunction switcher_clear{
     bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_CLEAR)};
 
 auto base_addr = bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::COEFF_BASE_FUNC_IDX);

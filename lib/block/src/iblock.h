@@ -29,20 +29,21 @@
 #include <cstdint>
 
 #include "base_block.h"
+#include "functions.h"
 #include "local_bus.h"
 
 namespace blocks {
 
 namespace functions {
 
-class ICommandRegisterFunction : public bus::_old_DataFunction {
+class ICommandRegisterFunction : public ::functions::_old_DataFunction {
 public:
   //! Data is [8bit 4_* SR][8bit 3_* SR][8bit 2_* SR][8bit 1_* SR]
   //!      -> [0-15 X 0-07][16-31 X 0-7][0-15 X 8-15][16-31 X 8-15]   [ input X output ] matrix
   //! Each is [DATA Y2 Y1 Y0 X3 X2 X1 X0]
   uint32_t data = 0;
 
-  using bus::_old_DataFunction::_old_DataFunction;
+  using ::functions::_old_DataFunction::_old_DataFunction;
   explicit ICommandRegisterFunction(bus::addr_t address);
 
   static uint8_t chip_cmd_word(uint8_t chip_input_idx, uint8_t chip_output_idx, bool connect = true);
@@ -66,8 +67,8 @@ public:
   static constexpr uint8_t NUM_OUTPUTS = 16;
   std::array<uint32_t, NUM_OUTPUTS> outputs;
   functions::ICommandRegisterFunction f_cmd;
-  bus::TriggerFunction f_imatrix_reset;
-  bus::TriggerFunction f_imatrix_sync;
+  ::functions::TriggerFunction f_imatrix_reset;
+  ::functions::TriggerFunction f_imatrix_sync;
 
   explicit IBlock(const uint8_t clusterIdx)
       : FunctionBlock(clusterIdx), outputs{0}, f_cmd{bus::idx_to_addr(clusterIdx, BLOCK_IDX,

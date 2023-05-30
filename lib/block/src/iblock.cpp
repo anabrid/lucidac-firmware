@@ -22,7 +22,9 @@
 // For Germany, additional rules exist. Please consult /LICENSE.DE
 // for further agreements.
 // ANABRID_END_LICENSE
+
 #include "iblock.h"
+#include "functions.h"
 
 void blocks::functions::ICommandRegisterFunction::write_to_hardware() const {
   begin_communication();
@@ -31,7 +33,7 @@ void blocks::functions::ICommandRegisterFunction::write_to_hardware() const {
 }
 
 blocks::functions::ICommandRegisterFunction::ICommandRegisterFunction(bus::addr_t address)
-    : _old_DataFunction(address,
+    : ::functions::_old_DataFunction(address,
                    SPISettings(4'000'000, MSBFIRST,
                                SPI_MODE3 /* chip expects SPI MODE0, but CLK is inverted on the way */)),
       data(0) {}

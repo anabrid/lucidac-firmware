@@ -99,49 +99,4 @@ void address_board_function(uint8_t func_idx);
 
 void release_address();
 
-class Function {
-public:
-  const bus::addr_t address;
-  virtual void set_address() const;
-  virtual void release_address() const;
-
-  explicit Function(addr_t address);
-};
-
-class TriggerFunction : public Function {
-public:
-  void trigger() const;
-
-  using Function::Function;
-};
-
-class _old_DataFunction : public Function {
-  // TODO: Split in Reading/WritingFunction and ReadWriteFunction
-public:
-  void begin_communication() const;
-  void end_communication() const;
-
-  const SPISettings spi_settings;
-
-  _old_DataFunction(addr_t address, const SPISettings &spiSettings);
-};
-
-class DataFunction : public Function {
-protected:
-  static SPIClass& get_raw_spi();
-
-public:
-  const SPISettings &spi_settings;
-
-  DataFunction(addr_t address, const SPISettings &spiSettings);
-
-  void begin_communication() const;
-  void end_communication() const;
-
-  void transfer(const void *mosi_buf, void *miso_buf, size_t count);
-  uint8_t transfer(uint8_t data) const;
-  uint16_t transfer16(uint16_t data) const;
-  uint32_t transfer32(uint32_t data) const;
-};
-
 } // namespace bus

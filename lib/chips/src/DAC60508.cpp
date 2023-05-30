@@ -48,7 +48,7 @@ bool functions::DAC60508::write_register(uint8_t address, uint16_t data) const {
   return true;
 }
 
-functions::DAC60508::DAC60508(bus::addr_t address) : bus::DataFunction(address, DEFAULT_SPI_SETTINGS) {}
+functions::DAC60508::DAC60508(bus::addr_t address) : functions::DataFunction(address, DEFAULT_SPI_SETTINGS) {}
 
 uint16_t functions::DAC60508::float_to_raw(float value) {
   // TODO: Potentially, each channel must be calibrated.

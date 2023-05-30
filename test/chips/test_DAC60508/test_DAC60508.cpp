@@ -27,14 +27,14 @@
 #include <unity.h>
 
 #define protected public
-#include "local_bus.h"
 #include "DAC60508.h"
+#include "functions.h"
 
 using namespace functions;
 
 auto addr = bus::idx_to_addr(0, bus::M2_BLOCK_IDX, 1);
 
-bus::DataFunction f{addr, functions::DAC60508::DEFAULT_SPI_SETTINGS};
+DataFunction f{addr, functions::DAC60508::DEFAULT_SPI_SETTINGS};
 functions::DAC60508 dac{addr};
 
 void setUp() {
@@ -53,7 +53,7 @@ void test_float_to_raw() {
 
 void test_raw_read() {
   f.begin_communication();
-  auto &raw_spi = bus::DataFunction::get_raw_spi();
+  auto &raw_spi = functions::DataFunction::get_raw_spi();
 
   // Read command is
   //  1. /CS low

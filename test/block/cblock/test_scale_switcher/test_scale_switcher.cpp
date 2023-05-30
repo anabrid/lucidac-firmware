@@ -27,10 +27,12 @@
 #include <unity.h>
 
 #include "block.h"
+#include "cblock.h"
+#include "functions.h"
 
 blocks::CScaleSwitchFunction switcher{bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER)};
-bus::TriggerFunction switcher_sync{bus::idx_to_addr(0,bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_SYNC)};
-bus::TriggerFunction switcher_clear{bus::idx_to_addr(0,bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_CLEAR)};
+functions::TriggerFunction switcher_sync{bus::idx_to_addr(0,bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_SYNC)};
+functions::TriggerFunction switcher_clear{bus::idx_to_addr(0,bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_CLEAR)};
 
 
 void setUp() {

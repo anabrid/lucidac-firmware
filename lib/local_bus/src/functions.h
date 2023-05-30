@@ -23,30 +23,60 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#include "block.h"
-#include "functions.h"
+#pragma once
+
+#include <SPI.h>
+#include <array>
+#include <core_pins.h>
+#include <cstdint>
+
 #include "local_bus.h"
 
-void blocks::CScaleSwitchFunction::write_to_hardware() const {
-  begin_communication();
-  bus::spi.transfer32(data);
-  end_communication();
-}
+namespace functions {
 
-blocks::CScaleSwitchFunction::CScaleSwitchFunction(bus::addr_t address)
-    : _old_DataFunction(address, SPISettings(4'000'000, MSBFIRST,
-                                        SPI_MODE3 /* Chip expects MODE0, CLK is inverted on the way */)),
-      data(0) {}
+class Function {
+public:
+  const bus::addr_t address;
+  virtual void set_address() const;
+  virtual void release_address() const;
 
-blocks::CCoeffFunction::CCoeffFunction(bus::addr_t base_address, uint8_t coeff_idx)
-    : _old_DataFunction(bus::increase_function_idx(base_address, coeff_idx),
-                   SPISettings(4'000'000, MSBFIRST, SPI_MODE1)),
-      data{0} {}
+  explicit Function(bus::addr_t address);
+};
 
-void blocks::CCoeffFunction::write_to_hardware() const {
-  begin_communication();
-  // AD5452 expects at least 13ns delay between chip select and data
-  delayNanoseconds(15);
-  bus::spi.transfer16(data);
-  end_communication();
-}
+class TriggerFunction : public Function {
+public:
+  void trigger() const;
+
+  using Function::Function;
+};
+
+class _old_DataFunction : public Function {
+  // TODO: Split in Reading/WritingFunction and ReadWriteFunction
+public:
+  void begin_communication() const;
+  void end_communication() const;
+
+  const SPISettings spi_settings;
+
+  _old_DataFunction(bus::addr_t address, const SPISettings &spiSettings);
+};
+
+class DataFunction : public Function {
+protected:
+  static SPIClass &get_raw_spi();
+
+public:
+  const SPISettings &spi_settings;
+
+  DataFunction(bus::addr_t address, const SPISettings &spiSettings);
+
+  void begin_communication() const;
+  void end_communication() const;
+
+  void transfer(const void *mosi_buf, void *miso_buf, size_t count);
+  uint8_t transfer(uint8_t data) const;
+  uint16_t transfer16(uint16_t data) const;
+  uint32_t transfer32(uint32_t data) const;
+};
+
+} // namespace functions
