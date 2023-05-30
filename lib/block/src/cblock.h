@@ -30,6 +30,7 @@
 
 #include "base_block.h"
 #include "local_bus.h"
+#include "AD5452.h"
 
 namespace blocks {
 

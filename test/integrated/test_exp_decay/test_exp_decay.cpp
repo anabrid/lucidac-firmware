@@ -33,6 +33,7 @@
 #define private public
 #include "mblock.h"
 #include "ublock.h"
+#include "cblock.h"
 #include "iblock.h"
 
 using namespace daq;
@@ -41,6 +42,8 @@ using namespace blocks;
 OneshotDAQ DAQ{};
 MIntBlock intblock{0, blocks::MIntBlock::M2_IDX};
 UBlock ublock{0};
+// Replace by complete CBlock sometime :)
+::functions::AD5452 mdac{bus::idx_to_addr(0, bus::C_BLOCK_IDX, 1)};
 IBlock iblock{0};
 
 void setUp() {
@@ -71,7 +74,7 @@ void test_exp_decay() {
   // Now it works again. Very fishy. I'll just commit everything and this DOES WORK, but only sometimes :)
   // Spoiler: Was a problem with the hardware,
 
-  intblock.set_ic(0, +0.77);
+  intblock.set_ic(0, +1.0f);
   intblock.write_to_hardware();
   // Signal does arrive at UBlock BL_IN0
 
@@ -80,6 +83,7 @@ void test_exp_decay() {
   // Signal leaves UBlock on BL_OUT0, *inverted and doubled*
 
   // CBlock should do out = -in without configuration
+  mdac.set_scale(+0.5f);
 
   // IBlock should connect (CBlock BL_OUT0 = IBlock BL_OUT0 (=input!)) to (M2 Block IN0 = IBlock MBL_IN0 (!kicad schematic is not up-to-date) = IBlock output 0)
   iblock.outputs[0] = IBlock::INPUT_BITMASK(0);
