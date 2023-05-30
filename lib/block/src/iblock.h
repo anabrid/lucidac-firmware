@@ -76,6 +76,7 @@ public:
         f_imatrix_sync{bus::idx_to_addr(clusterIdx, BLOCK_IDX, IMATRIX_SYNC_FUNC_IDX)} {}
 
   void write_to_hardware();
+  void init() override;
 };
 
 } // namespace blocks

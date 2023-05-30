@@ -104,3 +104,9 @@ void blocks::IBlock::write_to_hardware() {
     }
   }
 }
+
+void blocks::IBlock::init() {
+  FunctionBlock::init();
+  // I-Block matrix is not reset on power-cycle, apparently.
+  write_to_hardware();
+}
