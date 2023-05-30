@@ -33,6 +33,7 @@
 #define private public
 #include "mblock.h"
 #include "ublock.h"
+#include "iblock.h"
 
 using namespace daq;
 using namespace blocks;
@@ -40,6 +41,7 @@ using namespace blocks;
 OneshotDAQ DAQ{};
 MIntBlock intblock{0, blocks::MIntBlock::M2_IDX};
 UBlock ublock{0};
+IBlock iblock{0};
 
 void setUp() {
   // Set stuff up here
@@ -50,6 +52,7 @@ void setUp() {
   // Initialize blocks
   intblock.init();
   ublock.init();
+  iblock.init();
 
   // Use DIO13 = LED for synchronization
   pinMode(LED_BUILTIN, OUTPUT);
@@ -66,8 +69,21 @@ void test_exp_decay() {
   // BUT only when you remove the first four BL_IN* BL_OUT* jumper after power-on?
   // NO, only sometimes? It worked a few times, now everything is broken x_X
   // Now it works again. Very fishy. I'll just commit everything and this DOES WORK, but only sometimes :)
-  intblock.set_ic(0, +1);
+  // Spoiler: Was a problem with the hardware,
+
+  intblock.set_ic(0, +0.77);
   intblock.write_to_hardware();
+  // Signal does arrive at UBlock BL_IN0
+
+  ublock.connect(0,0);
+  ublock.write_to_hardware();
+  // Signal leaves UBlock on BL_OUT0, *inverted and doubled*
+
+  // CBlock should do out = -in without configuration
+
+  // IBlock should connect (CBlock BL_OUT0 = IBlock BL_OUT0 (=input!)) to (M2 Block IN0 = IBlock MBL_IN0 (!kicad schematic is not up-to-date) = IBlock output 0)
+  iblock.outputs[0] = IBlock::INPUT_BITMASK(0);
+  iblock.write_to_hardware();
 
   digitalWriteFast(LED_BUILTIN, HIGH);
   mode::ManualControl::to_ic();
