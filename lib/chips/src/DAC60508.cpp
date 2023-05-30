@@ -27,6 +27,18 @@
 
 const SPISettings functions::DAC60508::DEFAULT_SPI_SETTINGS{4'000'000, MSBFIRST, SPI_MODE1};
 
+uint16_t functions::DAC60508::read_register(uint8_t address) const {
+  begin_communication();
+  get_raw_spi().transfer((address & 0b0'000'1111) | 0b1'000'0000);
+  get_raw_spi().transfer16(0);
+  end_communication();
+  begin_communication();
+  get_raw_spi().transfer(0);
+  auto data = get_raw_spi().transfer16(0);
+  end_communication();
+  return data;
+}
+
 bool functions::DAC60508::write_register(uint8_t address, uint16_t data) const {
   begin_communication();
   get_raw_spi().transfer(address & 0b0'000'1111);
@@ -54,6 +66,7 @@ bool functions::DAC60508::set_channel(uint8_t idx, uint16_t value) const {
 }
 
 void functions::DAC60508::init() {
-  write_register(functions::DAC60508::REG_CONFIG, 0b0000'0001'0000'0000);
+  // TODO: Change back to external reference when working again
+  write_register(functions::DAC60508::REG_CONFIG, 0b0000'0000'0000'0000);
   write_register(functions::DAC60508::REG_GAIN, 0b0000'0000'1111'1111);
 }

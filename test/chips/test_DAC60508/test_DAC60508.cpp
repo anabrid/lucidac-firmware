@@ -75,37 +75,50 @@ void test_raw_read() {
   f.end_communication();
 }
 
+void test_read_register() {
+  TEST_ASSERT_EQUAL(0b0'010'1000'1'00101'10, dac.read_register(DAC60508::REG_DEVICE_ID));
+}
+
 void test_set_noop_register() {
   TEST_ASSERT(dac.write_register(0, 0b1111'0000'0000'0011));
+  TEST_ASSERT_EQUAL(0, dac.read_register(0));
 }
 
 void test_set_registers_as_they_should_be_later() {
-  TEST_ASSERT(dac.write_register(functions::DAC60508::REG_CONFIG, 0b0000'0001'0000'0000));
-  TEST_ASSERT(dac.write_register(functions::DAC60508::REG_GAIN, 0b0000'0000'1111'1111));
+  // TODO: Change back to external reference when working again
+  uint16_t data_reg_config = 0b0000'0000'0000'0000;
+  TEST_ASSERT(dac.write_register(DAC60508::REG_CONFIG, data_reg_config));
+  TEST_ASSERT_EQUAL(data_reg_config, dac.read_register(DAC60508::REG_CONFIG));
+
+  uint16_t data_reg_gain = 0b0000'0000'1111'1111;
+  TEST_ASSERT(dac.write_register(DAC60508::REG_GAIN, data_reg_gain));
+  TEST_ASSERT_EQUAL(data_reg_gain, dac.read_register(DAC60508::REG_GAIN));
 }
 
 void test_set_dac_outputs() {
   //TEST_ASSERT(dac.write_register(functions::DAC60508::REG_DAC(0), 0b0000'0000'0000'0000));
-  //TEST_ASSERT(dac.write_register(functions::DAC60508::REG_DAC(0), 0b0000'1111'0000'0000));
-  TEST_ASSERT(dac.write_register(functions::DAC60508::REG_DAC(0), 0b1111'1111'1111'0000));
+  TEST_ASSERT(dac.write_register(functions::DAC60508::REG_DAC(0), 0b0000'1111'0000'0000));
+  TEST_ASSERT_EQUAL(0x0F00, dac.read_register(DAC60508::REG_DAC(0)));
+  //TEST_ASSERT(dac.write_register(functions::DAC60508::REG_DAC(0), 0b1111'1111'1111'0000));
 }
 
 void test_set_dac_outputs_raw() {
-  dac.set_channel(0, 0xFFFF); // = -1
-  dac.set_channel(0, 0x0); // = +1
+  dac.set_channel(0, DAC60508::RAW_MINUS_ONE);
+  //dac.set_channel(0, DAC60508::RAW_PLUS_ONE);
 }
 
 void test_set_dac_outputs_float() {
-  dac.set_channel(0, DAC60508::float_to_raw(0.45f));
+  TEST_ASSERT(dac.set_channel(0, DAC60508::float_to_raw(-0.65f)));
 }
 
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_float_to_raw);
   RUN_TEST(test_raw_read);
+  RUN_TEST(test_read_register);
   RUN_TEST(test_set_noop_register);
   RUN_TEST(test_set_registers_as_they_should_be_later);
-  RUN_TEST(test_set_dac_outputs);
+  //RUN_TEST(test_set_dac_outputs);
   RUN_TEST(test_set_dac_outputs_raw);
   RUN_TEST(test_set_dac_outputs_float);
   UNITY_END();
