@@ -33,7 +33,7 @@ OneshotDAQ DAQ{};
 
 void setUp() {
   // set stuff up here
-  DAQ.init();
+  DAQ.init(0);
 }
 
 void tearDown() {

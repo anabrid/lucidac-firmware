@@ -48,7 +48,7 @@ IBlock iblock{0};
 
 void setUp() {
   // Set stuff up here
-  DAQ.init();
+  DAQ.init(0);
   bus::init();
   mode::ManualControl::init();
 

@@ -35,8 +35,13 @@ constexpr uint8_t PIN_CNVST = 7;
 constexpr uint8_t PIN_CLK = 6;
 constexpr std::array<uint8_t, NUM_CHANNELS> PINS_MISO = {34, 35, 36, 37, 11, 10, 9, 8};
 
+class BaseDAQ {
+public:
+  virtual bool init(unsigned int sample_rate) = 0;
+  virtual std::array<uint16_t, NUM_CHANNELS> sample_raw() = 0;
+};
 
-class FlexIODAQ {
+class FlexIODAQ : public BaseDAQ {
 private:
   FlexIOHandler *flexio;
 
@@ -47,16 +52,16 @@ private:
 public:
   FlexIODAQ();
 
-  bool init(unsigned int sample_rate);
+  bool init(unsigned int sample_rate) override;
   bool _init_cnvst(unsigned int sample_rate);
   void enable();
   bool _init_clk();
 };
 
-class OneshotDAQ {
+class OneshotDAQ : public BaseDAQ {
 public:
-  void init();
-  std::array<uint16_t, NUM_CHANNELS> sample_raw();
+  bool init(__attribute__((unused)) unsigned int sample_rate) override;
+  std::array<uint16_t, NUM_CHANNELS> sample_raw() override;
 };
 
 }
