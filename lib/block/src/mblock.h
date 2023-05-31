@@ -34,7 +34,13 @@
 namespace blocks {
 
 class MBlock : public FunctionBlock {
-  using FunctionBlock::FunctionBlock;
+protected:
+  uint8_t slot_idx;
+
+public:
+  MBlock(uint8_t cluster_idx, uint8_t slot_idx);
+
+  bus::addr_t get_block_address() override;
 };
 
 class MIntBlock : public MBlock {
@@ -44,14 +50,13 @@ public:
   static constexpr uint8_t IC_FUNC_IDX = 1;
 
 private:
-  uint8_t slot_idx;
   functions::DAC60508 f_ic_dac;
   std::array<uint16_t, 8> ic_raw;
 
 public:
   MIntBlock(uint8_t cluster_idx, uint8_t slot_idx);
 
-  void init() override;
+  bool init() override;
 
   bool set_ic(uint8_t idx, float value);
 

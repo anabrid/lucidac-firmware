@@ -33,8 +33,8 @@ void blocks::functions::ICommandRegisterFunction::write_to_hardware() const {
 }
 
 blocks::functions::ICommandRegisterFunction::ICommandRegisterFunction(bus::addr_t address)
-    : ::functions::_old_DataFunction(address,
-                   SPISettings(4'000'000, MSBFIRST,
+    : ::functions::_old_DataFunction(
+          address, SPISettings(4'000'000, MSBFIRST,
                                SPI_MODE3 /* chip expects SPI MODE0, but CLK is inverted on the way */)),
       data(0) {}
 
@@ -107,8 +107,13 @@ void blocks::IBlock::write_to_hardware() {
   }
 }
 
-void blocks::IBlock::init() {
-  FunctionBlock::init();
+bool blocks::IBlock::init() {
+  if (!FunctionBlock::init()) {
+    return false;
+  };
   // I-Block matrix is not reset on power-cycle, apparently.
   write_to_hardware();
+  return true;
 }
+
+bus::addr_t blocks::IBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }

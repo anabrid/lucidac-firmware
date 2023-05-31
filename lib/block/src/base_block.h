@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include "local_bus.h"
+
 namespace blocks {
 
 class FunctionBlock {
@@ -33,7 +35,9 @@ public:
 
   explicit FunctionBlock(const uint8_t clusterIdx) : cluster_idx(clusterIdx) {}
 
-  virtual void init() {}
+  virtual bool init() { return true; }
+
+  virtual bus::addr_t get_block_address() = 0;
 };
 
 } // namespace blocks

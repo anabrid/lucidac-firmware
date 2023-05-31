@@ -72,7 +72,7 @@ daq::FlexIODAQ::FlexIODAQ()
 
 void daq::FlexIODAQ::enable() { flexio->port().CTRL |= FLEXIO_CTRL_FLEXEN; }
 
-void daq::OneshotDAQ::init() {
+bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate) {
   pinMode(PIN_CNVST, OUTPUT);
   digitalWriteFast(PIN_CNVST, LOW);
   pinMode(PIN_CLK, OUTPUT);
@@ -82,6 +82,7 @@ void daq::OneshotDAQ::init() {
     // Pull-up is on hardware
     pinMode(pin, INPUT);
   }
+  return true;
 }
 
 std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {

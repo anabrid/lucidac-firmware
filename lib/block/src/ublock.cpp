@@ -274,3 +274,5 @@ bool blocks::UBlock::set_offset(uint8_t output, float offset) {
   auto offset_raw = decltype(f_offset_loader)::offset_to_raw(offset);
   return set_offset(output, offset_raw);
 }
+
+bus::addr_t blocks::UBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }

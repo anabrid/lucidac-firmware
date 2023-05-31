@@ -36,6 +36,11 @@ namespace blocks {
 
 class CBlock : public FunctionBlock {
 public:
+  static constexpr uint8_t BLOCK_IDX = bus::C_BLOCK_IDX;
+
+  bus::addr_t get_block_address() override;
+
+public:
   static constexpr uint8_t COEFF_BASE_FUNC_IDX = 1;
   static constexpr uint8_t SCALE_SWITCHER = 33;
   static constexpr uint8_t SCALE_SWITCHER_SYNC = 34;

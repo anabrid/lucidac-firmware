@@ -159,6 +159,8 @@ protected:
 public:
   explicit UBlock(uint8_t clusterIdx);
 
+  bus::addr_t get_block_address() override;
+
   //! Connect or disconnect an input to an output. Both input and output are zero-based indizes.
   bool connect(uint8_t input, uint8_t output, bool connect = true);
 

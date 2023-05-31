@@ -24,3 +24,5 @@
 // ANABRID_END_LICENSE
 
 #include "cblock.h"
+
+bus::addr_t blocks::CBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }

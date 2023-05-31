@@ -25,9 +25,14 @@
 
 #include "mblock.h"
 
-blocks::MIntBlock::MIntBlock(uint8_t cluster_idx, uint8_t m_slot)
-    : blocks::MBlock{cluster_idx}, slot_idx(m_slot),
-      f_ic_dac(bus::idx_to_addr(cluster_idx, m_slot, IC_FUNC_IDX)), ic_raw{0} {}
+blocks::MBlock::MBlock(uint8_t cluster_idx, uint8_t slot_idx)
+    : blocks::FunctionBlock{cluster_idx}, slot_idx{slot_idx} {}
+
+bus::addr_t blocks::MBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, slot_idx, 0); }
+
+blocks::MIntBlock::MIntBlock(uint8_t cluster_idx, uint8_t slot_idx)
+    : blocks::MBlock{cluster_idx, slot_idx},
+      f_ic_dac(bus::idx_to_addr(cluster_idx, slot_idx, IC_FUNC_IDX)), ic_raw{0} {}
 
 bool blocks::MIntBlock::set_ic(uint8_t idx, float value) {
   if (idx >= ic_raw.size())
@@ -46,4 +51,7 @@ void blocks::MIntBlock::write_to_hardware() {
   }
 }
 
-void blocks::MIntBlock::init() { f_ic_dac.init(); }
+bool blocks::MIntBlock::init() {
+  f_ic_dac.init();
+  return true;
+}
