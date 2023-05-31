@@ -23,25 +23,32 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#pragma once
+#include <Arduino.h>
+#include <unity.h>
 
-#include "blocks.h"
+#include "lucidac.h"
 
-namespace lucidac {
+using namespace lucidac;
 
-class LUCIDAC {
-public:
-  blocks::MBlock* m1block = nullptr;
-  blocks::MBlock* m2block = nullptr;
-  blocks::UBlock* ublock = nullptr;
-  blocks::CBlock* cblock = nullptr;
-  blocks::IBlock* iblock = nullptr;
+LUCIDAC luci{};
 
-  LUCIDAC();
-
-  auto get_blocks();
-
-  bool init();
-};
-
+void setUp() {
+  // set stuff up here
+  luci.init();
 }
+
+void tearDown() {
+  // clean stuff up here
+}
+
+void test_lucidac() {
+  TEST_ASSERT_EQUAL(0b00000'0011, luci.ublock->get_block_address());
+}
+
+void setup() {
+  UNITY_BEGIN();
+  RUN_TEST(test_lucidac);
+  UNITY_END();
+}
+
+void loop() {}

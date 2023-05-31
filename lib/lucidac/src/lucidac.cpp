@@ -23,25 +23,20 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#pragma once
+#include "lucidac.h"
+#include "local_bus.h"
 
-#include "blocks.h"
-
-namespace lucidac {
-
-class LUCIDAC {
-public:
-  blocks::MBlock* m1block = nullptr;
-  blocks::MBlock* m2block = nullptr;
-  blocks::UBlock* ublock = nullptr;
-  blocks::CBlock* cblock = nullptr;
-  blocks::IBlock* iblock = nullptr;
-
-  LUCIDAC();
-
-  auto get_blocks();
-
-  bool init();
-};
-
+auto lucidac::LUCIDAC::get_blocks() {
+  return std::array<blocks::FunctionBlock*, 5>{m1block, m2block, ublock, cblock, iblock};
 }
+
+bool lucidac::LUCIDAC::init() {
+  bus::init();
+  for (auto block: get_blocks()) {
+    if (block && !block->init())
+      return false;
+  }
+  return true;
+}
+
+lucidac::LUCIDAC::LUCIDAC() : ublock{new blocks::UBlock{0}} {}
