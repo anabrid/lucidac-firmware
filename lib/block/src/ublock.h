@@ -28,9 +28,9 @@
 #include <array>
 #include <cstdint>
 
+#include "analog.h"
 #include "base_block.h"
 #include "local_bus.h"
-#include "lucidac.h"
 
 namespace blocks {
 
@@ -85,8 +85,8 @@ public:
   static constexpr uint16_t OUTPUTS_PER_CHIP = 8;
   static constexpr uint16_t MAX_CHIP_OUTPUT_IDX = OUTPUTS_PER_CHIP - 1;
   // TODO: Min/Max float values may depend on hardware implementation.
-  static constexpr float MIN_OFFSET = -0.080f / lucidac::REF_VOLTAGE;
-  static constexpr float MAX_OFFSET = 0.080f / lucidac::REF_VOLTAGE;
+  static constexpr float MIN_OFFSET = -0.080f / analog::REF_VOLTAGE;
+  static constexpr float MAX_OFFSET = 0.080f / analog::REF_VOLTAGE;
   static constexpr uint16_t MIN_OFFSET_RAW = 0;
   static constexpr uint16_t MAX_OFFSET_RAW = 1023;
   static constexpr uint16_t ZERO_OFFSET_RAW = 512;
