@@ -27,14 +27,18 @@
 #include <unity.h>
 
 #include "lucidac.h"
+#include "daq.h"
 
 using namespace lucidac;
+using namespace daq;
 
 LUCIDAC luci{};
+OneshotDAQ daq_{};
 
 void setUp() {
   // set stuff up here
   luci.init();
+  daq_.init(0);
 }
 
 void tearDown() {
@@ -45,9 +49,27 @@ void test_lucidac() {
   TEST_ASSERT_EQUAL(0b00000'0011, luci.ublock->get_block_address());
 }
 
+void test_calibrate() {
+  luci.calibrate(&daq_);
+  while (true) {
+    auto data = daq_.sample_raw();
+    TEST_MESSAGE("X =|################|, bisher fehlt ein bit");
+    for (unsigned int i_ = 0; i_ < data.size(); i_++) {
+      char buffer[4 + 33] = {' ', ' ', '=', ' '};
+      buffer[0] = '0' + i_;
+      itoa(data[i_], buffer + 4, 2);
+      TEST_MESSAGE(buffer);
+      itoa(data[i_], buffer + 4, 10);
+      TEST_MESSAGE(buffer);
+    }
+    delay(1000);
+  }
+}
+
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_lucidac);
+  RUN_TEST(test_calibrate);
   UNITY_END();
 }
 

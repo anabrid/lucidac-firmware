@@ -40,3 +40,20 @@ bool lucidac::LUCIDAC::init() {
 }
 
 lucidac::LUCIDAC::LUCIDAC() : ublock{new blocks::UBlock{0}} {}
+
+void lucidac::LUCIDAC::calibrate(daq::BaseDAQ *daq) { calibrate_offsets_ublock_initial(daq); }
+
+void lucidac::LUCIDAC::calibrate_offsets_ublock_initial(daq::BaseDAQ *daq) {
+  // Connect REF signal from UBlock to ADC outputs
+  ublock->reset();
+  ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF);
+  for (auto out_to_adc : std::array<uint8_t, 8>{0,1,2,3,4,5,6,7}) {
+    ublock->connect(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, out_to_adc);
+  }
+  //ublock->set_offset(0, static_cast<uint16_t>(0));
+  ublock->write_to_hardware();
+  // Let the signal settle
+  delayMicroseconds(250);
+
+  // TODO: Finish, currently continues in test case
+}

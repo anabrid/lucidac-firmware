@@ -26,6 +26,7 @@
 #pragma once
 
 #include "blocks.h"
+#include "daq.h"
 
 namespace lucidac {
 
@@ -42,7 +43,10 @@ public:
   bool init();
   auto get_blocks();
 
-  bool init();
+  void calibrate(daq::BaseDAQ* daq);
+
+protected:
+  void calibrate_offsets_ublock_initial(daq::BaseDAQ* daq);
 };
 
 }
