@@ -31,6 +31,7 @@
 #include "analog.h"
 #include "base_block.h"
 #include "local_bus.h"
+#include "functions.h"
 
 namespace blocks {
 
@@ -133,6 +134,7 @@ public:
   __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN30_ACL6 = 1 << 6;
   __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN31_ACL7 = 1 << 7;
   __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_REF_HALF = 1 << 8;
+  __attribute__((unused)) static constexpr uint8_t ALT_SIGNAL_REF_HALF_INPUT = 7;
   static constexpr uint16_t MAX_ALT_SIGNAL = ALT_SIGNAL_REF_HALF;
 
   static const SPISettings UMATRIX_FUNC_SPI_SETTINGS;
@@ -161,6 +163,10 @@ public:
 
   bus::addr_t get_block_address() override;
 
+  void reset();
+
+  void reset_connections();
+
   //! Connect or disconnect an input to an output. Both input and output are zero-based indizes.
   bool connect(uint8_t input, uint8_t output, bool connect = true);
 
@@ -176,7 +182,9 @@ public:
   //! Get bit-wise combination of used alternative signals.
   uint16_t get_alt_signals() const;
 
+  void reset_alt_signals();
   void reset_offsets();
+
   bool set_offset(uint8_t output, uint16_t offset_raw);
   bool set_offset(uint8_t output, float offset);
 

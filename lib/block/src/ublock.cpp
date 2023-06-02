@@ -255,9 +255,7 @@ bool blocks::UBlock::is_alt_signal_used(uint16_t alt_signal) const { return alt_
 uint16_t blocks::UBlock::get_alt_signals() const { return alt_signals; }
 
 void blocks::UBlock::reset_offsets() {
-  for (auto &offset : offsets) {
-    offset = decltype(f_offset_loader)::ZERO_OFFSET_RAW;
-  }
+  std::fill(begin(offsets), end(offsets), decltype(f_offset_loader)::ZERO_OFFSET_RAW);
 }
 
 bool blocks::UBlock::set_offset(uint8_t output, uint16_t offset_raw) {
@@ -276,3 +274,17 @@ bool blocks::UBlock::set_offset(uint8_t output, float offset) {
 }
 
 bus::addr_t blocks::UBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
+
+void blocks::UBlock::reset_connections() {
+  std::fill(begin(output_input_map), end(output_input_map), 0);
+}
+
+void blocks::UBlock::reset_alt_signals() {
+  alt_signals = 0;
+}
+
+void blocks::UBlock::reset() {
+  reset_connections();
+  reset_alt_signals();
+  reset_offsets();
+}
