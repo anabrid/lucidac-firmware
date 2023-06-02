@@ -60,7 +60,7 @@ public:
 
 class OneshotDAQ : public BaseDAQ {
 public:
-  bool init(__attribute__((unused)) unsigned int sample_rate) override;
+  bool init(__attribute__((unused)) unsigned int sample_rate_unused) override;
   std::array<uint16_t, NUM_CHANNELS> sample_raw() override;
 };
 

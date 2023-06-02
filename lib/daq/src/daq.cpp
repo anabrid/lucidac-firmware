@@ -72,7 +72,7 @@ daq::FlexIODAQ::FlexIODAQ()
 
 void daq::FlexIODAQ::enable() { flexio->port().CTRL |= FLEXIO_CTRL_FLEXEN; }
 
-bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate) {
+bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate_unused) {
   pinMode(PIN_CNVST, OUTPUT);
   digitalWriteFast(PIN_CNVST, LOW);
   pinMode(PIN_CLK, OUTPUT);
