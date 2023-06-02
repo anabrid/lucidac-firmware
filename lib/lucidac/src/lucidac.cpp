@@ -27,12 +27,12 @@
 #include "local_bus.h"
 
 auto lucidac::LUCIDAC::get_blocks() {
-  return std::array<blocks::FunctionBlock*, 5>{m1block, m2block, ublock, cblock, iblock};
+  return std::array<blocks::FunctionBlock *, 5>{m1block, m2block, ublock, cblock, iblock};
 }
 
 bool lucidac::LUCIDAC::init() {
   bus::init();
-  for (auto block: get_blocks()) {
+  for (auto block : get_blocks()) {
     if (block && !block->init())
       return false;
   }

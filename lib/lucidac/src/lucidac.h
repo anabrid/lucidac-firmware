@@ -39,6 +39,7 @@ public:
 
   LUCIDAC();
 
+  bool init();
   auto get_blocks();
 
   bool init();
