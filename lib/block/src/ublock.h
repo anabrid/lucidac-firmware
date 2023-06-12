@@ -90,7 +90,7 @@ public:
   static constexpr float MAX_OFFSET = 0.080f / analog::REF_VOLTAGE;
   static constexpr uint16_t MIN_OFFSET_RAW = 0;
   static constexpr uint16_t MAX_OFFSET_RAW = 1023;
-  static constexpr uint16_t ZERO_OFFSET_RAW = 512;
+  static constexpr uint16_t ZERO_OFFSET_RAW = 511;
 
 protected:
   ::functions::DataFunction f_offsets;
@@ -187,6 +187,7 @@ public:
 
   bool set_offset(uint8_t output, uint16_t offset_raw);
   bool set_offset(uint8_t output, float offset);
+  bool change_offset(uint8_t output, float delta);
 
   void write_matrix_to_hardware() const;
   void write_alt_signal_to_hardware() const;

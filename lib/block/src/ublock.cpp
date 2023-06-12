@@ -275,16 +275,17 @@ bool blocks::UBlock::set_offset(uint8_t output, float offset) {
 
 bus::addr_t blocks::UBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
 
-void blocks::UBlock::reset_connections() {
-  std::fill(begin(output_input_map), end(output_input_map), 0);
-}
+void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), end(output_input_map), 0); }
 
-void blocks::UBlock::reset_alt_signals() {
-  alt_signals = 0;
-}
+void blocks::UBlock::reset_alt_signals() { alt_signals = 0; }
 
 void blocks::UBlock::reset() {
   reset_connections();
   reset_alt_signals();
   reset_offsets();
+}
+
+bool blocks::UBlock::change_offset(uint8_t output, float delta) {
+  auto delta_raw = decltype(f_offset_loader)::offset_to_raw(delta) - decltype(f_offset_loader)::ZERO_OFFSET_RAW;
+  return set_offset(output, static_cast<uint16_t>(offsets[output] + delta_raw));
 }
