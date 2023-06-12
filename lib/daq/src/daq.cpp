@@ -87,7 +87,7 @@ bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate_unus
 }
 
 float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
-  return ((static_cast<float>(raw) - RAW_MINUS_ONE) / (RAW_PLUS_ONE-RAW_MINUS_ONE)) * 2.0f - 1.0f;
+  return ((static_cast<float>(raw) - RAW_MINUS_ONE) / (RAW_PLUS_ONE - RAW_MINUS_ONE)) * 2.0f - 1.0f;
 }
 
 std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {
