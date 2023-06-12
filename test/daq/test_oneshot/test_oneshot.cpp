@@ -26,6 +26,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#define protected public
 #include "daq.h"
 
 using namespace daq;
@@ -38,6 +39,17 @@ void setUp() {
 
 void tearDown() {
   // clean stuff up here
+}
+
+void test_raw_to_float() {
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.0f, OneshotDAQ::raw_to_float(4094));
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, +1.0f, OneshotDAQ::raw_to_float(OneshotDAQ::RAW_PLUS_ONE));
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, -1.0f, OneshotDAQ::raw_to_float(OneshotDAQ::RAW_MINUS_ONE));
+  // Slightly outside of range
+  TEST_ASSERT_FLOAT_WITHIN(
+      0.01f, +1.2f,
+      OneshotDAQ::raw_to_float(OneshotDAQ::RAW_PLUS_ONE +
+                               0.1 * (OneshotDAQ::RAW_PLUS_ONE - OneshotDAQ::RAW_MINUS_ONE)));
 }
 
 void test_sample_raw() {
@@ -63,6 +75,7 @@ void test_sample_raw() {
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_sample_raw);
+  RUN_TEST(test_raw_to_float);
   UNITY_END();
 }
 
