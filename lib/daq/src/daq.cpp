@@ -27,6 +27,7 @@
 #include <algorithm>
 
 #include "daq.h"
+#include "running_avg.h"
 
 bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   // Maximum FlexIO clock speed is 120MHz, see https://www.pjrc.com/teensy/IMXRT1060RM_rev3.pdf p.1025
@@ -88,6 +89,15 @@ bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate_unus
 
 float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
   return ((static_cast<float>(raw) - RAW_MINUS_ONE) / (RAW_PLUS_ONE - RAW_MINUS_ONE)) * 2.0f - 1.0f;
+}
+
+std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, unsigned int delay_us) {
+  utils::RunningAverageVec<NUM_CHANNELS> avg;
+  for (size_t i = 0; i < samples; i++) {
+    avg.add(sample());
+    delayMicroseconds(delay_us);
+  }
+  return avg.get_average();
 }
 
 std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {

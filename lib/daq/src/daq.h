@@ -46,6 +46,7 @@ public:
 
   virtual std::array<uint16_t, NUM_CHANNELS> sample_raw() = 0;
   virtual std::array<float, NUM_CHANNELS> sample() = 0;
+  std::array<float, NUM_CHANNELS> sample_avg(size_t samples, unsigned int delay_us);
 };
 
 class FlexIODAQ : public BaseDAQ {
