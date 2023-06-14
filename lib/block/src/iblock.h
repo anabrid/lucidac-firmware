@@ -81,7 +81,7 @@ public:
   void write_to_hardware() override;
   bool init() override;
 
-  bool connect(uint32_t input_mask, uint8_t output, bool exclusive = true);
+  bool connect(uint8_t input, uint8_t output, bool exclusive = false);
 };
 
 } // namespace blocks

@@ -118,12 +118,12 @@ bool blocks::IBlock::init() {
 
 bus::addr_t blocks::IBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
 
-bool blocks::IBlock::connect(uint32_t input_mask, uint8_t output, bool exclusive) {
-  if (output >= NUM_OUTPUTS)
+bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive) {
+  if (output >= NUM_OUTPUTS or input >= NUM_INPUTS)
     return false;
   if (exclusive)
-    outputs[output] = input_mask;
+    outputs[output] = INPUT_BITMASK(input);
   else
-    outputs[output] |= input_mask;
+    outputs[output] |= INPUT_BITMASK(input);
   return true;
 }
