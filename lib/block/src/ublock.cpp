@@ -279,13 +279,15 @@ void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), en
 
 void blocks::UBlock::reset_alt_signals() { alt_signals = 0; }
 
-void blocks::UBlock::reset() {
+void blocks::UBlock::reset(bool keep_offsets) {
   reset_connections();
   reset_alt_signals();
-  reset_offsets();
+  if (!keep_offsets)
+    reset_offsets();
 }
 
 bool blocks::UBlock::change_offset(uint8_t output, float delta) {
-  auto delta_raw = decltype(f_offset_loader)::offset_to_raw(delta) - decltype(f_offset_loader)::ZERO_OFFSET_RAW;
+  auto delta_raw =
+      decltype(f_offset_loader)::offset_to_raw(delta) - decltype(f_offset_loader)::ZERO_OFFSET_RAW;
   return set_offset(output, static_cast<uint16_t>(offsets[output] + delta_raw));
 }

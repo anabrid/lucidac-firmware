@@ -167,7 +167,7 @@ public:
 
   bus::addr_t get_block_address() override;
 
-  void reset();
+  void reset(bool keep_offsets = false);
 
   void reset_connections();
 

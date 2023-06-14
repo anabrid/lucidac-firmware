@@ -46,14 +46,18 @@ lucidac::LUCIDAC::LUCIDAC() : ublock{new blocks::UBlock{0}} {}
 
 bool lucidac::LUCIDAC::calibrate(daq::BaseDAQ *daq) {
   RETURN_FALSE_IF_FAILED(calibrate_offsets_ublock_initial(daq));
+  // Return to a non-connected state, but keep calibrated offsets
+  ublock->reset(true);
+  ublock->write_to_hardware();
   return true;
 }
 
 bool lucidac::LUCIDAC::calibrate_offsets_ublock_initial(daq::BaseDAQ *daq) {
-  // Connect REF signal from UBlock to ADC outputs
+  // Reset
   ublock->reset();
+  // Connect REF signal from UBlock to ADC outputs
   ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF);
-  for (auto out_to_adc : std::array<uint8_t, 8>{0,1,2,3,4,5,6,7}) {
+  for (auto out_to_adc : std::array<uint8_t, 8>{0, 1, 2, 3, 4, 5, 6, 7}) {
     ublock->connect(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, out_to_adc);
   }
   ublock->write_to_hardware();
