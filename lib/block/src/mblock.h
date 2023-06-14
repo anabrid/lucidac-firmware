@@ -60,7 +60,7 @@ public:
 
   bool set_ic(uint8_t idx, float value);
 
-  void write_to_hardware();
+  void write_to_hardware() override;
 };
 
 } // namespace blocks

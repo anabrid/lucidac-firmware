@@ -237,7 +237,7 @@ void blocks::UBlock::write_matrix_to_hardware() const {
   f_umatrix_sync.trigger();
 }
 
-void blocks::UBlock::write_to_hardware() const {
+void blocks::UBlock::write_to_hardware() {
   write_alt_signal_to_hardware();
   write_offsets_to_hardware();
   write_matrix_to_hardware();

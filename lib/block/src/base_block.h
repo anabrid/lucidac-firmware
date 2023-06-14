@@ -38,6 +38,8 @@ public:
   virtual bool init() { return true; }
 
   virtual bus::addr_t get_block_address() = 0;
+
+  virtual void write_to_hardware() = 0;
 };
 
 } // namespace blocks

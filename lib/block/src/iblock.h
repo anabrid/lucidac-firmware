@@ -78,7 +78,7 @@ public:
 
   bus::addr_t get_block_address() override;
 
-  void write_to_hardware();
+  void write_to_hardware() override;
   bool init() override;
 };
 

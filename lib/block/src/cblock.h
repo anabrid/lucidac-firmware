@@ -73,7 +73,7 @@ public:
 
   bool set_factor(uint8_t idx, float factor);
 
-  void write_to_hardware();
+  void write_to_hardware() override;
 };
 
 } // namespace blocks

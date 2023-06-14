@@ -70,3 +70,10 @@ bool lucidac::LUCIDAC::calibrate_offsets_ublock_initial(daq::BaseDAQ *daq) {
   return true;
   // TODO: Finish calibration sequence
 }
+
+void lucidac::LUCIDAC::write_to_hardware() {
+  for (auto block : get_blocks()) {
+    if (block)
+      block->write_to_hardware();
+  }
+}

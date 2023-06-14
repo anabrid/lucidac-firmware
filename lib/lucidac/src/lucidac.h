@@ -45,6 +45,8 @@ public:
 
   bool calibrate(daq::BaseDAQ* daq);
 
+  void write_to_hardware();
+
 protected:
   bool calibrate_offsets_ublock_initial(daq::BaseDAQ* daq);
 };
