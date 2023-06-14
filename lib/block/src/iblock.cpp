@@ -117,3 +117,13 @@ bool blocks::IBlock::init() {
 }
 
 bus::addr_t blocks::IBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
+
+bool blocks::IBlock::connect(uint32_t input_mask, uint8_t output, bool exclusive) {
+  if (output >= NUM_OUTPUTS)
+    return false;
+  if (exclusive)
+    outputs[output] = input_mask;
+  else
+    outputs[output] |= input_mask;
+  return true;
+}
