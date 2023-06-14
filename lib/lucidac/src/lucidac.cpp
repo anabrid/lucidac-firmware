@@ -27,7 +27,9 @@
 #include "local_bus.h"
 #include "running_avg.h"
 
-#define RETURN_FALSE_IF_FAILED(x) if (!(x)) return false;
+#define RETURN_FALSE_IF_FAILED(x)                                                                             \
+  if (!(x))                                                                                                   \
+    return false;
 
 auto lucidac::LUCIDAC::get_blocks() {
   return std::array<blocks::FunctionBlock *, 5>{m1block, m2block, ublock, cblock, iblock};
@@ -42,7 +44,10 @@ bool lucidac::LUCIDAC::init() {
   return true;
 }
 
-lucidac::LUCIDAC::LUCIDAC() : ublock{new blocks::UBlock{0}} {}
+lucidac::LUCIDAC::LUCIDAC()
+    : ublock{new blocks::UBlock{0}}, cblock{new blocks::CBlock{0}}, iblock{new blocks::IBlock{0}} {
+  // TODO: Check for existence of blocks here instead of initializing them without checking
+}
 
 bool lucidac::LUCIDAC::calibrate(daq::BaseDAQ *daq) {
   RETURN_FALSE_IF_FAILED(calibrate_offsets_ublock_initial(daq));
