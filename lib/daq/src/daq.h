@@ -35,6 +35,8 @@ constexpr uint8_t PIN_CNVST = 7;
 constexpr uint8_t PIN_CLK = 6;
 constexpr std::array<uint8_t, NUM_CHANNELS> PINS_MISO = {34, 35, 36, 37, 11, 10, 9, 8};
 
+typedef std::array<float, NUM_CHANNELS> data_vec_t;
+
 class BaseDAQ {
 protected:
   static constexpr uint16_t RAW_MINUS_ONE = 2461;

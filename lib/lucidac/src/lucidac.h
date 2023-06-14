@@ -43,10 +43,10 @@ public:
   bool init();
   auto get_blocks();
 
-  void calibrate(daq::BaseDAQ* daq);
+  bool calibrate(daq::BaseDAQ* daq);
 
 protected:
-  void calibrate_offsets_ublock_initial(daq::BaseDAQ* daq);
+  bool calibrate_offsets_ublock_initial(daq::BaseDAQ* daq);
 };
 
 }

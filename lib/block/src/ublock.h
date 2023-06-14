@@ -30,8 +30,8 @@
 
 #include "analog.h"
 #include "base_block.h"
-#include "local_bus.h"
 #include "functions.h"
+#include "local_bus.h"
 
 namespace blocks {
 
@@ -115,6 +115,10 @@ public:
 
   static constexpr uint8_t NUM_OF_INPUTS = 16;
   static constexpr uint8_t NUM_OF_OUTPUTS = 32;
+  static constexpr std::array<uint8_t, NUM_OF_OUTPUTS> OUTPUT_IDX_RANGE() {
+    return {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
+            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+  };
 
   static constexpr uint8_t UMATRIX_FUNC_IDX = 1;
   static constexpr uint8_t UMATRIX_SYNC_FUNC_IDX = 2;
