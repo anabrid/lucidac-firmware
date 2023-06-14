@@ -29,14 +29,14 @@
 #include "block.h"
 #include "cblock.h"
 #include "functions.h"
-#include "lucidac.h"
-#include "mblock.h"
 
 functions::TriggerFunction switcher_sync{bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_SYNC)};
 functions::TriggerFunction switcher_clear{
     bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_CLEAR)};
 
 auto base_addr = bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::COEFF_BASE_FUNC_IDX);
+
+blocks::CBlock cblock{0};
 
 std::array<blocks::CCoeffFunction, 32> coeffs{
     blocks::CCoeffFunction{base_addr, 0},  blocks::CCoeffFunction{base_addr, 1},
@@ -57,12 +57,17 @@ std::array<blocks::CCoeffFunction, 32> coeffs{
     blocks::CCoeffFunction{base_addr, 30}, blocks::CCoeffFunction{base_addr, 31}};
 
 void setUp() {
-  // set stuff up here
-  bus::init();
+  // This is called before *each* test.
 }
 
 void tearDown() {
-  // clean stuff up here
+  // This is called after *each* test.
+}
+
+void test_init() {
+  // Put start-up sequence into a test case, so we can assert it worked.
+  bus::init();
+  TEST_ASSERT(cblock.init());
 }
 
 void test_address() {
@@ -91,10 +96,18 @@ void test_function() {
 
 }
 
+void test_via_block() {
+  TEST_ASSERT(cblock.set_factor(0, 0.5));
+  //TEST_ASSERT(cblock.set_factor(0, 5));
+  cblock.write_to_hardware();
+}
+
 void setup() {
   UNITY_BEGIN();
+  RUN_TEST(test_init);
   RUN_TEST(test_address);
   RUN_TEST(test_function);
+  RUN_TEST(test_via_block);
   UNITY_END();
 }
 

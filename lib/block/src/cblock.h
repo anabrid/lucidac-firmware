@@ -45,9 +45,10 @@ public:
   static constexpr uint8_t SCALE_SWITCHER_CLEAR = 35;
 
   static constexpr uint8_t NUM_COEFF = 32;
-  static constexpr float MAX_REAL_FACTOR = 1.0f;
-  static constexpr float MIN_REAL_FACTOR = -1.0f;
-  static constexpr float UPSCALING = 10.0f;
+  static constexpr float MAX_REAL_FACTOR = 2.0f;
+  static constexpr float MIN_REAL_FACTOR = -2.0f;
+  // TODO: Upscaling is not *exactly* 10
+  static constexpr float UPSCALING = 10.055f;
   static constexpr float MAX_FACTOR = MAX_REAL_FACTOR*UPSCALING;
   static constexpr float MIN_FACTOR = MIN_REAL_FACTOR*UPSCALING;
 

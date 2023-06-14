@@ -33,12 +33,12 @@ functions::AD5452::AD5452(bus::addr_t base_addr, uint8_t func_addr_shift)
     : AD5452(bus::increase_function_idx(base_addr, func_addr_shift)) {}
 
 uint16_t functions::AD5452::float_to_raw(float scale) {
-  // Scaling between +-1 and +-10 coefficient happens outside!
-  if (scale <= -1.0f)
+  // Scaling between +-2 and +-20 coefficient happens outside!
+  if (scale <= -2.0f)
     return 0;
-  if (scale >= +1.0f)
+  if (scale >= +2.0f)
     return 4095 << 2;
-  return static_cast<uint16_t>(scale * 2048.0f + 2047) << 2;
+  return static_cast<uint16_t>(scale * 1024.0f + 2047) << 2;
 }
 
 void functions::AD5452::set_scale(uint16_t scale_raw) {
