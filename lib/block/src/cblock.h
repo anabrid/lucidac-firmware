@@ -31,6 +31,7 @@
 #include "base_block.h"
 #include "local_bus.h"
 #include "AD5452.h"
+#include "SR74HCT595.h"
 
 namespace blocks {
 
@@ -38,15 +39,40 @@ class CBlock : public FunctionBlock {
 public:
   static constexpr uint8_t BLOCK_IDX = bus::C_BLOCK_IDX;
 
-  bus::addr_t get_block_address() override;
-
-public:
   static constexpr uint8_t COEFF_BASE_FUNC_IDX = 1;
   static constexpr uint8_t SCALE_SWITCHER = 33;
   static constexpr uint8_t SCALE_SWITCHER_SYNC = 34;
   static constexpr uint8_t SCALE_SWITCHER_CLEAR = 35;
 
-  using FunctionBlock::FunctionBlock;
+  static constexpr uint8_t NUM_COEFF = 32;
+  static constexpr float MAX_REAL_FACTOR = 1.0f;
+  static constexpr float MIN_REAL_FACTOR = -1.0f;
+  static constexpr float UPSCALING = 10.0f;
+  static constexpr float MAX_FACTOR = MAX_REAL_FACTOR*UPSCALING;
+  static constexpr float MIN_FACTOR = MIN_REAL_FACTOR*UPSCALING;
+
+protected:
+  std::array<::functions::AD5452, NUM_COEFF> f_coeffs;
+  ::functions::SR74HCT595 f_upscaling;
+  ::functions::TriggerFunction f_upscaling_sync;
+  ::functions::TriggerFunction f_upscaling_clear;
+
+  std::array<uint16_t, NUM_COEFF> factors_{0};
+  uint32_t upscaling_{0};
+
+  void set_upscaling(uint8_t idx, bool enable);
+
+  void write_factors_to_hardware();
+  void write_upscaling_to_hardware();
+
+public:
+  explicit CBlock(uint8_t clusterIdx);
+
+  bus::addr_t get_block_address() override;
+
+  bool set_factor(uint8_t idx, float factor);
+
+  void write_to_hardware();
 };
 
 } // namespace blocks
