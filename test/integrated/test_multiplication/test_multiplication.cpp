@@ -74,14 +74,15 @@ void test_function() {
   // In M2-Block, the MUL block should be
   // Resulting in 0.25 as output on BL_OUT.0
   // Connect this to an ADC to measure
-  TEST_ASSERT(luci.ublock->connect(0,2));
+  uint8_t adc_channel = 2;
+  TEST_ASSERT(luci.ublock->connect(MBlock::M2_OUTPUT(0),adc_channel));
   // Write config to hardware
   luci.write_to_hardware();
 
   // Measure result
-  delayMicroseconds(100);
+  delay(10);
   auto data = daq_.sample();
-  TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.25f, data[2]);
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, -0.25f, data[adc_channel]);
 }
 
 void setup() {
