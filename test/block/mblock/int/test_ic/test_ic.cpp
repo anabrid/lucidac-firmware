@@ -27,13 +27,14 @@
 #include <unity.h>
 
 #include "daq.h"
-#include "lucidac.h"
+#include "mblock.h"
+#include "mode.h"
 
-using namespace lucidac;
 using namespace blocks;
 using namespace daq;
+using namespace mode;
 
-LUCIDAC luci{};
+MIntBlock intblock{0, MBlock::M1_IDX};
 OneshotDAQ daq_{};
 
 void setUp() {
@@ -45,30 +46,18 @@ void tearDown() {
 }
 
 void test_init() {
-  // Put LUCIDAC start-up sequence into a test case, so we can assert it worked.
-  TEST_ASSERT(luci.init());
-  // Assert we have the necessary blocks
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.ublock, "U-Block not inserted");
-
-  // Calibrate
-  TEST_ASSERT(daq_.init(0));
-  delayMicroseconds(50);
-  TEST_ASSERT(luci.calibrate(&daq_));
-  delayMicroseconds(200);
+  // Initialize bus
+  bus::init();
+  // Initialize mode controller (currently separate thing)
+  ManualControl::init();
+  // Initialize MIntBlock
+  TEST_ASSERT(intblock.init());
 }
 
 void test_function() {
-  // Connect -1*REF to U-Block outputs 0 & 1
-  TEST_ASSERT(luci.ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF));
-  TEST_ASSERT(luci.ublock->connect(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, 0));
-  TEST_ASSERT(luci.ublock->connect(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, 1));
-  luci.write_to_hardware();
-
-  // Measure result
-  delayMicroseconds(100);
-  auto data = daq_.sample();
-  TEST_ASSERT_FLOAT_WITHIN(0.01f, -1.0f, data[0]);
-  TEST_ASSERT_FLOAT_WITHIN(0.01f, -1.0f, data[1]);
+  ManualControl::to_ic();
+  intblock.set_ic(0, +1.0f);
+  intblock.write_to_hardware();
 }
 
 void setup() {

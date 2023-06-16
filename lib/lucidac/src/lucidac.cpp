@@ -45,7 +45,7 @@ bool lucidac::LUCIDAC::init() {
 }
 
 lucidac::LUCIDAC::LUCIDAC()
-    : ublock{new blocks::UBlock{0}}, cblock{new blocks::CBlock{0}}, iblock{new blocks::IBlock{0}} {
+    : m1block{new blocks::MIntBlock{0, blocks::MBlock::M1_IDX}}, ublock{new blocks::UBlock{0}}, cblock{new blocks::CBlock{0}}, iblock{new blocks::IBlock{0}} {
   // TODO: Check for existence of blocks here instead of initializing them without checking
 }
 
