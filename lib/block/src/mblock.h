@@ -27,13 +27,25 @@
 
 #include <cstdint>
 
+#include "DAC60508.h"
 #include "base_block.h"
 #include "local_bus.h"
-#include "DAC60508.h"
 
 namespace blocks {
 
 class MBlock : public FunctionBlock {
+public:
+  static constexpr uint8_t M1_IDX = bus::M1_BLOCK_IDX;
+  static constexpr uint8_t M2_IDX = bus::M2_BLOCK_IDX;
+
+  static constexpr uint8_t M1_INPUT(uint8_t idx) { return idx + 8; }
+
+  static constexpr uint8_t M1_OUTPUT(uint8_t idx) { return idx + 8; }
+
+  static constexpr uint8_t M2_INPUT(uint8_t idx) { return idx; }
+
+  static constexpr uint8_t M2_OUTPUT(uint8_t idx) { return idx; }
+
 protected:
   uint8_t slot_idx;
 
@@ -45,8 +57,6 @@ public:
 
 class MIntBlock : public MBlock {
 public:
-  static constexpr uint8_t M1_IDX = bus::M1_BLOCK_IDX;
-  static constexpr uint8_t M2_IDX = bus::M2_BLOCK_IDX;
   static constexpr uint8_t IC_FUNC_IDX = 1;
 
 private:
