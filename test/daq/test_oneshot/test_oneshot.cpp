@@ -52,6 +52,16 @@ void test_raw_to_float() {
                                0.1 * (OneshotDAQ::RAW_PLUS_ONE - OneshotDAQ::RAW_MINUS_ONE)));
 }
 
+void test_sample() {
+  auto data = DAQ.sample();
+  for (unsigned int i_ = 0; i_ < data.size(); i_++) {
+    char buffer[4 + 33] = {' ', ' ', '=', ' '};
+    buffer[0] = '0' + i_;
+    sprintf(buffer + 4, "%.4f", data[i_]);
+    TEST_MESSAGE(buffer);
+  }
+}
+
 void test_sample_raw() {
   auto data = DAQ.sample_raw();
   TEST_ASSERT_EQUAL(daq::NUM_CHANNELS, data.size());
@@ -59,7 +69,7 @@ void test_sample_raw() {
   // Without other blocks, we should be at a certain value.
   // Not sure which one, but surely not zero :)
   // TODO: After ADCs are fixed, add correct values.
-  decltype(data) expected{0, 0, 0, 0, 0, 0, 0, 0};
+  decltype(data) expected{0, 0, 0, 0/*, 0, 0, 0, 0*/};
   decltype(data)::value_type acceptable_delta = 1000;
   for (unsigned int i_ = 0; i_ < data.size(); i_++) {
     char buffer[4 + 33] = {' ', ' ', '=', ' '};
@@ -74,6 +84,7 @@ void test_sample_raw() {
 
 void setup() {
   UNITY_BEGIN();
+  RUN_TEST(test_sample);
   RUN_TEST(test_sample_raw);
   RUN_TEST(test_raw_to_float);
   UNITY_END();
