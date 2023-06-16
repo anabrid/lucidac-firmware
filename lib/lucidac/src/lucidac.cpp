@@ -86,3 +86,13 @@ void lucidac::LUCIDAC::write_to_hardware() {
       block->write_to_hardware();
   }
 }
+
+bool lucidac::LUCIDAC::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out) {
+  if (!ublock->connect(u_in, u_out))
+    return false;
+  if (!cblock->set_factor(u_out, c_factor))
+    return false;
+  if (!iblock->connect(u_out, i_out))
+    return false;
+  return true;
+}

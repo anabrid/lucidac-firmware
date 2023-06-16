@@ -47,6 +47,8 @@ public:
 
   void write_to_hardware();
 
+  bool route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out);
+
 protected:
   bool calibrate_offsets_ublock_initial(daq::BaseDAQ* daq);
 };
