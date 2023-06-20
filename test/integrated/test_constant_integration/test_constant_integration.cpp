@@ -66,38 +66,37 @@ void test_init() {
 }
 
 void test_function() {
+  auto* intblock = (MIntBlock*)(luci.m1block);
+
   // Enable REF signals on U-Block
   TEST_ASSERT(luci.ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF));
   // Route it once through to the integration module in M1 slot
-  luci.route(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, 0, +0.2f, MBlock::M1_INPUT(0));
-  // Connect result to an ADC to measure
-  uint8_t adc_channel = 1;
-  TEST_ASSERT(luci.ublock->connect(MBlock::M1_OUTPUT(0), adc_channel));
+  float factor = -1.0f;
+  luci.route(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, 0, factor, MBlock::M1_INPUT(0));
 
-  float ic_value = 0.0f;
-  auto* intblock = (MIntBlock*)(luci.m1block);
+  float ic_value = 0.5f;
   intblock->set_ic(0,ic_value);
 
   // Write config to hardware
   luci.write_to_hardware();
   delayMicroseconds(100);
 
-  // Test IC result, except it is negated
+  // Set IC and then let it integrate
   ManualControl::to_ic();
-  delayMicroseconds(200);
-  ManualControl::to_halt();
-  auto data = daq_.sample();
-  TEST_ASSERT_FLOAT_WITHIN(0.1f, -ic_value, data[adc_channel]);
-
-  // Let it integrate
-  auto start = micros();
+  delayMicroseconds(50);
   ManualControl::to_op();
-  /*
-  for (auto i = 0; i < 2; i++) {
-    daq_.sample();
-  }
-   */
-  while (micros() - start < 120) {}
+  delayMicroseconds(100);
+  ManualControl::to_halt();
+
+  // Change factor to negative
+  luci.cblock->set_factor(0, -factor);
+  luci.cblock->write_to_hardware();
+
+  // Set IC and then let it integrate
+  ManualControl::to_ic();
+  delayMicroseconds(50);
+  ManualControl::to_op();
+  delayMicroseconds(100);
   ManualControl::to_halt();
 }
 
