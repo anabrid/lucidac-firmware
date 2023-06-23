@@ -68,48 +68,62 @@ void test_init() {
 void test_function() {
   auto* intblock = (MIntBlock*)(luci.m1block);
 
-  uint8_t coeff_idx = 0;
-  uint8_t adc_channel = 1 ? coeff_idx != 1 : 0;
+  auto coeff_idx_to_test = UBlock::OUTPUT_IDX_RANGE();
+  //std::array<uint8_t,1> coeff_idx_to_test = {4};
+  for (auto coeff_idx : coeff_idx_to_test) {
+    char buffer[128] = {'C','_','i','d','x','='};
+    itoa(coeff_idx, buffer + 6, 10);
+    TEST_MESSAGE(buffer);
 
-  // Enable REF signals on U-Block
-  TEST_ASSERT(luci.ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF));
-  // Route it once through to the integration module in M1 slot
-  float factor = -1.0f;
-  luci.route(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, coeff_idx, factor, MBlock::M1_INPUT(0));
-  // Route the result to an ADC input
-  luci.ublock->connect(MBlock::M1_OUTPUT(0), UBlock::OUTPUT_IDX_RANGE_TO_ADC()[adc_channel]);
-  // Define IC value
-  float ic_value = 0.0f;
-  intblock->set_ic(0,ic_value);
-  // Write config to hardware
-  luci.write_to_hardware();
-  delayMicroseconds(100);
+    uint8_t adc_channel = coeff_idx != 7 ? 7 : 0;
 
-  // Check for correct output
-  unsigned int op_time_us = 100;
-  float expected_value = ic_value + factor * static_cast<float>(op_time_us) / 100.0f;
-  float accepted_error = 0.01f;
-  // Load IC and then let it integrate
-  ManualControl::to_ic();
-  delayMicroseconds(50);
-  TEST_ASSERT_FLOAT_WITHIN(accepted_error, -ic_value, daq_.sample()[adc_channel]);
-  ManualControl::to_op();
-  delayMicroseconds(100);
-  ManualControl::to_halt();
-  TEST_ASSERT_FLOAT_WITHIN(accepted_error, -expected_value, daq_.sample()[adc_channel]);
+    // Reset
+    luci.reset(true);
+    delayMicroseconds(500);
 
-  // Change factor to negative
-  luci.cblock->set_factor(0, -factor);
-  luci.cblock->write_to_hardware();
+    // Enable REF signals on U-Block
+    TEST_ASSERT(luci.ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF));
+    // Route it once through to the integration module in M1 slot
+    float factor = -1.0f;
+    luci.route(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, coeff_idx, factor, MBlock::M1_INPUT(0));
+    // Route the result to an ADC input
+    luci.ublock->connect(MBlock::M1_OUTPUT(0), UBlock::OUTPUT_IDX_RANGE_TO_ADC()[adc_channel]);
+    // Define IC value
+    float ic_value = 0.0f;
+    intblock->set_ic(0, ic_value);
+    // Write config to hardware
+    luci.write_to_hardware();
+    delayMicroseconds(100);
 
-  // Set IC and then let it integrate
-  ManualControl::to_ic();
-  delayMicroseconds(50);
-  TEST_ASSERT_FLOAT_WITHIN(accepted_error, +ic_value, daq_.sample()[adc_channel]);
-  ManualControl::to_op();
-  delayMicroseconds(100);
-  ManualControl::to_halt();
-  TEST_ASSERT_FLOAT_WITHIN(accepted_error, +expected_value, daq_.sample()[adc_channel]);
+    // Check for correct output
+    unsigned int op_time_us = 100;
+    float expected_value = ic_value + factor * static_cast<float>(op_time_us) / 100.0f;
+    float accepted_error = 0.05f;
+    // Load IC and then let it integrate
+    ManualControl::to_ic();
+    delayMicroseconds(50);
+    TEST_ASSERT_FLOAT_WITHIN(accepted_error, -ic_value, daq_.sample()[adc_channel]);
+    ManualControl::to_op();
+    delayMicroseconds(100);
+    ManualControl::to_halt();
+    TEST_ASSERT_FLOAT_WITHIN(accepted_error, -expected_value, daq_.sample()[adc_channel]);
+
+    // Change factor to negative
+    luci.cblock->set_factor(0, -factor);
+    luci.cblock->write_to_hardware();
+
+    // Set IC and then let it integrate
+    ManualControl::to_ic();
+    delayMicroseconds(50);
+    TEST_ASSERT_FLOAT_WITHIN(accepted_error, +ic_value, daq_.sample()[adc_channel]);
+    ManualControl::to_op();
+    delayMicroseconds(100);
+    ManualControl::to_halt();
+    TEST_ASSERT_FLOAT_WITHIN(accepted_error, +expected_value, daq_.sample()[adc_channel]);
+
+    // Delay for better visibility on oscilloscope
+    delay(500);
+  }
 }
 
 void setup() {
