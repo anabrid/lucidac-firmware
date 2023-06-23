@@ -33,6 +33,7 @@ namespace functions {
 class AD5452 : public DataFunction {
 public:
   static const SPISettings DEFAULT_SPI_SETTINGS;
+  static constexpr uint16_t RAW_ZERO = 2047;
 
   using DataFunction::DataFunction;
   explicit AD5452(bus::addr_t address);

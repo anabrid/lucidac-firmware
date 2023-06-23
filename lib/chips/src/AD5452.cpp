@@ -38,7 +38,7 @@ uint16_t functions::AD5452::float_to_raw(float scale) {
     return 0;
   if (scale >= +2.0f)
     return 4095 << 2;
-  return static_cast<uint16_t>(scale * 1024.0f + 2047) << 2;
+  return static_cast<uint16_t>(scale * 1024.0f + RAW_ZERO) << 2;
 }
 
 void functions::AD5452::set_scale(uint16_t scale_raw) {
