@@ -65,15 +65,17 @@ void test_init() {
 void test_direct_ref() {
   // Connect -1*REF to U-Block outputs 0 & 1
   TEST_ASSERT(luci.ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF));
-  TEST_ASSERT(luci.ublock->connect(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, 0));
-  TEST_ASSERT(luci.ublock->connect(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, 1));
+  for (auto out_to_adc : blocks::UBlock::OUTPUT_IDX_RANGE_TO_ADC()) {
+    TEST_ASSERT(luci.ublock->connect(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, out_to_adc));
+  }
   luci.write_to_hardware();
 
   // Measure result
   delayMicroseconds(100);
   auto data = daq_.sample();
-  TEST_ASSERT_FLOAT_WITHIN(0.01f, -1.0f, data[0]);
-  TEST_ASSERT_FLOAT_WITHIN(0.01f, -1.0f, data[1]);
+  for (auto d: data) {
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, -1.0f, d);
+  }
 
   luci.ublock->reset(true);
   luci.ublock->write_to_hardware();
