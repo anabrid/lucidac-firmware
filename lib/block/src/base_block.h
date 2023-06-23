@@ -36,6 +36,7 @@ public:
   explicit FunctionBlock(const uint8_t clusterIdx) : cluster_idx(clusterIdx) {}
 
   virtual bool init() { return true; }
+  virtual void reset(bool keep_calibration) {}
 
   virtual bus::addr_t get_block_address() = 0;
 

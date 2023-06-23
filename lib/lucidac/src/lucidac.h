@@ -49,6 +49,8 @@ public:
 
   bool route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out);
 
+  void reset(bool keep_calibration);
+
 protected:
   bool calibrate_offsets_ublock_initial(daq::BaseDAQ* daq);
 };

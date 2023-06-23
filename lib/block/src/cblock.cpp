@@ -104,3 +104,10 @@ void blocks::CBlock::write_upscaling_to_hardware() {
   f_upscaling.transfer32(upscaling_);
   f_upscaling_sync.trigger();
 }
+
+void blocks::CBlock::reset(bool keep_calibration) {
+  FunctionBlock::reset(keep_calibration);
+  for (auto &factor : factors_) {
+    factor = decltype(f_coeffs)::value_type::RAW_ZERO;
+  }
+}

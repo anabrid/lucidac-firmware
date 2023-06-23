@@ -80,6 +80,7 @@ public:
 
   void write_to_hardware() override;
   bool init() override;
+  void reset(bool keep_calibration) override;
 
   bool connect(uint8_t input, uint8_t output, bool exclusive = false);
 };

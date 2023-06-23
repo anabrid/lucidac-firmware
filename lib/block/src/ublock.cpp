@@ -280,6 +280,7 @@ void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), en
 void blocks::UBlock::reset_alt_signals() { alt_signals = 0; }
 
 void blocks::UBlock::reset(bool keep_offsets) {
+  FunctionBlock::reset(keep_offsets);
   reset_connections();
   reset_alt_signals();
   if (!keep_offsets)

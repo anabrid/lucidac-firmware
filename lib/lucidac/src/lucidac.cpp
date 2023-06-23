@@ -59,7 +59,7 @@ bool lucidac::LUCIDAC::calibrate(daq::BaseDAQ *daq) {
 
 bool lucidac::LUCIDAC::calibrate_offsets_ublock_initial(daq::BaseDAQ *daq) {
   // Reset
-  ublock->reset();
+  ublock->reset(false);
   // Connect REF signal from UBlock to ADC outputs
   ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF);
   for (auto out_to_adc : std::array<uint8_t, 8>{0, 1, 2, 3, 4, 5, 6, 7}) {
@@ -95,4 +95,11 @@ bool lucidac::LUCIDAC::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_
   if (!iblock->connect(u_out, i_out))
     return false;
   return true;
+}
+
+void lucidac::LUCIDAC::reset(bool keep_calibration) {
+  for (auto block : get_blocks()) {
+    if (block)
+      block->reset(keep_calibration);
+  }
 }
