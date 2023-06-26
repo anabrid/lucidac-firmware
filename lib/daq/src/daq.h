@@ -41,6 +41,7 @@ class BaseDAQ {
 protected:
   static constexpr uint16_t RAW_MINUS_ONE = 2461;
   static constexpr uint16_t RAW_PLUS_ONE = 5733;
+
 public:
   virtual bool init(unsigned int sample_rate) = 0;
 
@@ -48,6 +49,7 @@ public:
 
   virtual std::array<uint16_t, NUM_CHANNELS> sample_raw() = 0;
   virtual std::array<float, NUM_CHANNELS> sample() = 0;
+  virtual float sample(uint8_t index) = 0;
   std::array<float, NUM_CHANNELS> sample_avg(size_t samples, unsigned int delay_us);
 };
 
@@ -73,6 +75,7 @@ public:
   bool init(__attribute__((unused)) unsigned int sample_rate_unused) override;
   std::array<uint16_t, NUM_CHANNELS> sample_raw() override;
   std::array<float, NUM_CHANNELS> sample() override;
+  float sample(uint8_t index) override;
 };
 
-}
+} // namespace daq

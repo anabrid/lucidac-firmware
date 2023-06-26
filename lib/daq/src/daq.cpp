@@ -132,3 +132,5 @@ std::array<float, daq::NUM_CHANNELS> daq::OneshotDAQ::sample() {
   std::transform(std::begin(data_raw), std::end(data_raw), std::begin(data), raw_to_float);
   return data;
 }
+
+float daq::OneshotDAQ::sample(uint8_t index) { return sample()[index]; }
