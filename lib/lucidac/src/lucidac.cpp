@@ -52,8 +52,8 @@ lucidac::LUCIDAC::LUCIDAC()
 bool lucidac::LUCIDAC::calibrate(daq::BaseDAQ *daq) {
   RETURN_FALSE_IF_FAILED(calibrate_offsets_ublock_initial(daq));
   // Return to a non-connected state, but keep calibrated offsets
-  ublock->reset(true);
-  ublock->write_to_hardware();
+  reset(true);
+  write_to_hardware();
   return true;
 }
 
