@@ -109,7 +109,7 @@ void test_function() {
     TEST_ASSERT_FLOAT_WITHIN(accepted_error, -expected_value, daq_.sample()[adc_channel]);
 
     // Change factor to negative
-    luci.cblock->set_factor(0, -factor);
+    luci.cblock->set_factor(coeff_idx, -factor);
     luci.cblock->write_to_hardware();
 
     // Set IC and then let it integrate
