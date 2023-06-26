@@ -121,6 +121,15 @@ bus::addr_t blocks::IBlock::get_block_address() { return bus::idx_to_addr(cluste
 bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive) {
   if (output >= NUM_OUTPUTS or input >= NUM_INPUTS)
     return false;
+
+  // Manually fix pin-numbering, see https://lab.analogparadigm.com/lucidac/hardware/i-block/-/issues/2
+  // TODO: Remove once hardware is fixed.
+  if ((input >= 6 && input <= 11) || (input >= 22 && input <= 27)) {
+    input += 2;
+  } else if ((input >= 12 && input <= 13) || (input >= 28 && input <= 29)) {
+    input -= 6;
+  }
+
   if (exclusive)
     outputs[output] = INPUT_BITMASK(input);
   else
