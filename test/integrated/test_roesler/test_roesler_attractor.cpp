@@ -68,71 +68,61 @@ void test_init() {
 void test_function() {
   auto *intblock = (MIntBlock *)(luci.m1block);
 
-  auto coeff_idx_to_test = UBlock::OUTPUT_IDX_RANGE();
-  //std::array<uint8_t,1> coeff_idx_to_test = {4};
-  for (auto coeff_idx : coeff_idx_to_test) {
-    char buffer[128] = {'C', '_', 'i', 'd', 'x', '='};
-    itoa(coeff_idx, buffer + 6, 10);
-    TEST_MESSAGE(buffer);
-   /* if (coeff_idx == 14) {
-      TEST_MESSAGE("SKIPPED");
-      continue;
-    }*/
+  // We need a +1 later
+  TEST_ASSERT(luci.ublock->use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF));
 
-    uint8_t adc_channel = coeff_idx != 7 ? 7 : 0;
+  // Choose integrators and set IC
+  // An IC value's sign is actually equal to the output's sign (not inverted)
+  struct { int  mx = MBlock::M1_OUTPUT(0),
+                 y = MBlock::M1_OUTPUT(1),
+                 z = MBlock::M1_OUTPUT(2),
+              mult = MBlock::M2_OUTPUT(0); } out;
+  struct { int  mx = MBlock::M1_INPUT(0),
+                 y = MBlock::M1_INPUT(1),
+                 z = MBlock::M1_INPUT(2),
+              mult = MBlock::M2_INPUT(0); } in;
+  auto one = UBlock::ALT_SIGNAL_REF_HALF; // +1
+  TEST_ASSERT(intblock->set_ic(0, 0.666)); // mx
+  TEST_ASSERT(intblock->set_ic(1,  0));    // y
+  TEST_ASSERT(intblock->set_ic(2,  0));    // z
+  
+  int poti = 0;  
+  
+  #define patch(a, b, c) TEST_ASSERT(luci.route(a, poti++, b, c )) 
+  
+  patch(out.mx,   -1.25f,   in.y);
+  patch(out.mx,    1.f,     in.mult);
+  patch(one,       0.3796f, in.mult);
+  patch(out.mult, 15.f,     in.z);
+  patch(one,       0.005f,  in.z);
+  patch(out.y,     0.2f,    in.y);
+  patch(out.y,     0.8f,    in.mx);
+  patch(out.z,     1.f,     in.mult);
+  patch(out.y,     2.3f,    in.mx);
+  
+  // readout
+  luci.ublock->connect(out.mx, 15); // OUT0
+  luci.ublock->connect(out.y,  14); // OUT1
+  luci.ublock->connect(out.z,  13); // OUT2
+  luci.ublock->connect(out.z,  12); // OUT3
 
-    // Reset
-    luci.reset(true);
-    delayMicroseconds(500);
+  // Write to hardware
+  luci.write_to_hardware();
+  delayMicroseconds(100);
 
-    // Enable REF signals on U-Block
-    TEST_ASSERT(luci.ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF));
-    // Route it once through to the integration module in M1 slot
-    float factor = 2.5f;
-    luci.route(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, coeff_idx, factor, MBlock::M1_INPUT(0));
-    // Route the result to an ADC input
-    luci.ublock->connect(MBlock::M1_OUTPUT(0), UBlock::OUTPUT_IDX_RANGE_TO_ADC()[adc_channel]);
-    // Define IC value
-    float ic_value = 0.0f;
-    intblock->set_ic(0, ic_value);
-    // Write config to hardware
-    luci.write_to_hardware();
-    delayMicroseconds(100);
+  TEST_MESSAGE("Written to hardware, starting IC OP.");
 
-    // Check for correct output
-    unsigned int op_time_us = 20;
-    float expected_value = ic_value + factor * static_cast<float>(op_time_us) / 100.0f;
-    float accepted_error = 0.15f;
-    // Load IC and then let it integrate
-    ManualControl::to_ic();
-    delayMicroseconds(50);
-    TEST_ASSERT_FLOAT_WITHIN(accepted_error, -ic_value, daq_.sample()[adc_channel]);
-    ManualControl::to_op();
-    delayMicroseconds(op_time_us);
-    ManualControl::to_halt();
-    //TEST_ASSERT_FLOAT_WITHIN(accepted_error, -expected_value, daq_.sample()[adc_channel]);
-    if (abs(-expected_value - daq_.sample()[adc_channel]) > accepted_error) {
-      TEST_MESSAGE("FAILED");
-    }
+  // Run it
+  for(;;) {
+  
+  mode::ManualControl::to_ic();
+  delayMicroseconds(120);
+  mode::ManualControl::to_op();
+  delayMicroseconds(1000*6666);
+  mode::ManualControl::to_halt();
 
-    // Change factor to negative
-    luci.cblock->set_factor(coeff_idx, -factor);
-    luci.cblock->write_to_hardware();
+  TEST_MESSAGE("CYCLE");
 
-    // Set IC and then let it integrate
-    ManualControl::to_ic();
-    delayMicroseconds(50);
-    TEST_ASSERT_FLOAT_WITHIN(accepted_error, +ic_value, daq_.sample()[adc_channel]);
-    ManualControl::to_op();
-    delayMicroseconds(op_time_us);
-    ManualControl::to_halt();
-    //TEST_ASSERT_FLOAT_WITHIN(accepted_error, +expected_value, daq_.sample()[adc_channel]);
-    if (abs(+expected_value - daq_.sample()[adc_channel]) > accepted_error) {
-      TEST_MESSAGE("FAILED");
-    }
-
-    // Delay for better visibility on oscilloscope
-    delay(150);
   }
 }
 

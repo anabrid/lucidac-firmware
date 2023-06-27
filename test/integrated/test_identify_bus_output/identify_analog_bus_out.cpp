@@ -68,72 +68,37 @@ void test_init() {
 void test_function() {
   auto *intblock = (MIntBlock *)(luci.m1block);
 
-  auto coeff_idx_to_test = UBlock::OUTPUT_IDX_RANGE();
-  //std::array<uint8_t,1> coeff_idx_to_test = {4};
-  for (auto coeff_idx : coeff_idx_to_test) {
-    char buffer[128] = {'C', '_', 'i', 'd', 'x', '='};
-    itoa(coeff_idx, buffer + 6, 10);
-    TEST_MESSAGE(buffer);
-   /* if (coeff_idx == 14) {
-      TEST_MESSAGE("SKIPPED");
-      continue;
-    }*/
-
-    uint8_t adc_channel = coeff_idx != 7 ? 7 : 0;
-
-    // Reset
-    luci.reset(true);
-    delayMicroseconds(500);
-
-    // Enable REF signals on U-Block
-    TEST_ASSERT(luci.ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF));
-    // Route it once through to the integration module in M1 slot
-    float factor = 2.5f;
-    luci.route(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, coeff_idx, factor, MBlock::M1_INPUT(0));
-    // Route the result to an ADC input
-    luci.ublock->connect(MBlock::M1_OUTPUT(0), UBlock::OUTPUT_IDX_RANGE_TO_ADC()[adc_channel]);
-    // Define IC value
-    float ic_value = 0.0f;
-    intblock->set_ic(0, ic_value);
-    // Write config to hardware
-    luci.write_to_hardware();
-    delayMicroseconds(100);
-
-    // Check for correct output
-    unsigned int op_time_us = 20;
-    float expected_value = ic_value + factor * static_cast<float>(op_time_us) / 100.0f;
-    float accepted_error = 0.15f;
-    // Load IC and then let it integrate
-    ManualControl::to_ic();
-    delayMicroseconds(50);
-    TEST_ASSERT_FLOAT_WITHIN(accepted_error, -ic_value, daq_.sample()[adc_channel]);
-    ManualControl::to_op();
-    delayMicroseconds(op_time_us);
-    ManualControl::to_halt();
-    //TEST_ASSERT_FLOAT_WITHIN(accepted_error, -expected_value, daq_.sample()[adc_channel]);
-    if (abs(-expected_value - daq_.sample()[adc_channel]) > accepted_error) {
-      TEST_MESSAGE("FAILED");
+    // Connect a sinusoidal solution
+    for(int i=0; i<8; i++) {
+      TEST_ASSERT(intblock->set_ic(i, 0.1 * i));
+      TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i), 0, -1.0f, MBlock::M1_INPUT(i)));
     }
+    
+  // after long and tedious search:
+  luci.ublock->connect(MBlock::M1_OUTPUT(0), 15); // OUT0
+  luci.ublock->connect(MBlock::M1_OUTPUT(1), 14); // OUT1
+  luci.ublock->connect(MBlock::M1_OUTPUT(2), 13); // OUT2
+  luci.ublock->connect(MBlock::M1_OUTPUT(3), 12); // OUT3
+  luci.ublock->connect(MBlock::M1_OUTPUT(4), 11); // OUT4
+  luci.ublock->connect(MBlock::M1_OUTPUT(5), 10); // OUT5
+  luci.ublock->connect(MBlock::M1_OUTPUT(6),  9); // OUT6
+  luci.ublock->connect(MBlock::M1_OUTPUT(7),  8); // OUT7
+  //luci.ublock->connect(MBlock::M1_OUTPUT(0), 16); // OUT5
 
-    // Change factor to negative
-    luci.cblock->set_factor(coeff_idx, -factor);
-    luci.cblock->write_to_hardware();
-
-    // Set IC and then let it integrate
-    ManualControl::to_ic();
-    delayMicroseconds(50);
-    TEST_ASSERT_FLOAT_WITHIN(accepted_error, +ic_value, daq_.sample()[adc_channel]);
-    ManualControl::to_op();
-    delayMicroseconds(op_time_us);
-    ManualControl::to_halt();
-    //TEST_ASSERT_FLOAT_WITHIN(accepted_error, +expected_value, daq_.sample()[adc_channel]);
-    if (abs(+expected_value - daq_.sample()[adc_channel]) > accepted_error) {
-      TEST_MESSAGE("FAILED");
-    }
-
-    // Delay for better visibility on oscilloscope
-    delay(150);
-  }
+  luci.write_to_hardware();
+  delayMicroseconds(100);
+    
+  mode::ManualControl::to_ic();
+  delayMicroseconds(120);
+  
+  // NO OP!
+  /*
+    mode::ManualControl::to_op();
+    delayMicroseconds(6666); //50*1000*1000);
+    mode::ManualControl::to_halt();
+    */
+    
+  
 }
 
 void setup() {
