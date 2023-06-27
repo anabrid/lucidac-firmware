@@ -88,7 +88,7 @@ void test_function() {
     // Enable REF signals on U-Block
     TEST_ASSERT(luci.ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF));
     // Route it once through to the integration module in M1 slot
-    float factor = -1.0f;
+    float factor = 2.5f;
     luci.route(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, coeff_idx, factor, MBlock::M1_INPUT(0));
     // Route the result to an ADC input
     luci.ublock->connect(MBlock::M1_OUTPUT(0), UBlock::OUTPUT_IDX_RANGE_TO_ADC()[adc_channel]);
@@ -100,7 +100,7 @@ void test_function() {
     delayMicroseconds(100);
 
     // Check for correct output
-    unsigned int op_time_us = 100;
+    unsigned int op_time_us = 20;
     float expected_value = ic_value + factor * static_cast<float>(op_time_us) / 100.0f;
     float accepted_error = 0.05f;
     // Load IC and then let it integrate
@@ -108,7 +108,7 @@ void test_function() {
     delayMicroseconds(50);
     TEST_ASSERT_FLOAT_WITHIN(accepted_error, -ic_value, daq_.sample()[adc_channel]);
     ManualControl::to_op();
-    delayMicroseconds(100);
+    delayMicroseconds(op_time_us);
     ManualControl::to_halt();
     //TEST_ASSERT_FLOAT_WITHIN(accepted_error, -expected_value, daq_.sample()[adc_channel]);
     if (abs(-expected_value - daq_.sample()[adc_channel]) > accepted_error) {
@@ -124,7 +124,7 @@ void test_function() {
     delayMicroseconds(50);
     TEST_ASSERT_FLOAT_WITHIN(accepted_error, +ic_value, daq_.sample()[adc_channel]);
     ManualControl::to_op();
-    delayMicroseconds(100);
+    delayMicroseconds(op_time_us);
     ManualControl::to_halt();
     //TEST_ASSERT_FLOAT_WITHIN(accepted_error, +expected_value, daq_.sample()[adc_channel]);
     if (abs(+expected_value - daq_.sample()[adc_channel]) > accepted_error) {
