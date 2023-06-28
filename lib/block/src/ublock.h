@@ -116,11 +116,24 @@ public:
   static constexpr uint8_t NUM_OF_INPUTS = 16;
   static constexpr uint8_t NUM_OF_OUTPUTS = 32;
   static constexpr std::array<uint8_t, NUM_OF_OUTPUTS> OUTPUT_IDX_RANGE() {
-    return {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
+    return { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
             16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
   };
   static constexpr std::array<uint8_t, 8> OUTPUT_IDX_RANGE_TO_ADC() {
-    return {0,  1,  2,  3,  4,  5,  6,  7};
+    return { 0,  1,  2,  3,  4,  5,  6,  7};
+  };
+  static constexpr std::array<uint8_t, 8> IDX_RANGE_TO_ACL_OUT() {
+    return {15, 14, 13, 12, 11, 10,  9,  8};
+  };
+
+  // TODO: Make this constexpr
+  static uint8_t OUTPUT_IDX_RANGE_TO_ADC(uint8_t idx) {
+    return UBlock::OUTPUT_IDX_RANGE_TO_ADC()[idx];
+  };
+
+  // TODO: Make this constexpr
+  static uint8_t IDX_RANGE_TO_ACL_OUT(uint8_t idx) {
+    return UBlock::IDX_RANGE_TO_ACL_OUT()[idx];
   };
 
   static constexpr uint8_t UMATRIX_FUNC_IDX = 1;
