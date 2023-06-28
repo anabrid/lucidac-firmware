@@ -68,20 +68,51 @@ void test_init() {
 void test_function() {
   auto *intblock = (MIntBlock *)(luci.m1block);
 
-  // Connect a sinusoidal solution
-  TEST_ASSERT(intblock->set_ic(0, 1));
-  TEST_ASSERT(intblock->set_ic(1, 0));
-  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(0), 0, -1.0f, MBlock::M1_INPUT(1)));
-  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(1), 1, +1.0f, MBlock::M1_INPUT(0)));
-  luci.write_to_hardware();
-  delayMicroseconds(100);
+    // choose which integrators to use:
+    //uint8_t i0 = 0, i1 = 1;
+    //uint8_t i0 = 2, i1 = 3;
+    //uint8_t i0 = 4, i1 = 5;
+    uint8_t i0 = 6, i1 = 7;
+  
+    // Connect a sinusoidal solution
+    TEST_ASSERT(intblock->set_ic(i0, 0.066));
+    TEST_ASSERT(intblock->set_ic(i1, 0));
+    
 
-  // Run it
-  mode::ManualControl::to_ic();
-  delayMicroseconds(120);
-  mode::ManualControl::to_op();
-  delayMicroseconds(6666);
-  mode::ManualControl::to_halt();
+    TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i0), 0, -1.0f, MBlock::M1_INPUT(i1)));
+    TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i1), 1, +1.0f, MBlock::M1_INPUT(i0)));
+    //TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(1), 2, -0.1f, MBlock::M1_INPUT(1))); // damping
+    
+    // choose which multiplier to use, between 0 and 3
+    uint8_t m0 = 3;
+    
+    TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i0), 2, +1.0f, MBlock::M2_INPUT(2*m0)));
+    TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i0), 3, +1.0f, MBlock::M2_INPUT(2*m0 + 1)));
+    
+    luci.ublock->connect(MBlock::M1_OUTPUT(i0), 15); // OUT0
+    luci.ublock->connect(MBlock::M1_OUTPUT(i1), 14); // OUT1
+    luci.ublock->connect(MBlock::M2_OUTPUT(m0), 13); // OUT2
+//    luci.ublock->connect(MBlock::M1_OUTPUT(0), 13); // OUT2
+//    luci.ublock->connect(MBlock::M1_OUTPUT(3), 12); // OUT3  
+  
+    luci.write_to_hardware();
+    delayMicroseconds(100);
+    
+    for(;;) {
+      
+    mode::ManualControl::to_ic();
+    
+    break;
+    
+    delayMicroseconds(120);
+    mode::ManualControl::to_op();
+    delayMicroseconds(6666); //50*1000*1000);
+    mode::ManualControl::to_halt();
+    
+        TEST_MESSAGE("CYCLE");
+
+    }
+  
 }
 
 void setup() {
