@@ -68,50 +68,78 @@ void test_init() {
 void test_function() {
   auto *intblock = (MIntBlock *)(luci.m1block);
 
-    // choose which integrators to use:
-    //uint8_t i0 = 0, i1 = 1;
+    // Choose which pair of integrators [0..7] to use. The port indices i0 and i1 correspond
+    // directly to the input and output of the M1 block.
+    uint8_t i0 = 0, i1 = 1;
     //uint8_t i0 = 2, i1 = 3;
     //uint8_t i0 = 4, i1 = 5;
-    uint8_t i0 = 6, i1 = 7;
+    //uint8_t i0 = 6, i1 = 7;
   
-    // Connect a sinusoidal solution
-    TEST_ASSERT(intblock->set_ic(i0, 0.066));
+    // IC for an oscillator should be a pair like {0,1} or {0,a} with some a.
+    TEST_ASSERT(intblock->set_ic(i0, 0.5));
     TEST_ASSERT(intblock->set_ic(i1, 0));
     
-
-    TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i0), 0, -1.0f, MBlock::M1_INPUT(i1)));
-    TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i1), 1, +1.0f, MBlock::M1_INPUT(i0)));
-    //TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(1), 2, -0.1f, MBlock::M1_INPUT(1))); // damping
+    // For testing the different U-lanes:
+    // Choose which U-lane to use (column in U-C-I blocks)
+    uint8_t ustart_lane = 0;
     
-    // choose which multiplier to use, between 0 and 3
-    uint8_t m0 = 3;
-    
-    TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i0), 2, +1.0f, MBlock::M2_INPUT(2*m0)));
-    TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i0), 3, +1.0f, MBlock::M2_INPUT(2*m0 + 1)));
-    
-    luci.ublock->connect(MBlock::M1_OUTPUT(i0), 15); // OUT0
-    luci.ublock->connect(MBlock::M1_OUTPUT(i1), 14); // OUT1
-    luci.ublock->connect(MBlock::M2_OUTPUT(m0), 13); // OUT2
-//    luci.ublock->connect(MBlock::M1_OUTPUT(0), 13); // OUT2
-//    luci.ublock->connect(MBlock::M1_OUTPUT(3), 12); // OUT3  
-  
-    luci.write_to_hardware();
-    delayMicroseconds(100);
-    
+    /*
     for(;;) {
       
-    mode::ManualControl::to_ic();
-    
-    break;
-    
-    delayMicroseconds(120);
-    mode::ManualControl::to_op();
-    delayMicroseconds(6666); //50*1000*1000);
-    mode::ManualControl::to_halt();
-    
-        TEST_MESSAGE("CYCLE");
+      for(uint8_t ustart_lane=1; ustart_lane < 31; ustart_lane++) {
+        if(ustart_lane == 9) ustart_lane ++;
+        
+        String msg = String("Start lane = ") + String(ustart_lane);
+        TEST_MESSAGE(msg.c_str());
+        
+      //  luci.ublock->reset(true);
+      //  luci.iblock->reset(true);
+*/
+        
+        // this combination of lanes (0 and 1) is known to work perfectly. Always.
+        TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i0), 0,     +1.0f, MBlock::M1_INPUT(i1)));
+        TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i1), 1,     -1.0f, MBlock::M1_INPUT(i0)));
+        
 
+        // Enable this line for a damped oscillation
+        //TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i1), 2, -0.1f, MBlock::M1_INPUT(i1))); // damping
+      
+        /*
+        // for testing the route additionally throught some multiplier, test these lines:
+        // choose which multiplier to use, between 0 and 3
+        uint8_t m0 = 3;
+        TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i0), 2, +1.0f, MBlock::M2_INPUT(2*m0)));
+        TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i0), 3, +1.0f, MBlock::M2_INPUT(2*m0 + 1)));
+        */
+        
+        /*
+        if(ustart_lane != 8) {
+          luci.ublock->connect(MBlock::M1_OUTPUT(i0), 8); // OUT0
+        }
+        */
+        
+        luci.ublock->connect(MBlock::M1_OUTPUT(i0), 8); // ACL_OUT0
+        luci.ublock->connect(MBlock::M1_OUTPUT(i1), 9); // ACL_OUT1
+          
+        luci.write_to_hardware();
+        delayMicroseconds(100);
+        
+        for(;;) {
+        
+            mode::ManualControl::to_ic();
+            delayMicroseconds(120);
+            mode::ManualControl::to_op();
+            delayMicroseconds(5000); //50*1000*1000);
+            mode::ManualControl::to_halt();
+        }
+
+        /*
+        ustart_lane--; // keep the same ulane for the next run
+      }
+    
+    delayMicroseconds(1000*1000);
     }
+    }*/
   
 }
 
