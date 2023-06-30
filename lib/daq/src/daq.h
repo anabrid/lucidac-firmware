@@ -28,6 +28,7 @@
 #include <FlexIO_t4.h>
 #include <array>
 
+/// @brief Routines for Data Aquisition (DAQ) / Analog2Digital converters (ADCs)
 namespace daq {
 
 constexpr uint8_t NUM_CHANNELS = 8;
@@ -70,11 +71,17 @@ public:
   bool _init_clk();
 };
 
+/**
+ * Do single captures with the ADC.
+ * This class is meant to be used as quasi Singleton standalone.
+ **/
 class OneshotDAQ : public BaseDAQ {
 public:
   bool init(__attribute__((unused)) unsigned int sample_rate_unused) override;
   std::array<uint16_t, NUM_CHANNELS> sample_raw() override;
   std::array<float, NUM_CHANNELS> sample() override;
+
+  /// Extracts a single number of a full word capture.
   float sample(uint8_t index) override;
 };
 

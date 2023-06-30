@@ -28,6 +28,12 @@
 #include <cstdint>
 #include <array>
 
+#include "unity.h" // only for debugging
+
+// hint: This function could be avoided to be a template if the signature
+//       was just transfer(const uint8_t* const outputs, uint8_t num_of_outputs).
+//       The template provides little advantage here.
+
 template <unsigned int num_of_outputs>
 void blocks::functions::UMatrixFunction<num_of_outputs>::transfer(std::array<uint8_t, num_of_outputs> outputs) const {
   constexpr uint8_t NUM_BYTES = num_of_outputs*5/8;
@@ -70,6 +76,14 @@ void blocks::functions::UMatrixFunction<num_of_outputs>::transfer(std::array<uin
     if (idx > 1)
       utils::shift_5_left(buffer, sizeof(buffer));
   }
+
+  char strbuf2[10];
+  String strbuf = "UBLOCK MESSAGE = ";
+  for(int j=0; j<NUM_BYTES; j++) {
+     sprintf(strbuf2, "%02X", buffer[j]);
+     strbuf += String(strbuf2);
+  }
+  //TEST_MESSAGE(strbuf.c_str());
 
   begin_communication();
   // Unfortunately, the chip responsible for output 0-7 is the second chip in the SPI-chain.

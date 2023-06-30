@@ -109,6 +109,19 @@ public:
 
 } // namespace functions
 
+/**
+ * The Lucidac U-Block (U for Voltage) is represented by this class.
+ * 
+ * This class provides an in-memory representation of the XBAR bit matrix,
+ * neat way of manipulating it and flushing it out to the hardware.
+ * 
+ * As a Lucidac can only have a single U-Block, this is kind of a singleton.
+ * Typical usage happens via the Lucidac class.
+ * 
+ * @TODO: Should ensure that there is no more then one bit per line,
+ *        cf. https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/issues/8
+ * 
+ **/
 class UBlock : public FunctionBlock {
 public:
   static constexpr uint8_t BLOCK_IDX = bus::U_BLOCK_IDX;
@@ -124,6 +137,7 @@ public:
   };
   static constexpr std::array<uint8_t, 8> IDX_RANGE_TO_ACL_OUT() {
     return {15, 14, 13, 12, 11, 10,  9,  8};
+    //return { 8,  9, 10, 11, 12, 13, 14, 15};
   };
 
   // TODO: Make this constexpr

@@ -29,6 +29,15 @@
 
 namespace blocks {
 
+/**
+ * A function block represents one module in the LUCIDAC,
+ * such as an M-Block, C-Block, I-Block or U-Block.
+ * 
+ * This class (or its children) typically holds the in-RAM representation
+ * of the configuration space of the particular hardware and serves as the
+ * primary programming interface.
+ * 
+ */
 class FunctionBlock {
 public:
   const uint8_t cluster_idx;

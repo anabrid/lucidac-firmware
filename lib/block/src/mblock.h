@@ -33,6 +33,15 @@
 
 namespace blocks {
 
+/**
+  * A Lucidac Math block (M-Block) is represented by this class.
+  * Lucidac currently has two Math blocks, refered to as M1 and M2.
+  * Both are represented by instances of this class or a suitable subclass.
+  * 
+  * This base class provides convenient static functions to compute the correct
+  * index (for usage in the U and I block) for M block computing elements.
+  * 
+  **/
 class MBlock : public FunctionBlock {
 public:
   static constexpr uint8_t M1_IDX = bus::M1_BLOCK_IDX;
@@ -55,6 +64,8 @@ public:
   bus::addr_t get_block_address() override;
 };
 
+// HINT: Consider renaming this MBlockInt
+//       in particular if we get some MBlockMult (MMultBlock reads weird)
 class MIntBlock : public MBlock {
 public:
   static constexpr uint8_t IC_FUNC_IDX = 1;
@@ -72,5 +83,6 @@ public:
 
   void write_to_hardware() override;
 };
+
 
 } // namespace blocks

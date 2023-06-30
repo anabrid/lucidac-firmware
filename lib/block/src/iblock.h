@@ -34,6 +34,7 @@
 
 namespace blocks {
 
+/// @brief  namespace for internal helpers
 namespace functions {
 
 class ICommandRegisterFunction : public ::functions::_old_DataFunction {
@@ -41,6 +42,7 @@ public:
   //! Data is [8bit 4_* SR][8bit 3_* SR][8bit 2_* SR][8bit 1_* SR]
   //!      -> [0-15 X 0-07][16-31 X 0-7][0-15 X 8-15][16-31 X 8-15]   [ input X output ] matrix
   //! Each is [DATA Y2 Y1 Y0 X3 X2 X1 X0]
+  //! Data bit comes first, most significant bit comes first (in SPI)
   uint32_t data = 0;
 
   using ::functions::_old_DataFunction::_old_DataFunction;
@@ -53,6 +55,21 @@ public:
 
 } // namespace functions
 
+
+/**
+ * The Lucidac I-Block (I for Current; the Implicit Summing Block) is
+ * represented by this class.
+ * 
+ * This class provides an in-memory representation of the bit matrix,
+ * neat way of manipulating it and flushing it out to the hardware.
+ * 
+ * As a Lucidac can only have a single I-Block, this is kind of a singleton.
+ * Typical usage happens via the Lucidac class.
+ * 
+ * @TODO: Should ensure that there is no more then one bit per line,
+ *        cf. https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/issues/8
+ * 
+ **/
 class IBlock : public FunctionBlock {
 public:
   static constexpr uint8_t BLOCK_IDX = bus::I_BLOCK_IDX;
@@ -82,6 +99,23 @@ public:
   bool init() override;
   void reset(bool keep_calibration) override;
 
+  /**
+   * Connects an input line [0..31] to an output line [0..15]
+   * by setting an appropriate bit/switch in the respective position
+   * in the matrix.
+   * 
+   * Note that this function only manipulates the in-memory representation
+   * and does not immediately write outs to hardware.
+   * 
+   * Note that calls to connect() only add bits to the existing configuration.
+   * Use reset() to reset the matrix.
+   * 
+   * The flag `exlusive` resets all output line bits. This is WIP, cf
+   * https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/issues/8
+   * 
+   * @returns false in case of invalid input, true else.
+   * 
+   **/
   bool connect(uint8_t input, uint8_t output, bool exclusive = false);
 };
 
