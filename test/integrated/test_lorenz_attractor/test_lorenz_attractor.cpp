@@ -73,8 +73,8 @@ void test_function() {
 
   // Currently, not all coefficients are working :)
   uint8_t coeff_idx = 0;
-  std::array<uint8_t, 12> coeffs{0,  1,  5,  6, /*7 is UBlock::ALT_SIGNAL_REF_HALF_INPUT,*/ 13, 16, 17,
-                                 18, 19, 20, 21};
+  std::array<uint8_t, 13> coeffs{1,  2,  3,  4, /*7 is UBlock::ALT_SIGNAL_REF_HALF_INPUT,*/ 13, 15, 17,
+                                 18, 19, 20, 21, 22};
 
   // Choose integrators and set IC
   // An IC value's sign is actually equal to the output's sign (not inverted)
@@ -87,8 +87,8 @@ void test_function() {
 
   // Integrator feedbacks
   TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(int_x), coeffs[coeff_idx++], -1.0f, MBlock::M1_INPUT(int_x)));
-  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(int_y), coeffs[coeff_idx++], -0.2667f, MBlock::M1_INPUT(int_y)));
-  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(int_z), coeffs[coeff_idx++], -0.1f, MBlock::M1_INPUT(int_z)));
+  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(int_y), coeffs[coeff_idx++], -0.1f, MBlock::M1_INPUT(int_y)));
+  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(int_z), coeffs[coeff_idx++], -0.2667f, MBlock::M1_INPUT(int_z)));
 
   // Multiply x*y
   auto mul_xy = 0;
@@ -106,16 +106,32 @@ void test_function() {
   // Add result to Y integrator input
   TEST_ASSERT(luci.route(MBlock::M2_OUTPUT(mul_xz), coeffs[coeff_idx++], -1.536, MBlock::M1_INPUT(int_y)));
 
+  // And add y on x
+  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(int_y), coeffs[coeff_idx++], 1.8, MBlock::M1_INPUT(int_x)));
+
+  // Allow to read out integrator U block values on VG analog readout
+  luci.ublock->connect(MBlock::M1_OUTPUT(int_x),  8);
+  luci.ublock->connect(MBlock::M1_OUTPUT(int_y),  9);
+  luci.ublock->connect(MBlock::M1_OUTPUT(int_z), 10);
+
   // Write to hardware
   luci.write_to_hardware();
   delayMicroseconds(100);
 
+  TEST_MESSAGE("Written to hardware, starting IC OP.");
+
   // Run it
+  for(;;) {
+  
   mode::ManualControl::to_ic();
   delayMicroseconds(120);
   mode::ManualControl::to_op();
-  delayMicroseconds(6666);
+  delayMicroseconds(66666);
   mode::ManualControl::to_halt();
+
+  TEST_MESSAGE("CYCLE");
+
+  }
 }
 
 void setup() {
