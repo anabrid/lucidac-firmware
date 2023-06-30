@@ -41,6 +41,7 @@ bool lucidac::LUCIDAC::init() {
     if (block && !block->init())
       return false;
   }
+  reset(false);
   return true;
 }
 
