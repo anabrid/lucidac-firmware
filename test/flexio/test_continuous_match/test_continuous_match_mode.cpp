@@ -72,9 +72,10 @@ void test_flexio_setup() {
   TEST_ASSERT_NOT_EQUAL(0xff, _sck_flex_pin);
 
   // Set timer compare
+  // TODO: Replace the dual 8-bit baud mode by a timer that does not expire
   // See dual 8-bit counter baud mode in reference manual for details.
   // [ 16 bit reserved ][ 8 bit number of bits * 2 - 1 ][ 8 bit divider ]
-  flexio->port().TIMCMP[_timer] = 0x0000'1F'00;
+  flexio->port().TIMCMP[_timer] = 0x0000'FF'00;
   // Control timer (https://www.pjrc.com/teensy/IMXRT1060RM_rev3.pdf p.2999)
   flexio->port().TIMCTL[_timer] = FLEXIO_TIMCTL_PINSEL(_sck_flex_pin) | FLEXIO_TIMCTL_TIMOD(1);
   // Configure timer (https://www.pjrc.com/teensy/IMXRT1060RM_rev3.pdf p.3002)
@@ -97,29 +98,27 @@ void test_flexio_setup() {
   // If you set the first 16 bits as compare value to all zeros, the shifter immediately matches.
   // If you set the last 16 bits as mask to all ones, the shifter immediately matches, meaning entries with
   // 1=mask are really masked, i.e. matched regardless of their value
-  flexio->port().SHIFTBUF[_shifter] = 0b11111111'11111111'11111111'11111110;
+  flexio->port().SHIFTBUF[_shifter] = 0b01010101'00001111'00000000'00000000;
   // Reset SHIFTERR (=a match has occurred at any time) by writing a 1, as it may be set from previous runs
   flexio->port().SHIFTERR |= 1 << _shifter;
   // Set IO pin to FlexIO mode
   flexio->setIOPinToFlexMode(PIN_DATA_IN);
 
   // Get a timer which is enabled when there is a match
-  /*
   auto _triggered_timer = flexio->requestTimers();
+  TEST_ASSERT_NOT_EQUAL(_timer, _triggered_timer);
   TEST_ASSERT_NOT_EQUAL(0xff, _triggered_timer);
   auto _flexio_pin_trigger_out = flexio->mapIOPinToFlexPin(PIN_TRIGGER_OUT);
   TEST_ASSERT_NOT_EQUAL(0xff, _flexio_pin_trigger_out);
   // Configure timer
-  flexio->port().TIMCTL[_triggered_timer] = FLEXIO_TIMCTL_TRGSEL(4*_shifter+1) | FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(_flexio_pin_trigger_out) | FLEXIO_TIMCTL_TIMOD(1);
+  flexio->port().TIMCTL[_triggered_timer] = FLEXIO_TIMCTL_TRGSEL(4*_shifter+1) | FLEXIO_TIMCTL_TRGSRC | FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(_flexio_pin_trigger_out) | FLEXIO_TIMCTL_TIMOD(1);
   flexio->port().TIMCFG[_triggered_timer] = FLEXIO_TIMCFG_TIMDIS(2) | FLEXIO_TIMCFG_TIMENA(6);
-  flexio->port().TIMCMP[_timer] = 0x0000'08'00;
+  flexio->port().TIMCMP[_triggered_timer] = 0x0000'08'00;
   // Set IO pin to FlexIO mode
   flexio->setIOPinToFlexMode(PIN_TRIGGER_OUT);
-  */
-
-  delay(100);
 
   // Enable this FlexIO
+  delay(100);
   flexio->port().CTRL = FLEXIO_CTRL_FLEXEN;
 }
 
@@ -140,21 +139,21 @@ void test_flexio() {
 
   // Timer should have expired, thus TIMSTAT should be set
   // But comparison should not have been successful, thus SHIFTSTAT & SHIFTERR should not be set
-  TEST_ASSERT_BITS_HIGH(1 << _timer, flexio->port().TIMSTAT);
+  TEST_ASSERT_BITS_LOW(1 << _timer, flexio->port().TIMSTAT);
   TEST_ASSERT_BITS_LOW(1 << _shifter, flexio->port().SHIFTSTAT);
   TEST_ASSERT_BITS_LOW(1 << _shifter, flexio->port().SHIFTERR);
   // Reset TIMSTAT by writing a 1, which is not done automatically
   flexio->port().TIMSTAT &= (1 << _timer);
   TEST_ASSERT_BITS_LOW(1 << _timer, flexio->port().TIMSTAT);
 
-  // Send a bunch of ones
-  SPI1.transfer16(0b11111111'11111111);
+  // Send a bunch of matching data
+  // This is shifted into SHIFTBUF in reverse
+  SPI1.transfer16(0b11110000'10101010);
 
   // Timer should have expired and shifter should have matched
-  TEST_ASSERT_BITS_HIGH(1 << _timer, flexio->port().TIMSTAT);
+  TEST_ASSERT_BITS_LOW(1 << _timer, flexio->port().TIMSTAT);
   TEST_ASSERT_BITS_HIGH(1 << _shifter, flexio->port().SHIFTERR);
-  // TODO: SHIFTERR is set meaning there has been a match, but SHIFTSTAT is not set????
-  //TEST_ASSERT_BITS_HIGH(1 << _shifter, flexio->port().SHIFTSTAT);
+  TEST_ASSERT_BITS_HIGH(1 << _shifter, flexio->port().SHIFTSTAT);
 }
 
 void setup() {
