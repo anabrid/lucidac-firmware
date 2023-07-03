@@ -64,6 +64,9 @@ void test_connections() {
 }
 
 void test_flexio_setup() {
+  // With a faster clock you get faster synchronization
+  //flexio->setClockSettings(3,0,0);
+
   // Get a timer
   _timer = flexio->requestTimers(1);
   TEST_ASSERT_NOT_EQUAL(0xff, _timer);
@@ -111,7 +114,9 @@ void test_flexio_setup() {
   auto _flexio_pin_trigger_out = flexio->mapIOPinToFlexPin(PIN_TRIGGER_OUT);
   TEST_ASSERT_NOT_EQUAL(0xff, _flexio_pin_trigger_out);
   // Configure timer
-  flexio->port().TIMCTL[_triggered_timer] = FLEXIO_TIMCTL_TRGSEL(4*_shifter+1) | FLEXIO_TIMCTL_TRGSRC | FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(_flexio_pin_trigger_out) | FLEXIO_TIMCTL_TIMOD(1);
+  flexio->port().TIMCTL[_triggered_timer] =
+      FLEXIO_TIMCTL_TRGSEL(4 * _shifter + 1) | FLEXIO_TIMCTL_TRGSRC | FLEXIO_TIMCTL_PINCFG(3) |
+      FLEXIO_TIMCTL_PINSEL(_flexio_pin_trigger_out) | FLEXIO_TIMCTL_TIMOD(1);
   flexio->port().TIMCFG[_triggered_timer] = FLEXIO_TIMCFG_TIMDIS(2) | FLEXIO_TIMCFG_TIMENA(6);
   flexio->port().TIMCMP[_triggered_timer] = 0x0000'08'00;
   // Set IO pin to FlexIO mode
@@ -164,4 +169,8 @@ void setup() {
   UNITY_END();
 }
 
-void loop() { delay(1); }
+void loop() {
+  delay(500);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalToggle(LED_BUILTIN);
+}
