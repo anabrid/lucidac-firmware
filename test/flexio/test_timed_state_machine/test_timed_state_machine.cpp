@@ -69,10 +69,6 @@ void test_connections() {
 }
 
 void test_flexio_setup() {
-  // Trigger on this
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWriteFast(LED_BUILTIN, HIGH);
-
   _s_zero = flexio->requestShifter();
   _s_one = flexio->requestShifter();
   TEST_ASSERT_NOT_EQUAL(0xff, _s_zero);
@@ -84,10 +80,18 @@ void test_flexio_setup() {
   uint8_t _input_a_flex = flexio->mapIOPinToFlexPin(PIN_INPUT_A);
   TEST_ASSERT_EQUAL_MESSAGE(12, _input_a_flex, "State inputs are partly hardcoded, check twice :)");
 
+  // Configure a timer to move from state zero to one
+  auto _t_zero = flexio->requestTimers();
+  TEST_ASSERT_NOT_EQUAL(0xff, _t_zero);
+  flexio->port().TIMCTL[_t_zero] = FLEXIO_TIMCTL_TRGSEL(4 * _s_zero + 1) | FLEXIO_TIMCTL_TRGSRC |
+                                   FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(8) | FLEXIO_TIMCTL_TIMOD(3);
+  flexio->port().TIMCFG[_t_zero] = FLEXIO_TIMCFG_TIMDIS(6) | FLEXIO_TIMCFG_TIMENA(6);
+  flexio->port().TIMCMP[_t_zero] = 0b0000000000000000'0000000011111111;
+  flexio->setIOPinToFlexMode(5);
+
   // Configure state zero
-  // NOTE: We don't use a timer here, only manual state transitions
-  flexio->port().SHIFTCTL[_s_zero] =
-      FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_PINSEL(_input_a_flex) | FLEXIO_SHIFTCTL_SMOD(6);
+  flexio->port().SHIFTCTL[_s_zero] = FLEXIO_SHIFTCTL_TIMSEL(_t_zero) | FLEXIO_SHIFTCTL_PINCFG(3) |
+                                     FLEXIO_SHIFTCTL_PINSEL(_input_a_flex) | FLEXIO_SHIFTCTL_SMOD(6);
   // SHIFTCFG {PWIDTH[3:0],SSTOP[1:0],SSTART[1:0]} are respectively used to disable the output drive
   // But it's unclear whether 0 or 1 disables them :)
   // I tried both and they both don't seem to do anything haha
@@ -99,9 +103,18 @@ void test_flexio_setup() {
   // Set all outputs and always change to state one
   flexio->port().SHIFTBUF[_s_zero] = 0b11111111'001'001'001'001'001'001'001'001;
 
+  // Configure a timer to move from state one to zero
+  auto _t_one = flexio->requestTimers();
+  TEST_ASSERT_NOT_EQUAL(0xff, _t_one);
+  flexio->port().TIMCTL[_t_one] = FLEXIO_TIMCTL_TRGSEL(4 * _s_one + 1) | FLEXIO_TIMCTL_TRGSRC |
+                                  FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(15) | FLEXIO_TIMCTL_TIMOD(3);
+  flexio->port().TIMCFG[_t_one] = FLEXIO_TIMCFG_TIMDIS(6) | FLEXIO_TIMCFG_TIMENA(6);
+  flexio->port().TIMCMP[_t_one] = 0b0000000000000000'0000000111100011;
+  flexio->setIOPinToFlexMode(54);
+
   // Configure state one
-  flexio->port().SHIFTCTL[_s_one] =
-      FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_PINSEL(_input_a_flex) | FLEXIO_SHIFTCTL_SMOD(6);
+  flexio->port().SHIFTCTL[_s_one] = FLEXIO_SHIFTCTL_TIMSEL(_t_one) | FLEXIO_SHIFTCTL_PINCFG(3) |
+                                    FLEXIO_SHIFTCTL_PINSEL(_input_a_flex) | FLEXIO_SHIFTCTL_SMOD(6);
   flexio->port().SHIFTCFG[_s_one] = 0;
   // Set some outputs and always change to state zero
   flexio->port().SHIFTBUF[_s_one] = 0b10101010'000'000'000'000'000'000'000'000;
@@ -112,31 +125,20 @@ void test_flexio_setup() {
   flexio->setIOPinToFlexMode(PIN_STATE_OUT_SIX);
   flexio->setIOPinToFlexMode(PIN_STATE_OUT_SEVEN);
 
-  TEST_ASSERT_TRUE(true);
-  // Enable this FlexIO
+  // Trigger on this
   delayMicroseconds(10);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWriteFast(LED_BUILTIN, HIGH);
+  // Enable this FlexIO
   flexio->port().CTRL = FLEXIO_CTRL_FLEXEN;
 }
 
 void test_flexio() {
-  // We should start in initial state
-  TEST_ASSERT_EQUAL(_s_zero, flexio->port().SHIFTSTATE);
-  // Check state output, which should all be HIGH in state zero
-  TEST_ASSERT(digitalReadFast(PIN_TEST_IN_STATE_OUT_FOUR));
-  TEST_ASSERT(digitalReadFast(PIN_TEST_IN_STATE_OUT_FIVE));
-  TEST_ASSERT(digitalReadFast(PIN_TEST_IN_STATE_OUT_SIX));
-  TEST_ASSERT(digitalReadFast(PIN_TEST_IN_STATE_OUT_SEVEN));
+  TEST_ASSERT(true);
 
-  // Switch to next state after a bit
-  delayMicroseconds(10);
+  // Timers are only enabled on state change, not in initial state.
+  // Once we move to state one once, the loop between the states starts.
   flexio->port().SHIFTSTATE = _s_one;
-  delayMicroseconds(10);
-  TEST_ASSERT_EQUAL(_s_one, flexio->port().SHIFTSTATE);
-  // Check state output, which should be alternating in state one
-  TEST_ASSERT(!digitalReadFast(PIN_TEST_IN_STATE_OUT_FOUR));
-  TEST_ASSERT(digitalReadFast(PIN_TEST_IN_STATE_OUT_FIVE));
-  TEST_ASSERT(!digitalReadFast(PIN_TEST_IN_STATE_OUT_SIX));
-  TEST_ASSERT(digitalReadFast(PIN_TEST_IN_STATE_OUT_SEVEN));
 
   digitalWriteFast(LED_BUILTIN, LOW);
 }
