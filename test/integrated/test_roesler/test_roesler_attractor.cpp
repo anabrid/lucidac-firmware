@@ -171,8 +171,7 @@ void test_function() {
 
 
   // Run it
-//  for(;;) {
-  /*
+  for(;;) {
 
   TEST_MESSAGE("QUICK IC OP CYCLE");
   for(;;) {
@@ -188,11 +187,10 @@ void test_function() {
 
     delayMicroseconds(120);
     mode::ManualControl::to_op();
-    delayMicroseconds(20);
+    delayMicroseconds(20000);
     mode::ManualControl::to_halt();
     delayMicroseconds(120);
 
-*/
 /*
   mode::ManualControl::to_op();
   delayMicroseconds(1000*6666);
@@ -200,8 +198,8 @@ void test_function() {
 
   TEST_MESSAGE("CYCLE");
 */
-
-//  }
+  }
+  }
 }
 
 void setup() {

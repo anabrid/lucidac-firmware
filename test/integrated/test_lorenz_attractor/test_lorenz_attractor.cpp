@@ -124,9 +124,9 @@ void test_function() {
   for(;;) {
   
   mode::ManualControl::to_ic();
-  delayMicroseconds(120);
+  delay(1);
   mode::ManualControl::to_op();
-  delayMicroseconds(66666);
+  delay(1000);
   mode::ManualControl::to_halt();
 
   TEST_MESSAGE("CYCLE");

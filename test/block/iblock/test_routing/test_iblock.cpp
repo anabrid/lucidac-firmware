@@ -131,9 +131,9 @@ void test_single_input() {
 }
 
 void test_single_connection() {
-  u_int16_t delayTime = 1;
-  u_int64_t in1 = 0;
-  u_int64_t out1 = 0;
+  u_int32_t delayTime = 100000;
+  u_int8_t in1 = 20;
+  u_int8_t out1 = 0;
 
   luci.iblock->reset(true);
   luci.write_to_hardware();
@@ -144,20 +144,19 @@ void test_single_connection() {
   char msgbuf[100];
   sprintf(msgbuf, "In|Out = %d | %d", in1, out1);
   TEST_MESSAGE(msgbuf);
-
   delay(delayTime);
+  
   luci.iblock->reset(true);
   luci.write_to_hardware();
-  delay(delayTime);
+  delay(10);
 }
 
 void test_double_connection() {
-  u_int16_t delayTime = 1;
-  u_int64_t in1 = 7;
-  u_int64_t out1 = 0;  
+  u_int8_t in1 = 1;
+  u_int8_t out1 = 0;  
   
-  u_int64_t in2 = 1;
-  u_int64_t out2 = 1;
+  u_int8_t in2 = 2;
+  u_int8_t out2 = 0;
 
   luci.iblock->reset(true);
   luci.write_to_hardware();
@@ -167,13 +166,13 @@ void test_double_connection() {
   luci.write_to_hardware();
     
   char msgbuf[100];
-  sprintf(msgbuf, "In|Out = %d | %d", in1, out1);
+  sprintf(msgbuf, "%d --> %d  |  %d --> %d", in1, out1, in2, out2);
   TEST_MESSAGE(msgbuf);
 
-  delay(delayTime);
+  delay(100000);
   luci.iblock->reset(true);
   luci.write_to_hardware();
-  delay(delayTime);
+  delay(10);
 }
 
 void test_double_outputs() {
@@ -242,12 +241,13 @@ void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_init);
   //RUN_TEST(test_trivial_single_connection);
+  RUN_TEST(test_single_connection);
   //RUN_TEST(test_single_output);
   //RUN_TEST(test_single_input);
   //RUN_TEST(test_single_connection);
   //RUN_TEST(test_trivial_double_connection);
   //RUN_TEST(test_double_connection);
-  RUN_TEST(test_double_outputs);
+  //RUN_TEST(test_double_outputs);
   UNITY_END();
 }
 
