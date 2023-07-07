@@ -63,6 +63,9 @@ void blocks::IBlock::write_to_hardware() {
 
     // We can always set one output in range (0,15) and one in (16,31) in for each output
     for (uint8_t input_idx = 0; input_idx < NUM_INPUTS / 2; input_idx++) {
+
+      command = 0;
+
       const auto iidx_one_three = input_idx;
       const auto iidx_two_four = input_idx + NUM_INPUTS / 2;
       bool actual_data = false;
