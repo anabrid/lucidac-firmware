@@ -65,7 +65,7 @@ void test_init() {
 
 auto *mBlock = (MIntBlock *)(luci.m1block);
 
-uint32_t TquaterCirc = 160;
+uint32_t TquaterCirc = 162;
 
 auto one = mBlock->M2_OUTPUT(4);
 
@@ -76,6 +76,10 @@ auto x_out = mBlock->M1_OUTPUT(0);
 uint8_t y = 1;
 auto y_in = mBlock->M1_INPUT(1);
 auto y_out = mBlock->M1_OUTPUT(1);
+
+uint8_t z = 2;
+auto z_in = mBlock->M1_INPUT(2);
+auto z_out = mBlock->M1_OUTPUT(2);
 
 void draw_circ(float pos_x, float pos_y, float c_x, float c_y, float size, uint64_t t, bool reverse = false) {
     mBlock->set_ic(x, pos_x);
@@ -92,6 +96,9 @@ void draw_circ(float pos_x, float pos_y, float c_x, float c_y, float size, uint6
     luci.cblock->set_factor(1, rev*c_x);
     luci.cblock->set_factor(2, rev);
     luci.cblock->set_factor(3, -rev*c_y);
+    luci.cblock->set_factor(4, 0);
+    luci.cblock->set_factor(5, 0);
+    luci.cblock->set_factor(6, 0);
     luci.cblock->write_to_hardware();
 
     ManualControl::to_ic();
@@ -110,6 +117,9 @@ void draw_line_horiz(float pos_x, float pos_y, float length) {
     luci.cblock->set_factor(1, 0);
     luci.cblock->set_factor(2, 0);
     luci.cblock->set_factor(3, length);
+    luci.cblock->set_factor(4, 0);
+    luci.cblock->set_factor(5, 0);
+    luci.cblock->set_factor(6, 0);
     luci.cblock->write_to_hardware();
 
     ManualControl::to_ic();
@@ -128,6 +138,9 @@ void draw_line_vert(float pos_x, float pos_y, float length) {
     luci.cblock->set_factor(1, length);
     luci.cblock->set_factor(2, 0);
     luci.cblock->set_factor(3, 0);
+    luci.cblock->set_factor(4, 0);
+    luci.cblock->set_factor(5, 0);
+    luci.cblock->set_factor(6, 0);
     luci.cblock->write_to_hardware();
 
     ManualControl::to_ic();
@@ -192,7 +205,7 @@ void draw_d(float pos_x, float pos_y, float size) {
   draw_circ(pos_x+size, pos_y+size, c_x, c_y, size, TquaterCirc);
 }
 
-void draw_logo() {
+void draw_anabrid() {
   luci.reset(true);
 
   luci.ublock->connect(x_out, UBlock::IDX_RANGE_TO_ACL_OUT(5));
@@ -207,10 +220,10 @@ void draw_logo() {
   luci.write_to_hardware();
   delayMicroseconds(500);
 
-  float size = 0.14;
+  float size = 0.13;
   
   float gap = 2.5*size;
-  float start = -1;
+  float start = -0.829;
 
   for (;;){
     draw_a(start, 0, size);
@@ -233,10 +246,62 @@ void draw_logo() {
   luci.write_to_hardware();
 }
 
+void draw_damped_sin() {
+  mBlock->set_ic(x, -1);
+  mBlock->set_ic(y, -0);
+  mBlock->set_ic(z, 1);
+  mBlock->write_to_hardware();
+
+  luci.cblock->set_factor(0, 0);
+  luci.cblock->set_factor(1, 0);
+  luci.cblock->set_factor(2, 0);
+  luci.cblock->set_factor(3, 0.116);
+  luci.cblock->set_factor(4, -0.2);
+  luci.cblock->set_factor(5, 1);
+  luci.cblock->set_factor(6, -1);
+  luci.cblock->write_to_hardware();
+
+  ManualControl::to_ic();
+  delayMicroseconds(50);
+  ManualControl::to_op();
+  delayMicroseconds(1980);
+  ManualControl::to_halt();
+}
+
+void draw_logo() {
+  luci.reset(true);
+
+  luci.ublock->connect(x_out, UBlock::IDX_RANGE_TO_ACL_OUT(5));
+  luci.ublock->connect(y_out, UBlock::IDX_RANGE_TO_ACL_OUT(6));
+
+  luci.route(x_out, 0, 0, y_in);
+  luci.route(one, 1, 0, y_in);
+
+  luci.route(y_out, 2, 0, x_in);
+  luci.route(one, 3, 0, x_in);
+
+  luci.route(y_out, 4, 0, y_in);
+  luci.route(y_out, 5, 0, z_in);
+  luci.route(z_out, 6, 0, y_in);
+
+  luci.write_to_hardware();
+  delayMicroseconds(500);
+
+  for (;;){
+    draw_circ(-1,0,0,0,1,4*TquaterCirc);
+    draw_damped_sin();
+    draw_line_horiz(1,0,-2);
+  }
+
+  luci.reset(true);
+  luci.write_to_hardware();
+}
+
 
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_init);
+  //RUN_TEST(draw_anabrid);
   RUN_TEST(draw_logo);
   UNITY_END();
 }
