@@ -36,7 +36,7 @@ constexpr uint8_t PIN_STATE_OUT_FOUR = 2, PIN_STATE_OUT_FIVE = 3, PIN_STATE_OUT_
 // Use FlexIO 1 in this example
 auto flexio = FlexIOHandler::flexIOHandler_list[0];
 // Global variables for timer/shifter flexio index
-uint8_t _s_zero = 0xff, _s_one = 0xff;
+uint8_t _s_zero = 0xff, _s_one = 0xff, _t_zero = 0xff, _t_one = 0xff;
 
 void setUp() {
   // This is called before *each* test.
@@ -81,7 +81,7 @@ void test_flexio_setup() {
   TEST_ASSERT_EQUAL_MESSAGE(12, _input_a_flex, "State inputs are partly hardcoded, check twice :)");
 
   // Configure a timer to move from state zero to one
-  auto _t_zero = flexio->requestTimers();
+  _t_zero = flexio->requestTimers();
   TEST_ASSERT_NOT_EQUAL(0xff, _t_zero);
   flexio->port().TIMCTL[_t_zero] = FLEXIO_TIMCTL_TRGSEL(4 * _s_zero + 1) | FLEXIO_TIMCTL_TRGSRC |
                                    FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(8) | FLEXIO_TIMCTL_TIMOD(3);
@@ -104,7 +104,7 @@ void test_flexio_setup() {
   flexio->port().SHIFTBUF[_s_zero] = 0b11111111'001'001'001'001'001'001'001'001;
 
   // Configure a timer to move from state one to zero
-  auto _t_one = flexio->requestTimers();
+  _t_one = flexio->requestTimers();
   TEST_ASSERT_NOT_EQUAL(0xff, _t_one);
   flexio->port().TIMCTL[_t_one] = FLEXIO_TIMCTL_TRGSEL(4 * _s_one + 1) | FLEXIO_TIMCTL_TRGSRC |
                                   FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(15) | FLEXIO_TIMCTL_TIMOD(3);
@@ -124,30 +124,60 @@ void test_flexio_setup() {
   flexio->setIOPinToFlexMode(PIN_STATE_OUT_FIVE);
   flexio->setIOPinToFlexMode(PIN_STATE_OUT_SIX);
   flexio->setIOPinToFlexMode(PIN_STATE_OUT_SEVEN);
-
-  // Trigger on this
-  delayMicroseconds(10);
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWriteFast(LED_BUILTIN, HIGH);
-  // Enable this FlexIO
-  flexio->port().CTRL = FLEXIO_CTRL_FLEXEN;
 }
 
 void test_flexio() {
-  TEST_ASSERT(true);
+  // Trigger on this
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWriteFast(LED_BUILTIN, HIGH);
+  // Enable this FlexIO
+  flexio->port().CTRL |= FLEXIO_CTRL_FLEXEN;
 
   // Timers are only enabled on state change, not in initial state.
   // Once we move to state one once, the loop between the states starts.
   flexio->port().SHIFTSTATE = _s_one;
 
   digitalWriteFast(LED_BUILTIN, LOW);
+  TEST_ASSERT(true);
+  delayMicroseconds(100);
+  flexio->port().CTRL &= ~FLEXIO_CTRL_FLEXEN;
+}
+
+void test_flexio_live_reconfiguration() {
+  // Trigger on this
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWriteFast(LED_BUILTIN, HIGH);
+
+  // Change flexio config, set _s_zero to trigger on _t_one, which will never happen in _s_zero
+  flexio->port().SHIFTCTL[_s_zero] = (flexio->port().SHIFTCTL[_s_zero] & ~FLEXIO_SHIFTCTL_TIMSEL(0x07)) | FLEXIO_SHIFTCTL_TIMSEL(_t_one);
+
+  // Enable this FlexIO
+  // Timers are still running from last test
+  flexio->port().CTRL |= FLEXIO_CTRL_FLEXEN;
+
+  // After about 40 microseconds, we are back in state zero and stuck there.
+  delayMicroseconds(40);
+
+  // While in state zero, reconfigure _t_one to increase length of state one.
+  // Something like this is necessary for quantum-gatter like computations, so it's tested here.
+  flexio->port().TIMCMP[_t_one] = 0b0000000000000000'0000001111100011;
+  // And force state change into _s_one
+  flexio->port().SHIFTSTATE = _s_one;
+
+  delayMicroseconds(100);
+  flexio->port().CTRL &= ~FLEXIO_CTRL_FLEXEN;
+  digitalWriteFast(LED_BUILTIN, LOW);
+  TEST_ASSERT(true);
 }
 
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_connections);
   RUN_TEST(test_flexio_setup);
+  // Always run test_flexio and test_flexio_with_reconfiguration together!
   RUN_TEST(test_flexio);
+  delay(2000);
+  RUN_TEST(test_flexio_live_reconfiguration);
   UNITY_END();
 }
 
