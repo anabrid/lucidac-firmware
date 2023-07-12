@@ -41,6 +41,10 @@ void tearDown() {
   digitalWriteFast(LED_BUILTIN, LOW);
 }
 
+void interrupt_handler() {
+  digitalWriteFast(LED_BUILTIN, LOW);
+}
+
 void test_simple_delay_jitter() {
   ManualControl::init();
 
@@ -63,9 +67,34 @@ void test_simple_delay_jitter() {
   TEST_ASSERT(true);
 }
 
+void test_gpio_interrupt() {
+  pinMode(21, INPUT);
+  pinMode(PIN_MODE_IC, OUTPUT);
+  // Test connection
+  digitalWriteFast(PIN_MODE_IC, HIGH);
+  delayMicroseconds(1);
+  TEST_ASSERT_MESSAGE(digitalReadFast(21), "You must connect pin 4 to pin 23.");
+  digitalWriteFast(PIN_MODE_IC, LOW);
+  delayMicroseconds(1);
+
+  attachInterrupt(21, interrupt_handler, CHANGE);
+  delayMicroseconds(5);
+  digitalWriteFast(PIN_MODE_IC, HIGH);
+  // This should toggle LED low when IC goes HIGH
+  // Measured delay is 90-95ns
+  // Note that attachInterrupt on Teensy does not seem to have a list of functions to call,
+  // like it does on Arduino (which is really slow), but I'm not perfectly sure.
+  // Maybe this could be improved upon.
+
+  delayMicroseconds(5);
+  digitalWriteFast(LED_BUILTIN, HIGH);
+  TEST_ASSERT(true);
+}
+
 void setup() {
   UNITY_BEGIN();
-  RUN_TEST(test_simple_delay_jitter);
+  //RUN_TEST(test_simple_delay_jitter);
+  RUN_TEST(test_gpio_interrupt);
   UNITY_END();
 }
 
