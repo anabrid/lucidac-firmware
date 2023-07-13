@@ -1,0 +1,2 @@
+constexpr float ANABRID_TESTS_TARGET_PRECISION=0.05f;
+constexpr bool ANABRID_TESTS_USE_ACL_OUT=true;
