@@ -195,24 +195,31 @@ blocks::UBlock::UBlock(const uint8_t clusterIdx)
   offsets.fill(decltype(f_offset_loader)::ZERO_OFFSET_RAW);
 }
 
-bool blocks::UBlock::connect(uint8_t input, uint8_t output, bool connect) {
+bool blocks::UBlock::connect(uint8_t input, uint8_t output, bool allow_disconnections) {
   // Sanity check
   if (input >= NUM_OF_INPUTS or output >= NUM_OF_OUTPUTS)
     return false;
 
-  // Disconnect is possible if input/output are actually connected
-  if (!connect) {
-    if (output_input_map[output] == input + 1) {
-      output_input_map[output] = 0;
-      return true;
-    } else {
-      return false;
-    }
+  // Check for other connections on the same output, unless we don't care if we overwrite them
+  if (!allow_disconnections and output_input_map[output]) {
+    return false;
   }
 
-  // Connect
   output_input_map[output] = input + 1;
   return true;
+}
+
+bool blocks::UBlock::disconnect(uint8_t input, uint8_t output) {
+  // Sanity check
+  if (input >= NUM_OF_INPUTS or output >= NUM_OF_OUTPUTS)
+    return false;
+
+  if (output_input_map[output] == input + 1) {
+    output_input_map[output] = 0;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool blocks::UBlock::is_connected(uint8_t input, uint8_t output) {
@@ -220,7 +227,7 @@ bool blocks::UBlock::is_connected(uint8_t input, uint8_t output) {
   if (input >= NUM_OF_INPUTS or output >= NUM_OF_OUTPUTS)
     return false;
 
-  return output_input_map[output] == input;
+  return output_input_map[output] == input + 1;
 }
 
 void blocks::UBlock::write_alt_signal_to_hardware() const {

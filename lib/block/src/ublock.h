@@ -201,8 +201,11 @@ public:
 
   void reset_connections();
 
-  //! Connect or disconnect an input to an output. Both input and output are zero-based indizes.
-  bool connect(uint8_t input, uint8_t output, bool connect = true);
+  //! Connect an input to an output, if output is unused. Both input and output are zero-based indizes.
+  bool connect(uint8_t input, uint8_t output, bool allow_disconnections = false);
+
+  //! Disconnect an input from an output, if they are connected. Both input and output are zero-based indizes.
+  bool disconnect(uint8_t input, uint8_t output);
 
   //! Check whether an input is connected to an output.
   bool is_connected(uint8_t input, uint8_t output);
