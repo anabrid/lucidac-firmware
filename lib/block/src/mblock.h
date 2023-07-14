@@ -34,25 +34,53 @@
 namespace blocks {
 
 /**
-  * A Lucidac Math block (M-Block) is represented by this class.
-  * Lucidac currently has two Math blocks, refered to as M1 and M2.
-  * Both are represented by instances of this class or a suitable subclass.
-  * 
-  * This base class provides convenient static functions to compute the correct
-  * index (for usage in the U and I block) for M block computing elements.
-  * 
-  **/
+ * A Lucidac Math block (M-Block) is represented by this class.
+ * Lucidac currently has two Math blocks, referred to as M1 and M2.
+ * Both are represented by instances of this class or a suitable subclass.
+ *
+ * This base class provides convenient static functions to compute the correct
+ * index (for usage in the U and I block) for M block computing elements.
+ *
+ **/
 class MBlock : public FunctionBlock {
 public:
   static constexpr uint8_t M1_IDX = bus::M1_BLOCK_IDX;
   static constexpr uint8_t M2_IDX = bus::M2_BLOCK_IDX;
 
+  //! M1 input signal specifier for hard-coded usage, like MBlock::M1_INPUT<3>().
+  template <int n> static constexpr uint8_t M1_INPUT() {
+    static_assert(n < 8, "MBlock input must be less than 8.");
+    return n + 8;
+  }
+
+  //! M1 input signal specifier for dynamic usage, like MBlock::M1_INPUT(variable).
   static constexpr uint8_t M1_INPUT(uint8_t idx) { return idx + 8; }
 
+  //! M1 output signal specifier for hard-coded usage, like MBlock::M1_OUTPUT<3>().
+  template <int n> static constexpr uint8_t M1_OUTPUT() {
+    static_assert(n < 8, "MBlock output must be less than 8.");
+    return n + 8;
+  }
+
+  //! M1 output signal specifier for dynamic usage, like MBlock::M1_OUTPUT(variable).
   static constexpr uint8_t M1_OUTPUT(uint8_t idx) { return idx + 8; }
 
+  //! M2 input signal specifier for hard-coded usage, like MBlock::M2_INPUT<3>().
+  template <int n> static constexpr uint8_t M2_INPUT() {
+    static_assert(n < 8, "MBlock input must be less than 8.");
+    return n;
+  }
+
+  //! M2 input signal specifier for dynamic usage, like MBlock::M2_INPUT(variable).
   static constexpr uint8_t M2_INPUT(uint8_t idx) { return idx; }
 
+  //! M2 output signal specifier for hard-coded usage, like MBlock::M2_OUTPUT<3>().
+  template <int n> static constexpr uint8_t M2_OUTPUT() {
+    static_assert(n < 8, "MBlock output must be less than 8.");
+    return n;
+  }
+
+  //! M2 output signal specifier for dynamic usage, like MBlock::M2_OUTPUT(variable).
   static constexpr uint8_t M2_OUTPUT(uint8_t idx) { return idx; }
 
 protected:
