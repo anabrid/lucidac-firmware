@@ -73,6 +73,12 @@ public:
    **/
   bool route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out);
 
+  /**
+   * Register a route using one of the alternate signals. See `route` for additional information.
+   * Some alt signals may not be arbitrarily routed.
+   */
+  bool route_alt_signal(uint16_t alt_signal, uint8_t u_out, float c_factor, uint8_t i_out);
+
   void reset(bool keep_calibration);
 
 protected:

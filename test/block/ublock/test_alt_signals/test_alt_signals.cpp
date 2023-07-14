@@ -49,8 +49,8 @@ void test_function() {
 
   TEST_ASSERT_FALSE(ublock.use_alt_signals(UBlock::MAX_ALT_SIGNAL + 1));
 
-  TEST_ASSERT(ublock.use_alt_signals(UBlock::ALT_SIGNAL_IN31_ACL7));
-  TEST_ASSERT_EQUAL(UBlock::ALT_SIGNAL_REF_HALF | UBlock::ALT_SIGNAL_IN31_ACL7, ublock.get_alt_signals());
+  TEST_ASSERT(ublock.use_alt_signals(UBlock::ALT_SIGNAL_ACL7));
+  TEST_ASSERT_EQUAL(UBlock::ALT_SIGNAL_REF_HALF | UBlock::ALT_SIGNAL_ACL7, ublock.get_alt_signals());
 
   ublock.write_alt_signal_to_hardware();
 }

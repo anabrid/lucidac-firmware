@@ -303,3 +303,56 @@ bool blocks::UBlock::change_offset(uint8_t output, float delta) {
       decltype(f_offset_loader)::offset_to_raw(delta) - decltype(f_offset_loader)::ZERO_OFFSET_RAW;
   return set_offset(output, static_cast<uint16_t>(offsets[output] + delta_raw));
 }
+
+bool blocks::UBlock::connect_alt_signal(uint16_t alt_signal, uint8_t output) {
+  // Sanity check
+  if (alt_signal > MAX_ALT_SIGNAL)
+    return false;
+
+  // Some alt signals may only be connected to certain outputs
+  bool success = false;
+  if (alt_signal == ALT_SIGNAL_REF_HALF) {
+    success = connect(ALT_SIGNAL_REF_HALF_INPUT, output, false);
+  } else {
+    if (output < 16)
+      return false;
+
+    // Select input depending on alt_signal
+    uint8_t input;
+    switch (alt_signal) {
+    case ALT_SIGNAL_ACL0:
+      input = 8;
+      break;
+    case ALT_SIGNAL_ACL1:
+      input = 9;
+      break;
+    case ALT_SIGNAL_ACL2:
+      input = 10;
+      break;
+    case ALT_SIGNAL_ACL3:
+      input = 11;
+      break;
+    case ALT_SIGNAL_ACL4:
+      input = 12;
+      break;
+    case ALT_SIGNAL_ACL5:
+      input = 13;
+      break;
+    case ALT_SIGNAL_ACL6:
+      input = 14;
+      break;
+    case ALT_SIGNAL_ACL7:
+      input = 15;
+      break;
+    default:
+      return false;
+    }
+    success = connect(input, output, false);
+  }
+
+  // Enable alt signal, but only if signal was connected successfully
+  if (success)
+    alt_signals |= alt_signal;
+
+  return success;
+}

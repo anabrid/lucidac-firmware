@@ -111,16 +111,16 @@ public:
 
 /**
  * The Lucidac U-Block (U for Voltage) is represented by this class.
- * 
+ *
  * This class provides an in-memory representation of the XBAR bit matrix,
  * neat way of manipulating it and flushing it out to the hardware.
- * 
+ *
  * As a Lucidac can only have a single U-Block, this is kind of a singleton.
  * Typical usage happens via the Lucidac class.
- * 
+ *
  * @TODO: Should ensure that there is no more then one bit per line,
  *        cf. https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/issues/8
- * 
+ *
  **/
 class UBlock : public FunctionBlock {
 public:
@@ -128,27 +128,24 @@ public:
 
   static constexpr uint8_t NUM_OF_INPUTS = 16;
   static constexpr uint8_t NUM_OF_OUTPUTS = 32;
+
   static constexpr std::array<uint8_t, NUM_OF_OUTPUTS> OUTPUT_IDX_RANGE() {
-    return { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
+    return {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
             16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
   };
-  static constexpr std::array<uint8_t, 8> OUTPUT_IDX_RANGE_TO_ADC() {
-    return { 0,  1,  2,  3,  4,  5,  6,  7};
-  };
+
+  static constexpr std::array<uint8_t, 8> OUTPUT_IDX_RANGE_TO_ADC() { return {0, 1, 2, 3, 4, 5, 6, 7}; };
+
   static constexpr std::array<uint8_t, 8> IDX_RANGE_TO_ACL_OUT() {
-    return {15, 14, 13, 12, 11, 10,  9,  8};
-    //return { 8,  9, 10, 11, 12, 13, 14, 15};
+    return {15, 14, 13, 12, 11, 10, 9, 8};
+    // return { 8,  9, 10, 11, 12, 13, 14, 15};
   };
 
   // TODO: Make this constexpr
-  static uint8_t OUTPUT_IDX_RANGE_TO_ADC(uint8_t idx) {
-    return UBlock::OUTPUT_IDX_RANGE_TO_ADC()[idx];
-  };
+  static uint8_t OUTPUT_IDX_RANGE_TO_ADC(uint8_t idx) { return UBlock::OUTPUT_IDX_RANGE_TO_ADC()[idx]; };
 
   // TODO: Make this constexpr
-  static uint8_t IDX_RANGE_TO_ACL_OUT(uint8_t idx) {
-    return UBlock::IDX_RANGE_TO_ACL_OUT()[idx];
-  };
+  static uint8_t IDX_RANGE_TO_ACL_OUT(uint8_t idx) { return UBlock::IDX_RANGE_TO_ACL_OUT()[idx]; };
 
   static constexpr uint8_t UMATRIX_FUNC_IDX = 1;
   static constexpr uint8_t UMATRIX_SYNC_FUNC_IDX = 2;
@@ -159,14 +156,14 @@ public:
   static constexpr uint8_t ALT_SIGNAL_SWITCHER_FUNC_IDX = 9;
   static constexpr uint8_t ALT_SIGNAL_SWITCHER_SYNC_FUNC_IDX = 10;
 
-  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN24_ACL0 = 1 << 0;
-  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN25_ACL1 = 1 << 1;
-  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN26_ACL2 = 1 << 2;
-  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN27_ACL3 = 1 << 3;
-  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN28_ACL4 = 1 << 4;
-  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN29_ACL5 = 1 << 5;
-  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN30_ACL6 = 1 << 6;
-  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_IN31_ACL7 = 1 << 7;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_ACL0 = 1 << 0;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_ACL1 = 1 << 1;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_ACL2 = 1 << 2;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_ACL3 = 1 << 3;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_ACL4 = 1 << 4;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_ACL5 = 1 << 5;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_ACL6 = 1 << 6;
+  __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_ACL7 = 1 << 7;
   __attribute__((unused)) static constexpr uint16_t ALT_SIGNAL_REF_HALF = 1 << 8;
   __attribute__((unused)) static constexpr uint8_t ALT_SIGNAL_REF_HALF_INPUT = 7;
   static constexpr uint16_t MAX_ALT_SIGNAL = ALT_SIGNAL_REF_HALF;
@@ -193,7 +190,6 @@ protected:
   std::array<uint16_t, NUM_OF_OUTPUTS> offsets;
 
 private:
-
   //! Check whether an input is connected to an output, without sanity checks.
   bool _is_connected(uint8_t input, uint8_t output);
 
@@ -216,7 +212,12 @@ public:
   bool is_connected(uint8_t input, uint8_t output);
 
   //! Use one or more of the alternative signal on the respective input signal.
-  bool use_alt_signals(uint16_t alt_signal);
+  [[deprecated("Use connect_alt_signal instead.")]] bool use_alt_signals(uint16_t alt_signal);
+
+  //! Enable and connect an alternative signal to an output. Use UBlock::ALT_SIGNAL_* for alt_signal.
+  //! This does not allow disconnections, since then you may be left with enabled alt signals blocking other
+  //! signals. Use reset for now if you need to disconnect an alternative signal.
+  bool connect_alt_signal(uint16_t alt_signal, uint8_t output);
 
   //! Check whether an alternative signal is used.
   bool is_alt_signal_used(uint16_t alt_signal) const;

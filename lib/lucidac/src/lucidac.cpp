@@ -98,6 +98,16 @@ bool lucidac::LUCIDAC::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_
   return true;
 }
 
+bool lucidac::LUCIDAC::route_alt_signal(uint16_t alt_signal, uint8_t u_out, float c_factor, uint8_t i_out) {
+  if (!ublock->connect_alt_signal(alt_signal, u_out))
+    return false;
+  if (!cblock->set_factor(u_out, c_factor))
+    return false;
+  if (!iblock->connect(u_out, i_out))
+    return false;
+  return true;
+}
+
 void lucidac::LUCIDAC::reset(bool keep_calibration) {
   for (auto block : get_blocks()) {
     if (block)
