@@ -214,7 +214,7 @@ bool blocks::UBlock::disconnect(uint8_t input, uint8_t output) {
   if (input >= NUM_OF_INPUTS or output >= NUM_OF_OUTPUTS)
     return false;
 
-  if (output_input_map[output] == input + 1) {
+  if (_is_connected(input, output)) {
     output_input_map[output] = 0;
     return true;
   } else {
@@ -222,12 +222,16 @@ bool blocks::UBlock::disconnect(uint8_t input, uint8_t output) {
   }
 }
 
+bool blocks::UBlock::_is_connected(uint8_t input, uint8_t output) {
+  return output_input_map[output] == input + 1;
+}
+
 bool blocks::UBlock::is_connected(uint8_t input, uint8_t output) {
   // Sanity check
   if (input >= NUM_OF_INPUTS or output >= NUM_OF_OUTPUTS)
     return false;
 
-  return output_input_map[output] == input + 1;
+  return _is_connected(input, output);
 }
 
 void blocks::UBlock::write_alt_signal_to_hardware() const {

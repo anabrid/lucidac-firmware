@@ -192,6 +192,11 @@ protected:
   uint16_t alt_signals;
   std::array<uint16_t, NUM_OF_OUTPUTS> offsets;
 
+private:
+
+  //! Check whether an input is connected to an output, without sanity checks.
+  bool _is_connected(uint8_t input, uint8_t output);
+
 public:
   explicit UBlock(uint8_t clusterIdx);
 
