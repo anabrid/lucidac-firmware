@@ -110,13 +110,15 @@ public:
    * Note that calls to connect() only add bits to the existing configuration.
    * Use reset() to reset the matrix.
    * 
-   * The flag `exlusive` resets all output line bits. This is WIP, cf
-   * https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/issues/8
-   * 
+   * The flag `exlusive` disconnects all other inputs from the chosen output.
+   *
    * @returns false in case of invalid input, true else.
    * 
    **/
-  bool connect(uint8_t input, uint8_t output, bool exclusive = false);
+  bool connect(uint8_t input, uint8_t output, bool exclusive = false, bool allow_input_splitting = false);
+
+  //! Whether an input is connected to an output.
+  bool is_connected(uint8_t input, uint8_t output);
 };
 
 } // namespace blocks

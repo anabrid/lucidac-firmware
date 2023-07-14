@@ -121,7 +121,13 @@ bool blocks::IBlock::init() {
 
 bus::addr_t blocks::IBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
 
-bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive) {
+bool blocks::IBlock::is_connected(uint8_t input, uint8_t output) {
+  if (output >= NUM_OUTPUTS or input >= NUM_INPUTS)
+    return false;
+  return outputs[output] & INPUT_BITMASK(input);
+}
+
+bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool allow_input_splitting) {
   if (output >= NUM_OUTPUTS or input >= NUM_INPUTS)
     return false;
 
@@ -131,6 +137,17 @@ bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive) {
     input += 2;
   } else if ((input >= 12 && input <= 13) || (input >= 28 && input <= 29)) {
     input -= 6;
+  }
+
+  // Usually, we don't want to connect one input to multiple outputs, so check for other connections
+  if (!allow_input_splitting) {
+    for (size_t other_output_idx = 0; other_output_idx < outputs.size(); other_output_idx++) {
+      if (output == other_output_idx)
+        continue ;
+      if (is_connected(input, other_output_idx)) {
+        return false;
+      }
+    }
   }
 
   if (exclusive)
