@@ -43,7 +43,7 @@ void tearDown() {
 
 void test_simple_run() {
   TEST_ASSERT(true);
-  unsigned int ic_time = 230, op_time=1000;
+  unsigned int ic_time = 130, op_time=1000;
   TEST_ASSERT(FlexIOControl::init(ic_time, op_time));
   for (auto i: {0/*,1,2,3,4*/}) {
     FlexIOControl::force_start();

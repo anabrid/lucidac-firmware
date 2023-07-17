@@ -94,7 +94,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned int op_time_ns)
   auto t_ic = flexio->requestTimers(1);
   if (t_ic == 0xff)
     return false;
-  flexio->port().TIMCTL[t_ic] = FLEXIO_TIMCTL_TRGSEL_STATE(s_ic) | FLEXIO_TIMCTL_TIMOD(3) | FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(8);
+  flexio->port().TIMCTL[t_ic] = FLEXIO_TIMCTL_TRGSEL_STATE(s_ic) | FLEXIO_TIMCTL_TIMOD(3);
   flexio->port().TIMCFG[t_ic] = FLEXIO_TIMCFG_TIMDIS(6) | FLEXIO_TIMCFG_TIMENA(6);
   flexio->port().TIMCMP[t_ic] = num_ic_clocks & 0xFFFF;
 
@@ -105,7 +105,10 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned int op_time_ns)
   flexio->port().SHIFTBUF[s_ic] = 0b10111111'010'010'010'010'010'010'010'010;
 
   //
-  // Configure OP state
+  // Configure OP state.
+  //
+  // State changes are triggered continuously as fast as possible,
+  // but we only leave OP when the correct input is set.
   //
 
   // Sanity check op_time_ns, which we will count with two 16bit timers (=32bit) at CLK_FREQ
@@ -114,22 +117,44 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned int op_time_ns)
   if (op_time_ns < 100 or num_op_clocks >= std::numeric_limits<uint32_t>::max())
     return false;
 
-  // Configure state timer
+  // Configure state change check timer as fast as possible
+  auto t_check = flexio->requestTimers(1);
+  flexio->port().TIMCTL[t_check] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) |
+                                   FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(12);
+  flexio->port().TIMCFG[t_check] = FLEXIO_TIMCFG_TIMDIS(6) | FLEXIO_TIMCFG_TIMENA(6);
+  flexio->port().TIMCMP[t_check] = 0x0000'00001;
+
+  // Configure a timer to set an input pin high, signaling end of op_time
   auto t_op = flexio->requestTimers(1);
   if (t_op == 0xff)
     return false;
-  flexio->port().TIMCTL[t_op] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3);
-  flexio->port().TIMCFG[t_op] = FLEXIO_TIMCFG_TIMDIS(6) | FLEXIO_TIMCFG_TIMENA(6);
-  flexio->port().TIMCMP[t_op] = num_op_clocks & 0xFFFF;
+  flexio->port().TIMCTL[t_op] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) |
+                                FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(13) | FLEXIO_TIMCTL_PINPOL;
+  flexio->port().TIMCFG[t_op] = FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(2) | FLEXIO_TIMCFG_TIMENA(6);
+  flexio->port().TIMCMP[t_op] = 0x0000'00011;
+  // Configure same timer for testing purposes
+  auto t_op_test = flexio->requestTimers(1);
+  if (t_op_test == 0xff)
+    return false;
+  flexio->port().TIMCTL[t_op_test] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) |
+                                     FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(8) | FLEXIO_TIMCTL_PINPOL;
+  flexio->port().TIMCFG[t_op_test] =
+      FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(2) | FLEXIO_TIMCFG_TIMENA(6);
+  flexio->port().TIMCMP[t_op_test] = 0x0000'00011;
 
   // Configure state shifter
-  flexio->port().SHIFTCTL[s_op] =
-      FLEXIO_SHIFTCTL_TIMSEL(t_op) | FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_SMOD_STATE;
+  flexio->port().SHIFTCTL[s_op] = FLEXIO_SHIFTCTL_TIMSEL(t_check) | FLEXIO_SHIFTCTL_PINCFG(3) |
+                                  FLEXIO_SHIFTCTL_PINSEL(13) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_op] = 0;
-  flexio->port().SHIFTBUF[s_op] = 0b11011111'000'000'000'000'000'000'000'000;
+  flexio->port().SHIFTBUF[s_op] = 0b11011111'010'010'000'010'010'010'000'010;
+  // flexio->port().SHIFTBUF[s_op] = 0b11011111'010'010'010'010'010'010'010'010;
 
   // Put relevant pins into FlexIO mode
-  for (auto pin : {PIN_MODE_IC, PIN_MODE_OP, static_cast<uint8_t>(5) /* FlexIO1:8 for testing outputs */}) {
+  for (auto pin : {PIN_MODE_IC, PIN_MODE_OP, static_cast<uint8_t>(5) /* FlexIO1:8 for testing outputs */,
+                   static_cast<uint8_t>(52) /* FlexIO1:12 for testing outputs */,
+                   static_cast<uint8_t>(49) /* FlexIO1:13 for testing outputs */,
+                   static_cast<uint8_t>(50) /* FlexIO1:14 for testing outputs */,
+                   static_cast<uint8_t>(54) /* FlexIO1:15 for testing outputs */}) {
     if (flexio->mapIOPinToFlexPin(pin) == 0xff)
       return false;
     flexio->setIOPinToFlexMode(pin);
