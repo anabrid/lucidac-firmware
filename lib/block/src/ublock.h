@@ -137,8 +137,8 @@ public:
   static constexpr std::array<uint8_t, 8> OUTPUT_IDX_RANGE_TO_ADC() { return {0, 1, 2, 3, 4, 5, 6, 7}; };
 
   static constexpr std::array<uint8_t, 8> IDX_RANGE_TO_ACL_OUT() {
-    return {15, 14, 13, 12, 11, 10, 9, 8};
-    // return { 8,  9, 10, 11, 12, 13, 14, 15};
+    // return {15, 14, 13, 12, 11, 10, 9, 8};
+    return { 8,  9, 10, 11, 12, 13, 14, 15};
   };
 
   // TODO: Make this constexpr
