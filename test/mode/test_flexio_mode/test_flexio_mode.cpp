@@ -1,4 +1,4 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2022 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 //
 // This file is part of the model-1 hybrid-controller firmware.
@@ -23,50 +23,38 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#pragma once
+#include <Arduino.h>
+#include <unity.h>
 
-#include <FlexIO_t4.h>
-#include <array>
-#include <cstdint>
+#include "mode.h"
 
-namespace mode {
+using namespace mode;
 
-constexpr uint8_t PIN_MODE_IC = 4;
-constexpr uint8_t PIN_MODE_OP = 3;
+void setUp() {
+  // This is called before *each* test.
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWriteFast(LED_BUILTIN, HIGH);
+}
 
-class ManualControl {
-public:
-  static void init();
-  static void to_ic();
-  static void to_op();
-  static void to_halt();
-};
+void tearDown() {
+  // This is called after *each* test.
+  digitalWriteFast(LED_BUILTIN, LOW);
+}
 
-class FlexIOControl {
-private:
-  static constexpr uint8_t CLK_SEL = 3, CLK_PRED = 0, CLK_PODF = 0;
-  static constexpr uint8_t s_idle = 0, s_ic = 1, s_op = 2, s_pause = 3, s_end = 4;
-  static constexpr std::array<uint8_t ,5> get_states(){ return {s_idle, s_ic, s_op, s_pause, s_end};}
-
-  static constexpr auto FLEXIO_SHIFTCTL_SMOD_STATE = FLEXIO_SHIFTCTL_SMOD(6);
-
-  static constexpr auto FLEXIO_TIMCTL_TRGSEL_STATE(uint8_t s_) {
-    return FLEXIO_TIMCTL_TRGSEL(4 * s_ + 1) | FLEXIO_TIMCTL_TRGSRC;
+void test_simple_run() {
+  TEST_ASSERT(true);
+  unsigned int ic_time = 230, op_time=1000;
+  TEST_ASSERT(FlexIOControl::init(ic_time, op_time));
+  for (auto i: {0/*,1,2,3,4*/}) {
+    FlexIOControl::force_start();
+    delayNanoseconds(ic_time+op_time+100);
   }
+}
 
-public:
-  static bool init(unsigned int ic_time_ns, unsigned int op_time_ns);
+void setup() {
+  UNITY_BEGIN();
+  RUN_TEST(test_simple_run);
+  UNITY_END();
+}
 
-  static void disable();
-  static void enable();
-  static void reset();
-
-  static void force_start();
-  static void to_idle();
-  static void to_ic();
-  static void to_op();
-  static void to_pause();
-  static void to_end();
-};
-
-} // namespace mode
+void loop() { delay(500); }
