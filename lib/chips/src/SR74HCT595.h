@@ -33,9 +33,10 @@ namespace functions {
 class SR74HCT595 : public DataFunction {
 public:
   static const SPISettings DEFAULT_SPI_SETTINGS;
+  static const SPISettings DEFAULT_SPI_SETTINGS_SHIFTED_CLOCK;
 
   using DataFunction::DataFunction;
-  explicit SR74HCT595(bus::addr_t address);
+  SR74HCT595(bus::addr_t address, bool shift_clock=false);
 };
 
 }
