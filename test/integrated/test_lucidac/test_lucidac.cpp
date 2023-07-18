@@ -26,8 +26,8 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#include "cluster.h"
 #include "daq.h"
-#include "lucidac.h"
 
 using namespace lucidac;
 using namespace daq;

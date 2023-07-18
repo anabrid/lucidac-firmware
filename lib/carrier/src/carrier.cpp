@@ -23,22 +23,12 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#pragma once
+#include "carrier.h"
 
-#include <array>
-
-#include "lucidac.h"
-
-using namespace lucidac;
-
-namespace carrier {
-
-class Carrier {
-private:
-  std::array<LUCIDAC, 1> clusters;
-
-public:
-  bool init();
-};
-
-} // namespace carrier
+bool carrier::Carrier::init() {
+  for (auto &cluster : clusters) {
+    if (!cluster.init())
+      return false;
+  }
+  return true;
+}

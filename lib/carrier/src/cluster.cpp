@@ -23,7 +23,7 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#include "lucidac.h"
+#include "cluster.h"
 #include "local_bus.h"
 #include "running_avg.h"
 
