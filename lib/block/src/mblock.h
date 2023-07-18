@@ -28,6 +28,7 @@
 #include <cstdint>
 
 #include "DAC60508.h"
+#include "SR74HCT595.h"
 #include "base_block.h"
 #include "local_bus.h"
 
@@ -97,10 +98,20 @@ public:
 class MIntBlock : public MBlock {
 public:
   static constexpr uint8_t IC_FUNC_IDX = 1;
+  static constexpr uint8_t TIME_FACTOR_FUNC_IDX = 3;
+  static constexpr uint8_t TIME_FACTOR_SYNC_FUNC_IDX = 4;
+  static constexpr uint8_t TIME_FACTOR_RESET_FUNC_IDX = 5;
+
+  static constexpr unsigned int DEFAULT_TIME_FACTOR = 10000;
 
 private:
   functions::DAC60508 f_ic_dac;
+  ::functions::SR74HCT595 f_time_factor;
+  ::functions::TriggerFunction f_time_factor_sync;
   std::array<uint16_t, 8> ic_raw;
+  std::array<unsigned int, 8> time_factors;
+
+  void write_time_factors_to_hardware();
 
 public:
   MIntBlock(uint8_t cluster_idx, uint8_t slot_idx);
@@ -109,8 +120,9 @@ public:
 
   bool set_ic(uint8_t idx, float value);
 
+  bool set_time_factor(uint8_t int_idx, unsigned int k);
+
   void write_to_hardware() override;
 };
-
 
 } // namespace blocks
