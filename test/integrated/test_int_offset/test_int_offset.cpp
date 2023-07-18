@@ -99,6 +99,7 @@ void test_function() {
   uint8_t i0 = 5;
   float ic = -1;
   TEST_ASSERT(intblock->set_ic(i0, ic));
+  TEST_ASSERT(intblock->set_time_factor(i0, 100));
   // get the 0.5 refrence signal from an unused Output of the M2 Mult Block
   uint8_t one = MBlock::M2_OUTPUT(5);
   TEST_ASSERT(luci.route(one, 16, +1.0f, MBlock::M1_INPUT(i0)));
@@ -117,21 +118,27 @@ void test_function() {
 
   for(;;) {
     mode::ManualControl::to_ic();
-    delayMicroseconds(100);
+    delayMicroseconds(100*100);
     mode::ManualControl::to_op();
-    delayNanoseconds(206*1000 + 500);
+    //delayNanoseconds((206*1000 + 500)*100);
+    delayMicroseconds(206*100 + 50);
     mode::ManualControl::to_halt();
-    delayMicroseconds(100);
-    delayMicroseconds(3*1000*1000);
+    delayMicroseconds(100 * 100);
+    //delayMicroseconds(3*1000*1000);
   }
   */
+  
 
   // slope automatically
 
+  // k0 is either fast (10000, default) or slow (100)
+  constexpr int k0 = 10000;
+  constexpr int k0f = 1; // 1 for k0=10000, 100 for k0=100
+
   // candidate optimes in nanoseconds
-  constexpr int optime_min = 204000;
-  constexpr int optime_max = 207000;
-  constexpr int step = 10;
+  constexpr int optime_min = 150000 * k0f;
+  constexpr int optime_max = 300000 * k0f;
+  constexpr int step = 100 * k0f;
   constexpr int num = (optime_max - optime_min) / step;
 
   String msg = String("Sweeping all INTs over ") + String(num) + String(" candidates");
@@ -142,27 +149,41 @@ void test_function() {
     for(uint8_t i0=0; i0<8; i0++){
       float ic = -1;
       uint8_t one = MBlock::M2_OUTPUT(5);
-      luci.reset(/* keep calibration*/ true);
+      luci.reset(true); // keep calibration
       TEST_ASSERT(luci.route(one, 16, +1.0f, MBlock::M1_INPUT(i0)));
-      luci.ublock->connect(MBlock::M1_OUTPUT(i0), 8); // ACL_OUT0
-      luci.ublock->connect(MBlock::M1_OUTPUT(i0), 0); // ADC0
+      TEST_ASSERT(luci.ublock->connect(MBlock::M1_OUTPUT(i0), 8)); // ACL_OUT0
+      TEST_ASSERT(luci.ublock->connect(MBlock::M1_OUTPUT(i0), 0)); // ADC0
+      TEST_ASSERT(intblock->set_time_factor(i0, k0));
 
-      float integration_values[num];
+      float current, last;
+      int   optime_optimal = -1;
+      constexpr float target_integration_value = -1.0;      
     
       for(int i=0; i<num; i++) {
+        last = current;
         TEST_ASSERT(intblock->set_ic(i0, ic));
         luci.write_to_hardware();
         delayMicroseconds(100);
         mode::ManualControl::to_ic();
-        delayMicroseconds(100);
+        delayMicroseconds(100); // for k0=10.000
+        // delayMicroseconds(100*100); // for k0=100
         mode::ManualControl::to_op();
-        delayNanoseconds(optime_min + i * step);
+        delayNanoseconds(optime_min + i * step); // for k0=10.000
+        // delayMicroseconds( (optime_min + i*step) / 1000 ); // for k0=100, wegen Wertedarstellung
         mode::ManualControl::to_halt();
-        integration_values[i] = daq_.sample()[0];
+        current = daq_.sample()[0];
+
+        if( abs(current) >= abs(target_integration_value) &&
+            abs(last)    <  abs(target_integration_value) ) {
+           optime_optimal = optime_min + i*step;
+           break;
+        }
       }
 
+      msg += String(optime_optimal) + String(" ");
+/*
       int best_index = 0;
-      constexpr float target_integration_value = -1.0;
+
       for(int i=0; i<num; i++) {
         int optime = optime_min + i * step;
         // poor man's find_minimum(integration_values - 1);
@@ -170,14 +191,13 @@ void test_function() {
           <  abs(integration_values[best_index] - target_integration_value) ){
                 best_index = i;
         }
-        /*
-        char buf[100]; sprintf(buf, "%f", integration_values[i]);
-        msg = String(optime) + String(": ") + String(buf);
-        TEST_MESSAGE(msg.c_str());
-        */
+        //char buf[100]; sprintf(buf, "%f", integration_values[i]);
+        //msg = String(optime) + String(": ") + String(buf);
+        //TEST_MESSAGE(msg.c_str());
       }
       //msg = String("INT") + String(i0) + String(": ") + String(optime_min + best_index * step);
       msg += String(optime_min + best_index * step) + String(" ");
+*/
     }
     TEST_MESSAGE(msg.c_str());
   }
