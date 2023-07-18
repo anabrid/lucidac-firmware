@@ -70,17 +70,21 @@ void test_function() {
   
   // Not ending this test can be handy when looking constantly
   // on the DSO and not having ideal trigger conditions.
-  bool loop_forever = false;
+  bool loop_forever = true;
 
   for(;loop_forever == true;) {
   
   // i0 loops over the eight integrators on M1 block, to test each of them
   for(uint8_t i0=0; i0<8; i0++) {
-    i0=0;
+
+    i0=0; // fix the integrator to be tested
 
     auto coeff_idx_to_test = UBlock::OUTPUT_IDX_RANGE();
     //std::array<uint8_t,1> coeff_idx_to_test = {4};
     for (auto coeff_idx : coeff_idx_to_test) {
+
+      coeff_idx = 0; // fix the coefficient to be tested
+
       char buffer[128];
       sprintf(buffer, "Int%d, C_idx=%d", i0, coeff_idx);
       TEST_MESSAGE(buffer);
