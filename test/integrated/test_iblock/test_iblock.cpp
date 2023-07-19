@@ -76,12 +76,16 @@ void test_function() {
   uint8_t mul = 0;
 
   // Test values to multiply (a*b = c)
-  float a = 0.2, b = 0.3;
+  float a = 1.0f, b = 0.5f;
 
   // Ports for a*b = c
   uint8_t mul_a = 2*MBlock::M2_INPUT (mul),
           mul_b = 2*MBlock::M2_INPUT (mul) + 1,
           mul_c =   MBlock::M2_OUTPUT(mul);
+
+  char msgbuf[100];
+  sprintf(msgbuf, "%d  %d", mul_a, mul_b);
+  TEST_MESSAGE(msgbuf);
 
   /* ein anderer Test */
   /*
@@ -89,10 +93,11 @@ void test_function() {
     luci.route(one, j, 0.5, mul_a);
   }
   */
-
+  int Nfails = 0;
+  int Ntotal = 0;
   // Teste alle Spaltenkombinationen durch den Rechner durch (eine "lane" geht jeweils durch U-C-I Block).
-  for(uint8_t alane = 0; alane < 31; alane++)
-  for(uint8_t blane = 0; blane < 31; blane++) {
+  for(uint8_t alane = 0; alane < 32; alane++)
+  for(uint8_t blane = 0; blane < 32; blane++) {
 
   if(alane == blane) continue; // a*a can not be mapped this way onto Lucidac
 
@@ -100,14 +105,14 @@ void test_function() {
   luci.iblock->reset(true); // important!
 
   // Manually set the values to test, overwriting the loop logic.
-  alane = 0; // 1;
-  blane = 1; // 2;
+  //alane = 0; // 1;
+  //blane = 1; // 2;
 
   luci.route(one, alane, a, mul_a);
   luci.route(one, blane, b, mul_b);
 
   // decide which ADC channel ADC[0-7] to use in a non-colliding way
-  uint8_t adc_channel = 0
+  uint8_t adc_channel = 0;
   while(alane == adc_channel || blane == adc_channel) {
     adc_channel++;
     adc_channel = adc_channel%7;
@@ -129,8 +134,14 @@ void test_function() {
   // Check for correct output. Mind the negating multiplication on LUCIDAC.
   float expected_value = -a * b, actual_value = daq_.sample()[adc_channel];
   float accepted_relative_error = 0.15f;
-  //bool failed = abs(expected_value - actual_value) > accepted_absolute_error;
-  bool failed = abs(expected_value - actual_value) / abs(expected_value) > accepted_relative_error;
+  float accepted_absolute_error = 0.05f;
+  bool failed = abs(expected_value - actual_value) > accepted_absolute_error;
+  //bool failed = abs(expected_value - actual_value) / abs(expected_value) > accepted_relative_error;
+
+  Ntotal++;
+  if (failed) {
+    Nfails++;
+  }
 
   delayMicroseconds(1000);
 
@@ -138,15 +149,19 @@ void test_function() {
   // TEST_ASSERT(!failed);
 
   // Print out debugging statements
-  char msgbuf[100];
-  sprintf(msgbuf, "MUL%d via alane,blane,adc=%2d,%2d,%2d: %.3f * %.3f = %.3f %s",
-    mul, alane, blane, adc_channel, a, b, actual_value,  failed ? "FAILED" : "CORRECT" );
-  TEST_MESSAGE(msgbuf);
-
+  if (failed) {
+    char msgbuf[100];
+    sprintf(msgbuf, "MUL%d via alane,blane,adc=%2d,%2d,%2d: %.3f * %.3f = %.3f %s",
+      mul, alane, blane, adc_channel, a, b, actual_value,  failed ? "FAILED" : "CORRECT" );
+    TEST_MESSAGE(msgbuf);
+  }
   //delayMicroseconds(10*1000*1000);
 
 
   }  //endfor
+  sprintf(msgbuf, "Total number of Fails: %d/%d",
+      Nfails, Ntotal);
+    TEST_MESSAGE(msgbuf);
 
 }
 

@@ -70,7 +70,7 @@ protected:
   ::functions::TriggerFunction f_upscaling_sync;
   ::functions::TriggerFunction f_upscaling_clear;
 
-  std::array<uint16_t, NUM_COEFF> factors_{0};
+  std::array<uint16_t, NUM_COEFF> factors_{{0}};
   uint32_t upscaling_{0};
 
   void set_upscaling(uint8_t idx, bool enable);
