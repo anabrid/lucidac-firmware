@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 #include <QNEthernet.h>
 
+#include "carrier.h"
 #include "message_handlers.h"
 
 #define ERROR                                                                                                 \
@@ -15,13 +16,17 @@ namespace net = qindesign::network;
 uint16_t server_port = 5732;
 net::EthernetServer server{server_port};
 
+carrier::Carrier carrier_;
+
 void setup() {
+  // Initialize serial communication
   Serial.begin(0);
   while (!Serial && millis() < 4000) {
     // Wait for Serial, but not forever
   }
   Serial.println("Hello.");
 
+  // Initialize ethernet communication
   if (!net::Ethernet.begin()) {
     ERROR
   }
@@ -35,8 +40,14 @@ void setup() {
     Serial.print(server_port);
     Serial.println();
   }
-
   server.begin();
+
+  // Initialize carrier board
+  if (!carrier_.init()) {
+    ERROR
+  }
+  // Register message handler
+  msg::handlers::Registry::set("set_config", new msg::handlers::SetConfigMessageHandler(carrier_));
 }
 
 void loop() {
@@ -70,7 +81,7 @@ void loop() {
         auto msg_out = envelope_out.createNestedObject("msg");
 
         // Select message handler
-        auto msg_handler = msg::handlers::MessageHandler::get(msg_type);
+        auto msg_handler = msg::handlers::Registry::get(msg_type);
         if (!msg_handler) {
           // No handler for message known
           envelope_out["_success"] = false;

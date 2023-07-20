@@ -23,38 +23,39 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#pragma once
+#include <Arduino.h>
+#include <unity.h>
 
-#include <ArduinoJson.h>
-#include <map>
+#define private public
+#include "carrier.h"
 
-namespace msg {
+using namespace carrier;
 
-namespace handlers {
+Carrier _carrier_board;
 
-class MessageHandler {
-public:
-  virtual bool handle(JsonObjectConst msg_in, JsonObject &msg_out) = 0;
-};
+void setUp() {
+  // This is called before *each* test.
+}
 
-class Registry {
-  static std::map<std::string, MessageHandler *> _registry;
+void tearDown() {
+  // This is called after *each* test.
+}
 
-public:
-  static MessageHandler *get(const std::string& msg_type);
-  static bool set(const std::string& msg_type, msg::handlers::MessageHandler *handler, bool overwrite = false);
-};
+void test_init() {
+  TEST_ASSERT(_carrier_board.init());
+}
 
-class PingRequestHandler : public MessageHandler {
-public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
+void test_entity_id() {
+  TEST_ASSERT_EQUAL_STRING("04-E9-E5-14-74-BF", _carrier_board.entity_id.c_str());
+}
 
-class GetEntitiesRequestHandler : public MessageHandler {
-public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
+void setup() {
+  UNITY_BEGIN();
+  RUN_TEST(test_init);
+  RUN_TEST(test_entity_id);
+  UNITY_END();
+}
 
-} // namespace handlers
-
-} // namespace msg
+void loop() {
+  delay(100);
+}

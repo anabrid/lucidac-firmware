@@ -25,20 +25,48 @@
 
 #pragma once
 
+#include <Arduino.h>
+#include <ArduinoJson.h>
 #include <array>
 
 #include "cluster.h"
+#include "message_handlers.h"
 
 using namespace lucidac;
 
 namespace carrier {
 
 class Carrier {
+public:
+  static std::string get_system_mac();
+
 private:
-  std::array<LUCIDAC, 1> clusters;
+  std::string entity_id;
 
 public:
+  std::array<LUCIDAC, 1> clusters;
+
+  Carrier();
+
   bool init();
+
+  const std::string &get_entity_id() const;
 };
 
 } // namespace carrier
+
+namespace msg {
+namespace handlers {
+
+using namespace carrier;
+
+class SetConfigMessageHandler : public MessageHandler {
+  Carrier &carrier;
+
+public:
+  explicit SetConfigMessageHandler(Carrier &carrier);
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+};
+
+} // namespace handlers
+} // namespace msg

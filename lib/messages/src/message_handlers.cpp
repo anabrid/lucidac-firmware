@@ -25,17 +25,29 @@
 
 #include "message_handlers.h"
 
-std::map<std::string, msg::handlers::MessageHandler *> msg::handlers::MessageHandler::handler_registry{
+std::map<std::string, msg::handlers::MessageHandler *> msg::handlers::Registry::_registry{
     {"ping", new PingRequestHandler{}},
     {"get_entities", new GetEntitiesRequestHandler{}}
 };
 
-msg::handlers::MessageHandler *msg::handlers::MessageHandler::get(std::string msg_type) {
-  auto found = handler_registry.find(msg_type);
-  if (found != handler_registry.end()) {
+msg::handlers::MessageHandler *msg::handlers::Registry::get(const std::string& msg_type) {
+  auto found = _registry.find(msg_type);
+  if (found != _registry.end()) {
     return found->second;
   } else {
     return nullptr;
+  }
+}
+
+bool msg::handlers::Registry::set(const std::string& msg_type, msg::handlers::MessageHandler *handler,
+                                  bool overwrite) {
+  auto found = _registry.find(msg_type);
+  if (found != _registry.end() && !overwrite) {
+    return false;
+  } else {
+    // TODO: Overwritten message handlers should be freed
+    _registry[msg_type] = handler;
+    return true;
   }
 }
 
