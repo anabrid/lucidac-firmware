@@ -72,6 +72,12 @@ public:
     return true;
   }
 
+  void config_to_json(JsonObject &cfg, bool recursive = true) {
+    config_self_to_json(cfg);
+    if (recursive)
+      config_children_to_json(cfg);
+  }
+
 protected:
   virtual bool config_self_from_json(JsonObjectConst cfg) = 0;
 
@@ -87,6 +93,19 @@ protected:
       }
     }
     return true;
+  }
+
+  virtual void config_self_to_json(JsonObject &cfg) {
+#ifdef ANABRID_DEBUG_ENTITY_CONFIG
+    Serial.println(__PRETTY_FUNCTION__);
+#endif
+  }
+
+  void config_children_to_json(JsonObject &cfg) {
+    for (auto child : get_child_entities()) {
+      auto child_cfg = cfg.createNestedObject(std::string("/") + child->get_entity_id());
+      child->config_to_json(child_cfg, true);
+    }
   }
 };
 
