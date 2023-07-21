@@ -29,6 +29,7 @@
 #include <ArduinoJson.h>
 #include <array>
 
+#include "entity.h"
 #include "cluster.h"
 #include "message_handlers.h"
 
@@ -36,12 +37,9 @@ using namespace lucidac;
 
 namespace carrier {
 
-class Carrier {
+class Carrier : public entities::Entity {
 public:
   static std::string get_system_mac();
-
-private:
-  std::string entity_id;
 
 public:
   std::array<LUCIDAC, 1> clusters;
@@ -50,7 +48,8 @@ public:
 
   bool init();
 
-  const std::string &get_entity_id() const;
+  Entity *get_child_entity(const std::string &child_id) override;
+  bool config_from_json(JsonObjectConst cfg) override;
 };
 
 } // namespace carrier
