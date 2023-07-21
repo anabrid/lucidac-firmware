@@ -236,6 +236,8 @@ public:
   void write_alt_signal_to_hardware() const;
   void write_offsets_to_hardware() const;
   void write_to_hardware() override;
+
+  bool config_from_json(JsonObjectConst cfg) override;
 };
 
 } // namespace blocks

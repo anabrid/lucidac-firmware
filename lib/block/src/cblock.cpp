@@ -26,7 +26,7 @@
 #include "cblock.h"
 
 blocks::CBlock::CBlock(uint8_t clusterIdx)
-    : FunctionBlock(clusterIdx),
+    : FunctionBlock("C", clusterIdx),
       f_coeffs{
           functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 0),
           functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 1),
@@ -110,4 +110,12 @@ void blocks::CBlock::reset(bool keep_calibration) {
   for (auto &factor : factors_) {
     factor = decltype(f_coeffs)::value_type::RAW_ZERO;
   }
+}
+
+bool blocks::CBlock::config_from_json(JsonObjectConst cfg) {
+#ifdef ANABRID_DEBUG_ENTITY_CONFIG
+  Serial.println(__PRETTY_FUNCTION__);
+#endif
+  // TODO: Implement
+  return false;
 }

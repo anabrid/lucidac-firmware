@@ -23,40 +23,46 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#pragma once
+#include <Arduino.h>
+#include <unity.h>
 
-#include "entity.h"
-#include "local_bus.h"
+#define private public
+#include "mblock.h"
+#include "ublock.h"
+#include "cblock.h"
+#include "iblock.h"
 
-namespace blocks {
+using namespace blocks;
 
-/**
- * A function block represents one module in the LUCIDAC,
- * such as an M-Block, C-Block, I-Block or U-Block.
- *
- * This class (or its children) typically holds the in-RAM representation
- * of the configuration space of the particular hardware and serves as the
- * primary programming interface.
- *
- */
-class FunctionBlock : public entities::Entity {
-public:
-  const uint8_t cluster_idx;
+MIntBlock intblock1{0, MBlock::M1_IDX};
+MIntBlock intblock2{0, MBlock::M2_IDX};
+UBlock ublock{0};
+CBlock cblock{0};
+IBlock iblock{0};
 
-  explicit FunctionBlock(std::string entity_id, const uint8_t clusterIdx) : entities::Entity(std::move(entity_id)), cluster_idx(clusterIdx) {}
+void setUp() {
+  // This is called before *each* test.
+}
 
-  virtual bool init() { return true; }
+void tearDown() {
+  // This is called after *each* test.
+}
 
-  virtual void reset(bool keep_calibration) {}
+void test_entity_ids() {
+  TEST_ASSERT_EQUAL_STRING("M0", intblock1.get_entity_id().c_str());
+  TEST_ASSERT_EQUAL_STRING("M1", intblock2.get_entity_id().c_str());
+  TEST_ASSERT_EQUAL_STRING("U", ublock.get_entity_id().c_str());
+  TEST_ASSERT_EQUAL_STRING("C", cblock.get_entity_id().c_str());
+  TEST_ASSERT_EQUAL_STRING("I", iblock.get_entity_id().c_str());
+}
 
-  virtual bus::addr_t get_block_address() = 0;
+void setup() {
+  UNITY_BEGIN();
+  RUN_TEST(test_entity_ids);
+  UNITY_END();
+}
 
-  virtual void write_to_hardware() = 0;
-
-  Entity *get_child_entity(const std::string &child_id) override {
-    // FunctionBlocks do not give direct access to their children
-    return nullptr;
-  }
-};
-
-} // namespace blocks
+void loop() {
+  //test_function();
+  delay(100);
+}

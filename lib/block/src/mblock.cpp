@@ -26,7 +26,7 @@
 #include "mblock.h"
 
 blocks::MBlock::MBlock(uint8_t cluster_idx, uint8_t slot_idx)
-    : blocks::FunctionBlock{cluster_idx}, slot_idx{slot_idx} {}
+    : blocks::FunctionBlock{std::string("M") + std::to_string(slot_idx-M1_IDX), cluster_idx}, slot_idx{slot_idx} {}
 
 bus::addr_t blocks::MBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, slot_idx, 0); }
 
@@ -77,4 +77,12 @@ void blocks::MIntBlock::write_time_factors_to_hardware() {
   }
   f_time_factor.transfer(switches);
   f_time_factor_sync.trigger();
+}
+
+bool blocks::MIntBlock::config_from_json(JsonObjectConst cfg) {
+#ifdef ANABRID_DEBUG_ENTITY_CONFIG
+  Serial.println(__PRETTY_FUNCTION__);
+#endif
+  // TODO: Implement
+  return false;
 }

@@ -182,7 +182,7 @@ void blocks::functions::USignalSwitchFunction::write_to_hardware() const {
 }
 
 blocks::UBlock::UBlock(const uint8_t clusterIdx)
-    : FunctionBlock(clusterIdx),
+    : FunctionBlock("U", clusterIdx),
       f_umatrix(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_FUNC_IDX), UMATRIX_FUNC_SPI_SETTINGS),
       f_umatrix_sync(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_SYNC_FUNC_IDX)),
       f_umatrix_reset(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_RESET_FUNC_IDX)),
@@ -355,4 +355,12 @@ bool blocks::UBlock::connect_alt_signal(uint16_t alt_signal, uint8_t output) {
     alt_signals |= alt_signal;
 
   return success;
+}
+
+bool blocks::UBlock::config_from_json(JsonObjectConst cfg) {
+#ifdef ANABRID_DEBUG_ENTITY_CONFIG
+  Serial.println(__PRETTY_FUNCTION__);
+#endif
+  // TODO: Implement
+  return false;
 }

@@ -123,6 +123,8 @@ public:
   bool set_time_factor(uint8_t int_idx, unsigned int k);
 
   void write_to_hardware() override;
+
+  bool config_from_json(JsonObjectConst cfg) override;
 };
 
 } // namespace blocks

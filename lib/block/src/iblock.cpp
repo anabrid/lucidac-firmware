@@ -143,7 +143,7 @@ bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool
   if (!allow_input_splitting) {
     for (size_t other_output_idx = 0; other_output_idx < outputs.size(); other_output_idx++) {
       if (output == other_output_idx)
-        continue ;
+        continue;
       if (is_connected(input, other_output_idx)) {
         return false;
       }
@@ -162,4 +162,12 @@ void blocks::IBlock::reset(bool keep_calibration) {
   for (auto &output : outputs) {
     output = 0;
   }
+}
+
+bool blocks::IBlock::config_from_json(JsonObjectConst cfg) {
+#ifdef ANABRID_DEBUG_ENTITY_CONFIG
+  Serial.println(__PRETTY_FUNCTION__);
+#endif
+  // TODO: Implement
+  return false;
 }

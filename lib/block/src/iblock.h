@@ -88,7 +88,7 @@ public:
   ::functions::TriggerFunction f_imatrix_sync;
 
   explicit IBlock(const uint8_t clusterIdx)
-      : FunctionBlock(clusterIdx), outputs{0}, f_cmd{bus::idx_to_addr(clusterIdx, BLOCK_IDX,
+      : FunctionBlock("I", clusterIdx), outputs{0}, f_cmd{bus::idx_to_addr(clusterIdx, BLOCK_IDX,
                                                                       IMATRIX_COMMAND_SR_FUNC_IDX)},
         f_imatrix_reset{bus::idx_to_addr(clusterIdx, BLOCK_IDX, IMATRIX_RESET_FUNC_IDX)},
         f_imatrix_sync{bus::idx_to_addr(clusterIdx, BLOCK_IDX, IMATRIX_SYNC_FUNC_IDX)} {}
@@ -119,6 +119,8 @@ public:
 
   //! Whether an input is connected to an output.
   bool is_connected(uint8_t input, uint8_t output);
+
+  bool config_from_json(JsonObjectConst cfg) override;
 };
 
 } // namespace blocks
