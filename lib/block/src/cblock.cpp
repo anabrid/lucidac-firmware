@@ -112,7 +112,7 @@ void blocks::CBlock::reset(bool keep_calibration) {
   }
 }
 
-bool blocks::CBlock::config_from_json(JsonObjectConst cfg) {
+bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif

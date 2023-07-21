@@ -48,7 +48,7 @@ bool carrier::Carrier::init() {
   return true;
 }
 
-bool carrier::Carrier::config_from_json(JsonObjectConst cfg) {
+bool carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif

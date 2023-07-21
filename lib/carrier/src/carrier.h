@@ -49,7 +49,7 @@ public:
   bool init();
 
   Entity *get_child_entity(const std::string &child_id) override;
-  bool config_from_json(JsonObjectConst cfg) override;
+  bool config_self_from_json(JsonObjectConst cfg) override;
 };
 
 } // namespace carrier

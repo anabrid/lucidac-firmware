@@ -357,7 +357,7 @@ bool blocks::UBlock::connect_alt_signal(uint16_t alt_signal, uint8_t output) {
   return success;
 }
 
-bool blocks::UBlock::config_from_json(JsonObjectConst cfg) {
+bool blocks::UBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif

@@ -101,7 +101,7 @@ public:
   void write_to_hardware() override;
   void reset(bool keep_calibration) override;
 
-  bool config_from_json(JsonObjectConst cfg) override;
+  bool config_self_from_json(JsonObjectConst cfg) override;
 };
 
 } // namespace blocks

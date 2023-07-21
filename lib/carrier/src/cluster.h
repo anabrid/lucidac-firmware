@@ -83,7 +83,7 @@ public:
   void reset(bool keep_calibration);
 
   Entity *get_child_entity(const std::string &child_id) override;
-  bool config_from_json(JsonObjectConst cfg) override;
+  bool config_self_from_json(JsonObjectConst cfg) override;
 
 protected:
   bool calibrate_offsets_ublock_initial(daq::BaseDAQ *daq);

@@ -38,14 +38,14 @@ protected:
 
 public:
   Entity() = default;
+
   explicit Entity(std::string entityId) : entity_id(std::move(entityId)) {}
 
   const std::string &get_entity_id() const { return entity_id; }
 
-  virtual Entity *get_child_entity(const std::string& child_id) = 0;
+  virtual Entity *get_child_entity(const std::string &child_id) = 0;
 
-  virtual bool config_from_json(JsonObjectConst cfg) = 0;
-  Entity* resolve_child_entity(std::string paths[], size_t len) {
+  Entity *resolve_child_entity(std::string paths[], size_t len) {
     auto resolved_entity = this;
     for (size_t path_depth = 0; path_depth < len; path_depth++) {
       resolved_entity = resolved_entity->get_child_entity(paths[path_depth]);
@@ -54,6 +54,36 @@ public:
       }
     }
     return resolved_entity;
+  }
+
+  bool config_from_json(JsonObjectConst cfg) {
+#ifdef ANABRID_DEBUG_ENTITY_CONFIG
+    Serial.println(__PRETTY_FUNCTION__);
+#endif
+    if (cfg.isNull())
+      return false;
+    if (!config_self_from_json(cfg))
+      return false;
+    if (!config_children_from_json(cfg))
+      return false;
+    return true;
+  }
+
+protected:
+  virtual bool config_self_from_json(JsonObjectConst cfg) = 0;
+
+  bool config_children_from_json(JsonObjectConst &cfg) {
+    for (JsonPairConst keyval : cfg) {
+      if (keyval.key().c_str()[0] == '/' and keyval.key().size() > 1) {
+        std::string child_id(keyval.key().c_str() + 1);
+        auto child_entity = get_child_entity(child_id);
+        if (!child_entity)
+          return false;
+        if (!child_entity->config_from_json(keyval.value()))
+          return false;
+      }
+    }
+    return true;
   }
 };
 

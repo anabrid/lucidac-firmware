@@ -129,7 +129,7 @@ entities::Entity *lucidac::LUCIDAC::get_child_entity(const std::string &child_id
   return nullptr;
 }
 
-bool lucidac::LUCIDAC::config_from_json(JsonObjectConst cfg) {
+bool lucidac::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif

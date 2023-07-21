@@ -168,7 +168,7 @@ void blocks::IBlock::reset(bool keep_calibration) {
   reset_outputs();
 }
 
-bool blocks::IBlock::config_from_json(JsonObjectConst cfg) {
+bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif

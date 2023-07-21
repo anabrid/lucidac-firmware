@@ -79,7 +79,7 @@ void blocks::MIntBlock::write_time_factors_to_hardware() {
   f_time_factor_sync.trigger();
 }
 
-bool blocks::MIntBlock::config_from_json(JsonObjectConst cfg) {
+bool blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif

@@ -125,7 +125,7 @@ public:
   //! Disconnect all inputs from an output. Fails for invalid arguments.
   bool disconnect(uint8_t output);
 
-  bool config_from_json(JsonObjectConst cfg) override;
+  bool config_self_from_json(JsonObjectConst cfg) override;
 };
 
 } // namespace blocks
