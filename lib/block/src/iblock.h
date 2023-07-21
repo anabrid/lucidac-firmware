@@ -126,6 +126,7 @@ public:
   bool disconnect(uint8_t output);
 
   bool config_self_from_json(JsonObjectConst cfg) override;
+  bool _connect_from_json(const JsonVariantConst &input_spec, uint8_t output);
 };
 
 } // namespace blocks

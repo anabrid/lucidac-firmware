@@ -172,8 +172,55 @@ bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  // TODO: Implement
-  return false;
+  if (cfg.containsKey("outputs")) {
+    // Handle a mapping of output to list of inputs
+    // This only overrides outputs that are specifically mentioned
+    if (cfg["outputs"].is<JsonObjectConst>()) {
+      for (JsonPairConst keyval : cfg["outputs"].as<JsonObjectConst>()) {
+        // Key defines output
+        // TODO: Check conversion from string to number
+        auto output = std::stoul(keyval.key().c_str());
+        // Disconnect also sanity checks output index for us
+        if (!disconnect(output))
+          return false;
+        // Input may be given as list or as a single number
+        return _connect_from_json(keyval.value(), output);
+      }
+    }
+    // Handle a list of outputs
+    // This must overwrite all outputs, so we clear all of them
+    if (cfg["outputs"].is<JsonArrayConst>()) {
+      auto outputs_json = cfg["outputs"].as<JsonArrayConst>();
+      if (outputs_json.size() != NUM_OUTPUTS)
+        return false;
+      reset_outputs();
+      uint8_t idx = 0;
+      for (JsonVariantConst input_spec : outputs_json) {
+        // Input may be given as list or as a single number
+        return _connect_from_json(input_spec, idx++);
+      }
+    }
+  }
+  return true;
+}
+
+bool blocks::IBlock::_connect_from_json(const JsonVariantConst &input_spec, uint8_t output) {
+  if (input_spec.isNull()) {
+    // Output is already disconnected from outer code
+  } else if (input_spec.is<JsonArrayConst>()) {
+    for (auto input : input_spec.as<JsonArrayConst>()) {
+      if (!input.is<uint8_t>())
+        return false;
+      if (!connect(input, output))
+        return false;
+    }
+  } else if (input_spec.is<uint8_t>()) {
+    if (!connect(input_spec, output))
+      return false;
+  } else {
+    return false;
+  }
+  return true;
 }
 
 bool blocks::IBlock::disconnect(uint8_t input, uint8_t output) {
