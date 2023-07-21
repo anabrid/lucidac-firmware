@@ -42,7 +42,7 @@ public:
   blocks::CBlock *cblock = nullptr;
   blocks::IBlock *iblock = nullptr;
 
-  LUCIDAC();
+  explicit LUCIDAC(uint8_t cluster_idx = 0);
 
   bool init();
   auto get_blocks();
