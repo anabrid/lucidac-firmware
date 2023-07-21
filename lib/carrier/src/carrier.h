@@ -62,11 +62,25 @@ namespace handlers {
 
 using namespace carrier;
 
-class SetConfigMessageHandler : public MessageHandler {
+class CarrierMessageHandlerBase : public msg::handlers::MessageHandler {
+protected:
   Carrier &carrier;
 
 public:
-  explicit SetConfigMessageHandler(Carrier &carrier);
+  explicit CarrierMessageHandlerBase(Carrier &carrier);
+};
+
+class SetConfigMessageHandler : public CarrierMessageHandlerBase {
+public:
+  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
+
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+};
+
+class GetConfigMessageHandler : public CarrierMessageHandlerBase {
+public:
+  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
+
   bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 

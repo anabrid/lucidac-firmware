@@ -48,6 +48,7 @@ void setup() {
   }
   // Register message handler
   msg::handlers::Registry::set("set_config", new msg::handlers::SetConfigMessageHandler(carrier_));
+  msg::handlers::Registry::set("get_config", new msg::handlers::GetConfigMessageHandler(carrier_));
 }
 
 void loop() {

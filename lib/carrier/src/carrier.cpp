@@ -65,7 +65,6 @@ entities::Entity *carrier::Carrier::get_child_entity(const std::string &child_id
   return &clusters[cluster_idx];
 }
 
-msg::handlers::SetConfigMessageHandler::SetConfigMessageHandler(Carrier &carrier) : carrier(carrier) {}
 std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
 #ifdef ANABRID_DEBUG_ENTITY
   Serial.println(__PRETTY_FUNCTION__);
@@ -76,6 +75,8 @@ std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
   }
   return children;
 }
+
+msg::handlers::CarrierMessageHandlerBase::CarrierMessageHandlerBase(Carrier &carrier) : carrier(carrier) {}
 
 bool msg::handlers::SetConfigMessageHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
 #ifdef ANABRID_DEBUG_COMMS
@@ -111,4 +112,22 @@ bool msg::handlers::SetConfigMessageHandler::handle(JsonObjectConst msg_in, Json
   }
 
   return resolved_entity->config_from_json(msg_in["config"]);
+}
+
+bool msg::handlers::GetConfigMessageHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+#ifdef ANABRID_DEBUG_COMMS
+  Serial.println(__PRETTY_FUNCTION__);
+#endif
+  // TODO: Handle paths to sub-entities
+
+  // Save entity path back into response
+  auto entity_path = msg_out.createNestedArray("entity");
+  entity_path.add(carrier.get_entity_id());
+  // Save config into response
+  auto cfg = msg_out.createNestedObject("config");
+  auto recursive = true;
+  if (msg_in.containsKey("recursive"))
+    recursive = msg_in["recursive"].as<bool>();
+  carrier.config_to_json(cfg, recursive);
+  return true;
 }
