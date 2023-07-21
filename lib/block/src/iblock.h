@@ -70,6 +70,12 @@ class IBlock : public FunctionBlock {
 protected:
   void reset_outputs();
 
+  bool _connect_from_json(const JsonVariantConst &input_spec, uint8_t output);
+
+  void config_self_to_json(JsonObject &cfg) override;
+
+  bool _is_connected(uint8_t input, uint8_t output);
+
 public:
   static constexpr uint8_t BLOCK_IDX = bus::I_BLOCK_IDX;
   static constexpr uint8_t IMATRIX_COMMAND_SR_FUNC_IDX = 1;
@@ -95,7 +101,9 @@ public:
   bus::addr_t get_block_address() override;
 
   void write_to_hardware() override;
+
   bool init() override;
+
   void reset(bool keep_calibration) override;
 
   /**
@@ -126,7 +134,6 @@ public:
   bool disconnect(uint8_t output);
 
   bool config_self_from_json(JsonObjectConst cfg) override;
-  bool _connect_from_json(const JsonVariantConst &input_spec, uint8_t output);
 };
 
 } // namespace blocks

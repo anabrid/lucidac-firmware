@@ -121,10 +121,14 @@ bool blocks::IBlock::init() {
 
 bus::addr_t blocks::IBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
 
+bool blocks::IBlock::_is_connected(uint8_t input, uint8_t output) {
+  return outputs[output] & INPUT_BITMASK(input);
+}
+
 bool blocks::IBlock::is_connected(uint8_t input, uint8_t output) {
   if (output >= NUM_OUTPUTS or input >= NUM_INPUTS)
     return false;
-  return outputs[output] & INPUT_BITMASK(input);
+  return _is_connected(input, output);
 }
 
 bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool allow_input_splitting) {
@@ -184,7 +188,8 @@ bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
         if (!disconnect(output))
           return false;
         // Input may be given as list or as a single number
-        return _connect_from_json(keyval.value(), output);
+        if (!_connect_from_json(keyval.value(), output))
+          return false;
       }
     }
     // Handle a list of outputs
@@ -197,7 +202,8 @@ bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
       uint8_t idx = 0;
       for (JsonVariantConst input_spec : outputs_json) {
         // Input may be given as list or as a single number
-        return _connect_from_json(input_spec, idx++);
+        if (!_connect_from_json(input_spec, idx++))
+          return false;
       }
     }
   }
@@ -236,4 +242,20 @@ bool blocks::IBlock::disconnect(uint8_t output) {
     return false;
   outputs[output] = 0;
   return true;
+}
+
+void blocks::IBlock::config_self_to_json(JsonObject &cfg) {
+  Entity::config_self_to_json(cfg);
+  // Save outputs into cfg
+  auto outputs_cfg = cfg.createNestedArray("outputs");
+  for (uint8_t output = 0; output < NUM_OUTPUTS; output++) {
+    if (outputs[output]) {
+      auto inputs_cfg = outputs_cfg.createNestedArray();
+      for (uint8_t input = 0; input < NUM_INPUTS; input++)
+        if (_is_connected(input, output))
+          inputs_cfg.add(input);
+    } else {
+      outputs_cfg.add(nullptr);
+    }
+  }
 }
