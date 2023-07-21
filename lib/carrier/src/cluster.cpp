@@ -23,7 +23,7 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#include "lucidac.h"
+#include "cluster.h"
 #include "local_bus.h"
 #include "running_avg.h"
 
@@ -45,8 +45,8 @@ bool lucidac::LUCIDAC::init() {
   return true;
 }
 
-lucidac::LUCIDAC::LUCIDAC()
-    : m1block{new blocks::MIntBlock{0, blocks::MBlock::M1_IDX}}, ublock{new blocks::UBlock{0}}, cblock{new blocks::CBlock{0}}, iblock{new blocks::IBlock{0}} {
+lucidac::LUCIDAC::LUCIDAC(uint8_t cluster_idx)
+    : m1block{new blocks::MIntBlock{cluster_idx, blocks::MBlock::M1_IDX}}, ublock{new blocks::UBlock{cluster_idx}}, cblock{new blocks::CBlock{cluster_idx}}, iblock{new blocks::IBlock{cluster_idx}} {
   // TODO: Check for existence of blocks here instead of initializing them without checking
 }
 
