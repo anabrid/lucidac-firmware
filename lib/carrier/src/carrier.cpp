@@ -52,7 +52,9 @@ bool carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  return false;
+  // Carrier has no own configuration parameters currently
+  // TODO: Have an option to fail on unexpected configuration
+  return true;
 }
 
 entities::Entity *carrier::Carrier::get_child_entity(const std::string &child_id) {
@@ -92,7 +94,7 @@ bool msg::handlers::SetConfigMessageHandler::handle(JsonObjectConst msg_in, Json
   }
 
   // Path may be to one of our sub-entities
-  auto resolved_entity = carrier.resolve_child_entity(path+1, path_depth-1);
+  auto resolved_entity = carrier.resolve_child_entity(path + 1, path_depth - 1);
   if (!resolved_entity) {
     msg_out["error"] = "No entity at that path.";
     return false;
