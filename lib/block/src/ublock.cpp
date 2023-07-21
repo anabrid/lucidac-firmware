@@ -222,6 +222,13 @@ bool blocks::UBlock::disconnect(uint8_t input, uint8_t output) {
   }
 }
 
+bool blocks::UBlock::disconnect(uint8_t output) {
+  if (output >= NUM_OF_OUTPUTS)
+    return false;
+  output_input_map[output] = 0;
+  return true;
+}
+
 bool blocks::UBlock::_is_connected(uint8_t input, uint8_t output) {
   return output_input_map[output] == input + 1;
 }
@@ -361,6 +368,64 @@ bool blocks::UBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  // TODO: Implement
-  return false;
+  if (cfg.containsKey("outputs")) {
+    // Handle an array of outputs
+    // In this case, all outputs are reset
+    if (cfg["outputs"].is<JsonArrayConst>()) {
+      auto outputs = cfg["outputs"].as<JsonArrayConst>();
+      if (outputs.size() != NUM_OF_OUTPUTS)
+        return false;
+      reset_connections();
+      uint8_t idx = 0;
+      for (JsonVariantConst input : outputs) {
+        if (input.isNull()) {
+          idx++;
+          continue;
+        }
+        else if (!input.is<uint8_t>()) {
+          return false;
+        }
+        if (!connect(input.as<uint8_t>(), idx++))
+          return false;
+      }
+    }
+    // Handle a mapping of outputs
+    // In this case, only explicitly passed outputs are changed
+    // To allow reconnections (swapping), we first clear all outputs and set them afterwards.
+    if (cfg["outputs"].is<JsonObjectConst>()) {
+      for (JsonPairConst keyval : cfg["outputs"].as<JsonObjectConst>()) {
+        // Sanity check that any input passed is a number
+        if (!(keyval.value().is<uint8_t>() or keyval.value().isNull()))
+          return false;
+        // TODO: Check conversion from string to number
+        auto output = std::stoul(keyval.key().c_str());
+        disconnect(output);
+      }
+      for (JsonPairConst keyval : cfg["outputs"].as<JsonObjectConst>()) {
+        // TODO: Check conversion from string to number
+        auto output = std::stoul(keyval.key().c_str());
+        // Type is checked above
+        if (keyval.value().isNull())
+          continue;
+        auto input = keyval.value().as<uint8_t>();
+        if (!connect(input, output))
+          return false;
+      }
+    }
+  }
+
+  // The combination of checks above must not ignore any valid config dictionary
+  return true;
+}
+
+void blocks::UBlock::config_self_to_json(JsonObject &cfg) {
+  Entity::config_self_to_json(cfg);
+  // Save outputs into cfg
+  auto outputs_cfg = cfg.createNestedArray("outputs");
+  for (const auto &output : output_input_map) {
+    if (output)
+      outputs_cfg.add(output - 1);
+    else
+      outputs_cfg.add(nullptr);
+  }
 }

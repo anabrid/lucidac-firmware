@@ -208,6 +208,9 @@ public:
   //! Disconnect an input from an output, if they are connected. Both input and output are zero-based indizes.
   bool disconnect(uint8_t input, uint8_t output);
 
+  //! Disconnect all inputs from an output. Fails for invalid arguments.
+  bool disconnect(uint8_t output);
+
   //! Check whether an input is connected to an output.
   bool is_connected(uint8_t input, uint8_t output);
 
@@ -238,6 +241,9 @@ public:
   void write_to_hardware() override;
 
   bool config_self_from_json(JsonObjectConst cfg) override;
+
+protected:
+  void config_self_to_json(JsonObject &cfg) override;
 };
 
 } // namespace blocks
