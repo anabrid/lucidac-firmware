@@ -66,6 +66,16 @@ entities::Entity *carrier::Carrier::get_child_entity(const std::string &child_id
 }
 
 msg::handlers::SetConfigMessageHandler::SetConfigMessageHandler(Carrier &carrier) : carrier(carrier) {}
+std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
+#ifdef ANABRID_DEBUG_ENTITY
+  Serial.println(__PRETTY_FUNCTION__);
+#endif
+  std::vector<entities::Entity*> children;
+  for (auto& cluster: clusters) {
+    children.push_back(&cluster);
+  }
+  return children;
+}
 
 bool msg::handlers::SetConfigMessageHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
 #ifdef ANABRID_DEBUG_COMMS

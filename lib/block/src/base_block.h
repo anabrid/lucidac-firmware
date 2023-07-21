@@ -43,7 +43,8 @@ class FunctionBlock : public entities::Entity {
 public:
   const uint8_t cluster_idx;
 
-  explicit FunctionBlock(std::string entity_id, const uint8_t clusterIdx) : entities::Entity(std::move(entity_id)), cluster_idx(clusterIdx) {}
+  explicit FunctionBlock(std::string entity_id, const uint8_t clusterIdx)
+      : entities::Entity(std::move(entity_id)), cluster_idx(clusterIdx) {}
 
   virtual bool init() { return true; }
 
@@ -52,6 +53,14 @@ public:
   virtual bus::addr_t get_block_address() = 0;
 
   virtual void write_to_hardware() = 0;
+
+  std::vector<Entity *> get_child_entities() override {
+#ifdef ANABRID_DEBUG_ENTITY
+    Serial.println(__PRETTY_FUNCTION__);
+#endif
+    // FunctionBlocks do not give direct access to their children
+    return {};
+  }
 
   Entity *get_child_entity(const std::string &child_id) override {
     // FunctionBlocks do not give direct access to their children

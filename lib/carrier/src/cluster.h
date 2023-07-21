@@ -26,8 +26,8 @@
 #pragma once
 
 #include "blocks.h"
-#include "entity.h"
 #include "daq.h"
+#include "entity.h"
 
 namespace lucidac {
 
@@ -82,7 +82,10 @@ public:
 
   void reset(bool keep_calibration);
 
+  std::vector<Entity *> get_child_entities() override;
+
   Entity *get_child_entity(const std::string &child_id) override;
+
   bool config_self_from_json(JsonObjectConst cfg) override;
 
 protected:

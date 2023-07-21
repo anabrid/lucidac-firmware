@@ -26,6 +26,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
@@ -42,6 +43,8 @@ public:
   explicit Entity(std::string entityId) : entity_id(std::move(entityId)) {}
 
   const std::string &get_entity_id() const { return entity_id; }
+
+  virtual std::vector<Entity *> get_child_entities() = 0;
 
   virtual Entity *get_child_entity(const std::string &child_id) = 0;
 

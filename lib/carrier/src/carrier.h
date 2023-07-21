@@ -29,8 +29,8 @@
 #include <ArduinoJson.h>
 #include <array>
 
-#include "entity.h"
 #include "cluster.h"
+#include "entity.h"
 #include "message_handlers.h"
 
 using namespace lucidac;
@@ -48,7 +48,10 @@ public:
 
   bool init();
 
+  std::vector<Entity *> get_child_entities() override;
+
   Entity *get_child_entity(const std::string &child_id) override;
+
   bool config_self_from_json(JsonObjectConst cfg) override;
 };
 

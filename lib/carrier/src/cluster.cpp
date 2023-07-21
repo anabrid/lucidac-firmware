@@ -121,11 +121,11 @@ entities::Entity *lucidac::LUCIDAC::get_child_entity(const std::string &child_id
   else if (child_id == "M1")
     return m2block;
   else if (child_id == "U")
-      return ublock;
+    return ublock;
   else if (child_id == "C")
-      return cblock;
+    return cblock;
   else if (child_id == "I")
-      return iblock;
+    return iblock;
   return nullptr;
 }
 
@@ -136,4 +136,11 @@ bool lucidac::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
   // Cluster has no own configuration parameters currently
   // TODO: Have an option to fail on unexpected configuration
   return true;
+}
+
+std::vector<entities::Entity *> lucidac::LUCIDAC::get_child_entities() {
+#ifdef ANABRID_DEBUG_ENTITY_CONFIG
+    Serial.println(__PRETTY_FUNCTION__);
+#endif
+  return {m1block, m2block, ublock, cblock, iblock};
 }
