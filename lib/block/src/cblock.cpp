@@ -116,6 +116,33 @@ bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  // TODO: Implement
-  return false;
+  if (cfg.containsKey("factors")) {
+    // Handle an array of factors
+    if (cfg["factors"].is<JsonArrayConst>()) {
+      auto factors = cfg["factors"].as<JsonArrayConst>();
+      if (factors.size() != NUM_COEFF)
+        return false;
+      uint8_t idx = 0;
+      for (JsonVariantConst factor : factors) {
+        if (!factor.is<float>()) {
+          return false;
+        }
+        set_factor(idx++, factor.as<float>());
+      }
+    }
+    // Handle a mapping of factors
+    if (cfg["factors"].is<JsonObjectConst>()) {
+      for (JsonPairConst keyval : cfg["factors"].as<JsonObjectConst>()) {
+        if (!keyval.value().is<float>())
+          return false;
+        // TODO: Check conversion from string to number
+        auto idx = std::stoul(keyval.key().c_str());
+        if (!set_factor(idx, keyval.value().as<float>()))
+          return false;
+      }
+    }
+  }
+
+  // The combination of checks above must not ignore any valid config dictionary
+  return true;
 }
