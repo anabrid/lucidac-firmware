@@ -120,6 +120,12 @@ public:
   //! Whether an input is connected to an output.
   bool is_connected(uint8_t input, uint8_t output);
 
+  //! Disconnect one input from an output. Fails for invalid arguments or if no input is connected.
+  bool disconnect(uint8_t input, uint8_t output);
+
+  //! Disconnect all inputs from an output. Fails for invalid arguments.
+  bool disconnect(uint8_t output);
+
   bool config_from_json(JsonObjectConst cfg) override;
 };
 

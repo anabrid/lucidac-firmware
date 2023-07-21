@@ -62,9 +62,27 @@ void test_split_signal_constraint() {
   TEST_ASSERT(iblock.is_connected(1,1));
 }
 
+void test_disconnect() {
+  // Some connections
+  TEST_ASSERT(iblock.connect(0,0));
+  TEST_ASSERT(iblock.is_connected(0,0));
+  TEST_ASSERT(iblock.connect(1,0));
+  TEST_ASSERT(iblock.is_connected(1,0));
+
+  // Disconnect one
+  TEST_ASSERT(iblock.disconnect(0,0));
+  TEST_ASSERT_FALSE(iblock.is_connected(0,0));
+  TEST_ASSERT(iblock.is_connected(1,0));
+
+  // Disconnect all
+  TEST_ASSERT(iblock.disconnect(0));
+  TEST_ASSERT_FALSE(iblock.is_connected(1,0));
+}
+
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_split_signal_constraint);
+  RUN_TEST(test_disconnect);
   UNITY_END();
 }
 

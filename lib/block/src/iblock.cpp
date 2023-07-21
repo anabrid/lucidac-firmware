@@ -171,3 +171,18 @@ bool blocks::IBlock::config_from_json(JsonObjectConst cfg) {
   // TODO: Implement
   return false;
 }
+
+bool blocks::IBlock::disconnect(uint8_t input, uint8_t output) {
+  // Fail if input was not connected
+  if (!is_connected(input, output))
+    return false;
+  outputs[output] &= ~INPUT_BITMASK(input);
+  return true;
+}
+
+bool blocks::IBlock::disconnect(uint8_t output) {
+  if (output >= NUM_OUTPUTS)
+    return false;
+  outputs[output] = 0;
+  return true;
+}
