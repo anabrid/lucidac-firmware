@@ -127,4 +127,14 @@ public:
   bool config_self_from_json(JsonObjectConst cfg) override;
 };
 
+class MMulBlock : public MBlock {
+public:
+  using MBlock::MBlock;
+
+  void write_to_hardware() override;
+
+protected:
+  bool config_self_from_json(JsonObjectConst cfg) override;
+};
+
 } // namespace blocks

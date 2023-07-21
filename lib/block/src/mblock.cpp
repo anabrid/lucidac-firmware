@@ -86,3 +86,7 @@ bool blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
   // TODO: Implement
   return false;
 }
+
+void blocks::MMulBlock::write_to_hardware() {}
+
+bool blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) { return false; }
