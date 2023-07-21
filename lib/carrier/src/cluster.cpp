@@ -46,7 +46,7 @@ bool lucidac::LUCIDAC::init() {
 }
 
 lucidac::LUCIDAC::LUCIDAC(uint8_t cluster_idx)
-    : m1block{new blocks::MIntBlock{cluster_idx, blocks::MBlock::M1_IDX}}, ublock{new blocks::UBlock{cluster_idx}}, cblock{new blocks::CBlock{cluster_idx}}, iblock{new blocks::IBlock{cluster_idx}} {
+    : entities::Entity(std::to_string(cluster_idx)), m1block{new blocks::MIntBlock{cluster_idx, blocks::MBlock::M1_IDX}}, ublock{new blocks::UBlock{cluster_idx}}, cblock{new blocks::CBlock{cluster_idx}}, iblock{new blocks::IBlock{cluster_idx}} {
   // TODO: Check for existence of blocks here instead of initializing them without checking
 }
 
@@ -113,4 +113,26 @@ void lucidac::LUCIDAC::reset(bool keep_calibration) {
     if (block)
       block->reset(keep_calibration);
   }
+}
+
+entities::Entity *lucidac::LUCIDAC::get_child_entity(const std::string &child_id) {
+  if (child_id == "M0")
+    return m1block;
+  else if (child_id == "M1")
+    return m2block;
+  else if (child_id == "U")
+      return ublock;
+  else if (child_id == "C")
+      return cblock;
+  else if (child_id == "I")
+      return iblock;
+  return nullptr;
+}
+
+bool lucidac::LUCIDAC::config_from_json(JsonObjectConst cfg) {
+#ifdef ANABRID_DEBUG_ENTITY_CONFIG
+  Serial.println(__PRETTY_FUNCTION__);
+#endif
+  // TODO: Implement
+  return false;
 }

@@ -26,6 +26,7 @@
 #pragma once
 
 #include "blocks.h"
+#include "entity.h"
 #include "daq.h"
 
 namespace lucidac {
@@ -34,7 +35,7 @@ namespace lucidac {
  * The Lucidac class represents all (most) hardware of the Lucidac.
  * It serves as the primary entry point for on-microcontroller programming.
  **/
-class LUCIDAC {
+class LUCIDAC : public entities::Entity {
 public:
   blocks::MBlock *m1block = nullptr;
   blocks::MBlock *m2block = nullptr;
@@ -80,6 +81,9 @@ public:
   bool route_alt_signal(uint16_t alt_signal, uint8_t u_out, float c_factor, uint8_t i_out);
 
   void reset(bool keep_calibration);
+
+  Entity *get_child_entity(const std::string &child_id) override;
+  bool config_from_json(JsonObjectConst cfg) override;
 
 protected:
   bool calibrate_offsets_ublock_initial(daq::BaseDAQ *daq);
