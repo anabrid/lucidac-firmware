@@ -133,6 +133,7 @@ bool lucidac::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  // TODO: Implement
-  return false;
+  // Cluster has no own configuration parameters currently
+  // TODO: Have an option to fail on unexpected configuration
+  return true;
 }
