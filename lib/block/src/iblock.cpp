@@ -157,11 +157,15 @@ bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool
   return true;
 }
 
-void blocks::IBlock::reset(bool keep_calibration) {
-  FunctionBlock::reset(keep_calibration);
+void blocks::IBlock::reset_outputs() {
   for (auto &output : outputs) {
     output = 0;
   }
+}
+
+void blocks::IBlock::reset(bool keep_calibration) {
+  FunctionBlock::reset(keep_calibration);
+  reset_outputs();
 }
 
 bool blocks::IBlock::config_from_json(JsonObjectConst cfg) {

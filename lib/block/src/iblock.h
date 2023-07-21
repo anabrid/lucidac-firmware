@@ -55,22 +55,21 @@ public:
 
 } // namespace functions
 
-
 /**
  * The Lucidac I-Block (I for Current; the Implicit Summing Block) is
  * represented by this class.
- * 
+ *
  * This class provides an in-memory representation of the bit matrix,
  * neat way of manipulating it and flushing it out to the hardware.
- * 
+ *
  * As a Lucidac can only have a single I-Block, this is kind of a singleton.
  * Typical usage happens via the Lucidac class.
- * 
- * @TODO: Should ensure that there is no more then one bit per line,
- *        cf. https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/issues/8
- * 
+ *
  **/
 class IBlock : public FunctionBlock {
+protected:
+  void reset_outputs();
+
 public:
   static constexpr uint8_t BLOCK_IDX = bus::I_BLOCK_IDX;
   static constexpr uint8_t IMATRIX_COMMAND_SR_FUNC_IDX = 1;
@@ -89,7 +88,7 @@ public:
 
   explicit IBlock(const uint8_t clusterIdx)
       : FunctionBlock("I", clusterIdx), outputs{0}, f_cmd{bus::idx_to_addr(clusterIdx, BLOCK_IDX,
-                                                                      IMATRIX_COMMAND_SR_FUNC_IDX)},
+                                                                           IMATRIX_COMMAND_SR_FUNC_IDX)},
         f_imatrix_reset{bus::idx_to_addr(clusterIdx, BLOCK_IDX, IMATRIX_RESET_FUNC_IDX)},
         f_imatrix_sync{bus::idx_to_addr(clusterIdx, BLOCK_IDX, IMATRIX_SYNC_FUNC_IDX)} {}
 
@@ -103,17 +102,17 @@ public:
    * Connects an input line [0..31] to an output line [0..15]
    * by setting an appropriate bit/switch in the respective position
    * in the matrix.
-   * 
+   *
    * Note that this function only manipulates the in-memory representation
    * and does not immediately write outs to hardware.
-   * 
+   *
    * Note that calls to connect() only add bits to the existing configuration.
    * Use reset() to reset the matrix.
-   * 
+   *
    * The flag `exlusive` disconnects all other inputs from the chosen output.
    *
    * @returns false in case of invalid input, true else.
-   * 
+   *
    **/
   bool connect(uint8_t input, uint8_t output, bool exclusive = false, bool allow_input_splitting = false);
 
