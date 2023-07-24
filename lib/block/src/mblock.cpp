@@ -52,6 +52,7 @@ void blocks::MIntBlock::write_to_hardware() {
   for (decltype(ic_raw.size()) i = 0; i < ic_raw.size(); i++) {
     f_ic_dac.set_channel(i, ic_raw[i]);
   }
+  write_time_factors_to_hardware();
 }
 
 bool blocks::MIntBlock::init() {
