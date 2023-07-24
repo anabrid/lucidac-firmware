@@ -41,6 +41,10 @@ uint16_t functions::AD5452::float_to_raw(float scale) {
   return static_cast<uint16_t>(scale * 1024.0f + RAW_ZERO) << 2;
 }
 
+float functions::AD5452::raw_to_float(uint16_t raw) {
+  return (static_cast<float>(raw) - static_cast<float>(RAW_ZERO << 2)) / 4095;
+}
+
 void functions::AD5452::set_scale(uint16_t scale_raw) {
   begin_communication();
   // AD5452 expects at least 13ns delay between chip select and data

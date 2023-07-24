@@ -102,6 +102,9 @@ public:
   void reset(bool keep_calibration) override;
 
   bool config_self_from_json(JsonObjectConst cfg) override;
+
+protected:
+  void config_self_to_json(JsonObject &cfg) override;
 };
 
 } // namespace blocks

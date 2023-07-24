@@ -146,3 +146,11 @@ bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
   // The combination of checks above must not ignore any valid config dictionary
   return true;
 }
+
+void blocks::CBlock::config_self_to_json(JsonObject &cfg) {
+  Entity::config_self_to_json(cfg);
+  auto factors_cfg = cfg.createNestedArray("factors");
+  for (auto factor : factors_) {
+    factors_cfg.add(decltype(f_coeffs)::value_type::raw_to_float(factor));
+  }
+}

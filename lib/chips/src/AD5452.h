@@ -42,6 +42,7 @@ public:
   void set_scale(uint16_t scale_raw);
   void set_scale(float scale);
   static uint16_t float_to_raw(float scale);
+  static float raw_to_float(uint16_t raw);
 };
 
 }
