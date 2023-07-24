@@ -59,6 +59,12 @@ uint16_t functions::DAC60508::float_to_raw(float value) {
   return static_cast<uint16_t>((value + 1.0f) / 2.0f * static_cast<float>(RAW_PLUS_ONE - RAW_MINUS_ONE));
 }
 
+float functions::DAC60508::raw_to_float(uint16_t raw) {
+  return (static_cast<float>(raw) - static_cast<float>(RAW_MINUS_ONE)) /
+             static_cast<float>(RAW_PLUS_ONE - RAW_MINUS_ONE) * 2.0f -
+         1.0f;
+}
+
 bool functions::DAC60508::set_channel(uint8_t idx, uint16_t value) const {
   write_register(REG_DAC(idx), value);
   // One could possibly read the register back to check or use CRC

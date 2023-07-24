@@ -26,7 +26,8 @@
 #include "mblock.h"
 
 blocks::MBlock::MBlock(uint8_t cluster_idx, uint8_t slot_idx)
-    : blocks::FunctionBlock{std::string("M") + std::to_string(slot_idx-M1_IDX), cluster_idx}, slot_idx{slot_idx} {}
+    : blocks::FunctionBlock{std::string("M") + std::to_string(slot_idx - M1_IDX), cluster_idx},
+      slot_idx{slot_idx} {}
 
 bus::addr_t blocks::MBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, slot_idx, 0); }
 
@@ -84,8 +85,40 @@ bool blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  // TODO: Implement
-  return false;
+  if (cfg.containsKey("integrators")) {
+    // Handle an array of integrator configurations
+    if (cfg["integrators"].is<JsonArrayConst>()) {
+      auto ints_cfg = cfg["integrators"].as<JsonArrayConst>();
+      if (ints_cfg.size() != NUM_INTEGRATORS) {
+        return false;
+      }
+      for (size_t i = 0; i < ints_cfg.size(); i++) {
+        if (!ints_cfg[i].containsKey("ic") or !ints_cfg[i]["ic"].is<float>())
+          return false;
+        if (!set_ic(i, ints_cfg[i]["ic"]))
+          return false;
+        if (ints_cfg[i].containsKey("k")) {
+          if (!ints_cfg[i]["k"].is<unsigned int>())
+            return false;
+          if (!set_time_factor(i, ints_cfg[i]["k"]))
+            return false;
+        }
+      }
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
+void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
+  Entity::config_self_to_json(cfg);
+  auto ints_cfg = cfg.createNestedArray("integrators");
+  for (size_t i = 0; i < NUM_INTEGRATORS; i++) {
+    auto int_cfg = ints_cfg.createNestedObject();
+    int_cfg["ic"] = decltype(f_ic_dac)::raw_to_float(ic_raw[i]);
+    int_cfg["k"] = time_factors[i];
+  }
 }
 
 void blocks::MMulBlock::write_to_hardware() {}
