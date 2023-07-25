@@ -123,4 +123,8 @@ void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
 
 void blocks::MMulBlock::write_to_hardware() {}
 
-bool blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) { return false; }
+bool blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
+  if (!cfg.isNull())
+    return false;
+  return true;
+}
