@@ -24,7 +24,9 @@
 // ANABRID_END_LICENSE
 
 #include "iblock.h"
+
 #include "functions.h"
+#include "logging.h"
 
 void blocks::functions::ICommandRegisterFunction::write_to_hardware() const {
   begin_communication();
@@ -111,6 +113,7 @@ void blocks::IBlock::write_to_hardware() {
 }
 
 bool blocks::IBlock::init() {
+  LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   if (!FunctionBlock::init()) {
     return false;
   };

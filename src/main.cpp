@@ -3,6 +3,7 @@
 #include <QNEthernet.h>
 
 #include "carrier.h"
+#include "logging.h"
 #include "message_handlers.h"
 
 #define ERROR                                                                                                 \
@@ -24,31 +25,41 @@ void setup() {
   while (!Serial && millis() < 4000) {
     // Wait for Serial, but not forever
   }
-  Serial.println("Hello.");
+  LOG(ANABRID_DEBUG_INIT, "Hello.");
 
   // Initialize ethernet communication
   if (!net::Ethernet.begin()) {
+    LOG_ERROR("Error starting ethernet.");
     ERROR
   }
+  LOG(ANABRID_DEBUG_INIT, "Waiting for IP address on ethernet...");
   if (!net::Ethernet.waitForLocalIP(10000)) {
+    LOG_ERROR("Error getting IP address.");
     ERROR
   } else {
-    IPAddress ip = net::Ethernet.localIP();
+    __attribute__((unused)) IPAddress ip = net::Ethernet.localIP();
+#ifdef ANABRID_DEBUG_INIT
     Serial.print("I am listening on ");
     ip.printTo(Serial);
     Serial.print(" port ");
     Serial.print(server_port);
     Serial.println();
+#endif
   }
   server.begin();
 
   // Initialize carrier board
+  LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
   if (!carrier_.init()) {
+    LOG_ERROR("Error initializing carrier board.");
     ERROR
   }
   // Register message handler
   msg::handlers::Registry::set("set_config", new msg::handlers::SetConfigMessageHandler(carrier_));
   msg::handlers::Registry::set("get_config", new msg::handlers::GetConfigMessageHandler(carrier_));
+
+  // Done.
+  LOG(ANABRID_DEBUG_INIT, "Initialization done.");
 }
 
 void loop() {

@@ -26,6 +26,7 @@
 #include "local_bus.h"
 
 #include "ioregister.h"
+#include "logging.h"
 
 SPIClass &bus::spi = SPI1;
 
@@ -54,6 +55,7 @@ bus::addr_t bus::remove_addr_parts(bus::addr_t address, bool block, bool func) {
 bus::addr_t bus::board_function_to_addr(uint8_t func_idx) { return func_idx << 4; }
 
 void bus::init() {
+  LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   for (const auto pin : PINS_BADDR) {
     pinMode(pin, OUTPUT);
     digitalWriteFast(pin, LOW);

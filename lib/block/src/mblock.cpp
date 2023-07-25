@@ -24,6 +24,7 @@
 // ANABRID_END_LICENSE
 
 #include "mblock.h"
+#include "logging.h"
 
 blocks::MBlock::MBlock(uint8_t cluster_idx, uint8_t slot_idx)
     : blocks::FunctionBlock{std::string("M") + std::to_string(slot_idx - M1_IDX), cluster_idx},
@@ -57,6 +58,7 @@ void blocks::MIntBlock::write_to_hardware() {
 }
 
 bool blocks::MIntBlock::init() {
+  LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   f_ic_dac.init();
   return true;
 }

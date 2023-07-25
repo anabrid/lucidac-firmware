@@ -24,6 +24,7 @@
 // ANABRID_END_LICENSE
 
 #include "carrier.h"
+#include "logging.h"
 
 #include <QNEthernet.h>
 
@@ -38,6 +39,7 @@ std::string carrier::Carrier::get_system_mac() {
 carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}) {}
 
 bool carrier::Carrier::init() {
+  LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   entity_id = get_system_mac();
   if (entity_id.empty())
     return false;

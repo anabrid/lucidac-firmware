@@ -25,6 +25,7 @@
 
 #include "cluster.h"
 #include "local_bus.h"
+#include "logging.h"
 #include "running_avg.h"
 
 #define RETURN_FALSE_IF_FAILED(x)                                                                             \
@@ -36,11 +37,13 @@ auto lucidac::LUCIDAC::get_blocks() {
 }
 
 bool lucidac::LUCIDAC::init() {
+  LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   bus::init();
   for (auto block : get_blocks()) {
     if (block && !block->init())
       return false;
   }
+  LOG(ANABRID_DEBUG_INIT, "Cluster initialized.");
   reset(false);
   return true;
 }
