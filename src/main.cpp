@@ -83,32 +83,32 @@ void loop() {
         continue;
       } else {
         // Unpack metadata from envelope
-        unsigned int msg_id = envelope_in["_id"];
-        std::string msg_type = envelope_in["_type"];
+        std::string msg_id = envelope_in["id"];
+        std::string msg_type = envelope_in["type"];
 
         // Create return envelope
         envelope_out.clear();
-        envelope_out["_id"] = msg_id;
-        envelope_out["_type"] = msg_type;
+        envelope_out["id"] = msg_id;
+        envelope_out["type"] = msg_type;
         auto msg_out = envelope_out.createNestedObject("msg");
 
         // Select message handler
         auto msg_handler = msg::handlers::Registry::get(msg_type);
         if (!msg_handler) {
           // No handler for message known
-          envelope_out["_success"] = false;
+          envelope_out["success"] = false;
           msg_out["error"] = "Unknown message type.";
         } else {
           // Let handler handle message
           if (!msg_handler->handle(envelope_in["msg"].as<JsonObjectConst>(), msg_out)) {
             // Message could not be handled, mark envelope as unsuccessful
-            envelope_out["_success"] = false;
+            envelope_out["success"] = false;
             Serial.println("Error while handling message.");
           }
         }
 
         // If message generated a response or an error, actually sent it out
-        if (!msg_out.isNull() or envelope_out["_success"].as<bool>()) {
+        if (!msg_out.isNull() or !envelope_out["success"].as<bool>()) {
           serializeJson(envelope_out, Serial);
           serializeJson(envelope_out, client);
           if (!client.writeFully("\n"))

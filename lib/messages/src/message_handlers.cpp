@@ -57,6 +57,6 @@ bool msg::handlers::PingRequestHandler::handle(JsonObjectConst msg_in, JsonObjec
 }
 
 bool msg::handlers::GetEntitiesRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  msg_out["06-00-00-00-00-00"] = serialized(R"({"blocks": {"0": {"class": 1, "type": 0, "variant": 0, "version": 0}, "1": {"class": 1, "type": 1, "variant": 0, "version": 0}, "2": {"class": 1, "type": 2, "variant": 0, "version": 0}, "3": {"class": 1, "type": 3, "variant": 0, "version": 0}, "4": {"class": 1, "type": 4, "variant": 0, "version": 0}}})");
+  msg_out["entities"] = serialized(R"({"06-00-00-00-00-00": {"/0": {"/M0": {"class": 2, "type": 0, "variant": 0, "version": 0}, "/M1": {"class": 2, "type": 1, "variant": 0, "version": 0}, "/U": {"class": 3, "type": 0, "variant": 0, "version": 0}, "/C": {"class": 4, "type": 0, "variant": 0, "version": 0}, "/I": {"class": 5, "type": 0, "variant": 0, "version": 0}, "class": 1, "type": 3, "variant": 0, "version": 0}, "class": 0, "type": 0, "variant": 0, "version": 0}})");
   return true;
 }
