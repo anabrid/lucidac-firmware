@@ -106,6 +106,29 @@ bool blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
             return false;
         }
       }
+    } else if (cfg["integrators"].is<JsonObjectConst>()) {
+      for (JsonPairConst keyval : cfg["integrators"].as<JsonObjectConst>()) {
+        // Value is an object, with any key being optional
+        if (!keyval.value().is<JsonObjectConst>())
+          return false;
+        // TODO: Check conversion from string to number
+        auto int_idx = std::stoul(keyval.key().c_str());
+        if (int_idx >= NUM_INTEGRATORS)
+          return false;
+        auto int_cfg = keyval.value().as<JsonObjectConst>();
+        if (int_cfg.containsKey("ic")) {
+          if (!int_cfg["ic"].is<float>())
+            return false;
+          if (!set_ic(int_idx, int_cfg["ic"]))
+            return false;
+        }
+        if (int_cfg.containsKey("k")) {
+          if (!int_cfg["k"].is<unsigned int>())
+            return false;
+          if (!set_time_factor(int_idx, int_cfg["k"]))
+            return false;
+        }
+      }
     } else {
       return false;
     }
