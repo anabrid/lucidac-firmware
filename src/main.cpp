@@ -28,7 +28,7 @@ void setup() {
   LOG(ANABRID_DEBUG_INIT, "Hello.");
 
   // Initialize ethernet communication
-  if (!net::Ethernet.begin()) {
+  if (!net::Ethernet.begin(IPAddress(192, 168, 100, 222), IPAddress(255,255,255,0), IPAddress(192,168,100,1))) {
     LOG_ERROR("Error starting ethernet.");
     ERROR
   }
@@ -97,12 +97,14 @@ void loop() {
         if (!msg_handler) {
           // No handler for message known
           envelope_out["success"] = false;
-          msg_out["error"] = "Unknown message type.";
+          envelope_out["error"] = "Unknown message type.";
         } else {
           // Let handler handle message
           if (!msg_handler->handle(envelope_in["msg"].as<JsonObjectConst>(), msg_out)) {
             // Message could not be handled, mark envelope as unsuccessful
             envelope_out["success"] = false;
+            envelope_out["error"] = msg_out["error"];
+            envelope_out.remove("msg");
             Serial.println("Error while handling message.");
           }
         }

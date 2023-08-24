@@ -66,7 +66,7 @@ bool blocks::MIntBlock::init() {
 bool blocks::MIntBlock::set_time_factor(uint8_t int_idx, unsigned int k) {
   if (!(k == 100 or k == 10000))
     return false;
-  if (int_idx >= 8)
+  if (int_idx >= NUM_INTEGRATORS)
     return false;
   time_factors[int_idx] = k;
   return true;

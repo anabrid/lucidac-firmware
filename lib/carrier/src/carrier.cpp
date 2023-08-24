@@ -41,6 +41,7 @@ carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}) {}
 bool carrier::Carrier::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   entity_id = get_system_mac();
+  LOG(ANABRID_DEBUG_INIT, entity_id.c_str());
   if (entity_id.empty())
     return false;
   for (auto &cluster : clusters) {
@@ -71,8 +72,8 @@ std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
 #ifdef ANABRID_DEBUG_ENTITY
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  std::vector<entities::Entity*> children;
-  for (auto& cluster: clusters) {
+  std::vector<entities::Entity *> children;
+  for (auto &cluster : clusters) {
     children.push_back(&cluster);
   }
   return children;
