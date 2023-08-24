@@ -114,23 +114,46 @@ bool msg::handlers::SetConfigMessageHandler::handle(JsonObjectConst msg_in, Json
     return false;
   }
 
-  return resolved_entity->config_from_json(msg_in["config"]);
+  bool success = resolved_entity->config_from_json(msg_in["config"]);
+  if (!success and msg_out["error"].isNull()) {
+    msg_out["error"] = "Error applying configuration to entity.";
+  }
+  return success;
 }
 
 bool msg::handlers::GetConfigMessageHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
 #ifdef ANABRID_DEBUG_COMMS
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  // TODO: Handle paths to sub-entities
-
-  // Save entity path back into response
-  auto entity_path = msg_out.createNestedArray("entity");
-  entity_path.add(carrier.get_entity_id());
-  // Save config into response
-  auto cfg = msg_out.createNestedObject("config");
   auto recursive = true;
   if (msg_in.containsKey("recursive"))
     recursive = msg_in["recursive"].as<bool>();
-  carrier.config_to_json(cfg, recursive);
+
+  // Message may contain path to sub-entity
+  entities::Entity *entity;
+  if (!msg_in.containsKey("entity") or msg_in["entity"].isNull()) {
+    entity = &carrier;
+  } else if (msg_in["entity"].is<JsonArrayConst>()) {
+    auto path = msg_in["entity"].as<JsonArrayConst>();
+    if (!path.size()) {
+      entity = &carrier;
+    } else if (path[0].as<std::string>() != carrier.get_entity_id()) {
+      msg_out["error"] = "Entity lives on another carrier.";
+      return false;
+    } else {
+      auto path_begin = path.begin();
+      ++path_begin;
+      entity = carrier.resolve_child_entity(path_begin, path.end());
+    }
+  } else {
+    msg_out["error"] = "Invalid entity path.";
+    return false;
+  }
+
+  // Save entity path back into response
+  msg_out["entity"] = msg_in["entity"];
+  // Save config into response
+  auto cfg = msg_out.createNestedObject("config");
+  entity->config_to_json(cfg, recursive);
   return true;
 }
