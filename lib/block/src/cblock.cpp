@@ -116,10 +116,10 @@ bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  if (cfg.containsKey("factors")) {
+  if (cfg.containsKey("elements")) {
     // Handle an array of factors
-    if (cfg["factors"].is<JsonArrayConst>()) {
-      auto factors = cfg["factors"].as<JsonArrayConst>();
+    if (cfg["elements"].is<JsonArrayConst>()) {
+      auto factors = cfg["elements"].as<JsonArrayConst>();
       if (factors.size() != NUM_COEFF)
         return false;
       uint8_t idx = 0;
@@ -131,8 +131,8 @@ bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
       }
     }
     // Handle a mapping of factors
-    if (cfg["factors"].is<JsonObjectConst>()) {
-      for (JsonPairConst keyval : cfg["factors"].as<JsonObjectConst>()) {
+    if (cfg["elements"].is<JsonObjectConst>()) {
+      for (JsonPairConst keyval : cfg["elements"].as<JsonObjectConst>()) {
         if (!keyval.value().is<float>())
           return false;
         // TODO: Check conversion from string to number
@@ -149,7 +149,7 @@ bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
 
 void blocks::CBlock::config_self_to_json(JsonObject &cfg) {
   Entity::config_self_to_json(cfg);
-  auto factors_cfg = cfg.createNestedArray("factors");
+  auto factors_cfg = cfg.createNestedArray("elements");
   for (auto factor : factors_) {
     factors_cfg.add(decltype(f_coeffs)::value_type::raw_to_float(factor));
   }
