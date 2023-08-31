@@ -25,10 +25,11 @@ void setup() {
   while (!Serial && millis() < 4000) {
     // Wait for Serial, but not forever
   }
+  Serial.println("Hier gehts jetzt los");
   LOG(ANABRID_DEBUG_INIT, "Hello.");
 
   // Initialize ethernet communication
-  if (!net::Ethernet.begin(IPAddress(192, 168, 100, 222), IPAddress(255,255,255,0), IPAddress(192,168,100,1))) {
+  if (!net::Ethernet.begin(IPAddress(192, 168, 68, 222), IPAddress(255,255,255,0), IPAddress(192,168,100,1))) {
     LOG_ERROR("Error starting ethernet.");
     ERROR
   }
