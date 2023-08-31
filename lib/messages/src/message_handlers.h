@@ -50,11 +50,6 @@ public:
   bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
-class GetEntitiesRequestHandler : public MessageHandler {
-public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
 } // namespace handlers
 
 } // namespace msg

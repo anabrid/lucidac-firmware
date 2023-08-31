@@ -58,6 +58,7 @@ void setup() {
   // Register message handler
   msg::handlers::Registry::set("set_config", new msg::handlers::SetConfigMessageHandler(carrier_));
   msg::handlers::Registry::set("get_config", new msg::handlers::GetConfigMessageHandler(carrier_));
+  msg::handlers::Registry::set("get_entities", new msg::handlers::GetEntitiesRequestHandler(carrier_));
 
   // Done.
   LOG(ANABRID_DEBUG_INIT, "Initialization done.");
@@ -71,8 +72,8 @@ void loop() {
     client.remoteIP().printTo(Serial);
     Serial.println();
 
-    DynamicJsonDocument envelope_in(2048);
-    DynamicJsonDocument envelope_out(2048);
+    DynamicJsonDocument envelope_in(4096);
+    DynamicJsonDocument envelope_out(4096);
     while (client) {
       auto error = deserializeJson(envelope_in, client);
       if (error == DeserializationError::Code::EmptyInput) {

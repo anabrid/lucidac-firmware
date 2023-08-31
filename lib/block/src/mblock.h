@@ -133,6 +133,8 @@ protected:
 
 class MMulBlock : public MBlock {
 public:
+  static constexpr uint8_t NUM_MULTIPLIERS = 4;
+public:
   using MBlock::MBlock;
 
   void write_to_hardware() override;

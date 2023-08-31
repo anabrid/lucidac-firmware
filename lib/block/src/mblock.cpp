@@ -87,10 +87,10 @@ bool blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  if (cfg.containsKey("integrators")) {
+  if (cfg.containsKey("elements")) {
     // Handle an array of integrator configurations
-    if (cfg["integrators"].is<JsonArrayConst>()) {
-      auto ints_cfg = cfg["integrators"].as<JsonArrayConst>();
+    if (cfg["elements"].is<JsonArrayConst>()) {
+      auto ints_cfg = cfg["elements"].as<JsonArrayConst>();
       if (ints_cfg.size() != NUM_INTEGRATORS) {
         return false;
       }
@@ -106,8 +106,8 @@ bool blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
             return false;
         }
       }
-    } else if (cfg["integrators"].is<JsonObjectConst>()) {
-      for (JsonPairConst keyval : cfg["integrators"].as<JsonObjectConst>()) {
+    } else if (cfg["elements"].is<JsonObjectConst>()) {
+      for (JsonPairConst keyval : cfg["elements"].as<JsonObjectConst>()) {
         // Value is an object, with any key being optional
         if (!keyval.value().is<JsonObjectConst>())
           return false;
@@ -138,7 +138,7 @@ bool blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
 
 void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
   Entity::config_self_to_json(cfg);
-  auto ints_cfg = cfg.createNestedArray("integrators");
+  auto ints_cfg = cfg.createNestedArray("elements");
   for (size_t i = 0; i < NUM_INTEGRATORS; i++) {
     auto int_cfg = ints_cfg.createNestedObject();
     int_cfg["ic"] = decltype(f_ic_dac)::raw_to_float(ic_raw[i]);
@@ -149,7 +149,24 @@ void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
 void blocks::MMulBlock::write_to_hardware() {}
 
 bool blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
-  if (!cfg.isNull())
-    return false;
+  // MMulBlock does not expect any configuration currently.
+  // But due to automation, some may still be sent.
+  // Thus we accept any configuration containing only empty values or similar.
+  if (cfg.containsKey("elements")) {
+    if (cfg["elements"].is<JsonObjectConst>()) {
+      // TODO: Implement
+      return false;
+    } else if (cfg["elements"].is<JsonArrayConst>()) {
+      auto elements_cfg = cfg["elements"].as<JsonArrayConst>();
+      if (elements_cfg.size() != NUM_MULTIPLIERS) {
+        return false;
+      }
+      // TODO: Check each element. But currently makes no sense
+      //for (const auto& element_cfg : elements_cfg) {
+      //}
+    } else {
+      return false;
+    }
+  }
   return true;
 }
