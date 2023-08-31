@@ -149,7 +149,24 @@ void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
 void blocks::MMulBlock::write_to_hardware() {}
 
 bool blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
-  if (!cfg.isNull())
-    return false;
+  // MMulBlock does not expect any configuration currently.
+  // But due to automation, some may still be sent.
+  // Thus we accept any configuration containing only empty values or similar.
+  if (cfg.containsKey("elements")) {
+    if (cfg["elements"].is<JsonObjectConst>()) {
+      // TODO: Implement
+      return false;
+    } else if (cfg["elements"].is<JsonArrayConst>()) {
+      auto elements_cfg = cfg["elements"].as<JsonArrayConst>();
+      if (elements_cfg.size() != NUM_MULTIPLIERS) {
+        return false;
+      }
+      // TODO: Check each element. But currently makes no sense
+      //for (const auto& element_cfg : elements_cfg) {
+      //}
+    } else {
+      return false;
+    }
+  }
   return true;
 }
