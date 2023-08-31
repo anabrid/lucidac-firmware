@@ -26,11 +26,9 @@
 #include "message_handlers.h"
 
 std::map<std::string, msg::handlers::MessageHandler *> msg::handlers::Registry::_registry{
-    {"ping", new PingRequestHandler{}},
-    {"get_entities", new GetEntitiesRequestHandler{}}
-};
+    {"ping", new PingRequestHandler{}}};
 
-msg::handlers::MessageHandler *msg::handlers::Registry::get(const std::string& msg_type) {
+msg::handlers::MessageHandler *msg::handlers::Registry::get(const std::string &msg_type) {
   auto found = _registry.find(msg_type);
   if (found != _registry.end()) {
     return found->second;
@@ -39,7 +37,7 @@ msg::handlers::MessageHandler *msg::handlers::Registry::get(const std::string& m
   }
 }
 
-bool msg::handlers::Registry::set(const std::string& msg_type, msg::handlers::MessageHandler *handler,
+bool msg::handlers::Registry::set(const std::string &msg_type, msg::handlers::MessageHandler *handler,
                                   bool overwrite) {
   auto found = _registry.find(msg_type);
   if (found != _registry.end() && !overwrite) {
@@ -54,9 +52,4 @@ bool msg::handlers::Registry::set(const std::string& msg_type, msg::handlers::Me
 bool msg::handlers::PingRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
   msg_out["now"] = 43;
   return false;
-}
-
-bool msg::handlers::GetEntitiesRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  msg_out["entities"] = serialized(R"({"06-00-00-00-00-00": {"/0": {"/M0": {"class": 2, "type": 0, "variant": 0, "version": 0}, "/M1": {"class": 2, "type": 1, "variant": 0, "version": 0}, "/U": {"class": 3, "type": 0, "variant": 0, "version": 0}, "/C": {"class": 4, "type": 0, "variant": 0, "version": 0}, "/I": {"class": 5, "type": 0, "variant": 0, "version": 0}, "class": 1, "type": 3, "variant": 0, "version": 0}, "class": 0, "type": 0, "variant": 0, "version": 0}})");
-  return true;
 }

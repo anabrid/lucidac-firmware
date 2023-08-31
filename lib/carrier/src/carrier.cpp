@@ -27,6 +27,7 @@
 #include "logging.h"
 
 #include <QNEthernet.h>
+#include <cstring>
 
 std::string carrier::Carrier::get_system_mac() {
   uint8_t mac[6];
@@ -130,7 +131,7 @@ bool msg::handlers::GetConfigMessageHandler::handle(JsonObjectConst msg_in, Json
     recursive = msg_in["recursive"].as<bool>();
 
   // Message may contain path to sub-entity
-  entities::Entity *entity;
+  entities::Entity *entity = nullptr;
   if (!msg_in.containsKey("entity") or msg_in["entity"].isNull()) {
     entity = &carrier;
   } else if (msg_in["entity"].is<JsonArrayConst>()) {
@@ -144,6 +145,10 @@ bool msg::handlers::GetConfigMessageHandler::handle(JsonObjectConst msg_in, Json
       auto path_begin = path.begin();
       ++path_begin;
       entity = carrier.resolve_child_entity(path_begin, path.end());
+      if (!entity) {
+        msg_out["error"] = "Invalid entity path.";
+        return false;
+      }
     }
   } else {
     msg_out["error"] = "Invalid entity path.";
@@ -155,5 +160,12 @@ bool msg::handlers::GetConfigMessageHandler::handle(JsonObjectConst msg_in, Json
   // Save config into response
   auto cfg = msg_out.createNestedObject("config");
   entity->config_to_json(cfg, recursive);
+  return true;
+}
+
+bool msg::handlers::GetEntitiesRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+  auto serialized_data = R"({"00-00-00-00-00-00": {"/0": {"/M0": {"class": 2, "type": 0, "variant": 0, "version": 0}, "/M1": {"class": 2, "type": 1, "variant": 0, "version": 0}, "/U": {"class": 3, "type": 0, "variant": 0, "version": 0}, "/C": {"class": 4, "type": 0, "variant": 0, "version": 0}, "/I": {"class": 5, "type": 0, "variant": 0, "version": 0}, "class": 1, "type": 3, "variant": 0, "version": 0}, "class": 0, "type": 0, "variant": 0, "version": 0}})";
+  std::memcpy((void*)(serialized_data + 2), (void*)(carrier.get_entity_id().c_str()), 17);
+  msg_out["entities"] = serialized(serialized_data);
   return true;
 }
