@@ -70,8 +70,8 @@ void loop() {
     client.remoteIP().printTo(Serial);
     Serial.println();
 
-    DynamicJsonDocument envelope_in(2048);
-    DynamicJsonDocument envelope_out(2048);
+    DynamicJsonDocument envelope_in(4096);
+    DynamicJsonDocument envelope_out(4096);
     while (client) {
       auto error = deserializeJson(envelope_in, client);
       if (error == DeserializationError::Code::EmptyInput) {
