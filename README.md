@@ -33,12 +33,11 @@ the same network).
 
 Use the IDE plugin or run `pio run --target=upload`.
 
-You can monitor the serial output for debugging at `pio device monitor`. Use this way or
+You can monitor the serial output for debugging at `pio device monitor` which prints the IP
+and Mac address the device is listening on. Use this way or
 `arp` to detect the Mac address of your teensy network interface.
 
-Note that you cannot ICMP ping the Teensy!
-
-For testing the network access ("hello world"), you can use the following code in your local terminal:
+For testing the network access ("hello world"), you can ping the Teensy and also use the following code in your local terminal:
 
 ```
 (echo '{ "_id": 42, "_type": "get_config", "msg": { "entity": ["04-E9-E5-14-74-BF"], "recursive": true } }'; sleep 1) | nc 123.456.789.123 5732
