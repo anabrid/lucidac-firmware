@@ -6,7 +6,7 @@
 #include "logging.h"
 #include "message_handlers.h"
 
-#define ERROR                                                                                                 \
+#define _ERROR_OUT_                                                                                           \
   while (true) {                                                                                              \
     digitalToggle(13);                                                                                        \
     delay(100);                                                                                               \
@@ -30,12 +30,12 @@ void setup() {
   // Initialize ethernet communication
   if (!net::Ethernet.begin(IPAddress(192, 168, 100, 222), IPAddress(255,255,255,0), IPAddress(192,168,100,1))) {
     LOG_ERROR("Error starting ethernet.");
-    ERROR
+    _ERROR_OUT_
   }
   LOG(ANABRID_DEBUG_INIT, "Waiting for IP address on ethernet...");
   if (!net::Ethernet.waitForLocalIP(10000)) {
     LOG_ERROR("Error getting IP address.");
-    ERROR
+    _ERROR_OUT_
   } else {
     __attribute__((unused)) IPAddress ip = net::Ethernet.localIP();
 #ifdef ANABRID_DEBUG_INIT
@@ -52,7 +52,7 @@ void setup() {
   LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
   if (!carrier_.init()) {
     LOG_ERROR("Error initializing carrier board.");
-    ERROR
+    _ERROR_OUT_
   }
   // Register message handler
   msg::handlers::Registry::set("set_config", new msg::handlers::SetConfigMessageHandler(carrier_));

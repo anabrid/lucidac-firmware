@@ -9,7 +9,8 @@
 #include "QNEthernet.h"
 #include <bitset>
 
-#define ERROR while (true) { digitalToggleFast(PIN_LED); delay(50);}
+#define _ERROR_OUT_                                                                                           \
+  while (true) { digitalToggleFast(PIN_LED); delay(50);}
 
 namespace qn = qindesign::network;
 
@@ -45,7 +46,8 @@ void setup() {
     digitalWriteFast(PIN_LED, HIGH);
 
     qn::Ethernet.begin();
-    if (!qn::Ethernet.waitForLocalIP(10000)) ERROR
+    if (!qn::Ethernet.waitForLocalIP(10000))
+      _ERROR_OUT_
 
     qn::stdPrint = &udp;
     udp.beginPacket(client_ip, 8000);
@@ -78,7 +80,8 @@ void setup() {
     uint8_t PIN_FLEX_CNVST;
     flexio = FlexIOHandler::mapIOPinToFlexIOHandler(PIN_CNVST, PIN_FLEX_CNVST);
     uint8_t PIN_FLEX_CLK = flexio->mapIOPinToFlexPin(PIN_CLK);
-    if (PIN_FLEX_CNVST == 0xff || PIN_FLEX_CLK == 0xff) ERROR
+    if (PIN_FLEX_CNVST == 0xff || PIN_FLEX_CLK == 0xff)
+      _ERROR_OUT_
 
     flexio->setClockSettings(3, 3, 3);
 
@@ -126,7 +129,8 @@ void setup() {
         pinMode(PIN_MISO, INPUT);
         flexio->setIOPinToFlexMode(PIN_MISO);
         uint8_t pin_miso_flex_idx = flexio->mapIOPinToFlexPin(PIN_MISO);
-        if (PIN_MISO == 0xff) ERROR
+        if (PIN_MISO == 0xff)
+          _ERROR_OUT_
 
         uint8_t shifter_idx = flexio->requestShifter();
         printf("Configuring shifter FlexIO%i:%i for pin %i.\n", flexio->FlexIOIndex() + 1, pin_miso_flex_idx, PIN_MISO);
@@ -145,7 +149,8 @@ void setup() {
     // Select shifter zero to generate DMA events.
     // Which shifter is selected should not matter, as long as it is used.
     uint8_t shifter_dma_idx = 0;
-    if (flexio->claimShifter(shifter_dma_idx)) ERROR
+    if (flexio->claimShifter(shifter_dma_idx))
+      _ERROR_OUT_
 
     // Set shifter to generate DMA events.
     flexio->port().SHIFTSDEN = 1 << shifter_dma_idx;
