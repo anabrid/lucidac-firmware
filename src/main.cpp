@@ -3,8 +3,10 @@
 #include <QNEthernet.h>
 
 #include "carrier.h"
+#include "client.h"
 #include "logging.h"
 #include "message_handlers.h"
+#include "run.h"
 
 #define _ERROR_OUT_                                                                                           \
   while (true) {                                                                                              \
@@ -58,30 +60,37 @@ void setup() {
   msg::handlers::Registry::set("set_config", new msg::handlers::SetConfigMessageHandler(carrier_));
   msg::handlers::Registry::set("get_config", new msg::handlers::GetConfigMessageHandler(carrier_));
   msg::handlers::Registry::set("get_entities", new msg::handlers::GetEntitiesRequestHandler(carrier_));
+  msg::handlers::Registry::set("start_run", new msg::handlers::StartRunRequestHandler(run::RunManager::get()));
 
   // Done.
   LOG(ANABRID_DEBUG_INIT, "Initialization done.");
 }
 
 void loop() {
-  net::EthernetClient client = server.accept();
+  net::EthernetClient connection = server.accept();
+  auto &run_manager = run::RunManager::get();
 
-  if (client) {
+  if (connection) {
     Serial.print("Client connected from ");
-    client.remoteIP().printTo(Serial);
+    connection.remoteIP().printTo(Serial);
     Serial.println();
 
+    // Reserve space for JSON communication
+    // TODO: This must probably be global for all clients
     DynamicJsonDocument envelope_in(4096);
     DynamicJsonDocument envelope_out(4096);
-    while (client) {
-      auto error = deserializeJson(envelope_in, client);
+
+    // Bind things to this client specifically
+    client::RunStateChangeNotificationHandler run_state_change_handler{connection, envelope_out};
+
+    // Handle incoming messages
+    while (connection) {
+      auto error = deserializeJson(envelope_in, connection);
       if (error == DeserializationError::Code::EmptyInput) {
         Serial.print(".");
-        continue;
       } else if (error) {
         Serial.print("Error while parsing JSON:");
         Serial.println(error.c_str());
-        continue;
       } else {
         // Unpack metadata from envelope
         std::string msg_id = envelope_in["id"];
@@ -113,10 +122,16 @@ void loop() {
         // If message generated a response or an error, actually sent it out
         if (!msg_out.isNull() or !envelope_out["success"].as<bool>()) {
           serializeJson(envelope_out, Serial);
-          serializeJson(envelope_out, client);
-          if (!client.writeFully("\n"))
+          serializeJson(envelope_out, connection);
+          if (!connection.writeFully("\n"))
             break;
         }
+      }
+
+      // Fake run for now
+      if (!run_manager.queue.empty()) {
+        Serial.println("faking run");
+        run_manager.run_next(&run_state_change_handler);
       }
     }
 
