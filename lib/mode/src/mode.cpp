@@ -64,6 +64,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned int op_time_ns)
   }
 
   // Set clock settings
+  // For (3, 0, 0) the clock frequency is 480'000'000
   flexio->setClockSettings(CLK_SEL, CLK_PRED, CLK_PODF);
   auto CLK_FREQ = flexio->computeClockRate();
   auto CLK_FREQ_MHz = CLK_FREQ / 1'000'000;
@@ -76,7 +77,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned int op_time_ns)
 
   flexio->port().SHIFTCTL[s_idle] = FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_idle] = 0;
-  flexio->port().SHIFTBUF[s_idle] = 0b11111111'000'000'000'000'000'000'000'000;
+  flexio->port().SHIFTBUF[s_idle] = FLEXIO_STATE_SHIFTBUF(0b11111111, s_idle);
 
   //
   //  Configure IC state
@@ -102,7 +103,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned int op_time_ns)
   flexio->port().SHIFTCTL[s_ic] =
       FLEXIO_SHIFTCTL_TIMSEL(t_ic) | FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_ic] = 0;
-  flexio->port().SHIFTBUF[s_ic] = 0b10111111'010'010'010'010'010'010'010'010;
+  flexio->port().SHIFTBUF[s_ic] = FLEXIO_STATE_SHIFTBUF(0b10111111, s_op);
 
   //
   // Configure OP state.
@@ -112,9 +113,10 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned int op_time_ns)
   //
 
   // Sanity check op_time_ns, which we will count with two 16bit timers (=32bit) at CLK_FREQ
+  // TODO: Note that here it is /1000, not /2000 like with IC (because timer is not directly triggering state?)
   // TODO: Correctly check for "overflows"
-  uint32_t num_op_clocks = op_time_ns * CLK_FREQ_MHz / 2000;
-  if (op_time_ns < 100 or num_op_clocks >= std::numeric_limits<uint32_t>::max())
+  uint32_t num_op_clocks = op_time_ns * CLK_FREQ_MHz / 1000;
+  if (op_time_ns < 100 or num_op_clocks >= std::numeric_limits<uint16_t>::max())
     return false;
 
   // Configure state change check timer as fast as possible
@@ -131,7 +133,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned int op_time_ns)
   flexio->port().TIMCTL[t_op] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) |
                                 FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(13) | FLEXIO_TIMCTL_PINPOL;
   flexio->port().TIMCFG[t_op] = FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(2) | FLEXIO_TIMCFG_TIMENA(6);
-  flexio->port().TIMCMP[t_op] = 0x0000'00011;
+  flexio->port().TIMCMP[t_op] = num_op_clocks;
   // Configure same timer for testing purposes
   auto t_op_test = flexio->requestTimers(1);
   if (t_op_test == 0xff)
@@ -140,14 +142,14 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned int op_time_ns)
                                      FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(8) | FLEXIO_TIMCTL_PINPOL;
   flexio->port().TIMCFG[t_op_test] =
       FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(2) | FLEXIO_TIMCFG_TIMENA(6);
-  flexio->port().TIMCMP[t_op_test] = 0x0000'00011;
+  flexio->port().TIMCMP[t_op_test] = num_op_clocks;
 
   // Configure state shifter
   flexio->port().SHIFTCTL[s_op] = FLEXIO_SHIFTCTL_TIMSEL(t_check) | FLEXIO_SHIFTCTL_PINCFG(3) |
                                   FLEXIO_SHIFTCTL_PINSEL(13) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_op] = 0;
-  flexio->port().SHIFTBUF[s_op] = 0b11011111'010'010'000'010'010'010'000'010;
-  // flexio->port().SHIFTBUF[s_op] = 0b11011111'010'010'010'010'010'010'010'010;
+  flexio->port().SHIFTBUF[s_op] =
+      FLEXIO_STATE_SHIFTBUF(0b11011111, s_ic, s_ic, s_ic, s_ic,s_ic,s_ic,s_op,s_idle);
 
   // Put relevant pins into FlexIO mode
   for (auto pin : {PIN_MODE_IC, PIN_MODE_OP, static_cast<uint8_t>(5) /* FlexIO1:8 for testing outputs */,

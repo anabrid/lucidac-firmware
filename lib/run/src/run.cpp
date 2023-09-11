@@ -33,6 +33,9 @@ run::RunManager run::RunManager::_instance{};
 void run::RunManager::run_next(run::RunStateChangeHandler *state_change_handler) {
   auto run = queue.front();
 
+  mode::FlexIOControl::init(run.config.ic_time, run.config.op_time);
+  mode::FlexIOControl::force_start();
+  /*
   // Take off
   auto change = run.to(RunState::TAKE_OFF, 0);
   state_change_handler->handle(change, run);
@@ -50,6 +53,7 @@ void run::RunManager::run_next(run::RunStateChangeHandler *state_change_handler)
   // DONE
   change = run.to(RunState::DONE, run.config.ic_time+run.config.op_time);
   state_change_handler->handle(change, run);
+   */
 
   queue.pop();
 }

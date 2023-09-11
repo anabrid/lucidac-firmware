@@ -43,11 +43,12 @@ void tearDown() {
 
 void test_simple_run() {
   TEST_ASSERT(true);
-  unsigned int ic_time = 130, op_time=1000;
+  unsigned int ic_time = 242, op_time = 1300;
+  TEST_ASSERT_FALSE(FlexIOControl::init(ic_time, 1'000'000'000));
   TEST_ASSERT(FlexIOControl::init(ic_time, op_time));
-  for (auto i: {0/*,1,2,3,4*/}) {
+  for (auto i : {0 /*,1,2,3,4*/}) {
     FlexIOControl::force_start();
-    delayNanoseconds(ic_time+op_time+100);
+    delayNanoseconds(ic_time + op_time + 100);
   }
 }
 
@@ -57,4 +58,7 @@ void setup() {
   UNITY_END();
 }
 
-void loop() { delay(500); }
+void loop() {
+  delay(1000);
+  FlexIOControl::force_start();
+}
