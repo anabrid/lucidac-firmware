@@ -41,24 +41,29 @@ void tearDown() {
   digitalWriteFast(LED_BUILTIN, LOW);
 }
 
+void test_limits() {
+  // Too short
+  TEST_ASSERT_FALSE(FlexIOControl::init(99, mode::DEFAULT_OP_TIME));
+  TEST_ASSERT_FALSE(FlexIOControl::init(mode::DEFAULT_IC_TIME, 99));
+  // Too long
+  TEST_ASSERT_FALSE(FlexIOControl::init(275'000, mode::DEFAULT_OP_TIME));
+  TEST_ASSERT_FALSE(FlexIOControl::init(mode::DEFAULT_IC_TIME, 9'000'000'000));
+}
+
 void test_simple_run() {
-  TEST_ASSERT(true);
-  unsigned int ic_time = 242, op_time = 1300;
-  TEST_ASSERT_FALSE(FlexIOControl::init(ic_time, 1'000'000'000));
-  TEST_ASSERT(FlexIOControl::init(ic_time, op_time));
-  for (auto i : {0 /*,1,2,3,4*/}) {
-    FlexIOControl::force_start();
-    delayNanoseconds(ic_time + op_time + 100);
-  }
+  TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, mode::DEFAULT_OP_TIME));
+  FlexIOControl::force_start();
 }
 
 void setup() {
   UNITY_BEGIN();
+  RUN_TEST(test_limits);
   RUN_TEST(test_simple_run);
   UNITY_END();
 }
 
 void loop() {
-  delay(1000);
+  // Maximum at 480MHz clock with 2x16bit timers is ~9 seconds
+  delay(10'000);
   FlexIOControl::force_start();
 }
