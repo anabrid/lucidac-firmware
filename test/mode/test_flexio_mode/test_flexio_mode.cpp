@@ -63,7 +63,12 @@ void setup() {
 }
 
 void loop() {
-  // Maximum at 480MHz clock with 2x16bit timers is ~9 seconds
-  delay(10'000);
-  FlexIOControl::force_start();
+  static auto op_time = mode::DEFAULT_OP_TIME;
+  delay(max(op_time/1'000'000, 10000));
+  if (FlexIOControl::init(mode::DEFAULT_IC_TIME, op_time)) {
+    FlexIOControl::force_start();
+    op_time *= 2;
+  } else {
+    op_time = mode::DEFAULT_OP_TIME;
+  }
 }

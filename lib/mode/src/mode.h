@@ -35,7 +35,7 @@ constexpr uint8_t PIN_MODE_IC = 4;
 constexpr uint8_t PIN_MODE_OP = 3;
 
 constexpr unsigned int DEFAULT_IC_TIME = 100'000;
-constexpr unsigned long DEFAULT_OP_TIME = 1'000'000;
+constexpr unsigned long long DEFAULT_OP_TIME = 1'000'000;
 
 class ManualControl {
 public:

@@ -81,7 +81,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   //
 
   // Sanity check ic_time_ns, which must be countable by a 16bit timer at CLK_FREQ
-  if (ic_time_ns < 100 or ic_time_ns >= 0xFFFF*2000/CLK_FREQ_MHz)
+  if (ic_time_ns < 100 or ic_time_ns >= 0xFFFF * 2000 / CLK_FREQ_MHz)
     return false;
   // We can change FLEXIO_SHIFTCTL_TIMPOL to only have to divide by 1000, but it does not matter much.
   uint32_t num_ic_clocks = ic_time_ns * CLK_FREQ_MHz / 2000;
@@ -110,13 +110,10 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   //
 
   // Sanity check op_time_ns, which we will count with two 16bit timers (=32bit) at CLK_FREQ
-  // That means we can count up to 0xFFFF*0xFFFF/CLK_FREQ ~= 9 seconds
+  // That means we can count up to 0xFFFF*0xFFFF/CLK_FREQ_GHz ~= 8.947 seconds
   // Also, we don't really want to do extremely short OP times (for now?)
-  if (op_time_ns < 100 or op_time_ns >= 0xFFFFull*0xFFFFull/CLK_FREQ_MHz)
+  if (op_time_ns < 100 or op_time_ns >= 0xFFFFull * 0xFFFFull * 1000ull / CLK_FREQ_MHz)
     return false;
-
-  // Split counting to two timers
-  uint32_t num_op_clocks = op_time_ns * CLK_FREQ_MHz / 1000;
 
   // Configure state change check timer as fast as possible
   auto t_check = ++_t_idx;
@@ -128,32 +125,47 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   flexio->port().TIMCMP[t_check] = 0x0000'0001;
 
   // Configure a timer to set an input pin high, signaling end of op_time
-  auto t_op = ++_t_idx;
-  if (t_op >= 8)
-    return false;
-  flexio->port().TIMCTL[t_op] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) |
-                                FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(8) | FLEXIO_TIMCTL_PINPOL;
-  flexio->port().TIMCFG[t_op] = FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(0b110) | FLEXIO_TIMCFG_TIMENA(6);
-  flexio->port().TIMCMP[t_op] = 0x0000'FFFF;
-  // Configure same timer for testing purposes
-  auto t_op_second = ++_t_idx;
-  if (t_op_second >= 8)
-    return false;
-  // There are constraints when using "when timer N-1 does something"
-  if (t_op_second != t_op + 1 or t_op_second % 4 == 0)
-    return false;
-  flexio->port().TIMCTL[t_op_second] = FLEXIO_TIMCTL_TRGSEL(4 * t_op + 3) | FLEXIO_TIMCTL_TRGSRC |
-                                       FLEXIO_TIMCTL_TIMOD(3) | FLEXIO_TIMCTL_PINCFG(3) |
-                                       FLEXIO_TIMCTL_PINSEL(13) | FLEXIO_TIMCTL_PINPOL;
-  flexio->port().TIMCFG[t_op_second] =
-      FLEXIO_TIMCFG_TIMDEC(1) | FLEXIO_TIMCFG_TIMRST(0) | FLEXIO_TIMCFG_TIMDIS(1) | FLEXIO_TIMCFG_TIMENA(1);
-  flexio->port().TIMCMP[t_op_second] = 0x0000'FFFF;
+  if (op_time_ns < 0xFFFFull * 1000ull / CLK_FREQ_MHz) {
+    // One 16bit timer is enough actually
+    auto t_op = ++_t_idx;
+    if (t_op >= 8)
+      return false;
+    flexio->port().TIMCTL[t_op] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) |
+                                  FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(13) | FLEXIO_TIMCTL_PINPOL;
+    flexio->port().TIMCFG[t_op] =
+        FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(0b110) | FLEXIO_TIMCFG_TIMENA(6);
+    flexio->port().TIMCMP[t_op] = op_time_ns * CLK_FREQ_MHz / 1000;
+  } else {
+    // Configure first timer as pre-scaler
+    auto t_op = ++_t_idx;
+    if (t_op >= 8)
+      return false;
+    flexio->port().TIMCTL[t_op] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) |
+                                  FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(8) | FLEXIO_TIMCTL_PINPOL;
+    flexio->port().TIMCFG[t_op] =
+        FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(0b110) | FLEXIO_TIMCFG_TIMENA(6);
+    flexio->port().TIMCMP[t_op] = 0x0000'FFFF;
+    // Configure second timer for 32bit total
+    auto t_op_second = ++_t_idx;
+    if (t_op_second >= 8)
+      return false;
+    // There are constraints when using "when timer N-1 does something"
+    if (t_op_second != t_op + 1 or t_op_second % 4 == 0)
+      return false;
+    flexio->port().TIMCTL[t_op_second] = FLEXIO_TIMCTL_TRGSEL(4 * t_op + 3) | FLEXIO_TIMCTL_TRGSRC |
+                                         FLEXIO_TIMCTL_TIMOD(3) | FLEXIO_TIMCTL_PINCFG(3) |
+                                         FLEXIO_TIMCTL_PINSEL(13) | FLEXIO_TIMCTL_PINPOL;
+    flexio->port().TIMCFG[t_op_second] =
+        FLEXIO_TIMCFG_TIMDEC(1) | FLEXIO_TIMCFG_TIMRST(0) | FLEXIO_TIMCFG_TIMDIS(1) | FLEXIO_TIMCFG_TIMENA(1);
+    flexio->port().TIMCMP[t_op_second] = op_time_ns * CLK_FREQ_MHz / 1000ull / 0xFFFF;
+  }
 
   // Configure state shifter
   flexio->port().SHIFTCTL[s_op] = FLEXIO_SHIFTCTL_TIMSEL(t_check) | FLEXIO_SHIFTCTL_PINCFG(3) |
                                   FLEXIO_SHIFTCTL_PINSEL(13) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_op] = 0;
-  flexio->port().SHIFTBUF[s_op] = FLEXIO_STATE_SHIFTBUF(0b11011111, s_ic, s_ic, s_ic, s_ic, s_ic, s_ic, s_op, s_idle);
+  flexio->port().SHIFTBUF[s_op] =
+      FLEXIO_STATE_SHIFTBUF(0b11011111, s_ic, s_ic, s_ic, s_ic, s_ic, s_ic, s_op, s_idle);
 
   // Put relevant pins into FlexIO mode
   for (auto pin : {PIN_MODE_IC, PIN_MODE_OP, static_cast<uint8_t>(5) /* FlexIO1:8 for testing outputs */,
