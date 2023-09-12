@@ -30,6 +30,7 @@
 #include <string>
 
 #include "message_handlers.h"
+#include "mode.h"
 
 namespace run {
 
@@ -42,15 +43,15 @@ constexpr const char* RunStateNames[static_cast<unsigned int>(RunState::_COUNT)]
 
 class RunStateChange {
 public:
-  unsigned int t;
+  unsigned long long t;
   RunState old;
   RunState new_;
 };
 
 class RunConfig {
 public:
-  unsigned int ic_time = 50'000'000;
-  unsigned int op_time = 500'000'000;
+  unsigned int ic_time = 100'000;
+  unsigned long long op_time = 500'000'000;
   bool halt_on_overload = true;
 
   static RunConfig from_json(JsonObjectConst &json);

@@ -33,28 +33,19 @@ run::RunManager run::RunManager::_instance{};
 void run::RunManager::run_next(run::RunStateChangeHandler *state_change_handler) {
   auto run = queue.front();
 
-  mode::FlexIOControl::init(run.config.ic_time, run.config.op_time);
+  if (!mode::FlexIOControl::init(run.config.ic_time, run.config.op_time)) {
+    auto change = run.to(RunState::ERROR, 0);
+    state_change_handler->handle(change, run);
+    queue.pop();
+    return;
+  }
   mode::FlexIOControl::force_start();
-  /*
-  // Take off
-  auto change = run.to(RunState::TAKE_OFF, 0);
-  state_change_handler->handle(change, run);
-  // IC
-  change = run.to(RunState::IC, 0);
-  state_change_handler->handle(change, run);
-  delayNanoseconds(run.config.ic_time);
-  // OP
-  change = run.to(RunState::OP, run.config.ic_time);
-  state_change_handler->handle(change, run);
-  delayNanoseconds(run.config.op_time);
-  // OP end
-  change = run.to(RunState::OP_END, run.config.ic_time+run.config.op_time);
-  state_change_handler->handle(change, run);
-  // DONE
-  change = run.to(RunState::DONE, run.config.ic_time+run.config.op_time);
-  state_change_handler->handle(change, run);
-   */
+  mode::FlexIOControl::delay_till_done();
+  auto actual_op_time = mode::FlexIOControl::get_actual_op_time();
 
+  // DONE
+  auto change = run.to(RunState::DONE, actual_op_time);
+  state_change_handler->handle(change, run);
   queue.pop();
 }
 
