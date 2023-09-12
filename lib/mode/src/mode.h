@@ -96,6 +96,8 @@ public:
   static void to_op();
   static void to_pause();
   static void to_end();
+
+  static void delay_till_done();
 };
 
 } // namespace mode

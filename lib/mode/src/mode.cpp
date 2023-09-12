@@ -165,7 +165,21 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
                                   FLEXIO_SHIFTCTL_PINSEL(13) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_op] = 0;
   flexio->port().SHIFTBUF[s_op] =
-      FLEXIO_STATE_SHIFTBUF(0b11011111, s_ic, s_ic, s_ic, s_ic, s_ic, s_ic, s_op, s_idle);
+      FLEXIO_STATE_SHIFTBUF(0b11011111, s_ic, s_ic, s_ic, s_ic, s_ic, s_ic, s_op, s_end);
+
+  //
+  // Configure END state.
+  //
+
+  flexio->port().SHIFTCTL[s_end] =
+      FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_PINSEL(13) | FLEXIO_SHIFTCTL_SMOD_STATE;
+  flexio->port().SHIFTCFG[s_end] = 0;
+  flexio->port().SHIFTBUF[s_end] =
+      FLEXIO_STATE_SHIFTBUF(0b11111111, s_end);
+
+  //
+  // Configure miscellaneous flexio stuff
+  //
 
   // Put relevant pins into FlexIO mode
   for (auto pin : {PIN_MODE_IC, PIN_MODE_OP, static_cast<uint8_t>(5) /* FlexIO1:8 for testing outputs */,
@@ -225,4 +239,10 @@ void mode::FlexIOControl::reset() {
   delayMicroseconds(1);
   flexio->port().CTRL &= ~FLEXIO_CTRL_SWRST;
   delayMicroseconds(1);
+}
+
+void mode::FlexIOControl::delay_till_done() {
+  auto flexio = FlexIOHandler::flexIOHandler_list[0];
+  while (flexio->port().SHIFTSTATE != s_end) {
+  }
 }
