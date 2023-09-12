@@ -53,9 +53,12 @@ void mode::ManualControl::to_halt() {
 }
 
 bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_time_ns) {
+  // Initialize and reset QTMR
+  _init_qtmr_op();
+  _reset_qtmr_op();
+
+  // Get FlexIO handler for initialization
   auto flexio = FlexIOHandler::flexIOHandler_list[0];
-  // Reset FlexIO
-  // reset();
 
   // We hardcode timer indices, otherwise we would need to use freeTimers all the time
   int _t_idx = -1;
@@ -245,4 +248,50 @@ void mode::FlexIOControl::delay_till_done() {
   auto flexio = FlexIOHandler::flexIOHandler_list[0];
   while (flexio->port().SHIFTSTATE != s_end) {
   }
+}
+
+void mode::FlexIOControl::_reset_qtmr_op() {
+  TMR1_CNTR1 = 0;
+  TMR1_CNTR2 = 0;
+}
+
+void mode::FlexIOControl::_init_qtmr_op() {
+  CCM_CCGR6 |= CCM_CCGR6_QTIMER1(CCM_CCGR_ON);
+
+  // Configure timer 1 of first QTMR module to do input-gated counting
+  TMR1_CTRL1 = 0; // stop
+  TMR1_CNTR1 = 0; // reset counter
+  TMR1_SCTRL1 = 0;
+  TMR1_LOAD1 = 0;
+  TMR1_CSCTRL1 = 0;
+  TMR1_LOAD1 = 0;       // start val after compare
+  TMR1_COMP11 = 0xffff; // count up to this val, interrupt,  and start again
+  TMR1_CMPLD11 = 0xffff;
+  // Set CM=0 for now, enable later, select fastest clock with PCS, select gating signal with SCS
+  TMR1_CTRL1 = TMR_CTRL_CM(0) | TMR_CTRL_PCS(8) | TMR_CTRL_SCS(1);
+  // Invert secondary signal (gating when HIGH, counting when LOW)
+  TMR1_SCTRL1 = TMR_SCTRL_IPS;
+
+  // Configure timer 2 of first QTMR module to cascade from timer 1
+  TMR1_CTRL2 = 0;
+  TMR1_CNTR2 = 0; // reset counter
+  TMR1_SCTRL2 = 0;
+  TMR1_LOAD2 = 0;
+  TMR1_CSCTRL2 = 0;
+  TMR1_LOAD2 = 0;       // start val after compare
+  TMR1_COMP12 = 0xffff; // count up to this val and start again
+  TMR1_CMPLD12 = 0xffff;
+  // Set CM=0 for now, enable later, select first timer with PCS
+  TMR1_CTRL2 = TMR_CTRL_CM(0) | TMR_CTRL_PCS(4 + 1);
+
+  // Put PIN_QTMR_OP_GATE in QTimer mode
+  *(portConfigRegister(PIN_QTMR_OP_GATE)) = 1; // ALT 1
+  // Enable timers in reverse order
+  TMR1_CTRL2 |= TMR_CTRL_CM(7);
+  TMR1_CTRL1 |= TMR_CTRL_CM(3);
+}
+
+unsigned long long mode::FlexIOControl::get_actual_op_time() {
+  // TODO: This is currently measured, but of course it can be calculated
+  return (TMR1_CNTR2 * 0xFFFF + TMR1_CNTR1) * 671 / 100;
 }

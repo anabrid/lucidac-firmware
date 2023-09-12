@@ -33,6 +33,7 @@ namespace mode {
 
 constexpr uint8_t PIN_MODE_IC = 4;
 constexpr uint8_t PIN_MODE_OP = 3;
+constexpr uint8_t PIN_QTMR_OP_GATE = 12;
 
 constexpr unsigned int DEFAULT_IC_TIME = 100'000;
 constexpr unsigned long long DEFAULT_OP_TIME = 1'000'000;
@@ -89,6 +90,11 @@ public:
   static void disable();
   static void enable();
   static void reset();
+
+  // QTMR functions
+  static void _init_qtmr_op();
+  static void _reset_qtmr_op();
+  static unsigned long long get_actual_op_time();
 
   static void force_start();
   static void to_idle();
