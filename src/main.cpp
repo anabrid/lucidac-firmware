@@ -56,6 +56,14 @@ void setup() {
     LOG_ERROR("Error initializing carrier board.");
     _ERROR_OUT_
   }
+
+  // Initialize things related to runs
+  // ... Nothing yet :)
+  if (!mode::FlexIOControl::init(mode::DEFAULT_IC_TIME, mode::DEFAULT_OP_TIME)) {
+    LOG_ERROR("Error initializing FlexIO mode control.");
+    _ERROR_OUT_
+  }
+
   // Register message handler
   msg::handlers::Registry::set("set_config", new msg::handlers::SetConfigMessageHandler(carrier_));
   msg::handlers::Registry::set("get_config", new msg::handlers::GetConfigMessageHandler(carrier_));
