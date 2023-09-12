@@ -30,7 +30,7 @@ void setup() {
   LOG(ANABRID_DEBUG_INIT, "Hello.");
 
   // Initialize ethernet communication
-  if (!net::Ethernet.begin(IPAddress(192, 168, 100, 222), IPAddress(255,255,255,0), IPAddress(192,168,100,1))) {
+  if (!net::Ethernet.begin()) {
     LOG_ERROR("Error starting ethernet.");
     _ERROR_OUT_
   }
