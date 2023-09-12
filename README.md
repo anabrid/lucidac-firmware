@@ -1,8 +1,47 @@
-# LUCIDAC Teensy hybrid-controller
+# LUCIDAC Hybrid Controller
 
-This repository holds the firmware for the **Teensy** hybrid controller for the LUCIDAC.
+This repository holds the firmware for the hybrid controller of the LUCIDAC.
 
-## Getting started
+## Users: Getting started
+
+This section is intended for users of the LUCIDAC,
+who want to use it as is.
+
+###  Flashing the latest firmware
+
+If necessary, you can download the latest stable firmware from the releases page
+or the latest development version from the build artifacts.
+
+Install the teensy flashing utility `teensy-loader-cli`
+and the udev rules from https://www.pjrc.com/teensy/00-teensy.rules
+to allow flashing the firmware.
+
+Connect your hybrid controller via the USB port to your computer
+and press the small flash button on the teensy board.
+
+Execute `teensy_loader_cli --mcu=TEENSY41 firmware.hex` to flash your hybrid controller.
+
+### Find the hybrid controller in the network
+
+By default, the hybrid controller configures its network address via DHCP.
+You will need that network address to connect to it.
+
+The hybrid controller will send debug information, including its IP address,
+via the USB-serial connection.
+After a restart, use `cat /dev/ttyACM0` or similar to access the debug output.
+Please note that debug output is not buffered and may not be visible if you are too slow.
+
+You can also find the IP address by asking your system administrator
+or watching your DHCP logs.
+
+### Using your LUCIDAC
+
+Use the `pyanabrid-redac` python package to interact with your LUCIDAC.
+
+## Developers: Getting started
+
+This section is intended for developers of the LUCIDAC,
+who are looking to adapt and build the firmware themselves.
 
 Follow the respective platformio (`pio` in short) documentations to install the required dependencies and tools for developement.
 
