@@ -50,6 +50,6 @@ bool msg::handlers::Registry::set(const std::string &msg_type, msg::handlers::Me
 }
 
 bool msg::handlers::PingRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  msg_out["now"] = 43;
+  msg_out["now"] = "2007-08-31T16:47+01:00";
   return false;
 }
