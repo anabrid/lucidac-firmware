@@ -21,6 +21,24 @@ net::EthernetServer server{server_port};
 
 carrier::Carrier carrier_;
 
+class HackMessageHandler : public msg::handlers::MessageHandler {
+public:
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
+    std::string command = msg_in["command"];
+    if (command.empty())
+      return false;
+
+    // Slave mode for transferring IC/OP signals
+    if (command == "slave") {
+      LOG_ALWAYS("Enabling slave mode, setting IC/OP pins to input (floating).");
+      pinMode(mode::PIN_MODE_IC, INPUT);
+      pinMode(mode::PIN_MODE_OP, INPUT);
+    }
+
+    return true;
+  }
+};
+
 void setup() {
   // Initialize serial communication
   Serial.begin(0);
