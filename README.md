@@ -11,10 +11,15 @@ who want to use it as is.
 
 If necessary, you can download the latest stable firmware from the releases page
 or the latest development version from the build artifacts.
+In the moment, this is *not* the [Gitlab project releases](https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/releases)
+but instead the [Gitlab project jobs](https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/jobs) built
+artifacts, i.e. you should go to https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/artifacts
+and look for the latest artifact from the *dev branch*. You can download
+the `artifacts.zip` and lookup the file in `.pio/build/teensy41/firmware.hex`
 
 Install the teensy flashing utility `teensy-loader-cli`
 and the udev rules from https://www.pjrc.com/teensy/00-teensy.rules
-to allow flashing the firmware.
+to allow flashing the firmware image without prior building at your computer.
 
 Connect your hybrid controller via the USB port to your computer
 and press the small flash button on the teensy board.
