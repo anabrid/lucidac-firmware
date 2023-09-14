@@ -132,13 +132,22 @@ bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
     }
     // Handle a mapping of factors
     if (cfg["elements"].is<JsonObjectConst>()) {
+      serializeJson(cfg, Serial);
       for (JsonPairConst keyval : cfg["elements"].as<JsonObjectConst>()) {
-        if (!keyval.value().is<float>())
-          return false;
+        // Keys define index of factor to change
         // TODO: Check conversion from string to number
         auto idx = std::stoul(keyval.key().c_str());
-        if (!set_factor(idx, keyval.value().as<float>()))
+        // Values can either be direct factor float values or {"factor": 0.42} objects
+        if (keyval.value().is<JsonObjectConst>() and keyval.value().as<JsonObjectConst>().containsKey("factor")) {
+          if (!set_factor(idx, keyval.value().as<JsonObjectConst>()["factor"].as<float>()))
+            return false;
+        }
+        else if (keyval.value().is<float>()) {
+          if (!set_factor(idx, keyval.value().as<float>()))
+            return false;
+        } else {
           return false;
+        }
       }
     }
   }
