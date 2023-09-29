@@ -23,8 +23,11 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#include "mode.h"
 #include "run.h"
+
+#include "daq.h"
+#include "logging.h"
+#include "mode.h"
 
 #include <utility>
 
@@ -33,12 +36,17 @@ run::RunManager run::RunManager::_instance{};
 void run::RunManager::run_next(run::RunStateChangeHandler *state_change_handler) {
   auto run = queue.front();
 
-  if (!mode::FlexIOControl::init(run.config.ic_time, run.config.op_time)) {
+  daq::FlexIODAQ daq_{};
+  daq_.reset();
+  if (!mode::FlexIOControl::init(run.config.ic_time, run.config.op_time) or
+      !daq_.init(daq::DEFAULT_SAMPLE_RATE)) {
+    LOG_ERROR("Error while initializing state machine or daq for run.")
     auto change = run.to(RunState::ERROR, 0);
     state_change_handler->handle(change, run);
     queue.pop();
     return;
   }
+  daq_.enable();
   mode::FlexIOControl::force_start();
   mode::FlexIOControl::delay_till_done();
   auto actual_op_time = mode::FlexIOControl::get_actual_op_time();
