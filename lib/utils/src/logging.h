@@ -48,3 +48,15 @@
 #else
 #define LOG_ANABRID_DEBUG_INIT(message) ((void)0)
 #endif
+
+#ifdef ANABRID_DEBUG_STATE
+#define LOG_ANABRID_DEBUG_STATE(message) __LOG(message)
+#else
+#define LOG_ANABRID_DEBUG_STATE(message) ((void)0)
+#endif
+
+#ifdef ANABRID_DEBUG_DAQ
+#define LOG_ANABRID_DEBUG_DAQ(message) __LOG(message)
+#else
+#define LOG_ANABRID_DEBUG_DAQ(message) ((void)0)
+#endif
