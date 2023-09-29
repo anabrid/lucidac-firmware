@@ -34,7 +34,10 @@ namespace daq {
 constexpr uint8_t NUM_CHANNELS = 8;
 constexpr uint8_t PIN_CNVST = 7;
 constexpr uint8_t PIN_CLK = 6;
+constexpr uint8_t PIN_GATE = 32;
 constexpr std::array<uint8_t, NUM_CHANNELS> PINS_MISO = {34, 35, 36, 37, 11, 10, 9, 8};
+
+constexpr unsigned int DEFAULT_SAMPLE_RATE = 100'000;
 
 typedef std::array<float, NUM_CHANNELS> data_vec_t;
 
@@ -60,6 +63,7 @@ private:
 
   uint8_t _flexio_pin_cnvst;
   uint8_t _flexio_pin_clk;
+  uint8_t _flexio_pin_gate;
   std::array<uint8_t, NUM_CHANNELS> _flexio_pins_miso;
 
 public:
@@ -68,7 +72,11 @@ public:
   bool init(unsigned int sample_rate) override;
   bool _init_cnvst(unsigned int sample_rate);
   void enable();
-  bool _init_clk();
+  void reset();
+
+  std::array<uint16_t, NUM_CHANNELS> sample_raw() override;
+  std::array<float, NUM_CHANNELS> sample() override;
+  float sample(uint8_t index) override;
 };
 
 /**

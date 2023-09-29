@@ -27,52 +27,90 @@
 #include <algorithm>
 
 #include "daq.h"
+#include "logging.h"
 #include "running_avg.h"
 
 bool daq::FlexIODAQ::init(unsigned int sample_rate) {
-  // Maximum FlexIO clock speed is 120MHz, see https://www.pjrc.com/teensy/IMXRT1060RM_rev3.pdf p.1025
-  // PLL3 is 480MHz, divide that by 2*2 = 4
-  flexio->setClockSettings(3, 1, 1);
-  if (!_init_cnvst(0))
+  LOG_ANABRID_DEBUG_DAQ(__PRETTY_FUNCTION__);
+  // Check if any of the pins could not be mapped to the same FlexIO module
+  if (_flexio_pin_cnvst == 0xff or _flexio_pin_clk == 0xff or _flexio_pin_gate == 0xff)
     return false;
-  if (!_init_clk())
+  for (auto _flexio_pin_miso : _flexio_pins_miso)
+    if (_flexio_pin_miso == 0xff)
+      return false;
+
+  // Maximum FlexIO clock speed is 120MHz, see https://www.pjrc.com/teensy/IMXRT1060RM_rev3.pdf p.1025
+  // PLL3 is 480MHz, (3,1,1) divides that by 4 to 120MHz
+  // But for state, it also works to use (3,0,0)?
+  flexio->setClockSettings(3, 0, 0);
+  if (!_init_cnvst(sample_rate))
     return false;
 
   return true;
 }
 
 bool daq::FlexIODAQ::_init_cnvst(unsigned int sample_rate) {
+  LOG_ANABRID_DEBUG_DAQ(__PRETTY_FUNCTION__);
+  if (sample_rate > 1'000'000 or sample_rate < 32)
+    return false;
+
+  flexio->setIOPinToFlexMode(PIN_GATE);
+  uint8_t _gated_timer_idx = 0;
+  flexio->port().TIMCTL[_gated_timer_idx] = FLEXIO_TIMCTL_TRGSEL(2 * _flexio_pin_gate) | FLEXIO_TIMCTL_TRGPOL |
+                                            FLEXIO_TIMCTL_TRGSRC | FLEXIO_TIMCTL_TIMOD(0b11);
+  flexio->port().TIMCFG[_gated_timer_idx] = FLEXIO_TIMCFG_TIMDIS(0b011) | FLEXIO_TIMCFG_TIMENA(0b110);
+  flexio->port().TIMCMP[_gated_timer_idx] = 239;
+
+  uint8_t _sample_timer_idx = 1;
+  flexio->setIOPinToFlexMode(13);
+  flexio->port().TIMCTL[_sample_timer_idx] = FLEXIO_TIMCTL_TRGSEL(4 * _gated_timer_idx + 3) |
+                                             FLEXIO_TIMCTL_TRGSRC | FLEXIO_TIMCTL_TIMOD(0b11) |
+                                             FLEXIO_TIMCTL_PINSEL(3) | FLEXIO_TIMCTL_PINCFG(0b11);
+  flexio->port().TIMCFG[_sample_timer_idx] = FLEXIO_TIMCFG_TIMDEC(0b01) | FLEXIO_TIMCFG_TIMENA(0b110);
+  flexio->port().TIMCMP[_sample_timer_idx] = (1'000'000 / sample_rate) * 2 - 1;
+
   flexio->setIOPinToFlexMode(PIN_CNVST);
-
-  uint8_t _sample_timer_idx = flexio->requestTimers(1);
-  flexio->port().TIMCTL[_sample_timer_idx] = FLEXIO_TIMCTL_TIMOD(0b11);
-  flexio->port().TIMCFG[_sample_timer_idx] = 0;
-  flexio->port().TIMCMP[_sample_timer_idx] = 1500;
-
-  uint8_t _cnvst_timer_idx = flexio->requestTimers(1);
+  uint8_t _cnvst_timer_idx = 2;
   flexio->port().TIMCTL[_cnvst_timer_idx] =
       FLEXIO_TIMCTL_PINSEL(_flexio_pin_cnvst) | FLEXIO_TIMCTL_PINCFG(0b11) | FLEXIO_TIMCTL_TRGSRC |
       FLEXIO_TIMCTL_TRGSEL(4 * _sample_timer_idx + 3) | FLEXIO_TIMCTL_TIMOD(0b10);
   flexio->port().TIMCFG[_cnvst_timer_idx] = FLEXIO_TIMCFG_TIMDIS(0b010) | FLEXIO_TIMCFG_TIMENA(0b111);
-  flexio->port().TIMCMP[_cnvst_timer_idx] = 0x0000'10'40;
+  flexio->port().TIMCMP[_cnvst_timer_idx] = 0x0000'10'FF;
 
   flexio->setIOPinToFlexMode(PIN_CLK);
-  uint8_t _clk_timer_idx = flexio->requestTimers(1);
+  uint8_t _clk_timer_idx = 3;
   flexio->port().TIMCTL[_clk_timer_idx] =
       FLEXIO_TIMCTL_PINSEL(_flexio_pin_clk) | FLEXIO_TIMCTL_PINCFG(0b11) | FLEXIO_TIMCTL_TRGSRC |
       FLEXIO_TIMCTL_TRGSEL(4 * _cnvst_timer_idx + 3) | FLEXIO_TIMCTL_TIMOD(0b01) | FLEXIO_TIMCTL_TRGPOL;
   flexio->port().TIMCFG[_clk_timer_idx] = FLEXIO_TIMCFG_TIMDIS(0b010) | FLEXIO_TIMCFG_TIMENA(0b110);
-  flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'1F'01;
+  flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'1F'02;
   return true;
 }
 
-bool daq::FlexIODAQ::_init_clk() { return true; }
-
 daq::FlexIODAQ::FlexIODAQ()
     : flexio(FlexIOHandler::mapIOPinToFlexIOHandler(PIN_CNVST, _flexio_pin_cnvst)),
-      _flexio_pin_clk(flexio->mapIOPinToFlexPin(PIN_CLK)) {}
+      _flexio_pin_clk(flexio->mapIOPinToFlexPin(PIN_CLK)),
+      _flexio_pin_gate(flexio->mapIOPinToFlexPin(PIN_GATE)) {
+  std::transform(PINS_MISO.begin(), PINS_MISO.end(), _flexio_pins_miso.begin(),
+                 [&](auto pin) { return flexio->mapIOPinToFlexPin(pin); });
+}
 
 void daq::FlexIODAQ::enable() { flexio->port().CTRL |= FLEXIO_CTRL_FLEXEN; }
+
+std::array<uint16_t, daq::NUM_CHANNELS> daq::FlexIODAQ::sample_raw() { return {}; }
+
+std::array<float, daq::NUM_CHANNELS> daq::FlexIODAQ::sample() { return {}; }
+
+float daq::FlexIODAQ::sample(uint8_t index) { return 0; }
+
+void daq::FlexIODAQ::reset() {
+  LOG_ANABRID_DEBUG_DAQ(__PRETTY_FUNCTION__);
+  flexio->port().CTRL &= ~FLEXIO_CTRL_FLEXEN;
+  flexio->port().CTRL |= FLEXIO_CTRL_SWRST;
+  delayNanoseconds(100);
+  flexio->port().CTRL &= ~FLEXIO_CTRL_SWRST;
+  delayNanoseconds(100);
+}
 
 bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate_unused) {
   pinMode(PIN_CNVST, OUTPUT);
