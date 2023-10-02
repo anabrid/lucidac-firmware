@@ -89,7 +89,12 @@ bool daq::FlexIODAQ::_init_cnvst(unsigned int sample_rate) {
       FLEXIO_TIMCTL_PINSEL(_flexio_pin_clk) | FLEXIO_TIMCTL_PINCFG(0b11) | FLEXIO_TIMCTL_TRGSRC |
       FLEXIO_TIMCTL_TRGSEL(4 * _delay_timer_idx + 3) | FLEXIO_TIMCTL_TRGPOL | FLEXIO_TIMCTL_TIMOD(0b01);
   flexio->port().TIMCFG[_clk_timer_idx] = FLEXIO_TIMCFG_TIMDIS(0b010) | FLEXIO_TIMCFG_TIMENA(0b110);
-  flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'1F'05;
+  // langsam
+  // flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'1F'60;
+  // vielfaches von bit-bang algorithm:
+  flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'1F'07;
+  // maximal schnell
+  // flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'1F'05;
   return true;
 }
 
