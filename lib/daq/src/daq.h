@@ -61,7 +61,13 @@ public:
 class FlexIODAQ : public BaseDAQ {
 // TODO: Currently public for hacking
 public:
-  volatile uint32_t dma_buffer[8] __attribute__((used, aligned(32))) = {1, 2, 3, 4, 5, 6, 7, 8};
+  // We need a memory segment to implement a ring buffer.
+  // Its size should be a power-of-2-multiple of NUM_CHANNELS.
+  // The DMA implements ring buffer by restricting the N lower bits of the destination address to change.
+  // That means the memory segment must start at a memory address with enough lower bits being zero.
+  // TODO: This is not necessary, since we cycle back to DADDR not to address with MOD zero bits -- simplify.
+  static constexpr size_t BUFFER_SIZE = 4*NUM_CHANNELS;
+  std::array<volatile uint32_t, BUFFER_SIZE> dma_buffer __attribute__((used, aligned(BUFFER_SIZE*4))) = {0};
 
   FlexIOHandler *flexio;
 

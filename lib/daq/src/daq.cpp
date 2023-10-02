@@ -103,7 +103,7 @@ bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   /*
    *  Configure shifters for data capture
    *
-   *  Note that CLK shifts 16 times and then the compare event triggers a store.
+   *  Note that CLK shifts 16 times and then the compare event (timer stop/disable) triggers a store.
    *  That means the shift registers will store each 16-bit data packet separately,
    *  not collect 32 bits and then store the full 32 bits.
    *  Thus, part of SHIFTBUF will always be zero.
@@ -132,24 +132,66 @@ bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   flexio->port().SHIFTSDEN = 1 << shifter_dma_idx;
   // Configure DMA channel
   dma.begin();
-  // dma.sourceBuffer(flexio->port().SHIFTBUFBIS, 8);
-  // dma.destinationCircular(dma_buffer, 16);
 
-  // One DMA request (SHIFTBUF full) triggers one minor loop
-  // CITER "current major loop iteration count"
-  // *but* is reduced every minor loop. When it reaches zero, major loop is done.
-  dma.TCD->CITER = 2;
-  // BITER "beginning iteration count" = number of minor loops in one major loop
-  dma.TCD->BITER = 2;
+  // Configure minor and major loop count of DMA process.
+  // One DMA request (SHIFTBUF store) triggers one major loop.
+  // A major loop consists of several minor loops, which are executed one after the other.
+  // For each loop, source address and destination address is adjusted and data is copied.
+  // The general approach is to use the minor loops to copy all shift registers when one triggers the DMA.
+  // That means each major loop copies over NUM_CHANNELS data points.
+  // Triggering multiple major loops fills up the ring buffer.
+  // Once all major loops are done, the ring buffer is full and an interrupt is triggered to handle the data.
 
+  // BITER "beginning iteration count" is the number of minor loops in one major loop.
+  // This must equal the number of shift registers that should be read out.
+  dma.TCD->BITER = NUM_CHANNELS;
+  // CITER "current major loop iteration count" is the number of major loops.
+  // This must be adapted to fit the ring buffer size.
+  dma.TCD->CITER = dma_buffer.size()/NUM_CHANNELS;
+
+  // Configure source address and its adjustments.
+  // We want to circularly copy from SHIFTBUFBIS.
+  // In principle, we are only interested in the last 16 bits of each SHIFTBUFBIS.
+  // Unfortunately, configuring it in such a way was not successful -- maybe in the future.
+  // Instead, we copy the full 32 bit of data.
+  // SADDR "source address start" is where the DMA process starts.
+  // Set it to the beginning of the SHIFTBUFBIS array.
   dma.TCD->SADDR = flexio->port().SHIFTBUFBIS;
-  dma.TCD->NBYTES = 8;           // 64bit total transfer (=2 shift buffer)
+  // NBYTES "minor byte transfer count" is the number of bytes transferred in one minor loop.
+  // Set it such that the whole SHIFTBUFBIS array is copied, which is 4 bytes * NUM_CHANNELS
+  dma.TCD->NBYTES = 4 * NUM_CHANNELS;
+  // SOFF "source address offset" is the offset added onto SADDR for each minor loop.
+  // Set it to 4 bytes, equaling the 32 bits each shift register has.
   dma.TCD->SOFF = 4;             // 32bit offset (=1 shift buffer)
-  dma.TCD->ATTR_SRC = B00011010; // [5bit MOD, 00011=3lower bits may change][3bit SIZE, 010=32bit]
+  // ATTR_SRC "source address attribute" is an attribute setting the circularity and the transfer size.
+  // The format is [5bit MOD][3bit SIZE].
+  // The 5bit MOD is the number of lower address bites allowed to change, effectively circling back to SADDR.
+  // The 3bit SIZE defines the source data transfer size.
+  // Set MOD to 5, allowing the address bits to change until the end of the SHIFTBUFBIS array and cycling.
+  // Set SIZE to 0b010 for 32 bit transfer size.
+  dma.TCD->ATTR_SRC = B00101010; // [5bit MOD, 00011=3lower bits may change][3bit SIZE, 010=32bit]
 
-  dma.TCD->DADDR = dma_buffer;
+  // Configure destination address and its adjustments.
+  // We want to circularly copy into a memory ring buffer.
+  // Since we always copy 32 bit from SADDR, we will have the memory buffer in a 32 bit layout as well,
+  // even though we are again only interested in the lower 16 bits.
+  // DADDR "destination address start" is the start of the destination ring buffer.
+  // Set to address of ring buffer.
+  dma.TCD->DADDR = dma_buffer.data();
+  // DOOFF "destination address offset" is the offset added to DADDR for each minor loop.
+  // Set to 4 bytes, equaling the 32 bits each shift register has.
   dma.TCD->DOFF = 4;
-  dma.TCD->ATTR_DST = B00101010; // [5bit MOD, 00101=5lower bits of address may change, 32bytes = 4*2*32bit buffer][3bit SIZE, 010=32bit]
+  // ATTR_SRC "destination address attribute" is analogous to ATTR_SRC
+  // Set first 5 bit MOD according to size of ring buffer.
+  // Set last 3 bits to 0b010 for 32 bit transfer size.
+  uint8_t MOD = __builtin_ctz(BUFFER_SIZE*4);
+  // Check if memory buffer address is aligned such that MOD lower bits are zero (maybe this is too pedantic?)
+  // TODO: This is not necessary, since we cycle back to DADDR not to address with MOD zero bits -- simplify.
+  if (reinterpret_cast<uintptr_t>(dma_buffer.data()) & ~(~static_cast<uintptr_t>(0) << MOD)) {
+    LOG_ERROR("DMA buffer memory range is not sufficiently aligned.")
+    return false;
+  }
+  dma.TCD->ATTR_DST = ((MOD & 0b11111) << 3) | 0b010;
 
   // Call an interrupt when done
   dma.attachInterrupt(_dma_interrupt);
@@ -158,6 +200,9 @@ bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   dma.triggerAtHardwareEvent(flexio->shiftersDMAChannel(shifter_dma_idx));
   // Enable dma channel
   dma.enable();
+
+  if (dma.error())
+    return false;
 
   return true;
 }
