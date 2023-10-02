@@ -62,10 +62,8 @@ bool daq::FlexIODAQ::_init_cnvst(unsigned int sample_rate) {
   flexio->port().TIMCMP[_gated_timer_idx] = 239;
 
   uint8_t _sample_timer_idx = 1;
-  flexio->setIOPinToFlexMode(13);
-  flexio->port().TIMCTL[_sample_timer_idx] = FLEXIO_TIMCTL_TRGSEL(4 * _gated_timer_idx + 3) |
-                                             FLEXIO_TIMCTL_TRGSRC | FLEXIO_TIMCTL_TIMOD(0b11) |
-                                             FLEXIO_TIMCTL_PINSEL(3) | FLEXIO_TIMCTL_PINCFG(0b11);
+  flexio->port().TIMCTL[_sample_timer_idx] =
+      FLEXIO_TIMCTL_TRGSEL(4 * _gated_timer_idx + 3) | FLEXIO_TIMCTL_TRGSRC | FLEXIO_TIMCTL_TIMOD(0b11);
   flexio->port().TIMCFG[_sample_timer_idx] = FLEXIO_TIMCFG_TIMDEC(0b01) | FLEXIO_TIMCFG_TIMENA(0b110);
   flexio->port().TIMCMP[_sample_timer_idx] = (1'000'000 / sample_rate) * 2 - 1;
 
@@ -77,13 +75,21 @@ bool daq::FlexIODAQ::_init_cnvst(unsigned int sample_rate) {
   flexio->port().TIMCFG[_cnvst_timer_idx] = FLEXIO_TIMCFG_TIMDIS(0b010) | FLEXIO_TIMCFG_TIMENA(0b111);
   flexio->port().TIMCMP[_cnvst_timer_idx] = 0x0000'10'FF;
 
+  // Add a delay timer to control delay between CNVST and first CLK.
+  // Basically a second CNVST timer which is slightly longer and used to trigger first CLK.
+  uint8_t _delay_timer_idx = 3;
+  flexio->port().TIMCTL[_delay_timer_idx] =
+      FLEXIO_TIMCTL_TRGSRC | FLEXIO_TIMCTL_TRGSEL(4 * _sample_timer_idx + 3) | FLEXIO_TIMCTL_TIMOD(0b11);
+  flexio->port().TIMCFG[_delay_timer_idx] = FLEXIO_TIMCFG_TIMDIS(0b010) | FLEXIO_TIMCFG_TIMENA(0b110);
+  flexio->port().TIMCMP[_delay_timer_idx] = 300;
+
   flexio->setIOPinToFlexMode(PIN_CLK);
-  uint8_t _clk_timer_idx = 3;
+  uint8_t _clk_timer_idx = 4;
   flexio->port().TIMCTL[_clk_timer_idx] =
       FLEXIO_TIMCTL_PINSEL(_flexio_pin_clk) | FLEXIO_TIMCTL_PINCFG(0b11) | FLEXIO_TIMCTL_TRGSRC |
-      FLEXIO_TIMCTL_TRGSEL(4 * _cnvst_timer_idx + 3) | FLEXIO_TIMCTL_TIMOD(0b01) | FLEXIO_TIMCTL_TRGPOL;
+      FLEXIO_TIMCTL_TRGSEL(4 * _delay_timer_idx + 3) | FLEXIO_TIMCTL_TRGPOL | FLEXIO_TIMCTL_TIMOD(0b01);
   flexio->port().TIMCFG[_clk_timer_idx] = FLEXIO_TIMCFG_TIMDIS(0b010) | FLEXIO_TIMCFG_TIMENA(0b110);
-  flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'1F'02;
+  flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'1F'05;
   return true;
 }
 
