@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <DMAChannel.h>
 #include <FlexIO_t4.h>
 #include <array>
 
@@ -58,7 +59,10 @@ public:
 };
 
 class FlexIODAQ : public BaseDAQ {
-private:
+// TODO: Currently public for hacking
+public:
+  volatile uint32_t dma_buffer[8] __attribute__((used, aligned(32))) = {1, 2, 3, 4, 5, 6, 7, 8};
+
   FlexIOHandler *flexio;
 
   uint8_t _flexio_pin_cnvst;
@@ -70,7 +74,6 @@ public:
   FlexIODAQ();
 
   bool init(unsigned int sample_rate) override;
-  bool _init_cnvst(unsigned int sample_rate);
   void enable();
   void reset();
 

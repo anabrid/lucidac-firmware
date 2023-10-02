@@ -30,6 +30,17 @@
 #include "logging.h"
 #include "running_avg.h"
 
+DMAChannel dma(false);
+
+void _dma_interrupt() {
+  digitalToggleFast(13);
+
+  // Clear interrupt
+  dma.clearInterrupt();
+  // Memory barrier
+  asm("DSB");
+}
+
 bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   LOG_ANABRID_DEBUG_DAQ(__PRETTY_FUNCTION__);
   // Check if any of the pins could not be mapped to the same FlexIO module
@@ -43,14 +54,7 @@ bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   // PLL3 is 480MHz, (3,1,1) divides that by 4 to 120MHz
   // But for state, it also works to use (3,0,0)?
   flexio->setClockSettings(3, 0, 0);
-  if (!_init_cnvst(sample_rate))
-    return false;
 
-  return true;
-}
-
-bool daq::FlexIODAQ::_init_cnvst(unsigned int sample_rate) {
-  LOG_ANABRID_DEBUG_DAQ(__PRETTY_FUNCTION__);
   if (sample_rate > 1'000'000 or sample_rate < 32)
     return false;
 
@@ -95,6 +99,66 @@ bool daq::FlexIODAQ::_init_cnvst(unsigned int sample_rate) {
   flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'1F'07;
   // maximal schnell
   // flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'1F'05;
+
+  /*
+   *  Configure shifters for data capture
+   *
+   *  Note that CLK shifts 16 times and then the compare event triggers a store.
+   *  That means the shift registers will store each 16-bit data packet separately,
+   *  not collect 32 bits and then store the full 32 bits.
+   *  Thus, part of SHIFTBUF will always be zero.
+   */
+
+  for (auto _pin_miso : PINS_MISO) {
+    flexio->setIOPinToFlexMode(_pin_miso);
+  }
+  for (auto _pin_miso_idx = 0; _pin_miso_idx < _flexio_pins_miso.size(); _pin_miso_idx++) {
+    // Trigger all shifters from CLK
+    flexio->port().SHIFTCTL[_pin_miso_idx] = FLEXIO_SHIFTCTL_TIMSEL(_clk_timer_idx) | FLEXIO_SHIFTCTL_TIMPOL |
+                                             FLEXIO_SHIFTCTL_PINSEL(_flexio_pins_miso[_pin_miso_idx]) |
+                                             FLEXIO_SHIFTCTL_SMOD(1);
+
+    flexio->port().SHIFTCFG[_pin_miso_idx] = 0;
+  }
+
+  /*
+   *  Configure DMA
+   */
+
+  // Select shifter zero to generate DMA events.
+  // Which shifter is selected should not matter, as long as it is used.
+  uint8_t shifter_dma_idx = 0;
+  // Set shifter to generate DMA events.
+  flexio->port().SHIFTSDEN = 1 << shifter_dma_idx;
+  // Configure DMA channel
+  dma.begin();
+  // dma.sourceBuffer(flexio->port().SHIFTBUFBIS, 8);
+  // dma.destinationCircular(dma_buffer, 16);
+
+  // One DMA request (SHIFTBUF full) triggers one minor loop
+  // CITER "current major loop iteration count"
+  // *but* is reduced every minor loop. When it reaches zero, major loop is done.
+  dma.TCD->CITER = 2;
+  // BITER "beginning iteration count" = number of minor loops in one major loop
+  dma.TCD->BITER = 2;
+
+  dma.TCD->SADDR = flexio->port().SHIFTBUFBIS;
+  dma.TCD->NBYTES = 8;           // 64bit total transfer (=2 shift buffer)
+  dma.TCD->SOFF = 4;             // 32bit offset (=1 shift buffer)
+  dma.TCD->ATTR_SRC = B00011010; // [5bit MOD, 00011=3lower bits may change][3bit SIZE, 010=32bit]
+
+  dma.TCD->DADDR = dma_buffer;
+  dma.TCD->DOFF = 4;
+  dma.TCD->ATTR_DST = B00101010; // [5bit MOD, 00101=5lower bits of address may change, 32bytes = 4*2*32bit buffer][3bit SIZE, 010=32bit]
+
+  // Call an interrupt when done
+  dma.attachInterrupt(_dma_interrupt);
+  dma.interruptAtCompletion();
+  // Trigger from "shifter full" DMA event
+  dma.triggerAtHardwareEvent(flexio->shiftersDMAChannel(shifter_dma_idx));
+  // Enable dma channel
+  dma.enable();
+
   return true;
 }
 
