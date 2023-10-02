@@ -80,7 +80,7 @@ bool daq::FlexIODAQ::_init_cnvst(unsigned int sample_rate) {
   uint8_t _delay_timer_idx = 3;
   flexio->port().TIMCTL[_delay_timer_idx] =
       FLEXIO_TIMCTL_TRGSRC | FLEXIO_TIMCTL_TRGSEL(4 * _sample_timer_idx + 3) | FLEXIO_TIMCTL_TIMOD(0b11);
-  flexio->port().TIMCFG[_delay_timer_idx] = FLEXIO_TIMCFG_TIMDIS(0b010) | FLEXIO_TIMCFG_TIMENA(0b110);
+  flexio->port().TIMCFG[_delay_timer_idx] = FLEXIO_TIMCFG_TIMDIS(0b010) | FLEXIO_TIMCFG_TIMENA(0b111);
   flexio->port().TIMCMP[_delay_timer_idx] = 300;
 
   flexio->setIOPinToFlexMode(PIN_CLK);
