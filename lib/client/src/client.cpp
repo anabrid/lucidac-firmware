@@ -38,3 +38,77 @@ void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange
   serializeJson(envelope_out, client);
   client.writeFully("\n");
 }
+
+client::RunDataNotificationHandler::RunDataNotificationHandler(net::EthernetClient &client,
+                                                               DynamicJsonDocument &envelopeOut)
+    : client(client), envelope_out(envelopeOut) {}
+
+void client::RunDataNotificationHandler::handle(float *data, size_t outer_count, size_t inner_count,
+                                                const run::Run &run) {
+  // UDP object creating, begin/end packet overhead ~5 microseconds
+  net::EthernetUDP udp;
+  udp.beginPacket(client.remoteIP(), 5733);
+
+  /*
+  // TCP: Timing ~180 microseconds for BUFFER_SIZE = 32
+  // TCP: Timing ~140 microseconds for BUFFER_SIZE = 32, when converting int(*float data)
+  // UDP: Timing ~50 microseconds for BUFFER_SIZE = 32 and data = list[float]
+  envelope_out.clear();
+  envelope_out["type"] = "run_data";
+  auto msg = envelope_out.createNestedObject("msg");
+  msg["run_id"] = run.id;
+  msg["t_0"] = 0;
+  msg["state"] = run::RunStateNames[static_cast<size_t>(run::RunState::OP)];
+  auto outer_array = msg.createNestedArray("data");
+  for (size_t i = 0; i < outer_count; i++) {
+    auto inner_array = outer_array.createNestedArray();
+    for (size_t j = 0; j < inner_count; j++) {
+      inner_array.add(*(data + i * inner_count + j));
+    }
+  }
+  serializeJson(envelope_out, udp);
+  */
+
+  // UDP binary write: Timing ~5 microseconds
+  udp.write(reinterpret_cast<const uint8_t *>(data), outer_count*inner_count*sizeof(decltype(data)));
+
+  udp.write("\n");
+  udp.endPacket();
+}
+
+void client::RunDataNotificationHandler::handle(volatile int *data, size_t outer_count, size_t inner_count,
+                                                const run::Run &run) {
+  /*
+  // Timing ~40 microseconds
+  client.writeFully("#");
+  for (size_t i = 0; i < outer_count*inner_count; i++) {
+    client.writeFully("ABCDEF");
+  }
+  client.writeFully("\n");
+  */
+
+  Serial.println("Sending UDP packet.");
+  net::EthernetUDP udp;
+  udp.beginPacket(client.remoteIP(), 5733);
+  udp.write("b");
+  udp.write("\n");
+  //udp.send(client.remoteIP(), 5733, (const uint8_t *)data, outer_count*inner_count*sizeof(decltype(data)));
+
+  // Timing ~130 microseconds for BUFFER_SIZE = 32
+  envelope_out.clear();
+  envelope_out["type"] = "run_data";
+  auto msg = envelope_out.createNestedObject("msg");
+  msg["run_id"] = run.id;
+  msg["t_0"] = 0;
+  msg["state"] = run::RunStateNames[static_cast<size_t>(run::RunState::OP)];
+  auto outer_array = msg.createNestedArray("data");
+  for (size_t i = 0; i < outer_count*inner_count; i++) {
+    outer_array.add(*(data + i));
+  }
+  // serializeJson(envelope_out, Serial);
+  // Serial.write("\n");
+  serializeJson(envelope_out, udp);
+  //client.writeFully("\n");
+
+  udp.endPacket();
+}

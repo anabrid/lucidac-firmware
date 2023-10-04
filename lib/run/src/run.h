@@ -79,6 +79,13 @@ public:
 };
 
 
+class RunDataHandler {
+public:
+  virtual void handle(float *data, size_t outer_count, size_t inner_count, const run::Run &run) = 0;
+  virtual void handle(volatile int *data, size_t outer_count, size_t inner_count, const run::Run &run) = 0;
+};
+
+
 class RunManager {
 private:
   static RunManager _instance;
@@ -94,7 +101,7 @@ public:
 
   static RunManager &get() { return _instance; }
 
-  void run_next(run::RunStateChangeHandler *state_change_handler);
+  void run_next(RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler);
 };
 
 } // namespace run

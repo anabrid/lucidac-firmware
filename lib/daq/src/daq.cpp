@@ -30,10 +30,27 @@
 #include "logging.h"
 #include "running_avg.h"
 
+std::array<volatile uint32_t, daq::BUFFER_SIZE> daq::FlexIODAQ::dma_buffer = {0};
+
 DMAChannel dma(false);
 
+std::array<float, daq::BUFFER_SIZE> float_buffer = {0};
+std::array<int, daq::BUFFER_SIZE> normalized_buffer = {0};
+
 void _dma_interrupt() {
-  digitalToggleFast(13);
+  digitalToggleFast(LED_BUILTIN);
+  // Serial.println("DMA INTERRUPT");
+
+  // transform timing: ~2 microseconds for BUFFER_SIZE=32
+  std::transform(daq::FlexIODAQ::dma_buffer.begin(), daq::FlexIODAQ::dma_buffer.end(), float_buffer.begin(),
+                 [](uint32_t raw) { return daq::FlexIODAQ::raw_to_float(raw >> 2); });
+  //std::transform(daq::FlexIODAQ::dma_buffer.begin(), daq::FlexIODAQ::dma_buffer.end(), normalized_buffer.begin(),
+  //               [](uint32_t raw) { return daq::FlexIODAQ::raw_to_normalized(raw >> 2); });
+  // Serial.println() timing: ~30 microseconds for BUFFER_SIZE=32
+  // for (auto data: float_buffer)
+  //  Serial.println(data);
+
+  digitalToggleFast(LED_BUILTIN);
 
   // Clear interrupt
   dma.clearInterrupt();
@@ -147,7 +164,7 @@ bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   dma.TCD->BITER = NUM_CHANNELS;
   // CITER "current major loop iteration count" is the number of major loops.
   // This must be adapted to fit the ring buffer size.
-  dma.TCD->CITER = dma_buffer.size()/NUM_CHANNELS;
+  dma.TCD->CITER = dma_buffer.size() / NUM_CHANNELS;
 
   // Configure source address and its adjustments.
   // We want to circularly copy from SHIFTBUFBIS.
@@ -162,14 +179,14 @@ bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   dma.TCD->NBYTES = 4 * NUM_CHANNELS;
   // SOFF "source address offset" is the offset added onto SADDR for each minor loop.
   // Set it to 4 bytes, equaling the 32 bits each shift register has.
-  dma.TCD->SOFF = 4;             // 32bit offset (=1 shift buffer)
+  dma.TCD->SOFF = 4;
   // ATTR_SRC "source address attribute" is an attribute setting the circularity and the transfer size.
   // The format is [5bit MOD][3bit SIZE].
   // The 5bit MOD is the number of lower address bites allowed to change, effectively circling back to SADDR.
   // The 3bit SIZE defines the source data transfer size.
   // Set MOD to 5, allowing the address bits to change until the end of the SHIFTBUFBIS array and cycling.
   // Set SIZE to 0b010 for 32 bit transfer size.
-  dma.TCD->ATTR_SRC = B00101010; // [5bit MOD, 00011=3lower bits may change][3bit SIZE, 010=32bit]
+  dma.TCD->ATTR_SRC = B00101010;
 
   // Configure destination address and its adjustments.
   // We want to circularly copy into a memory ring buffer.
@@ -184,7 +201,7 @@ bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   // ATTR_SRC "destination address attribute" is analogous to ATTR_SRC
   // Set first 5 bit MOD according to size of ring buffer.
   // Set last 3 bits to 0b010 for 32 bit transfer size.
-  uint8_t MOD = __builtin_ctz(BUFFER_SIZE*4);
+  uint8_t MOD = __builtin_ctz(BUFFER_SIZE * 4);
   // Check if memory buffer address is aligned such that MOD lower bits are zero (maybe this is too pedantic?)
   // TODO: This is not necessary, since we cycle back to DADDR not to address with MOD zero bits -- simplify.
   if (reinterpret_cast<uintptr_t>(dma_buffer.data()) & ~(~static_cast<uintptr_t>(0) << MOD)) {
@@ -230,7 +247,14 @@ void daq::FlexIODAQ::reset() {
   delayNanoseconds(100);
   flexio->port().CTRL &= ~FLEXIO_CTRL_SWRST;
   delayNanoseconds(100);
+  // TODO: REMOVE!
+  for (auto &data : dma_buffer)
+    data = 0;
+  for (auto &data : normalized_buffer)
+    data = -42;
 }
+
+DMAChannel &daq::FlexIODAQ::get_dma_channel() { return dma; }
 
 bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate_unused) {
   pinMode(PIN_CNVST, OUTPUT);
@@ -247,6 +271,11 @@ bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate_unus
 
 float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
   return ((static_cast<float>(raw) - RAW_MINUS_ONE) / (RAW_PLUS_ONE - RAW_MINUS_ONE)) * 2.0f - 1.0f;
+}
+
+int daq::BaseDAQ::raw_to_normalized(uint16_t raw) {
+  // TODO: REMOVE!
+  return ((static_cast<int>(raw) - RAW_MINUS_ONE) * 1000 / (RAW_PLUS_ONE - RAW_MINUS_ONE));
 }
 
 std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, unsigned int delay_us) {
@@ -292,3 +321,7 @@ std::array<float, daq::NUM_CHANNELS> daq::OneshotDAQ::sample() {
 }
 
 float daq::OneshotDAQ::sample(uint8_t index) { return sample()[index]; }
+
+std::array<float, daq::BUFFER_SIZE> &daq::get_float_buffer() { return float_buffer; }
+
+std::array<int, daq::BUFFER_SIZE> &daq::get_normalized_buffer() { return normalized_buffer; }

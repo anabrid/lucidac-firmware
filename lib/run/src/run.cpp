@@ -25,17 +25,22 @@
 
 #include "run.h"
 
+#include "client.h"
 #include "daq.h"
 #include "logging.h"
 #include "mode.h"
 
+#include <bitset>
 #include <utility>
 
 run::RunManager run::RunManager::_instance{};
 
-void run::RunManager::run_next(run::RunStateChangeHandler *state_change_handler) {
+void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler) {
   auto run = queue.front();
 
+  // LED used as debug
+  // TODO: REMOVE ALL DEBUG
+  pinMode(LED_BUILTIN, OUTPUT);
   daq::FlexIODAQ daq_{};
   daq_.reset();
   if (!mode::FlexIOControl::init(run.config.ic_time, run.config.op_time) or
@@ -49,7 +54,31 @@ void run::RunManager::run_next(run::RunStateChangeHandler *state_change_handler)
   daq_.enable();
   mode::FlexIOControl::force_start();
   mode::FlexIOControl::delay_till_done();
+  // Sometimes, DMA was not yet done, e.g. op_time = 6000.
+  // TODO: Handle this better by checking for DMA completeness.
+  delayMicroseconds(5);
   auto actual_op_time = mode::FlexIOControl::get_actual_op_time();
+
+  // TODO: REMOVE ALL DEBUG
+  Serial.println("Error flags");
+  Serial.println(std::bitset<32>(daq_.flexio->port().SHIFTERR).to_string().c_str());
+  Serial.println("DMA channel properties");
+  Serial.println(daq_.get_dma_channel().TCD->CITER);
+  Serial.println("DMA buffer content");
+  for (auto data : decltype(daq_)::dma_buffer) {
+    Serial.println(std::bitset<32>(data).to_string().c_str());
+  }
+  Serial.println("Normalized buffer content");
+  for (auto data : daq::get_normalized_buffer()) {
+    Serial.println(data);
+  }
+  Serial.println("Float buffer content");
+  for (auto data : daq::get_float_buffer()) {
+    Serial.println(data);
+  }
+  digitalToggleFast(LED_BUILTIN);
+  run_data_handler->handle(daq::get_float_buffer().data(), daq::BUFFER_SIZE/daq::NUM_CHANNELS, daq::NUM_CHANNELS, run);
+  digitalToggleFast(LED_BUILTIN);
 
   // DONE
   auto change = run.to(RunState::DONE, actual_op_time);

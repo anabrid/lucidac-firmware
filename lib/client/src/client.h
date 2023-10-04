@@ -25,9 +25,11 @@
 
 #pragma once
 
-#include "run.h"
 #include <ArduinoJson.h>
 #include <QNEthernetClient.h>
+#include <QNEthernetUDP.h>
+
+#include "run.h"
 
 namespace net = qindesign::network;
 
@@ -35,6 +37,7 @@ namespace client {
 
 class RunStateChangeNotificationHandler : public run::RunStateChangeHandler {
   // TODO: This can become invalid on disconnects
+  // TODO: Possibly needs locking/synchronizing with other writes
   net::EthernetClient &client;
   DynamicJsonDocument &envelope_out;
 
@@ -42,8 +45,21 @@ public:
   RunStateChangeNotificationHandler(net::EthernetClient &client, DynamicJsonDocument &envelopeOut)
       : client(client), envelope_out(envelopeOut) {}
 
-private:
   void handle(run::RunStateChange change, const run::Run &run) override;
+};
+
+
+class RunDataNotificationHandler : public run::RunDataHandler {
+  // TODO: This can become invalid on disconnects
+  // TODO: Possibly needs locking/synchronizing with other writes
+  net::EthernetClient &client;
+  DynamicJsonDocument &envelope_out;
+
+public:
+  RunDataNotificationHandler(net::EthernetClient &client, DynamicJsonDocument &envelopeOut);
+
+  void handle(float *data, size_t outer_count, size_t inner_count, const run::Run &run) override;
+  void handle(volatile int *data, size_t outer_count, size_t inner_count, const run::Run &run) override;
 };
 
 } // namespace client

@@ -25,6 +25,9 @@
 
 #pragma once
 
+#include <array>
+
+#include <ArduinoJson.h>
 #include <DMAChannel.h>
 #include <FlexIO_t4.h>
 #include <array>
@@ -33,14 +36,19 @@
 namespace daq {
 
 constexpr uint8_t NUM_CHANNELS = 8;
+static constexpr size_t BUFFER_SIZE = 4 * NUM_CHANNELS;
+
 constexpr uint8_t PIN_CNVST = 7;
 constexpr uint8_t PIN_CLK = 6;
 constexpr uint8_t PIN_GATE = 32;
 constexpr std::array<uint8_t, NUM_CHANNELS> PINS_MISO = {34, 35, 36, 37, 11, 10, 9, 8};
 
-constexpr unsigned int DEFAULT_SAMPLE_RATE = 100'000;
+constexpr unsigned int DEFAULT_SAMPLE_RATE = 500'000;
 
 typedef std::array<float, NUM_CHANNELS> data_vec_t;
+
+std::array<float, daq::BUFFER_SIZE>& get_float_buffer();
+std::array<int, daq::BUFFER_SIZE>& get_normalized_buffer();
 
 class BaseDAQ {
 protected:
@@ -51,6 +59,7 @@ public:
   virtual bool init(unsigned int sample_rate) = 0;
 
   static float raw_to_float(uint16_t raw);
+  static int raw_to_normalized(uint16_t raw);
 
   virtual std::array<uint16_t, NUM_CHANNELS> sample_raw() = 0;
   virtual std::array<float, NUM_CHANNELS> sample() = 0;
@@ -66,8 +75,7 @@ public:
   // The DMA implements ring buffer by restricting the N lower bits of the destination address to change.
   // That means the memory segment must start at a memory address with enough lower bits being zero.
   // TODO: This is not necessary, since we cycle back to DADDR not to address with MOD zero bits -- simplify.
-  static constexpr size_t BUFFER_SIZE = 4*NUM_CHANNELS;
-  std::array<volatile uint32_t, BUFFER_SIZE> dma_buffer __attribute__((used, aligned(BUFFER_SIZE*4))) = {0};
+  static std::array<volatile uint32_t, BUFFER_SIZE> dma_buffer __attribute__((used, aligned(BUFFER_SIZE*4)));
 
   FlexIOHandler *flexio;
 
@@ -82,6 +90,8 @@ public:
   bool init(unsigned int sample_rate) override;
   void enable();
   void reset();
+
+  DMAChannel &get_dma_channel();
 
   std::array<uint16_t, NUM_CHANNELS> sample_raw() override;
   std::array<float, NUM_CHANNELS> sample() override;

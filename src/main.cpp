@@ -109,6 +109,7 @@ void loop() {
 
     // Bind things to this client specifically
     client::RunStateChangeNotificationHandler run_state_change_handler{connection, envelope_out};
+    client::RunDataNotificationHandler run_data_handler{connection, envelope_out};
 
     // Handle incoming messages
     while (connection) {
@@ -158,7 +159,7 @@ void loop() {
       // Fake run for now
       if (!run_manager.queue.empty()) {
         Serial.println("faking run");
-        run_manager.run_next(&run_state_change_handler);
+        run_manager.run_next(&run_state_change_handler, &run_data_handler);
       }
     }
 
