@@ -30,33 +30,50 @@
 #include "logging.h"
 #include "running_avg.h"
 
-std::array<volatile uint32_t, daq::BUFFER_SIZE> daq::FlexIODAQ::dma_buffer = {0};
+namespace daq {
+namespace dma {
 
-DMAChannel dma(false);
+// We need a memory segment to implement a ring buffer.
+// Its size should be a power-of-2-multiple of NUM_CHANNELS.
+// The DMA implements ring buffer by restricting the N lower bits of the destination address to change.
+// That means the memory segment must start at a memory address with enough lower bits being zero,
+// see manual "data queues [with] power-of-2 size bytes, [...] should start at a 0-modulo-size address".
+// One can put this into DMAMEM for increased performance, but that did not work for me right away.
+__attribute__((aligned(BUFFER_SIZE*4))) std::array<volatile uint32_t, BUFFER_SIZE> buffer = {0};
 
-std::array<float, daq::BUFFER_SIZE> float_buffer = {0};
-std::array<int, daq::BUFFER_SIZE> normalized_buffer = {0};
+DMAChannel channel(false);
 
-void _dma_interrupt() {
+void interrupt() {
   digitalToggleFast(LED_BUILTIN);
   // Serial.println("DMA INTERRUPT");
 
   // transform timing: ~2 microseconds for BUFFER_SIZE=32
-  std::transform(daq::FlexIODAQ::dma_buffer.begin(), daq::FlexIODAQ::dma_buffer.end(), float_buffer.begin(),
-                 [](uint32_t raw) { return daq::FlexIODAQ::raw_to_float(raw >> 2); });
-  //std::transform(daq::FlexIODAQ::dma_buffer.begin(), daq::FlexIODAQ::dma_buffer.end(), normalized_buffer.begin(),
+  // std::transform(daq::FlexIODAQ::dma_buffer.begin(), daq::FlexIODAQ::dma_buffer.end(), float_buffer.begin(),
+  //               [](uint32_t raw) { return daq::FlexIODAQ::raw_to_float(raw >> 2); });
+  // std::transform(daq::FlexIODAQ::dma_buffer.begin(), daq::FlexIODAQ::dma_buffer.end(),
+  // normalized_buffer.begin(),
   //               [](uint32_t raw) { return daq::FlexIODAQ::raw_to_normalized(raw >> 2); });
   // Serial.println() timing: ~30 microseconds for BUFFER_SIZE=32
   // for (auto data: float_buffer)
   //  Serial.println(data);
 
-  digitalToggleFast(LED_BUILTIN);
+  for (size_t i = 0; i < dma::buffer.size(); i++) {
+    //auto raw = dma::buffer[i];
+    dma::buffer[i] = 0b101010101010101010;
+    // strncpy(serialized_buffer[i], raw_to_str_arr[daq::FlexIODAQ::dma_buffer[i]], daq::LEN_SERIALIZATION-1);
+  }
 
   // Clear interrupt
-  dma.clearInterrupt();
+  channel.clearInterrupt();
   // Memory barrier
   asm("DSB");
+
+  digitalToggleFast(LED_BUILTIN);
 }
+
+} // namespace dma
+} // namespace daq
+
 
 bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   LOG_ANABRID_DEBUG_DAQ(__PRETTY_FUNCTION__);
@@ -148,23 +165,27 @@ bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   // Set shifter to generate DMA events.
   flexio->port().SHIFTSDEN = 1 << shifter_dma_idx;
   // Configure DMA channel
-  dma.begin();
+  dma::channel.begin();
 
-  // Configure minor and major loop count of DMA process.
+  // Configure minor and major loop of DMA process.
   // One DMA request (SHIFTBUF store) triggers one major loop.
-  // A major loop consists of several minor loops, which are executed one after the other.
+  // A major loop consists of several minor loops.
   // For each loop, source address and destination address is adjusted and data is copied.
-  // The general approach is to use the minor loops to copy all shift registers when one triggers the DMA.
+  // The number of minor loops is implicitly defined by how much data they should copy.
+  // The approach here is to use the minor loops to copy all shift registers when one triggers the DMA.
   // That means each major loop copies over NUM_CHANNELS data points.
   // Triggering multiple major loops fills up the ring buffer.
   // Once all major loops are done, the ring buffer is full and an interrupt is triggered to handle the data.
+  // For such configurations DMAChannel provides sourceCircular() and destinationCircular() functions,
+  // which are not quite able to handle our case (BITER/CITER and ATTR_DST must be different).
+  // That's why we do it by hand :)
 
-  // BITER "beginning iteration count" is the number of minor loops in one major loop.
-  // This must equal the number of shift registers that should be read out.
-  dma.TCD->BITER = NUM_CHANNELS;
-  // CITER "current major loop iteration count" is the number of major loops.
-  // This must be adapted to fit the ring buffer size.
-  dma.TCD->CITER = dma_buffer.size() / NUM_CHANNELS;
+  // BITER "beginning iteration count" is the number of major loops.
+  // Each major loop fills part (see TCD->NBYTES) of the ring buffer.
+  dma::channel.TCD->BITER = dma::buffer.size() / NUM_CHANNELS;
+  // CITER "current major loop iteration count" is the current number of major loops left to perform.
+  // It can be used to check progress of the process. It's reset to BITER whe we filled the buffer once.
+  dma::channel.TCD->CITER = dma::buffer.size() / NUM_CHANNELS;
 
   // Configure source address and its adjustments.
   // We want to circularly copy from SHIFTBUFBIS.
@@ -173,20 +194,24 @@ bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   // Instead, we copy the full 32 bit of data.
   // SADDR "source address start" is where the DMA process starts.
   // Set it to the beginning of the SHIFTBUFBIS array.
-  dma.TCD->SADDR = flexio->port().SHIFTBUFBIS;
+  dma::channel.TCD->SADDR = flexio->port().SHIFTBUFBIS;
   // NBYTES "minor byte transfer count" is the number of bytes transferred in one minor loop.
   // Set it such that the whole SHIFTBUFBIS array is copied, which is 4 bytes * NUM_CHANNELS
-  dma.TCD->NBYTES = 4 * NUM_CHANNELS;
+  dma::channel.TCD->NBYTES = 4 * NUM_CHANNELS;
   // SOFF "source address offset" is the offset added onto SADDR for each minor loop.
   // Set it to 4 bytes, equaling the 32 bits each shift register has.
-  dma.TCD->SOFF = 4;
+  dma::channel.TCD->SOFF = 4;
   // ATTR_SRC "source address attribute" is an attribute setting the circularity and the transfer size.
   // The format is [5bit MOD][3bit SIZE].
   // The 5bit MOD is the number of lower address bites allowed to change, effectively circling back to SADDR.
   // The 3bit SIZE defines the source data transfer size.
   // Set MOD to 5, allowing the address bits to change until the end of the SHIFTBUFBIS array and cycling.
+  // MOD = 5 because 2^5 = 32, meaning address cycles after 32 bytes, which are 8*32 bits.
   // Set SIZE to 0b010 for 32 bit transfer size.
-  dma.TCD->ATTR_SRC = B00101010;
+  dma::channel.TCD->ATTR_SRC = 0b00101'010;
+  // SLAST "last source address adjustment" is an adjustment applied to SADDR after all major iterations.
+  // We don't want any adjustments, since we already use ATTR_SRC to implement a circular buffer.
+  dma::channel.TCD->SLAST = 0;
 
   // Configure destination address and its adjustments.
   // We want to circularly copy into a memory ring buffer.
@@ -194,31 +219,33 @@ bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   // even though we are again only interested in the lower 16 bits.
   // DADDR "destination address start" is the start of the destination ring buffer.
   // Set to address of ring buffer.
-  dma.TCD->DADDR = dma_buffer.data();
+  dma::channel.TCD->DADDR = dma::buffer.data();
   // DOOFF "destination address offset" is the offset added to DADDR for each minor loop.
   // Set to 4 bytes, equaling the 32 bits each shift register has.
-  dma.TCD->DOFF = 4;
+  dma::channel.TCD->DOFF = 4;
   // ATTR_SRC "destination address attribute" is analogous to ATTR_SRC
   // Set first 5 bit MOD according to size of ring buffer.
   // Set last 3 bits to 0b010 for 32 bit transfer size.
-  uint8_t MOD = __builtin_ctz(BUFFER_SIZE * 4);
+  uint8_t MOD = __builtin_ctz(dma::BUFFER_SIZE * 4);
   // Check if memory buffer address is aligned such that MOD lower bits are zero (maybe this is too pedantic?)
-  // TODO: This is not necessary, since we cycle back to DADDR not to address with MOD zero bits -- simplify.
-  if (reinterpret_cast<uintptr_t>(dma_buffer.data()) & ~(~static_cast<uintptr_t>(0) << MOD)) {
+  if (reinterpret_cast<uintptr_t>(dma::buffer.data()) & ~(~static_cast<uintptr_t>(0) << MOD)) {
     LOG_ERROR("DMA buffer memory range is not sufficiently aligned.")
     return false;
   }
-  dma.TCD->ATTR_DST = ((MOD & 0b11111) << 3) | 0b010;
+  dma::channel.TCD->ATTR_DST = ((MOD & 0b11111) << 3) | 0b010;
+  // DLASTSGA "last destination address adjustment or next TCD" is similar to SLAST.
+  // We don't want any adjustments, since we already use ATTR_DST to implement a circular buffer.
+  dma::channel.TCD->SLAST = 0;
 
   // Call an interrupt when done
-  dma.attachInterrupt(_dma_interrupt);
-  dma.interruptAtCompletion();
+  dma::channel.attachInterrupt(dma::interrupt);
+  dma::channel.interruptAtCompletion();
   // Trigger from "shifter full" DMA event
-  dma.triggerAtHardwareEvent(flexio->shiftersDMAChannel(shifter_dma_idx));
+  dma::channel.triggerAtHardwareEvent(flexio->shiftersDMAChannel(shifter_dma_idx));
   // Enable dma channel
-  dma.enable();
+  dma::channel.enable();
 
-  if (dma.error())
+  if (dma::channel.error())
     return false;
 
   return true;
@@ -248,10 +275,8 @@ void daq::FlexIODAQ::reset() {
   flexio->port().CTRL &= ~FLEXIO_CTRL_SWRST;
   delayNanoseconds(100);
   // TODO: REMOVE!
-  for (auto &data : dma_buffer)
+  for (auto &data : dma::buffer)
     data = 0;
-  for (auto &data : normalized_buffer)
-    data = -42;
 }
 
 DMAChannel &daq::FlexIODAQ::get_dma_channel() { return dma; }
@@ -271,11 +296,6 @@ bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate_unus
 
 float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
   return ((static_cast<float>(raw) - RAW_MINUS_ONE) / (RAW_PLUS_ONE - RAW_MINUS_ONE)) * 2.0f - 1.0f;
-}
-
-int daq::BaseDAQ::raw_to_normalized(uint16_t raw) {
-  // TODO: REMOVE!
-  return ((static_cast<int>(raw) - RAW_MINUS_ONE) * 1000 / (RAW_PLUS_ONE - RAW_MINUS_ONE));
 }
 
 std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, unsigned int delay_us) {
@@ -321,7 +341,3 @@ std::array<float, daq::NUM_CHANNELS> daq::OneshotDAQ::sample() {
 }
 
 float daq::OneshotDAQ::sample(uint8_t index) { return sample()[index]; }
-
-std::array<float, daq::BUFFER_SIZE> &daq::get_float_buffer() { return float_buffer; }
-
-std::array<int, daq::BUFFER_SIZE> &daq::get_normalized_buffer() { return normalized_buffer; }

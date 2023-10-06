@@ -36,7 +36,6 @@
 namespace daq {
 
 constexpr uint8_t NUM_CHANNELS = 8;
-static constexpr size_t BUFFER_SIZE = 4 * NUM_CHANNELS;
 
 constexpr uint8_t PIN_CNVST = 7;
 constexpr uint8_t PIN_CLK = 6;
@@ -47,8 +46,9 @@ constexpr unsigned int DEFAULT_SAMPLE_RATE = 500'000;
 
 typedef std::array<float, NUM_CHANNELS> data_vec_t;
 
-std::array<float, daq::BUFFER_SIZE>& get_float_buffer();
-std::array<int, daq::BUFFER_SIZE>& get_normalized_buffer();
+namespace dma {
+constexpr size_t BUFFER_SIZE = 4 * NUM_CHANNELS;
+}
 
 class BaseDAQ {
 protected:
@@ -68,15 +68,6 @@ public:
 };
 
 class FlexIODAQ : public BaseDAQ {
-// TODO: Currently public for hacking
-public:
-  // We need a memory segment to implement a ring buffer.
-  // Its size should be a power-of-2-multiple of NUM_CHANNELS.
-  // The DMA implements ring buffer by restricting the N lower bits of the destination address to change.
-  // That means the memory segment must start at a memory address with enough lower bits being zero.
-  // TODO: This is not necessary, since we cycle back to DADDR not to address with MOD zero bits -- simplify.
-  static std::array<volatile uint32_t, BUFFER_SIZE> dma_buffer __attribute__((used, aligned(BUFFER_SIZE*4)));
-
   FlexIOHandler *flexio;
 
   uint8_t _flexio_pin_cnvst;
