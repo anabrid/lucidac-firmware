@@ -25,12 +25,14 @@
 
 #include <Arduino.h>
 #include <algorithm>
+#include <bitset>
 
 #include "daq.h"
 #include "logging.h"
 #include "running_avg.h"
 
 namespace daq {
+
 namespace dma {
 
 // We need a memory segment to implement a ring buffer.
@@ -39,28 +41,26 @@ namespace dma {
 // That means the memory segment must start at a memory address with enough lower bits being zero,
 // see manual "data queues [with] power-of-2 size bytes, [...] should start at a 0-modulo-size address".
 // One can put this into DMAMEM for increased performance, but that did not work for me right away.
-__attribute__((aligned(BUFFER_SIZE*4))) std::array<volatile uint32_t, BUFFER_SIZE> buffer = {0};
+__attribute__((aligned(BUFFER_SIZE * 4))) std::array<volatile uint32_t, BUFFER_SIZE> buffer = {0};
 
 DMAChannel channel(false);
+run::Run *run = nullptr;
+run::RunDataHandler *run_data_handler = nullptr;
+volatile bool first_data = false;
+volatile bool last_data = false;
+volatile bool overflow_data = false;
 
 void interrupt() {
-  digitalToggleFast(LED_BUILTIN);
-  // Serial.println("DMA INTERRUPT");
+  digitalWriteFast(LED_BUILTIN, HIGH);
 
-  // transform timing: ~2 microseconds for BUFFER_SIZE=32
-  // std::transform(daq::FlexIODAQ::dma_buffer.begin(), daq::FlexIODAQ::dma_buffer.end(), float_buffer.begin(),
-  //               [](uint32_t raw) { return daq::FlexIODAQ::raw_to_float(raw >> 2); });
-  // std::transform(daq::FlexIODAQ::dma_buffer.begin(), daq::FlexIODAQ::dma_buffer.end(),
-  // normalized_buffer.begin(),
-  //               [](uint32_t raw) { return daq::FlexIODAQ::raw_to_normalized(raw >> 2); });
-  // Serial.println() timing: ~30 microseconds for BUFFER_SIZE=32
-  // for (auto data: float_buffer)
-  //  Serial.println(data);
-
-  for (size_t i = 0; i < dma::buffer.size(); i++) {
-    //auto raw = dma::buffer[i];
-    dma::buffer[i] = 0b101010101010101010;
-    // strncpy(serialized_buffer[i], raw_to_str_arr[daq::FlexIODAQ::dma_buffer[i]], daq::LEN_SERIALIZATION-1);
+  auto is_half = (channel.TCD->CITER != channel.TCD->BITER);
+  if (is_half) {
+    overflow_data |= first_data;
+    first_data = true;
+  }
+  else {
+    overflow_data |= last_data;
+    last_data = true;
   }
 
   // Clear interrupt
@@ -68,15 +68,56 @@ void interrupt() {
   // Memory barrier
   asm("DSB");
 
-  digitalToggleFast(LED_BUILTIN);
+  digitalWriteFast(LED_BUILTIN, LOW);
 }
 
+volatile uint32_t *get_buffer() { return buffer.data(); }
 } // namespace dma
+
+ContinuousDAQ::ContinuousDAQ(run::Run &run, unsigned int sample_rate, run::RunDataHandler *run_data_handler)
+    : run(run), sample_rate(sample_rate), run_data_handler(run_data_handler) {}
+
+bool ContinuousDAQ::stream() {
+  if (dma::overflow_data)
+    return false;
+
+  auto active_buffer_part = dma::buffer.data();
+  volatile bool* data_flag_to_clear;
+  if (dma::first_data) {
+    data_flag_to_clear = &dma::first_data;
+  }
+  else if (dma::last_data) {
+    active_buffer_part += dma::BUFFER_SIZE/2;
+    data_flag_to_clear = &dma::last_data;
+  }
+  else
+    return true;
+
+  //Serial.println("handle");
+  //Serial.println(reinterpret_cast<uintptr_t>(active_buffer_part));
+  run_data_handler->handle(active_buffer_part, dma::BUFFER_SIZE/NUM_CHANNELS/2, NUM_CHANNELS, run);
+  *data_flag_to_clear = false;
+  return true;
+}
+
 } // namespace daq
 
+daq::FlexIODAQ::FlexIODAQ(run::Run &run, unsigned int sample_rate, run::RunDataHandler *run_data_handler)
+    : ContinuousDAQ(run, sample_rate, run_data_handler),
+      flexio(FlexIOHandler::mapIOPinToFlexIOHandler(PIN_CNVST, _flexio_pin_cnvst)),
+      _flexio_pin_clk(flexio->mapIOPinToFlexPin(PIN_CLK)),
+      _flexio_pin_gate(flexio->mapIOPinToFlexPin(PIN_GATE)) {
+  std::transform(PINS_MISO.begin(), PINS_MISO.end(), _flexio_pins_miso.begin(),
+                 [&](auto pin) { return flexio->mapIOPinToFlexPin(pin); });
+}
 
-bool daq::FlexIODAQ::init(unsigned int sample_rate) {
+bool daq::FlexIODAQ::init(unsigned int) {
   LOG_ANABRID_DEBUG_DAQ(__PRETTY_FUNCTION__);
+
+  // Update global pointers for dma::interrupt
+  dma::run_data_handler = run_data_handler;
+  dma::run = &run;
+
   // Check if any of the pins could not be mapped to the same FlexIO module
   if (_flexio_pin_cnvst == 0xff or _flexio_pin_clk == 0xff or _flexio_pin_gate == 0xff)
     return false;
@@ -130,7 +171,7 @@ bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   // langsam
   // flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'1F'60;
   // vielfaches von bit-bang algorithm:
-  flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'1F'07;
+  flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'1B'07;
   // maximal schnell
   // flexio->port().TIMCMP[_clk_timer_idx] = 0x0000'1F'05;
 
@@ -240,6 +281,7 @@ bool daq::FlexIODAQ::init(unsigned int sample_rate) {
   // Call an interrupt when done
   dma::channel.attachInterrupt(dma::interrupt);
   dma::channel.interruptAtCompletion();
+  dma::channel.interruptAtHalf();
   // Trigger from "shifter full" DMA event
   dma::channel.triggerAtHardwareEvent(flexio->shiftersDMAChannel(shifter_dma_idx));
   // Enable dma channel
@@ -249,14 +291,6 @@ bool daq::FlexIODAQ::init(unsigned int sample_rate) {
     return false;
 
   return true;
-}
-
-daq::FlexIODAQ::FlexIODAQ()
-    : flexio(FlexIOHandler::mapIOPinToFlexIOHandler(PIN_CNVST, _flexio_pin_cnvst)),
-      _flexio_pin_clk(flexio->mapIOPinToFlexPin(PIN_CLK)),
-      _flexio_pin_gate(flexio->mapIOPinToFlexPin(PIN_GATE)) {
-  std::transform(PINS_MISO.begin(), PINS_MISO.end(), _flexio_pins_miso.begin(),
-                 [&](auto pin) { return flexio->mapIOPinToFlexPin(pin); });
 }
 
 void daq::FlexIODAQ::enable() { flexio->port().CTRL |= FLEXIO_CTRL_FLEXEN; }
@@ -277,9 +311,33 @@ void daq::FlexIODAQ::reset() {
   // TODO: REMOVE!
   for (auto &data : dma::buffer)
     data = 0;
+  dma::first_data = dma::last_data = dma::overflow_data = false;
 }
 
-DMAChannel &daq::FlexIODAQ::get_dma_channel() { return dma; }
+bool daq::FlexIODAQ::finalize() {
+  Serial.println("dma::buffer memory location");
+  Serial.println(reinterpret_cast<uintptr_t>(dma::buffer.begin()));
+  Serial.println(reinterpret_cast<uintptr_t>(dma::buffer.end()));
+  /*
+  Serial.println(dma::channel.TCD->ATTR_DST, BIN);
+  Serial.println(dma::channel.TCD->CITER);
+  for (auto data : dma::buffer) {
+    Serial.println(std::bitset<32>(data).to_string().c_str());
+  }
+  */
+
+  // Clear global pointers for dma::interrupt
+  dma::run_data_handler = nullptr;
+  dma::run = nullptr;
+
+  // Check some errors
+  if (dma::channel.error())
+    return false;
+  if (flexio->port().SHIFTERR & 0b1111'1111)
+    return false;
+
+  return true;
+}
 
 bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate_unused) {
   pinMode(PIN_CNVST, OUTPUT);
@@ -298,6 +356,10 @@ float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
   return ((static_cast<float>(raw) - RAW_MINUS_ONE) / (RAW_PLUS_ONE - RAW_MINUS_ONE)) * 2.0f - 1.0f;
 }
 
+const char *daq::BaseDAQ::raw_to_str(uint16_t raw) {
+  return helpers::normalized_to_float_str_arr[raw_to_normalized(raw)];
+}
+
 std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, unsigned int delay_us) {
   utils::RunningAverageVec<NUM_CHANNELS> avg;
   for (size_t i = 0; i < samples; i++) {
@@ -306,6 +368,8 @@ std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, un
   }
   return avg.get_average();
 }
+
+size_t daq::BaseDAQ::raw_to_normalized(uint16_t raw) { return max((raw * 611) / 1000, 1303) - 1303; }
 
 std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {
   // Trigger CNVST

@@ -36,6 +36,8 @@ namespace net = qindesign::network;
 namespace client {
 
 class RunStateChangeNotificationHandler : public run::RunStateChangeHandler {
+// TODO: is only public for some hacky fake data streaming for now
+public:
   // TODO: This can become invalid on disconnects
   // TODO: Possibly needs locking/synchronizing with other writes
   net::EthernetClient &client;
@@ -50,16 +52,22 @@ public:
 
 
 class RunDataNotificationHandler : public run::RunDataHandler {
+public:
   // TODO: This can become invalid on disconnects
   // TODO: Possibly needs locking/synchronizing with other writes
   net::EthernetClient &client;
   DynamicJsonDocument &envelope_out;
+  char str_buffer[1000] = R"({ "run_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", "data": [sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF] })";
+  char sec_buffer[1000] = R"({ "run_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", "data": [sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF,sD.FFF] })";
+  static constexpr size_t BUFFER_IDX_DATA = 61;
+  net::EthernetUDP udp{};
 
 public:
   RunDataNotificationHandler(net::EthernetClient &client, DynamicJsonDocument &envelopeOut);
 
-  void handle(float *data, size_t outer_count, size_t inner_count, const run::Run &run) override;
-  void handle(volatile int *data, size_t outer_count, size_t inner_count, const run::Run &run) override;
+  void init() override;
+  void handle(volatile uint32_t *data, size_t outer_count, size_t inner_count, const run::Run &run) override;
+  void stream(volatile uint32_t *buffer, run::Run &run) override;
 };
 
 } // namespace client
