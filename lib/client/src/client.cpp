@@ -54,7 +54,7 @@ void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t 
   for (size_t i = 0; i < outer_count*inner_count; i++) {
     //Serial.println(data[i]);
     //Serial.println(daq::BaseDAQ::raw_to_normalized(data[i]));
-    strncpy(sec_buffer + BUFFER_IDX_DATA + (i*7), daq::BaseDAQ::raw_to_str(data[i]), 6);
+    strncpy(str_buffer + BUFFER_IDX_DATA + (i*7), daq::BaseDAQ::raw_to_str(data[i]), 6);
   }
   digitalWriteFast(18, HIGH);
   //net::EthernetUDP udp;
@@ -64,7 +64,7 @@ void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t 
   udp.write('\n');
   udp.endPacket();
    */
-  udp.send(client.remoteIP(), 5733, reinterpret_cast<const uint8_t *>(str_buffer), sizeof(str_buffer));
+  udp.send(client.remoteIP(), 5733, reinterpret_cast<const uint8_t *>(str_buffer), 934);
   digitalWriteFast(18, LOW);
 }
 

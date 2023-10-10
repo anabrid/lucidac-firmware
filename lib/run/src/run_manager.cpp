@@ -61,6 +61,8 @@ void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunD
       break ;
     }
   }
+  mode::FlexIOControl::to_end();
+
   // Sometimes, DMA was not yet done, e.g. op_time = 6000.
   // TODO: Handle this better by checking for DMA completeness.
   delayMicroseconds(5);
@@ -99,6 +101,7 @@ void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunD
     auto change = run.to(RunState::ERROR, actual_op_time);
     state_change_handler->handle(change, run);
     queue.pop();
+    return;
   }
 
   // DONE

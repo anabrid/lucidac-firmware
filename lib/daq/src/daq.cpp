@@ -315,10 +315,10 @@ void daq::FlexIODAQ::reset() {
 }
 
 bool daq::FlexIODAQ::finalize() {
+  /*
   Serial.println("dma::buffer memory location");
   Serial.println(reinterpret_cast<uintptr_t>(dma::buffer.begin()));
   Serial.println(reinterpret_cast<uintptr_t>(dma::buffer.end()));
-  /*
   Serial.println(dma::channel.TCD->ATTR_DST, BIN);
   Serial.println(dma::channel.TCD->CITER);
   for (auto data : dma::buffer) {
@@ -334,6 +334,8 @@ bool daq::FlexIODAQ::finalize() {
   if (dma::channel.error())
     return false;
   if (flexio->port().SHIFTERR & 0b1111'1111)
+    return false;
+  if (dma::overflow_data)
     return false;
 
   return true;
