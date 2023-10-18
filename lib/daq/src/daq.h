@@ -31,22 +31,12 @@
 #include <DMAChannel.h>
 #include <FlexIO_t4.h>
 
+#include "daq_base.h"
 #include "run.h"
 #include "serializer.h"
 
 /// @brief Routines for Data Aquisition (DAQ) / Analog2Digital converters (ADCs)
 namespace daq {
-
-constexpr uint8_t NUM_CHANNELS = 8;
-
-constexpr uint8_t PIN_CNVST = 7;
-constexpr uint8_t PIN_CLK = 6;
-constexpr uint8_t PIN_GATE = 32;
-constexpr std::array<uint8_t, NUM_CHANNELS> PINS_MISO = {34, 35, 36, 37, 11, 10, 9, 8};
-
-constexpr unsigned int DEFAULT_SAMPLE_RATE = 200'000;
-
-typedef std::array<float, NUM_CHANNELS> data_vec_t;
 
 namespace dma {
 constexpr size_t BUFFER_SIZE = 32 * NUM_CHANNELS;
