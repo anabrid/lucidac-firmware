@@ -29,6 +29,7 @@
 #include <queue>
 #include <string>
 
+#include "daq_base.h"
 #include "message_handlers.h"
 #include "mode.h"
 
@@ -62,11 +63,13 @@ public:
   const std::string id;
   RunConfig config;
   RunState state = RunState::NEW;
+  daq::DAQConfig daq_config;
 
 protected:
   std::queue<RunStateChange, std::array<RunStateChange, 7>> history;
 
 public:
+  Run(std::string id, const RunConfig &config, const daq::DAQConfig &daq_config);
   Run(std::string id, const RunConfig &config);
   static Run from_json(JsonObjectConst &json);
 

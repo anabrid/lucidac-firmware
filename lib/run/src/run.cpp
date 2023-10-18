@@ -38,12 +38,17 @@ run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
       .ic_time = json["ic_time"], .op_time = json["op_time"], .halt_on_overload = json["halt_on_overload"]};
 }
 
-run::Run::Run(std::string id, const run::RunConfig &config) : id(std::move(id)), config(config) {}
+run::Run::Run(std::string id, const run::RunConfig &config)
+    : id(std::move(id)), config(config), daq_config{} {}
+
+run::Run::Run(std::string id, const run::RunConfig &config, const daq::DAQConfig &daq_config)
+    : id(std::move(id)), config(config), daq_config(daq_config) {}
 
 run::Run run::Run::from_json(JsonObjectConst &json) {
   auto json_run_config = json["config"].as<JsonObjectConst>();
   auto run_config = RunConfig::from_json(json_run_config);
-  return {json["id"].as<std::string>(), run_config};
+  auto daq_config = daq::DAQConfig::from_json(json["daq_config"].as<JsonObjectConst>());
+  return {json["id"].as<std::string>(), run_config, daq_config};
 }
 
 run::RunStateChange run::Run::to(run::RunState new_state, unsigned int t) {
