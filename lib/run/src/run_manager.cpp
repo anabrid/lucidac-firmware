@@ -39,7 +39,7 @@ void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunD
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(18, OUTPUT);
   digitalWriteFast(18, LOW);
-  daq::FlexIODAQ daq_{run, daq::DEFAULT_SAMPLE_RATE, run_data_handler};
+  daq::FlexIODAQ daq_{run, run.daq_config, run_data_handler};
   daq_.reset();
   if (!mode::FlexIOControl::init(run.config.ic_time, run.config.op_time) or !daq_.init(0)) {
     LOG_ERROR("Error while initializing state machine or daq for run.")

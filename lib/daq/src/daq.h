@@ -65,11 +65,11 @@ public:
 class ContinuousDAQ: public BaseDAQ {
 protected:
   run::Run& run;
-  unsigned int sample_rate = DEFAULT_SAMPLE_RATE;
+  DAQConfig daq_config;
   run::RunDataHandler* run_data_handler{};
 
 public:
-  ContinuousDAQ(run::Run &run, unsigned int sample_rate, run::RunDataHandler *run_data_handler);
+  ContinuousDAQ(run::Run &run, const DAQConfig &daq_config, run::RunDataHandler *run_data_handler);
 
   bool stream();
 };
@@ -84,7 +84,7 @@ class FlexIODAQ : public ContinuousDAQ {
   std::array<uint8_t, NUM_CHANNELS> _flexio_pins_miso;
 
 public:
-  FlexIODAQ(run::Run& run, unsigned int sample_rate, run::RunDataHandler *run_data_handler);
+  FlexIODAQ(run::Run& run, DAQConfig &daq_config, run::RunDataHandler *run_data_handler);
 
   bool init(unsigned int) override;
   bool finalize();

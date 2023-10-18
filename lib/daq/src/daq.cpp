@@ -74,8 +74,9 @@ void interrupt() {
 volatile uint32_t *get_buffer() { return buffer.data(); }
 } // namespace dma
 
-ContinuousDAQ::ContinuousDAQ(run::Run &run, unsigned int sample_rate, run::RunDataHandler *run_data_handler)
-    : run(run), sample_rate(sample_rate), run_data_handler(run_data_handler) {}
+ContinuousDAQ::ContinuousDAQ(run::Run &run, const daq::DAQConfig &daq_config,
+                             run::RunDataHandler *run_data_handler)
+    : run(run), daq_config(daq_config), run_data_handler(run_data_handler) {}
 
 bool ContinuousDAQ::stream() {
   if (dma::overflow_data)
@@ -102,8 +103,8 @@ bool ContinuousDAQ::stream() {
 
 } // namespace daq
 
-daq::FlexIODAQ::FlexIODAQ(run::Run &run, unsigned int sample_rate, run::RunDataHandler *run_data_handler)
-    : ContinuousDAQ(run, sample_rate, run_data_handler),
+daq::FlexIODAQ::FlexIODAQ(run::Run &run, DAQConfig &daq_config, run::RunDataHandler *run_data_handler)
+    : ContinuousDAQ(run, daq_config, run_data_handler),
       flexio(FlexIOHandler::mapIOPinToFlexIOHandler(PIN_CNVST, _flexio_pin_cnvst)),
       _flexio_pin_clk(flexio->mapIOPinToFlexPin(PIN_CLK)),
       _flexio_pin_gate(flexio->mapIOPinToFlexPin(PIN_GATE)) {
@@ -130,7 +131,7 @@ bool daq::FlexIODAQ::init(unsigned int) {
   // But for state, it also works to use (3,0,0)?
   flexio->setClockSettings(3, 0, 0);
 
-  if (sample_rate > 1'000'000 or sample_rate < 32)
+  if (daq_config.get_sample_rate() > 1'000'000 or daq_config.get_sample_rate() < 32)
     return false;
 
   flexio->setIOPinToFlexMode(PIN_GATE);
@@ -144,7 +145,7 @@ bool daq::FlexIODAQ::init(unsigned int) {
   flexio->port().TIMCTL[_sample_timer_idx] =
       FLEXIO_TIMCTL_TRGSEL(4 * _gated_timer_idx + 3) | FLEXIO_TIMCTL_TRGSRC | FLEXIO_TIMCTL_TIMOD(0b11);
   flexio->port().TIMCFG[_sample_timer_idx] = FLEXIO_TIMCFG_TIMDEC(0b01) | FLEXIO_TIMCFG_TIMENA(0b110);
-  flexio->port().TIMCMP[_sample_timer_idx] = (1'000'000 / sample_rate) * 2 - 1;
+  flexio->port().TIMCMP[_sample_timer_idx] = (1'000'000 / daq_config.get_sample_rate()) * 2 - 1;
 
   flexio->setIOPinToFlexMode(PIN_CNVST);
   uint8_t _cnvst_timer_idx = 2;
