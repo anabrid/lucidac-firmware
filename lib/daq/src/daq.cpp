@@ -41,6 +41,7 @@ namespace dma {
 // That means the memory segment must start at a memory address with enough lower bits being zero,
 // see manual "data queues [with] power-of-2 size bytes, [...] should start at a 0-modulo-size address".
 // One can put this into DMAMEM for increased performance, but that did not work for me right away.
+// *MUST* be at least 2*NUM_CHANNELS, otherwise some math later does not work.
 __attribute__((aligned(BUFFER_SIZE * 4))) std::array<volatile uint32_t, BUFFER_SIZE> buffer = {0};
 
 DMAChannel channel(false);
@@ -114,6 +115,10 @@ daq::FlexIODAQ::FlexIODAQ(run::Run &run, DAQConfig &daq_config, run::RunDataHand
 
 bool daq::FlexIODAQ::init(unsigned int) {
   LOG_ANABRID_DEBUG_DAQ(__PRETTY_FUNCTION__);
+  if (!daq_config.is_valid()) {
+    LOG_ERROR("Invalid DAQ config.")
+    return false;
+  }
 
   // Update global pointers for dma::interrupt
   dma::run_data_handler = run_data_handler;
@@ -130,9 +135,6 @@ bool daq::FlexIODAQ::init(unsigned int) {
   // PLL3 is 480MHz, (3,1,1) divides that by 4 to 120MHz
   // But for state, it also works to use (3,0,0)?
   flexio->setClockSettings(3, 0, 0);
-
-  if (daq_config.get_sample_rate() > 1'000'000 or daq_config.get_sample_rate() < 32)
-    return false;
 
   flexio->setIOPinToFlexMode(PIN_GATE);
   uint8_t _gated_timer_idx = 0;
@@ -224,10 +226,10 @@ bool daq::FlexIODAQ::init(unsigned int) {
 
   // BITER "beginning iteration count" is the number of major loops.
   // Each major loop fills part (see TCD->NBYTES) of the ring buffer.
-  dma::channel.TCD->BITER = dma::buffer.size() / NUM_CHANNELS;
+  dma::channel.TCD->BITER = dma::buffer.size() / daq_config.get_num_channels() / 2 * 2;
   // CITER "current major loop iteration count" is the current number of major loops left to perform.
   // It can be used to check progress of the process. It's reset to BITER whe we filled the buffer once.
-  dma::channel.TCD->CITER = dma::buffer.size() / NUM_CHANNELS;
+  dma::channel.TCD->CITER = dma::buffer.size() / daq_config.get_num_channels() / 2 * 2;
 
   // Configure source address and its adjustments.
   // We want to circularly copy from SHIFTBUFBIS.
@@ -239,7 +241,7 @@ bool daq::FlexIODAQ::init(unsigned int) {
   dma::channel.TCD->SADDR = flexio->port().SHIFTBUFBIS;
   // NBYTES "minor byte transfer count" is the number of bytes transferred in one minor loop.
   // Set it such that the whole SHIFTBUFBIS array is copied, which is 4 bytes * NUM_CHANNELS
-  dma::channel.TCD->NBYTES = 4 * NUM_CHANNELS;
+  dma::channel.TCD->NBYTES = 4 * daq_config.get_num_channels();
   // SOFF "source address offset" is the offset added onto SADDR for each minor loop.
   // Set it to 4 bytes, equaling the 32 bits each shift register has.
   dma::channel.TCD->SOFF = 4;
@@ -250,7 +252,8 @@ bool daq::FlexIODAQ::init(unsigned int) {
   // Set MOD to 5, allowing the address bits to change until the end of the SHIFTBUFBIS array and cycling.
   // MOD = 5 because 2^5 = 32, meaning address cycles after 32 bytes, which are 8*32 bits.
   // Set SIZE to 0b010 for 32 bit transfer size.
-  dma::channel.TCD->ATTR_SRC = 0b00101'010;
+  uint8_t MOD_SRC = __builtin_ctz(daq_config.get_num_channels() * 4);
+  dma::channel.TCD->ATTR_SRC = ((MOD_SRC & 0b11111) << 3) | 0b010;
   // SLAST "last source address adjustment" is an adjustment applied to SADDR after all major iterations.
   // We don't want any adjustments, since we already use ATTR_SRC to implement a circular buffer.
   dma::channel.TCD->SLAST = 0;
@@ -267,6 +270,7 @@ bool daq::FlexIODAQ::init(unsigned int) {
   dma::channel.TCD->DOFF = 4;
   // ATTR_SRC "destination address attribute" is analogous to ATTR_SRC
   // Set first 5 bit MOD according to size of ring buffer.
+  // Since only power-of-two number of channels N<=8 is allowed, N*NUM_CHANNELS will always fit for each N.
   // Set last 3 bits to 0b010 for 32 bit transfer size.
   uint8_t MOD = __builtin_ctz(dma::BUFFER_SIZE * 4);
   // Check if memory buffer address is aligned such that MOD lower bits are zero (maybe this is too pedantic?)
@@ -294,7 +298,11 @@ bool daq::FlexIODAQ::init(unsigned int) {
   return true;
 }
 
-void daq::FlexIODAQ::enable() { flexio->port().CTRL |= FLEXIO_CTRL_FLEXEN; }
+void daq::FlexIODAQ::enable() {
+  if (!daq_config)
+    return;
+  flexio->port().CTRL |= FLEXIO_CTRL_FLEXEN;
+}
 
 std::array<uint16_t, daq::NUM_CHANNELS> daq::FlexIODAQ::sample_raw() { return {}; }
 
@@ -331,13 +339,25 @@ bool daq::FlexIODAQ::finalize() {
   dma::run_data_handler = nullptr;
   dma::run = nullptr;
 
+  // If DAQConfig is not active, we don't care about errors
+  if (!daq_config)
+    return true;
+
   // Check some errors
-  if (dma::channel.error())
+  if (dma::channel.error()) {
+    LOG_ERROR("DAQ DMA error.")
     return false;
-  if (flexio->port().SHIFTERR & 0b1111'1111)
+  }
+  uint32_t _shifterr_mask =
+      (daq_config.get_num_channels() > 1) ? ((1u << daq_config.get_num_channels()) - 1) : 1u;
+  if (flexio->port().SHIFTERR & _shifterr_mask) {
+    LOG_ERROR("DAQ SHIFTERR error.");
     return false;
-  if (dma::overflow_data)
+  }
+  if (dma::overflow_data) {
+    LOG_ERROR("DAQ overflow.");
     return false;
+  }
 
   return true;
 }

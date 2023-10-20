@@ -25,20 +25,15 @@
 
 #include "daq_base.h"
 
-daq::DAQConfig daq::DAQConfig::from_json(JsonObjectConst&& json) {
+daq::DAQConfig daq::DAQConfig::from_json(JsonObjectConst &&json) {
   DAQConfig daq_config;
   // Return default if no options are given
   if (json.isNull())
     return daq_config;
   // Otherwise, parse DAQConfig from json
-  auto channels = json["channels"].as<JsonArrayConst>();
-  if (!channels.isNull() and channels.size() > 0) {
-    daq_config.start_channel = channels[0].as<uint8_t>();
-    daq_config.num_channels = channels.size();
-  } else {
-    daq_config.start_channel = 0;
-    daq_config.num_channels = 0;
-  }
+  auto num_channels = json["num_channels"];
+  if (!num_channels.isNull() and num_channels.is<unsigned int>())
+    daq_config.num_channels = num_channels;
   auto sample_rate = json["sample_rate"];
   if (!sample_rate.isNull() and sample_rate.is<unsigned int>())
     daq_config.sample_rate = sample_rate;
@@ -51,8 +46,6 @@ daq::DAQConfig daq::DAQConfig::from_json(JsonObjectConst&& json) {
   return daq_config;
 }
 
-uint8_t daq::DAQConfig::get_start_channel() const { return start_channel; }
-
 uint8_t daq::DAQConfig::get_num_channels() const { return num_channels; }
 
 unsigned int daq::DAQConfig::get_sample_rate() const { return sample_rate; }
@@ -60,3 +53,13 @@ unsigned int daq::DAQConfig::get_sample_rate() const { return sample_rate; }
 bool daq::DAQConfig::should_sample_op() const { return sample_op; }
 
 bool daq::DAQConfig::should_sample_op_end() const { return sample_op_end; }
+
+bool daq::DAQConfig::is_valid() const {
+  // Total effective samples per seconds is limited due to streaming speed
+  if (sample_rate * num_channels > 1'000'000 or sample_rate < 32)
+    return false;
+  // Number of channels must be power-of-two
+  if ((num_channels > 0) and ((num_channels & (num_channels - 1)) != 0))
+    return false;
+  return true;
+}

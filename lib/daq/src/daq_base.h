@@ -44,20 +44,18 @@ constexpr unsigned int DEFAULT_SAMPLE_RATE = 400'000;
 typedef std::array<float, NUM_CHANNELS> data_vec_t;
 
 class DAQConfig {
-  uint8_t start_channel = 0;
   uint8_t num_channels = NUM_CHANNELS;
   unsigned int sample_rate = DEFAULT_SAMPLE_RATE;
   bool sample_op = true;
   bool sample_op_end = true;
 
 public:
-  uint8_t get_start_channel() const;
   uint8_t get_num_channels() const;
   unsigned int get_sample_rate() const;
   bool should_sample_op() const;
   bool should_sample_op_end() const;
 
-  bool is_valid();
+  bool is_valid() const;
 
   explicit operator bool() const {
       return num_channels and (sample_op or sample_op_end);
