@@ -25,12 +25,6 @@
 
 #include "run.h"
 
-#include "client.h"
-#include "daq.h"
-#include "logging.h"
-#include "mode.h"
-#include "run.h"
-
 #include <utility>
 
 run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
@@ -48,7 +42,11 @@ run::Run run::Run::from_json(JsonObjectConst &json) {
   auto json_run_config = json["config"].as<JsonObjectConst>();
   auto run_config = RunConfig::from_json(json_run_config);
   auto daq_config = daq::DAQConfig::from_json(json["daq_config"].as<JsonObjectConst>());
-  return {json["id"].as<std::string>(), run_config, daq_config};
+  auto id = json["id"].as<std::string>();
+  if (id.size() != 32 + 4) {
+    id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
+  }
+  return {id, run_config, daq_config};
 }
 
 run::RunStateChange run::Run::to(run::RunState new_state, unsigned int t) {
