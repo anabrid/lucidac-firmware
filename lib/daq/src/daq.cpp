@@ -52,14 +52,12 @@ volatile bool last_data = false;
 volatile bool overflow_data = false;
 
 void interrupt() {
-  digitalWriteFast(LED_BUILTIN, HIGH);
-
+  // Serial.println(__PRETTY_FUNCTION__);
   auto is_half = (channel.TCD->CITER != channel.TCD->BITER);
   if (is_half) {
     overflow_data |= first_data;
     first_data = true;
-  }
-  else {
+  } else {
     overflow_data |= last_data;
     last_data = true;
   }
@@ -68,11 +66,9 @@ void interrupt() {
   channel.clearInterrupt();
   // Memory barrier
   asm("DSB");
-
-  digitalWriteFast(LED_BUILTIN, LOW);
 }
 
-volatile uint32_t *get_buffer() { return buffer.data(); }
+std::array<volatile uint32_t, BUFFER_SIZE> get_buffer() { return buffer; }
 } // namespace dma
 
 ContinuousDAQ::ContinuousDAQ(run::Run &run, const daq::DAQConfig &daq_config,
@@ -80,24 +76,23 @@ ContinuousDAQ::ContinuousDAQ(run::Run &run, const daq::DAQConfig &daq_config,
     : run(run), daq_config(daq_config), run_data_handler(run_data_handler) {}
 
 bool ContinuousDAQ::stream() {
+  if (!daq_config)
+    return true;
   if (dma::overflow_data)
     return false;
 
   auto active_buffer_part = dma::buffer.data();
-  volatile bool* data_flag_to_clear;
+  volatile bool *data_flag_to_clear;
   if (dma::first_data) {
     data_flag_to_clear = &dma::first_data;
-  }
-  else if (dma::last_data) {
-    active_buffer_part += dma::BUFFER_SIZE/2;
+  } else if (dma::last_data) {
+    active_buffer_part += dma::BUFFER_SIZE / 2;
     data_flag_to_clear = &dma::last_data;
-  }
-  else
+  } else
     return true;
 
-  //Serial.println("handle");
-  //Serial.println(reinterpret_cast<uintptr_t>(active_buffer_part));
-  run_data_handler->handle(active_buffer_part, dma::BUFFER_SIZE/NUM_CHANNELS/2, NUM_CHANNELS, run);
+  run_data_handler->handle(active_buffer_part, dma::BUFFER_SIZE / daq_config.get_num_channels() / 2,
+                           daq_config.get_num_channels(), run);
   *data_flag_to_clear = false;
   return true;
 }
@@ -226,10 +221,10 @@ bool daq::FlexIODAQ::init(unsigned int) {
 
   // BITER "beginning iteration count" is the number of major loops.
   // Each major loop fills part (see TCD->NBYTES) of the ring buffer.
-  dma::channel.TCD->BITER = dma::buffer.size() / daq_config.get_num_channels() / 2 * 2;
+  dma::channel.TCD->BITER = dma::buffer.size() / daq_config.get_num_channels();
   // CITER "current major loop iteration count" is the current number of major loops left to perform.
   // It can be used to check progress of the process. It's reset to BITER whe we filled the buffer once.
-  dma::channel.TCD->CITER = dma::buffer.size() / daq_config.get_num_channels() / 2 * 2;
+  dma::channel.TCD->CITER = dma::buffer.size() / daq_config.get_num_channels();
 
   // Configure source address and its adjustments.
   // We want to circularly copy from SHIFTBUFBIS.

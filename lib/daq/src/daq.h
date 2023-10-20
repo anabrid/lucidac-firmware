@@ -39,8 +39,9 @@
 namespace daq {
 
 namespace dma {
+// BUFFER_SIZE *must* be a power-of-two number of bytes
 constexpr size_t BUFFER_SIZE = 32 * NUM_CHANNELS;
-volatile uint32_t * get_buffer();
+std::array<volatile uint32_t, BUFFER_SIZE> get_buffer();
 }
 
 class BaseDAQ {

@@ -88,6 +88,7 @@ public:
   virtual void init() {};
   virtual void handle(volatile uint32_t *data, size_t outer_count, size_t inner_count, const run::Run &run) = 0;
   virtual void stream(volatile uint32_t *buffer, run::Run &run) = 0;
+  virtual void prepare(Run& run) = 0;
 };
 
 } // namespace run

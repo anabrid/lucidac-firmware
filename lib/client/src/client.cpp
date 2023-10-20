@@ -45,27 +45,24 @@ void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange
 
 client::RunDataNotificationHandler::RunDataNotificationHandler(net::EthernetClient &client,
                                                                DynamicJsonDocument &envelopeOut)
-    : client(client), envelope_out(envelopeOut) {
-}
+    : client(client), envelope_out(envelopeOut) {}
 
 void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t outer_count,
                                                 size_t inner_count, const run::Run &run) {
-  //Serial.println(__PRETTY_FUNCTION__);
-  for (size_t i = 0; i < outer_count*inner_count; i++) {
-    //Serial.println(data[i]);
-    //Serial.println(daq::BaseDAQ::raw_to_normalized(data[i]));
-    strncpy(str_buffer + BUFFER_IDX_DATA + (i*7), daq::BaseDAQ::raw_to_str(data[i]), 6);
+  //digitalWriteFast(LED_BUILTIN, HIGH);
+  auto buffer = str_buffer + BUFFER_LENGTH_STATIC;
+  size_t inner_length = 3 + inner_count * 7 - 1;
+  for (size_t outer_i = 0; outer_i < outer_count; outer_i++) {
+    for (size_t inner_i = 0; inner_i < inner_count; inner_i++) {
+      memcpy(buffer + outer_i * inner_length + 1 + inner_i * 7,
+             daq::BaseDAQ::raw_to_str(data[outer_i * inner_count + inner_i]), 6);
+    }
   }
-  digitalWriteFast(18, HIGH);
-  //net::EthernetUDP udp;
-  /*
-  udp.beginPacket(client.remoteIP(), 5733);
-  udp.write(reinterpret_cast<const char *>(str_buffer));
-  udp.write('\n');
-  udp.endPacket();
-   */
-  udp.send(client.remoteIP(), 5733, reinterpret_cast<const uint8_t *>(str_buffer), 934);
-  digitalWriteFast(18, LOW);
+  //digitalWriteFast(LED_BUILTIN, LOW);
+
+  //digitalWriteFast(18, HIGH);
+  udp.send(client.remoteIP(), 5733, reinterpret_cast<const uint8_t *>(str_buffer), actual_buffer_length);
+  //digitalWriteFast(18, LOW);
 }
 
 void client::RunDataNotificationHandler::init() {
@@ -74,27 +71,36 @@ void client::RunDataNotificationHandler::init() {
 }
 
 void client::RunDataNotificationHandler::stream(volatile uint32_t *buffer, run::Run &run) {
-  digitalWriteFast(18, HIGH);
+  // TODO: Remove
+}
 
-  if (first_data) {
-    first_data = false;
-    //Serial.println("first_data");
-  } else if (last_data) {
-    buffer += daq::dma::BUFFER_SIZE/2;
-    last_data = false;
-    //Serial.println("last_data");
-  } else {
-    return;
+void client::RunDataNotificationHandler::prepare(run::Run &run) {
+  Serial.println(__PRETTY_FUNCTION__);
+  size_t inner_count = run.daq_config.get_num_channels();
+  // We always stream half the buffer
+  // TODO: Do not access daq::dma::BUFFER_SIZE directly, probably make it a template parameter.
+  size_t outer_count = daq::dma::BUFFER_SIZE / inner_count / 2;
+
+  // For each inner array, we need '[],', inner_count*6 for 'sD.FFF' and (inner_count-1) bytes for all ','.
+  size_t inner_length = 3 + inner_count * 7 - 1;
+  // For message end, we need a few more bytes.
+  actual_buffer_length = BUFFER_LENGTH_STATIC + outer_count * inner_length - sizeof(',' /* trailing comma */) +
+                         sizeof(MESSAGE_END) - sizeof('\0' /* null byte in MESSAGE_END */) +
+                         sizeof('\n' /* newline */);
+  memset(str_buffer + BUFFER_LENGTH_STATIC, '-', actual_buffer_length - BUFFER_LENGTH_STATIC);
+  memcpy(str_buffer + BUFFER_IDX_RUN_ID, run.id.c_str(), BUFFER_LENGTH_RUN_ID);
+  auto buffer = str_buffer + BUFFER_LENGTH_STATIC - 1;
+  for (size_t outer_i = 0; outer_i < outer_count; outer_i++) {
+    *(++buffer) = '[';
+    for (size_t inner_i = 0; inner_i < inner_count; inner_i++) {
+      buffer += 7;
+      *buffer = ',';
+    }
+    *buffer = ']';
+    *(++buffer) = ',';
   }
-
-  handle(buffer, daq::dma::BUFFER_SIZE/daq::NUM_CHANNELS/2, daq::NUM_CHANNELS, run);
-
-  net::EthernetUDP udp;
-  udp.beginPacket(client.remoteIP(), 5733);
-  udp.write(reinterpret_cast<const char *>(str_buffer));
-  udp.write("\n");
-  udp.endPacket();
-  digitalWriteFast(18, LOW);
-
-  //run --op-time 120000 macht ganz komische dinge lol
+  memcpy(buffer, MESSAGE_END, sizeof(MESSAGE_END) - 1);
+  // TODO: Figure out why there is one more special character left :)
+  str_buffer[actual_buffer_length - 2] = '\n';
+  str_buffer[actual_buffer_length - 1] = '\n';
 }

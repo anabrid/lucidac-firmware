@@ -32,7 +32,7 @@ run::RunManager run::RunManager::_instance{};
 
 void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler) {
   auto run = queue.front();
-
+  run_data_handler->prepare(run);
 
   // LED used as debug
   // TODO: REMOVE ALL DEBUG
@@ -78,8 +78,9 @@ void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunD
   Serial.println("DMA channel properties");
   Serial.println(daq_.get_dma_channel().TCD->CITER);
   Serial.println("DMA buffer content");
-  for (auto data : decltype(daq_)::dma_buffer) {
-    Serial.println(std::bitset<32>(data).to_string().c_str());
+  for (auto data : daq::dma::get_buffer()) {
+    Serial.print(std::bitset<32>(data).to_string().c_str());
+    Serial.print("    ");
     Serial.println(daq::BaseDAQ::raw_to_str(data));
   }
   Serial.println("Normalized buffer content");
