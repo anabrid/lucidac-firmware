@@ -41,7 +41,9 @@ or watching your DHCP logs.
 
 ### Using your LUCIDAC
 
-Use the `pyanabrid-redac` python package to interact with your LUCIDAC.
+Use the `pyanabrid-redac` python package to interact with your LUCIDAC. It currently lives
+at https://lab.analogparadigm.com/redac/software/pyanabrid-redac/
+as well as https://lab.analogparadigm.com/pyanabrid/.
 
 ## Developers: Getting started
 
