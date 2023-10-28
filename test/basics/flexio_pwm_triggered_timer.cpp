@@ -6,7 +6,8 @@
 #include <Arduino.h>
 #include <FlexIO_t4.h>
 
-#define ERROR while (true) { digitalToggleFast(PIN_LED); delay(50);}
+#define _ERROR_OUT_                                                                                           \
+  while (true) { digitalToggleFast(PIN_LED); delay(50);}
 
 constexpr uint8_t PIN_CNVST = 3;
 constexpr uint8_t PIN_CLK = 4;
@@ -29,7 +30,8 @@ void setup() {
     uint8_t PIN_FLEX_CNVST;
     auto flexio = FlexIOHandler::mapIOPinToFlexIOHandler(PIN_CNVST, PIN_FLEX_CNVST);
     uint8_t PIN_FLEX_CLK = flexio->mapIOPinToFlexPin(PIN_CLK);
-    if (PIN_FLEX_CNVST == 0xff || PIN_FLEX_CLK == 0xff) ERROR
+    if (PIN_FLEX_CNVST == 0xff || PIN_FLEX_CLK == 0xff)
+      _ERROR_OUT_
 
     flexio->setClockSettings(3, 7, 5);
 

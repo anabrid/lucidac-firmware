@@ -25,26 +25,25 @@
 
 #pragma once
 
-// The actual logging call
-#define __LOG(message) Serial.println(message);
+#include "run.h"
+#include <ArduinoJson.h>
+#include <QNEthernetClient.h>
 
-// A logging macro, which accepts an optional LOG_FLAG (e.g. ANABRID_DEBUG_INIT) and a message.
-#define LOG(LOG_FLAG, message) LOG_##LOG_FLAG(message)
-#define LOG_ERROR(message) __LOG(message)
-#define LOG_ALWAYS(message) __LOG(message)
+namespace net = qindesign::network;
 
-// Unfortunately, we need to define the actual logging macro for each LOG_FLAG we want to use.
-// Possibly, we can do some macro magic in the future.
-// But probably not, because checking for the defined'ness of a macro inside another macro is not possible.
+namespace client {
 
-#ifdef ANABRID_DEBUG
-#define LOG_ANABRID_DEBUG(message) __LOG(message)
-#else
-#define LOG_ANABRID_DEBUG(message) ((void)0)
-#endif
+class RunStateChangeNotificationHandler : public run::RunStateChangeHandler {
+  // TODO: This can become invalid on disconnects
+  net::EthernetClient &client;
+  DynamicJsonDocument &envelope_out;
 
-#ifdef ANABRID_DEBUG_INIT
-#define LOG_ANABRID_DEBUG_INIT(message) __LOG(message)
-#else
-#define LOG_ANABRID_DEBUG_INIT(message) ((void)0)
-#endif
+public:
+  RunStateChangeNotificationHandler(net::EthernetClient &client, DynamicJsonDocument &envelopeOut)
+      : client(client), envelope_out(envelopeOut) {}
+
+private:
+  void handle(run::RunStateChange change, const run::Run &run) override;
+};
+
+} // namespace client

@@ -53,6 +53,8 @@ public:
   Entity *get_child_entity(const std::string &child_id) override;
 
   bool config_self_from_json(JsonObjectConst cfg) override;
+
+  void write_to_hardware();
 };
 
 } // namespace carrier

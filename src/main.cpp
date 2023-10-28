@@ -3,10 +3,12 @@
 #include <QNEthernet.h>
 
 #include "carrier.h"
+#include "client.h"
 #include "logging.h"
 #include "message_handlers.h"
+#include "run.h"
 
-#define ERROR                                                                                                 \
+#define _ERROR_OUT_                                                                                           \
   while (true) {                                                                                              \
     digitalToggle(13);                                                                                        \
     delay(100);                                                                                               \
@@ -19,6 +21,24 @@ net::EthernetServer server{server_port};
 
 carrier::Carrier carrier_;
 
+class HackMessageHandler : public msg::handlers::MessageHandler {
+public:
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
+    std::string command = msg_in["command"];
+    if (command.empty())
+      return false;
+
+    // Slave mode for transferring IC/OP signals
+    if (command == "slave") {
+      LOG_ALWAYS("Enabling slave mode, setting IC/OP pins to input (floating).");
+      pinMode(mode::PIN_MODE_IC, INPUT);
+      pinMode(mode::PIN_MODE_OP, INPUT);
+    }
+
+    return true;
+  }
+};
+
 void setup() {
   // Initialize serial communication
   Serial.begin(0);
@@ -29,14 +49,14 @@ void setup() {
   LOG(ANABRID_DEBUG_INIT, "Hello.");
 
   // Initialize ethernet communication
-  if (!net::Ethernet.begin(IPAddress(192, 168, 68, 222), IPAddress(255,255,255,0), IPAddress(192,168,100,1))) {
+  if (!net::Ethernet.begin()) {
     LOG_ERROR("Error starting ethernet.");
-    ERROR
+    _ERROR_OUT_
   }
   LOG(ANABRID_DEBUG_INIT, "Waiting for IP address on ethernet...");
   if (!net::Ethernet.waitForLocalIP(10000)) {
     LOG_ERROR("Error getting IP address.");
-    ERROR
+    _ERROR_OUT_
   } else {
     __attribute__((unused)) IPAddress ip = net::Ethernet.localIP();
 #ifdef ANABRID_DEBUG_INIT
@@ -53,36 +73,52 @@ void setup() {
   LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
   if (!carrier_.init()) {
     LOG_ERROR("Error initializing carrier board.");
-    ERROR
+    _ERROR_OUT_
   }
+
+  // Initialize things related to runs
+  // ... Nothing yet :)
+  if (!mode::FlexIOControl::init(mode::DEFAULT_IC_TIME, mode::DEFAULT_OP_TIME)) {
+    LOG_ERROR("Error initializing FlexIO mode control.");
+    _ERROR_OUT_
+  }
+
   // Register message handler
+  msg::handlers::Registry::set("hack", new HackMessageHandler());
   msg::handlers::Registry::set("set_config", new msg::handlers::SetConfigMessageHandler(carrier_));
   msg::handlers::Registry::set("get_config", new msg::handlers::GetConfigMessageHandler(carrier_));
   msg::handlers::Registry::set("get_entities", new msg::handlers::GetEntitiesRequestHandler(carrier_));
+  msg::handlers::Registry::set("start_run", new msg::handlers::StartRunRequestHandler(run::RunManager::get()));
 
   // Done.
   LOG(ANABRID_DEBUG_INIT, "Initialization done.");
 }
 
 void loop() {
-  net::EthernetClient client = server.accept();
+  net::EthernetClient connection = server.accept();
+  auto &run_manager = run::RunManager::get();
 
-  if (client) {
+  if (connection) {
     Serial.print("Client connected from ");
-    client.remoteIP().printTo(Serial);
+    connection.remoteIP().printTo(Serial);
     Serial.println();
 
+    // Reserve space for JSON communication
+    // TODO: This must probably be global for all clients
     DynamicJsonDocument envelope_in(4096);
     DynamicJsonDocument envelope_out(4096);
-    while (client) {
-      auto error = deserializeJson(envelope_in, client);
+
+    // Bind things to this client specifically
+    client::RunStateChangeNotificationHandler run_state_change_handler{connection, envelope_out};
+
+    // Handle incoming messages
+    while (connection) {
+      auto error = deserializeJson(envelope_in, connection);
       if (error == DeserializationError::Code::EmptyInput) {
         Serial.print(".");
-        continue;
       } else if (error) {
         Serial.print("Error while parsing JSON:");
         Serial.println(error.c_str());
-        continue;
       } else {
         // Unpack metadata from envelope
         std::string msg_id = envelope_in["id"];
@@ -114,10 +150,16 @@ void loop() {
         // If message generated a response or an error, actually sent it out
         if (!msg_out.isNull() or !envelope_out["success"].as<bool>()) {
           serializeJson(envelope_out, Serial);
-          serializeJson(envelope_out, client);
-          if (!client.writeFully("\n"))
+          serializeJson(envelope_out, connection);
+          if (!connection.writeFully("\n"))
             break;
         }
+      }
+
+      // Fake run for now
+      if (!run_manager.queue.empty()) {
+        Serial.println("faking run");
+        run_manager.run_next(&run_state_change_handler);
       }
     }
 

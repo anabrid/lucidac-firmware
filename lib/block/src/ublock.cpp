@@ -381,8 +381,7 @@ bool blocks::UBlock::config_self_from_json(JsonObjectConst cfg) {
         if (input.isNull()) {
           idx++;
           continue;
-        }
-        else if (!input.is<uint8_t>()) {
+        } else if (!input.is<uint8_t>()) {
           return false;
         }
         if (!connect(input.as<uint8_t>(), idx++))
@@ -410,6 +409,15 @@ bool blocks::UBlock::config_self_from_json(JsonObjectConst cfg) {
         auto input = keyval.value().as<uint8_t>();
         if (!connect(input, output))
           return false;
+      }
+    }
+  }
+  if (cfg.containsKey("alt_signals")) {
+    if (cfg["alt_signals"].is<JsonArrayConst>()) {
+      for (JsonVariantConst signal : cfg["alt_signals"].as<JsonArrayConst>()) {
+        if (!signal.is<unsigned short>())
+          return false;
+        alt_signals |= 1 << signal.as<unsigned short>();
       }
     }
   }

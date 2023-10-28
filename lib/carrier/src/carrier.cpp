@@ -80,6 +80,12 @@ std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
   return children;
 }
 
+void carrier::Carrier::write_to_hardware() {
+  for (auto &cluster: clusters) {
+    cluster.write_to_hardware();
+  }
+}
+
 msg::handlers::CarrierMessageHandlerBase::CarrierMessageHandlerBase(Carrier &carrier) : carrier(carrier) {}
 
 bool msg::handlers::SetConfigMessageHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
@@ -119,6 +125,9 @@ bool msg::handlers::SetConfigMessageHandler::handle(JsonObjectConst msg_in, Json
   if (!success and msg_out["error"].isNull()) {
     msg_out["error"] = "Error applying configuration to entity.";
   }
+
+  // Actually write to hardware
+  carrier.write_to_hardware();
   return success;
 }
 
