@@ -2,6 +2,9 @@
 
 This repository holds the firmware for the **Teensy** hybrid controller for the LUCIDAC.
 
+| :warning: ATTENTION: You are currently reading the README file on the `main` branch. You should switch to the `dev` branch where the actual work happens. |
+| --- |
+
 ## Getting started
 
 Follow the respective platformio (`pio` in short) documentations to install the required dependencies and tools for developement.
