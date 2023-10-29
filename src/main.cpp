@@ -6,11 +6,13 @@
 #include "message_handlers.h"
 #include "run.h"
 #include "eeprom.h"
+#include "serial_lines.h"
 
+utils::SerialLineReader serial_line_reader;
 net::EthernetServer server;
 carrier::Carrier carrier_;
-
 eeprom::UserSettings settings;
+
 
 class HackMessageHandler : public msg::handlers::MessageHandler {
 public:
@@ -115,40 +117,6 @@ bool handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out) {
   return (!msg_out.isNull() or !envelope_out["success"].as<bool>());
 }
 
-// TODO: Clean up code, move to better places.
-class SerialLineReader {
-public:
-  static constexpr int serial_buffer_size = 4096;
-  char serial_buffer[serial_buffer_size];
-  int serial_buffer_pos = 0;
-
-  char* line_available() {
-    if(Serial.available() > 0) {
-      char in = Serial.read();
-
-      // be a responsive console, give immediate feedback on typing.
-      // TODO: User should be able to turn this off. Humans want this, machines not.
-      Serial.print(in); Serial.flush();
-
-      if(in == '\n') {
-        serial_buffer[serial_buffer_pos] = '\0';
-        serial_buffer_pos = 0;
-        return serial_buffer;
-      } else if (serial_buffer_pos < serial_buffer_size - 1) {  // Avoid buffer overflow
-        serial_buffer[serial_buffer_pos++] = in;
-      } else {
-        // buffer is full, flush it anyway.
-        serial_buffer[serial_buffer_pos-2] = '\n';
-        serial_buffer[serial_buffer_pos-1] = '\0';
-        serial_buffer_pos = 0;
-        return serial_buffer;
-      }
-    }
-    return NULL;
-  }
-};
-
-SerialLineReader serial_line_reader; // TODO: Clean up code, move to better places.
 
 void process_serial_input(char* line) {
   DynamicJsonDocument envelope_in(4096), envelope_out(4096);
@@ -161,17 +129,12 @@ void process_serial_input(char* line) {
     Serial.print("'. Error message: ");
     Serial.println(error.c_str());
   } else {
-    auto envelope_out_obj = envelope_out.as<JsonObject>();
+    auto envelope_out_obj = envelope_out.to<JsonObject>();
     if(handleMessage(envelope_in.as<JsonObjectConst>(), envelope_out_obj)) {
       serializeJson(envelope_out_obj, Serial);
-      Serial.flush(); // or probably print a newline
-    } else {
-      Serial.print("Would not send this out:");
-      serializeJson(envelope_out_obj, Serial);
+      Serial.println();
     }
-    envelope_out.clear();
   }
-  envelope_in.clear();
 }
 
 void peek_serial_input() {
@@ -190,7 +153,6 @@ void loop() {
     connection.remoteIP().printTo(Serial);
     Serial.println();
 
-
     // Reserve space for JSON communication
     // TODO: This must probably be global for all clients
     // TODO: Find out whether they should become rally global or really local (i.e. just before deserializeJson)
@@ -202,7 +164,6 @@ void loop() {
 
     // Handle incoming messages
     while (connection) {
-      envelope_in.clear();
       auto error = deserializeJson(envelope_in, connection);
       if (error == DeserializationError::Code::EmptyInput) {
         Serial.print(".");
@@ -210,7 +171,7 @@ void loop() {
         Serial.print("Error while parsing JSON:");
         Serial.println(error.c_str());
       } else {
-        auto envelope_out_obj = envelope_out.as<JsonObject>();
+        auto envelope_out_obj = envelope_out.to<JsonObject>();
         if(handleMessage(envelope_in.as<JsonObjectConst>(), envelope_out_obj)) {
           serializeJson(envelope_out_obj, Serial);
           serializeJson(envelope_out_obj, connection);
