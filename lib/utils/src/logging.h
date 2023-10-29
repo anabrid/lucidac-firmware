@@ -48,3 +48,10 @@
 #else
 #define LOG_ANABRID_DEBUG_INIT(message) ((void)0)
 #endif
+
+// moved here from main in order to use at other places
+#define _ERROR_OUT_                                                                                           \
+  while (true) {                                                                                              \
+    digitalToggle(13);                                                                                        \
+    delay(100);                                                                                               \
+  }

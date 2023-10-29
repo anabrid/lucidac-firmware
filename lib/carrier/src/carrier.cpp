@@ -25,23 +25,15 @@
 
 #include "carrier.h"
 #include "logging.h"
+#include "persistent_eth.h"
 
 #include <QNEthernet.h>
-#include <cstring>
-
-std::string carrier::Carrier::get_system_mac() {
-  uint8_t mac[6];
-  qindesign::network::Ethernet.macAddress(mac);
-  char mac_str[20];
-  sprintf(mac_str, "%02X-%02X-%02X-%02X-%02X-%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-  return mac_str;
-}
 
 carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}) {}
 
 bool carrier::Carrier::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
-  entity_id = get_system_mac();
+  entity_id = ethernet::system_mac_as_string();
   LOG(ANABRID_DEBUG_INIT, entity_id.c_str());
   if (entity_id.empty())
     return false;
