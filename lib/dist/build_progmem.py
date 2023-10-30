@@ -13,12 +13,14 @@ try:
   # the following code demonstrates how to access build system variables.
   # we don't make use of them right now.
   Import("env")
-  # print(env.Dump())
+  #print(env.Dump())
   interesting_fields = ["BOARD", "BOARD_MCU", "BOARD_F_CPU", "BUILD_TYPE", "UPLOAD_PROTOCOL"]
   build_system = { k: env.Dictionary(k) for k in interesting_fields }
+  build_flags = env.Dictionary('BUILD_FLAGS') # is a list
 except NameError:
   # pure python does not know 'Import' (is not defined in pure Python).
   build_system = {}
+  build_flags = []
 
 import pathlib, json, textwrap, uuid, pprint
 
@@ -45,7 +47,8 @@ item = {
     },
     "build_system": {
       "name": "pio",
-      "env": build_system
+      "env": build_system,
+      "build_flags": build_flags,
     },
     "device_serials": {
         "serial_number": "123",

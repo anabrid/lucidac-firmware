@@ -46,9 +46,6 @@ void eeprom::UserSettings::write_to_json(JsonObject target) {
 
     ethernet.write_to_json(target.createNestedObject("ethernet"));
     auth.write_to_json(target.createNestedObject("passwords"));
-
-    //LOG(ANABRID_DEBUG_INIT, "UserSettings::write_to_json produced this serialization:");
-    serializeJson(target, Serial);
 }
 
 void eeprom::UserSettings::read_from_eeprom() {
@@ -78,8 +75,10 @@ size_t eeprom::UserSettings::write_to_eeprom() {
     StreamUtils::EepromStream eepromStream(eeprom_address, eeprom_size);
     size_t consumed_size = serializeJson(serialized_conf, eepromStream);
 
-    Serial.printf("eeprom::UserSettings: Consumed %d Bytes from %d Available ones (%.2f%%)",
+    Serial.printf("eeprom::UserSettings: Consumed %d Bytes from %d Available ones (%.2f%%)\n",
       consumed_size, eeprom_size, 100.0 * consumed_size/eeprom_size);
+
+    return consumed_size;
 }
 
 bool msg::handlers::GetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
@@ -89,8 +88,9 @@ bool msg::handlers::GetSettingsHandler::handle(JsonObjectConst msg_in, JsonObjec
 
 bool msg::handlers::SetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
     settings.read_from_json(msg_in);
-    msg_out["consumed_bytes"] = settings.write_to_eeprom();
+    settings.write_to_json(msg_out.createNestedObject("updated_config"));
     msg_out["available_bytes"] = eeprom_size;
+    msg_out["consumed_bytes"] = settings.write_to_eeprom();
     return true;
 }
 

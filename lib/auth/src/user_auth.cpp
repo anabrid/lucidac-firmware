@@ -8,6 +8,7 @@ void auth::UserPasswordAuthentification::reset_defaults() {
 }
 
 void auth::UserPasswordAuthentification::read_from_json(JsonObjectConst serialized_conf) {
+  db.clear();
   for (JsonPairConst kv : serialized_conf) {
     db[kv.key().c_str()] = kv.value().as<std::string>();
   }
@@ -27,6 +28,10 @@ void auth::UserPasswordAuthentification::status(JsonObject target) {
 }
 
 bool msg::handlers::LoginHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out, auth::AuthentificationContext& user_context) {
+  #ifdef ANABRID_UNSAFE_INTERNET
+  msg_out["error"] = "No authentification neccessary. Auth system is disabled in this firmware build.";
+  return false;
+  #else
   std::string new_user = msg_in["user"];
   if(user_context.hasBetterClearenceThen(new_user)) {
     // This case avoids users from locking themself out of the serial console where they
@@ -53,5 +58,6 @@ bool msg::handlers::LoginHandler::handle(JsonObjectConst msg_in, JsonObject &msg
     Serial.print("New authentification: "); user_context.printTo(Serial); Serial.println();
     
     return true;
-  }  
+  }
+  #endif  
 }

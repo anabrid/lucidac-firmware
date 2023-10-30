@@ -58,7 +58,13 @@ class UserPasswordAuthentification {
 public:
   static constexpr const char* admin = "admin";
 
-  bool isdisabled() const {  return db.empty(); }
+  bool isdisabled() const {
+    #ifdef ANABRID_UNSAFE_INTERNET
+      return true;
+    #else
+      return db.empty();
+    #endif
+  }
   bool isvalid(std::string user, std::string pwd) { return isdisabled() || (db.count(user) && db[user] == pwd); }
 
   bool cando(std::string user, SecurityLevel task) const {
