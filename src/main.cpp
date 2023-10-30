@@ -41,10 +41,12 @@ void setup() {
     // Wait for Serial, but not forever
   }
 
-  LOG(ANABRID_DEBUG_INIT, "LUCIDAC Hybrid Controller Firmware (dev branch)");
+  LOG_ALWAYS("LUCIDAC Hybrid Controller Firmware (dev branch)");
 
   LOG(ANABRID_DEBUG_INIT, "Loading settings from EEPROM...");
   settings.read_from_eeprom();
+
+  LOG_START("UserPasswordAuthentification: "); LOG_JSON(settings.auth.status); LOG_END();
 
   LOG(ANABRID_DEBUG_INIT, "Starting up Ethernet...");
   settings.ethernet.begin(&server);
@@ -79,7 +81,8 @@ void setup() {
   msg::handlers::Registry::set("status", new msg::handlers::GetSystemStatus(settings.auth), auth::SecurityLevel::RequiresNothing);
   msg::handlers::Registry::set("login", new msg::handlers::LoginHandler(settings.auth), auth::SecurityLevel::RequiresNothing);
 
-  msg::handlers::Registry::dump();
+  //LOG("msg::handlers::Registry set up with handlers")
+  //msg::handlers::Registry::dump();
 
   // Done.
   LOG(ANABRID_DEBUG_INIT, "Initialization done.");
@@ -157,6 +160,7 @@ void loop() {
   process_serial_input();
 
   if (connection) {
+
     Serial.print("Client connected from ");
     connection.remoteIP().printTo(Serial);
     Serial.println();

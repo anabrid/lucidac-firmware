@@ -82,6 +82,9 @@ void msg::handlers::Registry::dump() {
 
 bool msg::handlers::PingRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
   msg_out["now"] = "2007-08-31T16:47+01:00";
+  // Note, with some initial NTP call we could get micro-second time resolution if we need it
+  // for whatever reason.
+  msg_out["micros"] = micros();
   return false;
 }
 

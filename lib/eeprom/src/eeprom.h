@@ -45,7 +45,6 @@ class UserSettings {
 public:
 
   // Settings are managed in their relevant subclasses.
-  // Here: network-related settings
   ethernet::UserDefinedEthernet ethernet;
   auth::UserPasswordAuthentification auth;
   // put other persistent entities here...
@@ -57,8 +56,6 @@ public:
 
   void read_from_eeprom(); ///< read configuration from eeprom
   size_t write_to_eeprom();  ///< serialize configuration to eeprom, @returns consumed bytes in eeprom
-
-  //UserSettings() { read_from_eeprom(); }
 
 };
 

@@ -51,14 +51,11 @@ void eeprom::UserSettings::write_to_json(JsonObject target) {
 void eeprom::UserSettings::read_from_eeprom() {
     StaticJsonDocument<eeprom_size> deserialized_conf;
     StreamUtils::EepromStream eepromStream(eeprom_address, eeprom_size);
-    //LOG(ANABRID_DEBUG_INIT, "Initialized EEPROM Stream");
     auto error = deserializeJson(deserialized_conf, eepromStream);
     if(error) {
         Serial.print("Error while reading configuration from EEPROM:");
         Serial.println(error.c_str());
     }
-
-    //LOG(ANABRID_DEBUG_INIT, "Finished reading EEPROM Stream");
 
     version = deserialized_conf["version"];
 
@@ -75,7 +72,7 @@ size_t eeprom::UserSettings::write_to_eeprom() {
     StreamUtils::EepromStream eepromStream(eeprom_address, eeprom_size);
     size_t consumed_size = serializeJson(serialized_conf, eepromStream);
 
-    Serial.printf("eeprom::UserSettings: Consumed %d Bytes from %d Available ones (%.2f%%)\n",
+    LOGMEV("Consumed %d Bytes from %d Available ones (%.2f%%)\n",
       consumed_size, eeprom_size, 100.0 * consumed_size/eeprom_size);
 
     return consumed_size;

@@ -70,7 +70,10 @@ void ethernet::UserDefinedEthernet::write_to_json(JsonObject target) {
 void ethernet::UserDefinedEthernet::begin(net::EthernetServer *server) {
     *server = net::EthernetServer(server_port);
 
+    LOG2("MAC: ", ethernet::system_mac_as_string().c_str())
+
     if(use_dhcp) {
+        LOG2("DHCP with Hostname: ", hostname);
         net::Ethernet.setHostname(hostname.c_str());
         if (!net::Ethernet.begin()) {
         LOG_ERROR("Error starting ethernet DHCP client.");
@@ -87,12 +90,8 @@ void ethernet::UserDefinedEthernet::begin(net::EthernetServer *server) {
         _ERROR_OUT_
         }
     }
-    IPAddress ip = net::Ethernet.localIP();
-    Serial.print("Listening on ");
-    ip.printTo(Serial);
-    Serial.print(" port ");
-    Serial.print(server_port);
-    Serial.println();
+
+    LOG4("Listening on ", net::Ethernet.localIP(), ":", server_port);
 
     (*server).begin();
 }
