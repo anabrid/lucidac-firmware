@@ -1,4 +1,5 @@
-# This is a pio build script and can also be used as a standlone python3 script.
+# This is a pio build script (see also scons.org)
+# and can also be used as a standlone python3 script.
 
 # The purpose of this script is to build distributor-specific
 # data into the ROM. These data are not subject to be changed
@@ -7,12 +8,23 @@
 # Within the Pio build process,
 # this python script is not invoked regularly as a seperate process but
 # within the pio code. Therefore, magic such as this one can be called:
-# Import("env")
 
-import pathlib, json, textwrap, uuid
+try:
+  # the following code demonstrates how to access build system variables.
+  # we don't make use of them right now.
+  Import("env")
+  # print(env.Dump())
+  interesting_fields = ["BOARD", "BOARD_MCU", "BOARD_F_CPU", "BUILD_TYPE", "UPLOAD_PROTOCOL"]
+  build_system = { k: env.Dictionary(k) for k in interesting_fields }
+except NameError:
+  # pure python does not know 'Import' (is not defined in pure Python).
+  build_system = {}
+
+import pathlib, json, textwrap, uuid, pprint
 
 rel_filename = "src/distributor_values.cpp"
 abs_filename = "lib/dist/" + rel_filename
+
 
 try:
   project_dir = pathlib.Path(__file__).parent.resolve().parent.parent
@@ -31,6 +43,10 @@ item = {
     "model": {
         "name": "LUCIDAC",
     },
+    "build_system": {
+      "name": "pio",
+      "env": build_system
+    },
     "device_serials": {
         "serial_number": "123",
         "uuid": "26051bb5-7cb7-43fd-8d64-e24fdfa14489",
@@ -44,6 +60,9 @@ item = {
         "admin": "Iesh8Sae"
     },
 }
+
+# uncomment this line to inspect the full data
+# pprint.pprint(item)
 
 nl = "\n"
 esc = lambda s: s.replace('"', '\\"')

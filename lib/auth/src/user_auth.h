@@ -26,6 +26,9 @@
 #pragma once
 
 #include <ArduinoJson.h>
+#include <IPAddress.h>
+#include <Printable.h>
+#include <cstring>
 #include <map>
 
 #include "message_handlers.h"
@@ -74,9 +77,18 @@ public:
 
   // if you want to let (any) remote users know something, use this
   void status(JsonObject target);
-
 };
 
+/// Some basic information about the remote station. Currently only distinguishes between
+/// an IP and "no IP", which represents the local terminal
+class RemoteIdentifier { // : public Printable {
+public:
+  IPAddress ip;
+  bool isLocal() const { return ip[0] == 0 && ip[1] == 0 && ip[2] == 0 && ip[3] == 0; } // (uint32_t)ip) doesnt work
+	size_t printTo(Print& p) const {
+    return isLocal() ? p.print("[serial-local]") : ip.printTo(p);
+  }
+};
 
 /**
  * A thin wrapper around the username.
@@ -86,10 +98,13 @@ public:
  **/
 class AuthentificationContext {
   UserPasswordAuthentification& auth;
+  RemoteIdentifier _remote;
   std::string _user;
 public:
   AuthentificationContext(UserPasswordAuthentification& auth, std::string user) : auth(auth), _user(user) {}
   AuthentificationContext(UserPasswordAuthentification& auth) : auth(auth) {}
+
+  void set_remote_identifier(RemoteIdentifier r) { _remote = r; }
 
   bool cando(SecurityLevel task) const { return auth.cando(_user, task); }
   bool hasBetterClearenceThen(std::string other) const {
@@ -98,6 +113,10 @@ public:
        (cando(SecurityLevel::RequiresLogin) && !auth.cando(other, SecurityLevel::RequiresLogin));
   }
   void login(std::string user) { _user = user; }
+
+	size_t printTo(Print& p) const {
+    return p.print(_user.empty() ? "[nobody]" : _user.c_str()) + p.print("@") + _remote.printTo(p);
+  }
 };
 
 } // namespace auth

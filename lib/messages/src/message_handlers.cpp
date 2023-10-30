@@ -65,6 +65,21 @@ bool msg::handlers::Registry::set(const std::string &msg_type, msg::handlers::Me
   }
 }
 
+void msg::handlers::Registry::dump() {
+  Serial.print("Registered message handlers (msg::handlers::Registry): ");
+  for(auto const &kv : _registry) {
+    Serial.print(kv.first.c_str());
+    if(!kv.second) Serial.print("(NULLPTR!)");
+    Serial.print(" ");
+  }
+  Serial.println("");
+  Serial.println("Registry clearance levels:");
+  for(auto const &kv : _clearance) {
+    Serial.print(kv.first.c_str()); Serial.print(":"); Serial.print((int)(kv.second)); Serial.print(" ");
+  }
+  Serial.println();
+}
+
 bool msg::handlers::PingRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
   msg_out["now"] = "2007-08-31T16:47+01:00";
   return false;

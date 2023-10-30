@@ -56,7 +56,7 @@ public:
   void write_to_json(JsonObject target);
 
   void read_from_eeprom(); ///< read configuration from eeprom
-  void write_to_eeprom();  ///< serialize configuration to eeprom
+  size_t write_to_eeprom();  ///< serialize configuration to eeprom, @returns consumed bytes in eeprom
 
   //UserSettings() { read_from_eeprom(); }
 

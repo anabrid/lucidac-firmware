@@ -35,9 +35,23 @@ bool msg::handlers::LoginHandler::handle(JsonObjectConst msg_in, JsonObject &msg
     return false;
   } else if(!auth.isvalid(new_user, msg_in["password"])) {
     msg_out["error"] = "Invalid username or password.";
+
+    #if defined(ANABRID_DEBUG) || defined(ANABRID_DEBUG_INIT)
+    // Show correct usernames and passwords on the console
+    Serial.println("Since authentificiation failed and debug mode is on, this is the list of currently allowed passwords:");
+    StaticJsonDocument<500> kvmap;
+    auth.write_to_json(kvmap.to<JsonObject>());
+    serializeJson(kvmap, Serial);
+    Serial.println();
+    #endif
+
     return false;
   } else {
     user_context.login(new_user);
+
+    // TODO: Somehow this line doesn't show up.
+    Serial.print("New authentification: "); user_context.printTo(Serial); Serial.println();
+    
     return true;
   }  
 }

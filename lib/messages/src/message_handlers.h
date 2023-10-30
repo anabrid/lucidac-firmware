@@ -53,6 +53,8 @@ public:
   static MessageHandler *get(const std::string& msg_type);
   static auth::SecurityLevel requiredClearance(const std::string& msg_type);
   static bool set(const std::string& msg_type, msg::handlers::MessageHandler *handler, auth::SecurityLevel minimumClearance);
+
+  static void dump(); // for debugging: Print Registry configuration to Serial
 };
 
 class PingRequestHandler : public MessageHandler {

@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <cstring>
 
 #include "carrier.h"
 #include "client.h"
@@ -77,6 +78,8 @@ void setup() {
 
   msg::handlers::Registry::set("status", new msg::handlers::GetSystemStatus(settings.auth), auth::SecurityLevel::RequiresNothing);
   msg::handlers::Registry::set("login", new msg::handlers::LoginHandler(settings.auth), auth::SecurityLevel::RequiresNothing);
+
+  msg::handlers::Registry::dump();
 
   // Done.
   LOG(ANABRID_DEBUG_INIT, "Initialization done.");
@@ -159,6 +162,7 @@ void loop() {
     Serial.println();
 
     auth::AuthentificationContext user_context{ settings.auth };
+    user_context.set_remote_identifier( auth::RemoteIdentifier{ connection.remoteIP() } );
 
     // Reserve space for JSON communication
     // TODO: This must probably be global for all clients

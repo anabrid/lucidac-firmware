@@ -72,14 +72,14 @@ void eeprom::UserSettings::read_from_eeprom() {
     }
 }
 
-void eeprom::UserSettings::write_to_eeprom() {
-    //LOG(ANABRID_DEBUG_INIT, "Dumping configuration to EEPROM...");
+size_t eeprom::UserSettings::write_to_eeprom() {
     StaticJsonDocument<eeprom_size> serialized_conf;
-    write_to_json(serialized_conf.as<JsonObject>());
-    //LOG(ANABRID_DEBUG_INIT, "Finished a JSON document in RAM, now writing to EEPROM");
+    write_to_json(serialized_conf.to<JsonObject>());
     StreamUtils::EepromStream eepromStream(eeprom_address, eeprom_size);
-    serializeJson(serialized_conf, eepromStream);
-    //LOG(ANABRID_DEBUG_INIT, "Finished Dumping configuration to EEPROM.");
+    size_t consumed_size = serializeJson(serialized_conf, eepromStream);
+
+    Serial.printf("eeprom::UserSettings: Consumed %d Bytes from %d Available ones (%.2f%%)",
+      consumed_size, eeprom_size, 100.0 * consumed_size/eeprom_size);
 }
 
 bool msg::handlers::GetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
@@ -89,7 +89,8 @@ bool msg::handlers::GetSettingsHandler::handle(JsonObjectConst msg_in, JsonObjec
 
 bool msg::handlers::SetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
     settings.read_from_json(msg_in);
-    settings.write_to_eeprom();
+    msg_out["consumed_bytes"] = settings.write_to_eeprom();
+    msg_out["available_bytes"] = eeprom_size;
     return true;
 }
 

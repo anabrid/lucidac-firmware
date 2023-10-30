@@ -17,6 +17,15 @@ namespace utils {
 struct UUID { // : public Printable { // no inheritance to maintain POD
 public:
     uint8_t ar[16];
+    // hint: Could also use something like the following if helps.
+    /*
+       union {
+        uint8_t  bytes[16];
+        uin16_t  nibbles[8];
+        uint32_t quads[4];
+	   } _ar;
+    */
+
 
     // TODO: Should unit test whether this is correct
     void toCharArray(char *_buffer) const {
