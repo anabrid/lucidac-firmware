@@ -10,7 +10,7 @@
 // Remember increasing the storage when more data have to be stored.
 static constexpr int
     eeprom_address = 0,
-    eeprom_size = 500;
+    eeprom_size = 2'000;
 
 // This number checks as a proof that the EEPROM stores something senseful. If it
 // does not store a number >= this constant, it is resetted.
@@ -19,12 +19,16 @@ static constexpr int
 static constexpr uint64_t required_magic = 0xAA00;
 
 void eeprom::UserSettings::reset_defaults() {
-    //LOG(ANABRID_DEBUG_INIT, "Settings reset to default, this time really.");
+    Serial.print("Resetting settings, EEPROM version was: ");
+    Serial.print(version, HEX);
+    Serial.print(", Firmware version is");
+    Serial.print(required_magic, HEX);
+    Serial.println(".");
+
     ethernet.reset_defaults();
-    // someOtherPersistentEntitiy.reset_defaults()
+    auth.reset_defaults();
 
     version = required_magic;
-    //LOG(ANABRID_DEBUG_INIT, "Done so. Hurry up with the eeprom!");
     write_to_eeprom();
 }
 
@@ -32,16 +36,16 @@ void eeprom::UserSettings::read_from_json(JsonObjectConst serialized_conf) {
     if(serialized_conf.containsKey("ethernet"))
         ethernet.read_from_json(serialized_conf["ethernet"]);
     
-    // someOtherPersistentEntitiy.read_from_json(...)
+    if(serialized_conf.containsKey("passwords"))
+        auth.read_from_json(serialized_conf["passwords"]);
 
-    version++; // no real intention
 }
 
 void eeprom::UserSettings::write_to_json(JsonObject target) {
     target["version"] = version;
 
     ethernet.write_to_json(target.createNestedObject("ethernet"));
-    // someOtherPersistentEntitiy.write_to_json(...)
+    auth.write_to_json(target.createNestedObject("passwords"));
 
     //LOG(ANABRID_DEBUG_INIT, "UserSettings::write_to_json produced this serialization:");
     serializeJson(target, Serial);

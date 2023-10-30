@@ -38,6 +38,8 @@ namespace ethernet {
 
 std::string system_mac_as_string(); //< Own mac address in Canonical Format AA-BB-CC-DD-EE-FF
 
+void status(JsonObject &msg_out);
+
 class UserDefinedEthernet {
 public:
 
@@ -51,7 +53,6 @@ public:
       static_netmask,  ///< used only when use_dhcp=false
       static_gw;       ///< used only when use_dhcp=false
 
-
   void reset_defaults();
 
   void read_from_json(JsonObjectConst serialized_conf);
@@ -61,20 +62,3 @@ public:
 };
 
 } // namespace ethernet
-
-
-namespace msg {
-
-namespace handlers {
-
-class GetEthernetStatus : public MessageHandler {
-public:
-  ethernet::UserDefinedEthernet& eth;
-  net::EthernetServer& server;
-  GetEthernetStatus(ethernet::UserDefinedEthernet& eth, net::EthernetServer& server) : eth(eth), server(server) {}
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-}
-
-}

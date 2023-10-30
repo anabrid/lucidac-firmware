@@ -68,6 +68,7 @@ cpp_code = \
 
 """ + "\n".join([
   cstring(oem_name=item["OEM"]),
+  cstring(model_name=item["model"]["name"]),
   cstring(appliance_serial_number=item["device_serials"]["serial_number"]),
   cuuid(appliance_serial_uuid=item["device_serials"]["uuid"]),
   cstring(appliance_registration_link=item["device_serials"]["registration_link"]),

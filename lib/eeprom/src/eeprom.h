@@ -28,6 +28,7 @@
 
 #include "message_handlers.h"
 #include "persistent_eth.h"
+#include "user_auth.h"
 
 namespace eeprom {
 
@@ -46,6 +47,7 @@ public:
   // Settings are managed in their relevant subclasses.
   // Here: network-related settings
   ethernet::UserDefinedEthernet ethernet;
+  auth::UserPasswordAuthentification auth;
   // put other persistent entities here...
 
   void reset_defaults();   ///< reset to system default (also calls write_to_eeprom)

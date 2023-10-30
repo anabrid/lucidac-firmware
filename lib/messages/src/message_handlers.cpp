@@ -25,8 +25,15 @@
 
 #include "message_handlers.h"
 
+#include "persistent_eth.h"
+#include "user_auth.h"
+#include "distributor.h"
+
 std::map<std::string, msg::handlers::MessageHandler *> msg::handlers::Registry::_registry{
     {"ping", new PingRequestHandler{}}};
+
+std::map<std::string, auth::SecurityLevel> msg::handlers::Registry::_clearance{
+    {"ping", auth::SecurityLevel::RequiresNothing}};
 
 msg::handlers::MessageHandler *msg::handlers::Registry::get(const std::string &msg_type) {
   auto found = _registry.find(msg_type);
@@ -37,14 +44,23 @@ msg::handlers::MessageHandler *msg::handlers::Registry::get(const std::string &m
   }
 }
 
+auth::SecurityLevel msg::handlers::Registry::requiredClearance(const std::string &msg_type) {
+  auto found = _clearance.find(msg_type);
+  if (found != _clearance.end()) {
+    return found->second;
+  } else {
+    return auth::SecurityLevel::RequiresNothing;
+  }
+}
+
 bool msg::handlers::Registry::set(const std::string &msg_type, msg::handlers::MessageHandler *handler,
-                                  bool overwrite) {
+                                  auth::SecurityLevel minimumClearance) {
   auto found = _registry.find(msg_type);
-  if (found != _registry.end() && !overwrite) {
+  if (found != _registry.end()) {
     return false;
   } else {
-    // TODO: Overwritten message handlers should be freed
     _registry[msg_type] = handler;
+    _clearance[msg_type] = minimumClearance;
     return true;
   }
 }
@@ -52,4 +68,18 @@ bool msg::handlers::Registry::set(const std::string &msg_type, msg::handlers::Me
 bool msg::handlers::PingRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
   msg_out["now"] = "2007-08-31T16:47+01:00";
   return false;
+}
+
+bool msg::handlers::GetSystemStatus::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+  auto odist = msg_out.createNestedObject("dist");
+  dist::Distributor d;
+  d.write_to_json(odist, /* include_secrets */ false);
+
+  auto oauth = msg_out.createNestedObject("auth");
+  _auth.status(oauth);
+
+  auto oeth = msg_out.createNestedObject("ethernet");
+  ethernet::status(oeth);
+
+  return true;
 }

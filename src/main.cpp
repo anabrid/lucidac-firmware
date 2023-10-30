@@ -7,6 +7,7 @@
 #include "run.h"
 #include "eeprom.h"
 #include "serial_lines.h"
+#include "user_auth.h"
 
 utils::SerialLineReader serial_line_reader;
 net::EthernetServer server;
@@ -62,26 +63,26 @@ void setup() {
   }
 
   // Register message handler
-  msg::handlers::Registry::set("hack", new HackMessageHandler());
-  msg::handlers::Registry::set("set_config", new msg::handlers::SetConfigMessageHandler(carrier_));
-  msg::handlers::Registry::set("get_config", new msg::handlers::GetConfigMessageHandler(carrier_));
-  msg::handlers::Registry::set("get_entities", new msg::handlers::GetEntitiesRequestHandler(carrier_));
-  msg::handlers::Registry::set("start_run", new msg::handlers::StartRunRequestHandler(run::RunManager::get()));
+  msg::handlers::Registry::set("hack", new HackMessageHandler(), auth::SecurityLevel::RequiresNothing);
+  msg::handlers::Registry::set("set_config", new msg::handlers::SetConfigMessageHandler(carrier_), auth::SecurityLevel::RequiresLogin);
+  msg::handlers::Registry::set("get_config", new msg::handlers::GetConfigMessageHandler(carrier_), auth::SecurityLevel::RequiresLogin);
+  msg::handlers::Registry::set("get_entities", new msg::handlers::GetEntitiesRequestHandler(carrier_), auth::SecurityLevel::RequiresLogin);
+  msg::handlers::Registry::set("start_run", new msg::handlers::StartRunRequestHandler(run::RunManager::get()), auth::SecurityLevel::RequiresLogin);
 
-  // TODO: It would be much cleaner if the Hybrid Controller configuration would be just part of the get_config/set_config idiom
-  //   because with this notation, we double the setter/getter.
-  //   Also, why can't we handle this with lambdas? That would avoid all that observer pattern boilerplate.
-  msg::handlers::Registry::set("get_settings", new msg::handlers::GetSettingsHandler(settings));
-  msg::handlers::Registry::set("update_settings", new msg::handlers::SetSettingsHandler(settings));
-  msg::handlers::Registry::set("reset_settings", new msg::handlers::ResetSettingsHandler(settings));
+  // TODO: It would be somewhat cleaner if the Hybrid Controller settings would be just part of the get_config/set_config idiom
+  //   because with this notation, we double the need for setters and getters.
+  msg::handlers::Registry::set("get_settings", new msg::handlers::GetSettingsHandler(settings), auth::SecurityLevel::RequiresAdmin);
+  msg::handlers::Registry::set("update_settings", new msg::handlers::SetSettingsHandler(settings), auth::SecurityLevel::RequiresAdmin);
+  msg::handlers::Registry::set("reset_settings", new msg::handlers::ResetSettingsHandler(settings), auth::SecurityLevel::RequiresAdmin);
 
-  msg::handlers::Registry::set("eth_status", new msg::handlers::GetEthernetStatus(settings.ethernet, server));
+  msg::handlers::Registry::set("status", new msg::handlers::GetSystemStatus(settings.auth), auth::SecurityLevel::RequiresNothing);
+  msg::handlers::Registry::set("login", new msg::handlers::LoginHandler(settings.auth), auth::SecurityLevel::RequiresNothing);
 
   // Done.
   LOG(ANABRID_DEBUG_INIT, "Initialization done.");
 }
 
-bool handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out) {
+bool handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out, auth::AuthentificationContext &user_context) {
   // Unpack metadata from envelope
   std::string msg_id = envelope_in["id"];
   std::string msg_type = envelope_in["type"];
@@ -94,31 +95,40 @@ bool handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out) {
 
   // Select message handler
   auto msg_handler = msg::handlers::Registry::get(msg_type);
+  auto requiredClearance = msg::handlers::Registry::requiredClearance(msg_type);
+  bool success = true;
   if (!msg_handler) {
     // No handler for message known
-    envelope_out["success"] = false;
-    envelope_out["error"] = "Unknown message type.";
+    success = false;
+    msg_out["error"] = "Unknown message type.";
+  } else if(!user_context.cando(requiredClearance)) {
+    success = false;
+    msg_out["error"] = "User is not authorized for action";
+  } else if(msg_type == "login") {
+    success = ((msg::handlers::LoginHandler*)msg_handler)->
+                           handle(envelope_in["msg"].as<JsonObjectConst>(), msg_out, user_context);
   } else {
-    // Let handler handle message
-    if (!msg_handler->handle(envelope_in["msg"].as<JsonObjectConst>(), msg_out)) {
-      // Message could not be handled, mark envelope as unsuccessful
-      envelope_out["success"] = false;
-      envelope_out["error"] = msg_out["error"];
-      envelope_out.remove("msg");
-      Serial.println("Error while handling message.");
-    }
+    success = msg_handler->handle(envelope_in["msg"].as<JsonObjectConst>(), msg_out);
   }
 
-  Serial.println("within handleMessage, this is what msg_out is:");
-  serializeJson(envelope_out, Serial);
-  Serial.println("Now handing back");
+  if (!success) {
+    // Message could not be handled, mark envelope as unsuccessful
+    envelope_out["success"] = false;
+    envelope_out["error"] = msg_out["error"];
+    envelope_out.remove("msg");
+    Serial.println("Error while handling message.");
+  }
 
   // If message generated a response or an error, actually sent it out
   return (!msg_out.isNull() or !envelope_out["success"].as<bool>());
 }
 
 
-void process_serial_input(char* line) {
+void process_serial_input() {
+  char* line = serial_line_reader.line_available();
+  if(!line) return;
+
+  static auth::AuthentificationContext admin_context{settings.auth, auth::UserPasswordAuthentification::admin};
   DynamicJsonDocument envelope_in(4096), envelope_out(4096);
   auto error = deserializeJson(envelope_in, line);
   if (error == DeserializationError::Code::EmptyInput) {
@@ -130,28 +140,25 @@ void process_serial_input(char* line) {
     Serial.println(error.c_str());
   } else {
     auto envelope_out_obj = envelope_out.to<JsonObject>();
-    if(handleMessage(envelope_in.as<JsonObjectConst>(), envelope_out_obj)) {
+    if(handleMessage(envelope_in.as<JsonObjectConst>(), envelope_out_obj, admin_context)) {
       serializeJson(envelope_out_obj, Serial);
       Serial.println();
     }
   }
 }
 
-void peek_serial_input() {
-  char* line = serial_line_reader.line_available();
-  if(line) process_serial_input(line);
-}
-
 void loop() {
   net::EthernetClient connection = server.accept();
   auto &run_manager = run::RunManager::get();
 
-  peek_serial_input();
+  process_serial_input();
 
   if (connection) {
     Serial.print("Client connected from ");
     connection.remoteIP().printTo(Serial);
     Serial.println();
+
+    auth::AuthentificationContext user_context{ settings.auth };
 
     // Reserve space for JSON communication
     // TODO: This must probably be global for all clients
@@ -172,7 +179,7 @@ void loop() {
         Serial.println(error.c_str());
       } else {
         auto envelope_out_obj = envelope_out.to<JsonObject>();
-        if(handleMessage(envelope_in.as<JsonObjectConst>(), envelope_out_obj)) {
+        if(handleMessage(envelope_in.as<JsonObjectConst>(), envelope_out_obj, user_context)) {
           serializeJson(envelope_out_obj, Serial);
           serializeJson(envelope_out_obj, connection);
           if (!connection.writeFully("\n"))
@@ -180,7 +187,7 @@ void loop() {
         }
       }
 
-      peek_serial_input();
+      process_serial_input();
 
       // Fake run for now
       if (!run_manager.queue.empty()) {

@@ -16,34 +16,41 @@ void dump_ip(const IPAddress& ip, JsonArray target) {
 }
 
 void ethernet::UserDefinedEthernet::reset_defaults() {
-    server_port = 5732;
-    use_dhcp = true;
+  server_port = 5732;
+  use_dhcp = true;
 
-    // Note that the default hostname by QNEthernet is teensy-lwip.
-    // Instead, here we choose something unique to the device.
+  // Note that the default hostname by QNEthernet is teensy-lwip.
+  // Instead, here we choose something unique to the device.
 
-    byte mac[6]; char mac_str[50];
-    net::Ethernet.macAddress(mac);
-    sprintf(mac_str, "lucidac-%02X-%02X-%02X", mac[3], mac[4], mac[5]);
-    hostname = mac_str;
+  byte mac[6];
+  char mac_str[50];
+  net::Ethernet.macAddress(mac);
+  sprintf(mac_str, "lucidac-%02X-%02X-%02X", mac[3], mac[4], mac[5]);
+  hostname = mac_str;
 
-    static_ipaddr  = IPAddress(192, 168,   1, 100);
-    static_netmask = IPAddress(255, 255, 255,   0);
-    static_gw      = IPAddress(192, 168,   1,   1);
+  static_ipaddr = IPAddress(192, 168, 1, 100);
+  static_netmask = IPAddress(255, 255, 255, 0);
+  static_gw = IPAddress(192, 168, 1, 1);
 }
 
-
 void ethernet::UserDefinedEthernet::read_from_json(JsonObjectConst serialized_conf) {
-    server_port = serialized_conf["server_port"];
-    use_dhcp = serialized_conf["use_dhcp"];
+    if(serialized_conf.containsKey("server_port"))
+        server_port = serialized_conf["server_port"];
+    if(serialized_conf.containsKey("use_dhcp"))
+        use_dhcp = serialized_conf["use_dhcp"];
 
-    std::string _hostname = serialized_conf["hostname"];
-    hostname = _hostname.c_str(); // maybe there is a better way...
+    if(serialized_conf.containsKey("hostname")) {
+        std::string _hostname = serialized_conf["hostname"];
+        hostname = _hostname.c_str(); // maybe there is a better way...
+    }
 
     for(int i=0; i<4; i++) {
-        static_ipaddr[i] = serialized_conf["static_ipaddr"][i];
-        static_netmask[i] = serialized_conf["static_netmask"][i];
-        static_gw[i] = serialized_conf["static_gw"][i];
+        if(serialized_conf.containsKey("static_ipaddr"))
+            static_ipaddr[i] = serialized_conf["static_ipaddr"][i];
+        if(serialized_conf.containsKey("static_netmask"))
+            static_netmask[i] = serialized_conf["static_netmask"][i];
+        if(serialized_conf.containsKey("static_gw"))
+            static_gw[i] = serialized_conf["static_gw"][i];
     }
 }
 
@@ -90,7 +97,7 @@ void ethernet::UserDefinedEthernet::begin(net::EthernetServer *server) {
     (*server).begin();
 }
 
-bool msg::handlers::GetEthernetStatus::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+void ethernet::status(JsonObject &msg_out) {
     msg_out["interfaceStatus"] = net::Ethernet.interfaceStatus();
     msg_out["mac"] = ethernet::system_mac_as_string();
 
@@ -113,6 +120,4 @@ bool msg::handlers::GetEthernetStatus::handle(JsonObjectConst msg_in, JsonObject
     //// this handler shall report the actual state.
     // auto settings = msg_out.createNestedObject("settings");
     // eth.write_to_json(settings);
-   
-    return true;
 }

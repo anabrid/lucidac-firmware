@@ -43,11 +43,11 @@ namespace dist {
  * The cumbersome function call-notation is used in order to require RAM only when
  * access is needed. This is only really relevant for the strings, but PROGMEM requires
  * a copy to RAM in order to be used as char* anyway, so yeah, this is where we are now.
+ * 
+ * This class is actually a namespace and can be used as a singleton.
  **/
 class Distributor {
 public:
-    Distributor();
-
     String        oem_name() const;
     String        model_name() const;
 
@@ -61,7 +61,7 @@ public:
 
     String         default_admin_password() const;
 
-    void write_to_json(JsonObject target) const;
+    void write_to_json(JsonObject target, bool include_secrets=true) const;
 
 };
 

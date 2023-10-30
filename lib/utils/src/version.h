@@ -12,7 +12,7 @@ namespace utils {
  * Semantic Versioning. Usage like
  * Version{ 0, 0, 1}
  **/
-struct Version : public Printable {
+struct Version { // : public Printable { // no inheritance to maintain POD
     uint8_t major, minor, patch;
 
     uint8_t at(uint8_t i) const {

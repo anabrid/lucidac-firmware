@@ -28,25 +28,42 @@
 #include <ArduinoJson.h>
 #include <map>
 
+namespace auth { // forward declaration to avoid include loops
+  enum class SecurityLevel;
+  class UserPasswordAuthentification;
+}
+
 namespace msg {
 
 namespace handlers {
 
 class MessageHandler {
 public:
+  /**
+   * @return Whether the handling was successful or not 
+   **/
   virtual bool handle(JsonObjectConst msg_in, JsonObject &msg_out) = 0;
 };
 
 class Registry {
   static std::map<std::string, MessageHandler *> _registry;
+  static std::map<std::string, auth::SecurityLevel> _clearance;
 
 public:
   static MessageHandler *get(const std::string& msg_type);
-  static bool set(const std::string& msg_type, msg::handlers::MessageHandler *handler, bool overwrite = false);
+  static auth::SecurityLevel requiredClearance(const std::string& msg_type);
+  static bool set(const std::string& msg_type, msg::handlers::MessageHandler *handler, auth::SecurityLevel minimumClearance);
 };
 
 class PingRequestHandler : public MessageHandler {
 public:
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+};
+
+class GetSystemStatus : public MessageHandler {
+  auth::UserPasswordAuthentification& _auth;
+public:
+  GetSystemStatus(auth::UserPasswordAuthentification& auth) : _auth(auth) {}
   bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 

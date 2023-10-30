@@ -1,6 +1,6 @@
 #include "distributor.h"
 
-void dist::Distributor::write_to_json(JsonObject target) const {
+void dist::Distributor::write_to_json(JsonObject target, bool include_secrets) const {
   target["OEM"] = oem_name();
 
   auto model = target.createNestedObject("model");
@@ -8,8 +8,10 @@ void dist::Distributor::write_to_json(JsonObject target) const {
   
   auto appliance = target.createNestedObject("appliance");
   appliance["serial_number"] = appliance_serial_number();
-  appliance["serial_uuid"] = appliance_serial_uuid().toString();
-  appliance["registration_link"] = appliance_registration_link();
+  if(include_secrets) {
+    appliance["serial_uuid"] = appliance_serial_uuid().toString();
+    appliance["registration_link"] = appliance_registration_link();
+  }
 
   auto versions = target.createNestedObject("versions");
   for(int i=0; i<3; i++) {
@@ -17,7 +19,9 @@ void dist::Distributor::write_to_json(JsonObject target) const {
     versions["protocol"][i] = protocol_version().at(i);
   }
 
-  auto passwords = target.createNestedObject("passwords");
-  passwords["admin"] = default_admin_password();
+  if(include_secrets) {
+    auto passwords = target.createNestedObject("passwords");
+    passwords["admin"] = default_admin_password();
+  }
 
 }
