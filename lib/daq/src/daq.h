@@ -25,18 +25,24 @@
 
 #pragma once
 
-#include <FlexIO_t4.h>
 #include <array>
+
+#include <ArduinoJson.h>
+#include <DMAChannel.h>
+#include <FlexIO_t4.h>
+
+#include "daq_base.h"
+#include "run.h"
+#include "serializer.h"
 
 /// @brief Routines for Data Aquisition (DAQ) / Analog2Digital converters (ADCs)
 namespace daq {
 
-constexpr uint8_t NUM_CHANNELS = 8;
-constexpr uint8_t PIN_CNVST = 7;
-constexpr uint8_t PIN_CLK = 6;
-constexpr std::array<uint8_t, NUM_CHANNELS> PINS_MISO = {34, 35, 36, 37, 11, 10, 9, 8};
-
-typedef std::array<float, NUM_CHANNELS> data_vec_t;
+namespace dma {
+// BUFFER_SIZE *must* be a power-of-two number of bytes
+constexpr size_t BUFFER_SIZE = 32 * NUM_CHANNELS;
+std::array<volatile uint32_t, BUFFER_SIZE> get_buffer();
+}
 
 class BaseDAQ {
 protected:
@@ -47,6 +53,8 @@ public:
   virtual bool init(unsigned int sample_rate) = 0;
 
   static float raw_to_float(uint16_t raw);
+  static size_t raw_to_normalized(uint16_t raw);
+  static const char *raw_to_str(uint16_t raw);
 
   virtual std::array<uint16_t, NUM_CHANNELS> sample_raw() = 0;
   virtual std::array<float, NUM_CHANNELS> sample() = 0;
@@ -54,21 +62,39 @@ public:
   std::array<float, NUM_CHANNELS> sample_avg(size_t samples, unsigned int delay_us);
 };
 
-class FlexIODAQ : public BaseDAQ {
-private:
+
+class ContinuousDAQ: public BaseDAQ {
+protected:
+  run::Run& run;
+  DAQConfig daq_config;
+  run::RunDataHandler* run_data_handler{};
+
+public:
+  ContinuousDAQ(run::Run &run, const DAQConfig &daq_config, run::RunDataHandler *run_data_handler);
+
+  bool stream();
+};
+
+
+class FlexIODAQ : public ContinuousDAQ {
   FlexIOHandler *flexio;
 
   uint8_t _flexio_pin_cnvst;
   uint8_t _flexio_pin_clk;
+  uint8_t _flexio_pin_gate;
   std::array<uint8_t, NUM_CHANNELS> _flexio_pins_miso;
 
 public:
-  FlexIODAQ();
+  FlexIODAQ(run::Run& run, DAQConfig &daq_config, run::RunDataHandler *run_data_handler);
 
-  bool init(unsigned int sample_rate) override;
-  bool _init_cnvst(unsigned int sample_rate);
+  bool init(unsigned int) override;
+  bool finalize();
   void enable();
-  bool _init_clk();
+  void reset();
+
+  std::array<uint16_t, NUM_CHANNELS> sample_raw() override;
+  std::array<float, NUM_CHANNELS> sample() override;
+  float sample(uint8_t index) override;
 };
 
 /**

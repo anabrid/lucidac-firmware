@@ -25,38 +25,44 @@
 
 #pragma once
 
-// The actual logging call
-#define __LOG(message) Serial.println(message);
+#include "run.h"
 
-// A logging macro, which accepts an optional LOG_FLAG (e.g. ANABRID_DEBUG_INIT) and a message.
-#define LOG(LOG_FLAG, message) LOG_##LOG_FLAG(message)
-#define LOG_ERROR(message) __LOG(message)
-#define LOG_ALWAYS(message) __LOG(message)
+namespace run {
 
-// Unfortunately, we need to define the actual logging macro for each LOG_FLAG we want to use.
-// Possibly, we can do some macro magic in the future.
-// But probably not, because checking for the defined'ness of a macro inside another macro is not possible.
+class RunManager {
+private:
+  static RunManager _instance;
 
-#ifdef ANABRID_DEBUG
-#define LOG_ANABRID_DEBUG(message) __LOG(message)
-#else
-#define LOG_ANABRID_DEBUG(message) ((void)0)
-#endif
+protected:
+  RunManager() = default;
 
-#ifdef ANABRID_DEBUG_INIT
-#define LOG_ANABRID_DEBUG_INIT(message) __LOG(message)
-#else
-#define LOG_ANABRID_DEBUG_INIT(message) ((void)0)
-#endif
+public:
+  std::queue<run::Run> queue;
 
-#ifdef ANABRID_DEBUG_STATE
-#define LOG_ANABRID_DEBUG_STATE(message) __LOG(message)
-#else
-#define LOG_ANABRID_DEBUG_STATE(message) ((void)0)
-#endif
+  RunManager(RunManager &other) = delete;
+  void operator=(const RunManager &other) = delete;
 
-#ifdef ANABRID_DEBUG_DAQ
-#define LOG_ANABRID_DEBUG_DAQ(message) __LOG(message)
-#else
-#define LOG_ANABRID_DEBUG_DAQ(message) ((void)0)
-#endif
+  static RunManager &get() { return _instance; }
+
+  void run_next(run::RunStateChangeHandler *state_change_handler, run::RunDataHandler *run_data_handler);
+};
+
+} // namespace run
+
+namespace msg {
+
+namespace handlers {
+
+class StartRunRequestHandler : public MessageHandler {
+protected:
+  run::RunManager &manager;
+
+public:
+  explicit StartRunRequestHandler(run::RunManager &run_manager) : manager(run_manager) {}
+
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+};
+
+} // namespace handlers
+
+} // namespace msg

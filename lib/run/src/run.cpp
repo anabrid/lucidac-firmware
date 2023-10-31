@@ -23,56 +23,34 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#include "mode.h"
 #include "run.h"
 
 #include <utility>
-
-run::RunManager run::RunManager::_instance{};
-
-void run::RunManager::run_next(run::RunStateChangeHandler *state_change_handler) {
-  auto run = queue.front();
-
-  if (!mode::FlexIOControl::init(run.config.ic_time, run.config.op_time)) {
-    auto change = run.to(RunState::ERROR, 0);
-    state_change_handler->handle(change, run);
-    queue.pop();
-    return;
-  }
-  mode::FlexIOControl::force_start();
-  mode::FlexIOControl::delay_till_done();
-  auto actual_op_time = mode::FlexIOControl::get_actual_op_time();
-
-  // DONE
-  auto change = run.to(RunState::DONE, actual_op_time);
-  state_change_handler->handle(change, run);
-  queue.pop();
-}
 
 run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
   return {
       .ic_time = json["ic_time"], .op_time = json["op_time"], .halt_on_overload = json["halt_on_overload"]};
 }
 
-run::Run::Run(std::string id, const run::RunConfig &config) : id(std::move(id)), config(config) {}
+run::Run::Run(std::string id, const run::RunConfig &config)
+    : id(std::move(id)), config(config), daq_config{} {}
+
+run::Run::Run(std::string id, const run::RunConfig &config, const daq::DAQConfig &daq_config)
+    : id(std::move(id)), config(config), daq_config(daq_config) {}
 
 run::Run run::Run::from_json(JsonObjectConst &json) {
   auto json_run_config = json["config"].as<JsonObjectConst>();
   auto run_config = RunConfig::from_json(json_run_config);
-  return {json["id"].as<std::string>(), run_config};
+  auto daq_config = daq::DAQConfig::from_json(json["daq_config"].as<JsonObjectConst>());
+  auto id = json["id"].as<std::string>();
+  if (id.size() != 32 + 4) {
+    id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
+  }
+  return {id, run_config, daq_config};
 }
 
 run::RunStateChange run::Run::to(run::RunState new_state, unsigned int t) {
   auto old = state;
   state = new_state;
   return {t, old, state};
-}
-
-bool msg::handlers::StartRunRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  if (!msg_in.containsKey("id") or !msg_in["id"].is<std::string>())
-    return false;
-  // Create run and put it into queue
-  auto run = run::Run::from_json(msg_in);
-  manager.queue.push(std::move(run));
-  return true;
 }

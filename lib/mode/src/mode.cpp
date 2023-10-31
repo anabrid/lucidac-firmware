@@ -245,8 +245,7 @@ void mode::FlexIOControl::reset() {
 }
 
 void mode::FlexIOControl::delay_till_done() {
-  auto flexio = FlexIOHandler::flexIOHandler_list[0];
-  while (flexio->port().SHIFTSTATE != s_end) {
+  while (!is_done()) {
   }
 }
 
@@ -294,4 +293,9 @@ void mode::FlexIOControl::_init_qtmr_op() {
 unsigned long long mode::FlexIOControl::get_actual_op_time() {
   // TODO: This is currently measured, but of course it can be calculated
   return (TMR1_CNTR2 * 0xFFFF + TMR1_CNTR1) * 671 / 100;
+}
+
+bool mode::FlexIOControl::is_done() {
+  auto flexio = FlexIOHandler::flexIOHandler_list[0];
+  return flexio->port().SHIFTSTATE == s_end;
 }
