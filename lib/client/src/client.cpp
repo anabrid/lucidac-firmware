@@ -28,6 +28,7 @@
 #include <bitset>
 
 #include "daq.h"
+#include "run.h"
 
 void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange change, const run::Run &run) {
   envelope_out.clear();
@@ -43,13 +44,14 @@ void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange
   client.writeFully("\n");
 }
 
-client::RunDataNotificationHandler::RunDataNotificationHandler(net::EthernetClient &client,
+client::RunDataNotificationHandler::RunDataNotificationHandler(carrier::Carrier &carrier,
+                                                               net::EthernetClient &client,
                                                                DynamicJsonDocument &envelopeOut)
-    : client(client), envelope_out(envelopeOut) {}
+    : carrier(carrier), client(client), envelope_out(envelopeOut) {}
 
 void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t outer_count,
                                                 size_t inner_count, const run::Run &run) {
-  //digitalWriteFast(LED_BUILTIN, HIGH);
+  // digitalWriteFast(LED_BUILTIN, HIGH);
   auto buffer = str_buffer + BUFFER_LENGTH_STATIC;
   size_t inner_length = 3 + inner_count * 7 - 1;
   for (size_t outer_i = 0; outer_i < outer_count; outer_i++) {
@@ -58,12 +60,12 @@ void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t 
              daq::BaseDAQ::raw_to_str(data[outer_i * inner_count + inner_i]), 6);
     }
   }
-  //digitalWriteFast(LED_BUILTIN, LOW);
+  // digitalWriteFast(LED_BUILTIN, LOW);
 
-  //digitalWriteFast(18, HIGH);
+  // digitalWriteFast(18, HIGH);
   client.writeFully(str_buffer, actual_buffer_length);
   client.flush();
-  //digitalWriteFast(18, LOW);
+  // digitalWriteFast(18, LOW);
 }
 
 void client::RunDataNotificationHandler::init() {
@@ -76,7 +78,9 @@ void client::RunDataNotificationHandler::stream(volatile uint32_t *buffer, run::
 }
 
 void client::RunDataNotificationHandler::prepare(run::Run &run) {
-  Serial.println(__PRETTY_FUNCTION__);
+  memcpy(str_buffer, MESSAGE_START, strlen(MESSAGE_START));
+  memcpy(str_buffer + BUFFER_IDX_ENTITY_ID, carrier.get_entity_id().c_str(), BUFFER_LENGTH_ENTITY_ID);
+
   size_t inner_count = run.daq_config.get_num_channels();
   // We always stream half the buffer
   // TODO: Do not access daq::dma::BUFFER_SIZE directly, probably make it a template parameter.
@@ -101,7 +105,5 @@ void client::RunDataNotificationHandler::prepare(run::Run &run) {
     *(++buffer) = ',';
   }
   memcpy(buffer, MESSAGE_END, sizeof(MESSAGE_END) - 1);
-  // TODO: Figure out why there is one more special character left :)
-  str_buffer[actual_buffer_length - 2] = '\n';
   str_buffer[actual_buffer_length - 1] = '\n';
 }

@@ -110,7 +110,7 @@ void loop() {
 
     // Bind things to this client specifically
     client::RunStateChangeNotificationHandler run_state_change_handler{connection, envelope_out};
-    client::RunDataNotificationHandler run_data_handler{connection, envelope_out};
+    client::RunDataNotificationHandler run_data_handler{carrier_, connection, envelope_out};
 
     // Handle incoming messages
     while (connection) {

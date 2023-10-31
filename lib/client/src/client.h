@@ -29,6 +29,7 @@
 #include <QNEthernetClient.h>
 #include <QNEthernetUDP.h>
 
+#include "carrier.h"
 #include "daq.h"
 #include "run.h"
 
@@ -55,24 +56,30 @@ class RunDataNotificationHandler : public run::RunDataHandler {
 public:
   // TODO: This can become invalid on disconnects
   // TODO: Possibly needs locking/synchronizing with other writes
+  carrier::Carrier& carrier;
   net::EthernetClient &client;
   DynamicJsonDocument &envelope_out;
-  // TODO: At least de-duplicate some strings, so it doesn't explode the second someone touches it.
-  static constexpr auto MESSAGE_END = "]}}";
-  static constexpr size_t BUFFER_LENGTH_STATIC =
-      sizeof(R"({ "type": "run_data", "msg": { "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", "data": [)") - sizeof('\0');
-  static constexpr size_t BUFFER_IDX_RUN_ID = 38;
-  static constexpr size_t BUFFER_LENGTH_RUN_ID = 32+4;
-  static constexpr size_t BUFFER_LENGTH =
-      BUFFER_LENGTH_STATIC + daq::dma::BUFFER_SIZE / 2 * sizeof("[sD.FFF]") + sizeof(MESSAGE_END);
-  char str_buffer[BUFFER_LENGTH] = R"({ "type": "run_data", "msg": { "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", "data": [)";
-  net::EthernetUDP udp{};
 
 private:
+  // TODO: At least de-duplicate some strings, so it doesn't explode the second someone touches it.
+  static constexpr decltype(auto) MESSAGE_START =
+      R"({ "type": "run_data", "msg": { "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", "entity": ["XX-XX-XX-XX-XX-XX", "0"], "data": [)";
+  static constexpr decltype(auto) MESSAGE_END = "]}}";
+  static constexpr size_t BUFFER_LENGTH_STATIC = sizeof(MESSAGE_START) - sizeof('\0');
+  static constexpr size_t BUFFER_IDX_RUN_ID = 38;
+  static constexpr size_t BUFFER_LENGTH_RUN_ID = 32 + 4;
+  static constexpr size_t BUFFER_IDX_ENTITY_ID = 89;
+  static constexpr size_t BUFFER_LENGTH_ENTITY_ID = 12 + 5;
+  static constexpr size_t BUFFER_LENGTH =
+      BUFFER_LENGTH_STATIC + daq::dma::BUFFER_SIZE / 2 * sizeof("[sD.FFF]") + sizeof(MESSAGE_END);
+  char str_buffer[BUFFER_LENGTH]{};
+  net::EthernetUDP udp{};
+
   size_t actual_buffer_length = BUFFER_LENGTH;
 
 public:
-  RunDataNotificationHandler(net::EthernetClient &client, DynamicJsonDocument &envelopeOut);
+  RunDataNotificationHandler(carrier::Carrier &carrier, net::EthernetClient &client,
+                             DynamicJsonDocument &envelopeOut);
 
   void init() override;
   void prepare(run::Run &run) override;
