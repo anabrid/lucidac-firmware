@@ -61,7 +61,8 @@ void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t 
   //digitalWriteFast(LED_BUILTIN, LOW);
 
   //digitalWriteFast(18, HIGH);
-  udp.send(client.remoteIP(), 5733, reinterpret_cast<const uint8_t *>(str_buffer), actual_buffer_length);
+  client.writeFully(str_buffer, actual_buffer_length);
+  client.flush();
   //digitalWriteFast(18, LOW);
 }
 

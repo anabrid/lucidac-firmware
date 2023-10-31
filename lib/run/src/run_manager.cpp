@@ -31,14 +31,10 @@
 run::RunManager run::RunManager::_instance{};
 
 void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler) {
+  // TODO: Improve handling of queue, especially the queue.pop() later.
   auto run = queue.front();
   run_data_handler->prepare(run);
 
-  // LED used as debug
-  // TODO: REMOVE ALL DEBUG
-  pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(18, OUTPUT);
-  digitalWriteFast(18, LOW);
   daq::FlexIODAQ daq_{run, run.daq_config, run_data_handler};
   daq_.reset();
   if (!mode::FlexIOControl::init(run.config.ic_time, run.config.op_time) or !daq_.init(0)) {
@@ -71,30 +67,6 @@ void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunD
   //}
 
   auto actual_op_time = mode::FlexIOControl::get_actual_op_time();
-  // TODO: REMOVE ALL DEBUG
-  /*
-  Serial.println("Error flags");
-  Serial.println(std::bitset<32>(daq_.flexio->port().SHIFTERR).to_string().c_str());
-  Serial.println("DMA channel properties");
-  Serial.println(daq_.get_dma_channel().TCD->CITER);
-  Serial.println("DMA buffer content");
-  for (auto data : daq::dma::get_buffer()) {
-    Serial.print(std::bitset<32>(data).to_string().c_str());
-    Serial.print("    ");
-    Serial.println(daq::BaseDAQ::raw_to_str(data));
-  }
-  Serial.println("Normalized buffer content");
-  for (auto data : daq::get_normalized_buffer()) {
-    Serial.println(data);
-  }
-  Serial.println("Float buffer content");
-  for (auto data : daq::get_float_buffer()) {
-    Serial.println(data);
-  }
-  digitalToggleFast(LED_BUILTIN);
-  run_data_handler->handle(decltype(daq_)::dma_buffer.data(), daq::dma::BUFFER_SIZE/daq::NUM_CHANNELS,
-  daq::NUM_CHANNELS, run); digitalToggleFast(LED_BUILTIN);
-  */
 
   // Finalize data acquisition
   if (!daq_.finalize()) {

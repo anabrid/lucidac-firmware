@@ -7,6 +7,7 @@
 #include "logging.h"
 #include "message_handlers.h"
 #include "run.h"
+#include "run_manager.h"
 
 #define _ERROR_OUT_                                                                                           \
   while (true) {                                                                                              \

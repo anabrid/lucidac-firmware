@@ -57,14 +57,15 @@ public:
   // TODO: Possibly needs locking/synchronizing with other writes
   net::EthernetClient &client;
   DynamicJsonDocument &envelope_out;
-  static constexpr auto MESSAGE_END = "]}";
+  // TODO: At least de-duplicate some strings, so it doesn't explode the second someone touches it.
+  static constexpr auto MESSAGE_END = "]}}";
   static constexpr size_t BUFFER_LENGTH_STATIC =
-      sizeof(R"({ "run_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", "data": [)") - sizeof('\0');
-  static constexpr size_t BUFFER_IDX_RUN_ID = 13;
+      sizeof(R"({ "type": "run_data", "msg": { "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", "data": [)") - sizeof('\0');
+  static constexpr size_t BUFFER_IDX_RUN_ID = 38;
   static constexpr size_t BUFFER_LENGTH_RUN_ID = 32+4;
   static constexpr size_t BUFFER_LENGTH =
       BUFFER_LENGTH_STATIC + daq::dma::BUFFER_SIZE / 2 * sizeof("[sD.FFF]") + sizeof(MESSAGE_END);
-  char str_buffer[BUFFER_LENGTH] = R"({ "run_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", "data": [)";
+  char str_buffer[BUFFER_LENGTH] = R"({ "type": "run_data", "msg": { "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", "data": [)";
   net::EthernetUDP udp{};
 
 private:
