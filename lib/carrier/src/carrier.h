@@ -93,5 +93,12 @@ public:
   bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
+class ResetRequestHandler : public CarrierMessageHandlerBase {
+public:
+  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
+
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+};
+
 } // namespace handlers
 } // namespace msg

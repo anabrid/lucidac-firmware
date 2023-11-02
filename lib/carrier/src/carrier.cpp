@@ -81,7 +81,7 @@ std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
 }
 
 void carrier::Carrier::write_to_hardware() {
-  for (auto &cluster: clusters) {
+  for (auto &cluster : clusters) {
     cluster.write_to_hardware();
   }
 }
@@ -176,5 +176,15 @@ bool msg::handlers::GetEntitiesRequestHandler::handle(JsonObjectConst msg_in, Js
   auto serialized_data = R"({"00-00-00-00-00-00": {"/0": {"/M0": {"class": 2, "type": 0, "variant": 0, "version": 0}, "/M1": {"class": 2, "type": 1, "variant": 0, "version": 0}, "/U": {"class": 3, "type": 0, "variant": 0, "version": 0}, "/C": {"class": 4, "type": 0, "variant": 0, "version": 0}, "/I": {"class": 5, "type": 0, "variant": 0, "version": 0}, "class": 1, "type": 3, "variant": 0, "version": 0}, "class": 0, "type": 0, "variant": 0, "version": 0}})";
   std::memcpy((void*)(serialized_data + 2), (void*)(carrier.get_entity_id().c_str()), 17);
   msg_out["entities"] = serialized(serialized_data);
+  return true;
+}
+
+bool msg::handlers::ResetRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+  for (auto &cluster : carrier.clusters) {
+    cluster.reset(msg_in["keep_calibration"] | true);
+  }
+  if (msg_in["sync"] | true) {
+    carrier.write_to_hardware();
+  }
   return true;
 }
