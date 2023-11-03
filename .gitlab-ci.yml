@@ -23,10 +23,10 @@ build_docs:
   image: alpine # suggested in https://gitlab.com/pages/doxygen but shitty
   script:
     - apk update && apk add doxygen # TODO: this is slow, use proper image
-    - doxygen
+    - doxygen docs/Doxyfile
   artifacts:
     paths:
-      - docs
+      - docs/html
 
 release_job:
   stage: release

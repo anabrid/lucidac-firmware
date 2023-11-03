@@ -29,4 +29,4 @@ _deps
 .vscode/
 
 # Doxygen output
-docs/
+docs/html
