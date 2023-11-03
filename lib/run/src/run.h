@@ -29,6 +29,7 @@
 #include <queue>
 #include <string>
 
+#include "daq_base.h"
 #include "message_handlers.h"
 #include "mode.h"
 
@@ -62,11 +63,13 @@ public:
   const std::string id;
   RunConfig config;
   RunState state = RunState::NEW;
+  daq::DAQConfig daq_config;
 
 protected:
   std::queue<RunStateChange, std::array<RunStateChange, 7>> history;
 
 public:
+  Run(std::string id, const RunConfig &config, const daq::DAQConfig &daq_config);
   Run(std::string id, const RunConfig &config);
   static Run from_json(JsonObjectConst &json);
 
@@ -78,41 +81,14 @@ public:
   virtual void handle(run::RunStateChange change, const run::Run &run) = 0;
 };
 
-
-class RunManager {
-private:
-  static RunManager _instance;
-
-protected:
-  RunManager() = default;
-
+class RunDataHandler {
 public:
-  std::queue<Run> queue;
-
-  RunManager(RunManager &other) = delete;
-  void operator=(const RunManager &other) = delete;
-
-  static RunManager &get() { return _instance; }
-
-  void run_next(run::RunStateChangeHandler *state_change_handler);
+  volatile bool first_data = false;
+  volatile bool last_data = false;
+  virtual void init() {};
+  virtual void handle(volatile uint32_t *data, size_t outer_count, size_t inner_count, const run::Run &run) = 0;
+  virtual void stream(volatile uint32_t *buffer, run::Run &run) = 0;
+  virtual void prepare(Run& run) = 0;
 };
 
 } // namespace run
-
-namespace msg {
-
-namespace handlers {
-
-class StartRunRequestHandler : public MessageHandler {
-protected:
-  run::RunManager &manager;
-
-public:
-  explicit StartRunRequestHandler(run::RunManager &run_manager) : manager(run_manager) {}
-
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-} // namespace handlers
-
-} // namespace msg

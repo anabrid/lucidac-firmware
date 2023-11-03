@@ -9,6 +9,7 @@
 #include "eeprom.h"
 #include "serial_lines.h"
 #include "user_auth.h"
+#include "run_manager.h"
 
 utils::SerialLineReader serial_line_reader;
 net::EthernetServer server;
@@ -67,6 +68,7 @@ void setup() {
 
   // Register message handler
   msg::handlers::Registry::set("hack", new HackMessageHandler(), auth::SecurityLevel::RequiresNothing);
+  msg::handlers::Registry::set("reset", new msg::handlers::ResetRequestHandler(carrier_), auth::SecurityLevel::RequiresLogin); // TODO: Should probably be called "reset_config" or so, cf. reset_settings
   msg::handlers::Registry::set("set_config", new msg::handlers::SetConfigMessageHandler(carrier_), auth::SecurityLevel::RequiresLogin);
   msg::handlers::Registry::set("get_config", new msg::handlers::GetConfigMessageHandler(carrier_), auth::SecurityLevel::RequiresLogin);
   msg::handlers::Registry::set("get_entities", new msg::handlers::GetEntitiesRequestHandler(carrier_), auth::SecurityLevel::RequiresLogin);
@@ -176,6 +178,7 @@ void loop() {
     // Bind things to this client specifically
     // TODO: This should also report to the Serial console when no connection takes place
     client::RunStateChangeNotificationHandler run_state_change_handler{connection, envelope_out};
+    client::RunDataNotificationHandler run_data_handler{carrier_, connection, envelope_out};
 
     // Handle incoming messages
     while (connection) {
@@ -200,7 +203,7 @@ void loop() {
       // Fake run for now
       if (!run_manager.queue.empty()) {
         Serial.println("faking run");
-        run_manager.run_next(&run_state_change_handler);
+        run_manager.run_next(&run_state_change_handler, &run_data_handler);
       }
     }
 

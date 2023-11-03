@@ -23,34 +23,45 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#include "run.h"
+#pragma once
 
-#include <utility>
+#include <array>
+#include <cstdint>
 
-run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
-  return {
-      .ic_time = json["ic_time"], .op_time = json["op_time"], .halt_on_overload = json["halt_on_overload"]};
-}
+#include <ArduinoJson.h>
 
-run::Run::Run(std::string id, const run::RunConfig &config)
-    : id(std::move(id)), config(config), daq_config{} {}
+namespace daq {
 
-run::Run::Run(std::string id, const run::RunConfig &config, const daq::DAQConfig &daq_config)
-    : id(std::move(id)), config(config), daq_config(daq_config) {}
+constexpr uint8_t NUM_CHANNELS = 8;
 
-run::Run run::Run::from_json(JsonObjectConst &json) {
-  auto json_run_config = json["config"].as<JsonObjectConst>();
-  auto run_config = RunConfig::from_json(json_run_config);
-  auto daq_config = daq::DAQConfig::from_json(json["daq_config"].as<JsonObjectConst>());
-  auto id = json["id"].as<std::string>();
-  if (id.size() != 32 + 4) {
-    id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
-  }
-  return {id, run_config, daq_config};
-}
+constexpr uint8_t PIN_CNVST = 7;
+constexpr uint8_t PIN_CLK = 6;
+constexpr uint8_t PIN_GATE = 32;
+constexpr std::array<uint8_t, NUM_CHANNELS> PINS_MISO = {34, 35, 36, 37, 11, 10, 9, 8};
+constexpr unsigned int DEFAULT_SAMPLE_RATE = 400'000;
 
-run::RunStateChange run::Run::to(run::RunState new_state, unsigned int t) {
-  auto old = state;
-  state = new_state;
-  return {t, old, state};
+
+typedef std::array<float, NUM_CHANNELS> data_vec_t;
+
+class DAQConfig {
+  uint8_t num_channels = NUM_CHANNELS;
+  unsigned int sample_rate = DEFAULT_SAMPLE_RATE;
+  bool sample_op = true;
+  bool sample_op_end = true;
+
+public:
+  uint8_t get_num_channels() const;
+  unsigned int get_sample_rate() const;
+  bool should_sample_op() const;
+  bool should_sample_op_end() const;
+
+  bool is_valid() const;
+
+  explicit operator bool() const {
+      return num_channels and (sample_op or sample_op_end);
+  };
+
+  static DAQConfig from_json(JsonObjectConst&& json);
+};
+
 }
