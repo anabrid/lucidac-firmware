@@ -28,10 +28,8 @@
 #include <ArduinoJson.h>
 #include <map>
 
-namespace auth { // forward declaration to avoid include loops
-  enum class SecurityLevel;
-  class UserPasswordAuthentification;
-}
+#include "user_auth.h"
+
 
 namespace msg {
 

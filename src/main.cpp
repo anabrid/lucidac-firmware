@@ -9,6 +9,7 @@
 #include "eeprom.h"
 #include "serial_lines.h"
 #include "user_auth.h"
+#include "user_login.h"
 #include "run_manager.h"
 
 utils::SerialLineReader serial_line_reader;

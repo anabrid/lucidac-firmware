@@ -1,4 +1,5 @@
 #include "user_auth.h"
+#include "user_login.h"
 #include "distributor.h"
 
 void auth::UserPasswordAuthentification::reset_defaults() {
@@ -41,9 +42,11 @@ bool msg::handlers::LoginHandler::handle(JsonObjectConst msg_in, JsonObject &msg
   } else if(!auth.isvalid(new_user, msg_in["password"])) {
     msg_out["error"] = "Invalid username or password.";
 
+    // todo: besseren DEBUG flag für finden, vgl. https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/merge_requests/3#note_2361
     #if defined(ANABRID_DEBUG) || defined(ANABRID_DEBUG_INIT)
     // Show correct usernames and passwords on the console
     Serial.println("Since authentificiation failed and debug mode is on, this is the list of currently allowed passwords:");
+    // TODO: Use LOG statements instead of Serial.print.
     StaticJsonDocument<500> kvmap;
     auth.write_to_json(kvmap.to<JsonObject>());
     serializeJson(kvmap, Serial);
