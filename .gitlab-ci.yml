@@ -18,6 +18,15 @@ build_job:
       dotenv: .anabrid_build_result.env
     expire_in: 4 weeks
 
+build_docs:
+  stage: build
+  image: alpine # suggested in https://gitlab.com/pages/doxygen but shitty
+  script:
+    - apk update && apk add doxygen # TODO: this is slow, use proper image
+    - doxygen
+  artifacts:
+    paths:
+      - docs
 
 release_job:
   stage: release
@@ -38,3 +47,4 @@ release_job:
       links:
         - name: 'Firmware binary hex file'
           url: '$CI_PROJECT_URL/-/jobs/${ANABRID_BUILD_JOB_ID}/artifacts/raw/.pio/build/teensy41/firmware.hex'
+

@@ -1,11 +1,19 @@
 # LUCIDAC Hybrid Controller
 
-This repository holds the firmware for the hybrid controller of the LUCIDAC.
+This repository holds the firmware for the hybrid controller of the LUCIDAC/REDAC. It
+lives at https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller.
 
-## Users: Getting started
+It is supposed to run on a [Teensy 4.1](https://www.pjrc.com/teensy/), i.e. a 32bit
+600MHz Cortex-M7 with Ethernet chip.
 
-This section is intended for users of the LUCIDAC,
-who want to use it as is.
+This project uses [PlatformIO](https://platformio.org/) for the build system (`pio` in
+short). PlatformIO helps for building, flashing and can also be used within various IDEs.
+
+## Getting started as a USER
+
+This section is intended for users of the LUCIDAC, who want to use it as is.
+Users are generally only interested in communicating with a "ready to use" Teensy
+microcontroller. The user needs are to build or flash an image onto the microcontroller.
 
 ###  Flashing the latest firmware
 
@@ -17,9 +25,10 @@ artifacts, i.e. you should go to https://lab.analogparadigm.com/lucidac/firmware
 and look for the latest artifact from the *dev branch*. You can download
 the `artifacts.zip` and lookup the file in `.pio/build/teensy41/firmware.hex`
 
-Install the teensy flashing utility `teensy-loader-cli`
-and the udev rules from https://www.pjrc.com/teensy/00-teensy.rules
-to allow flashing the firmware image without prior building at your computer.
+Install the [teensy flashing utility](https://www.pjrc.com/teensy/loader_cli.html)
+`teensy-loader-cli` to allow flashing the firmware image without prior building at your computer.
+Don't forget to apply the [udev rules](https://www.pjrc.com/teensy/00-teensy.rules) if
+you work on a Linux computer which was not connected to a Teensy before.
 
 Connect your hybrid controller via the USB port to your computer
 and press the small flash button on the teensy board.
@@ -28,8 +37,8 @@ Execute `teensy_loader_cli --mcu=TEENSY41 firmware.hex` to flash your hybrid con
 
 ### Find the hybrid controller in the network
 
-By default, the hybrid controller configures its network address via DHCP.
-You will need that network address to connect to it.
+By default, the hybrid controller configures its IPv4 network address via DHCP.
+You will need the IP address to connect to it. By default, it listens on TCP port 5732.
 
 The hybrid controller will send debug information, including its IP address,
 via the USB-serial connection.
@@ -37,7 +46,9 @@ After a restart, use `cat /dev/ttyACM0` or similar to access the debug output.
 Please note that debug output is not buffered and may not be visible if you are too slow.
 
 You can also find the IP address by asking your system administrator
-or watching your DHCP logs.
+or watching your DHCP logs. You can also perform a network scan such as 
+`nmap -v -A -p 5732 192.168.1.1-255` to search for computers in your (exemplaric)
+`192.168.1.1/24` network listening on port 5732.
 
 ### Using your LUCIDAC
 
@@ -45,10 +56,9 @@ Use the `pyanabrid-redac` python package to interact with your LUCIDAC. It curre
 at https://lab.analogparadigm.com/redac/software/pyanabrid-redac/
 as well as https://lab.analogparadigm.com/pyanabrid/.
 
-## Developers: Getting started
+## Getting started as a Developer
 
-This section is intended for developers of the LUCIDAC,
-who are looking to adapt and build the firmware themselves.
+This section is intended for developers of the LUCIDAC, who are looking to adapt and build the firmware themselves.
 
 Follow the respective platformio (`pio` in short) documentations to install the required dependencies and tools for developement.
 
