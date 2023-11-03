@@ -34,7 +34,6 @@ carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}) {}
 bool carrier::Carrier::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   entity_id = ethernet::system_mac_as_string();
-  //LOG(ANABRID_DEBUG_INIT, entity_id.c_str());
   if (entity_id.empty())
     return false;
   for (auto &cluster : clusters) {

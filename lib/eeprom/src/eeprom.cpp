@@ -19,11 +19,7 @@ static constexpr int
 static constexpr uint64_t required_magic = 0xAA00;
 
 void eeprom::UserSettings::reset_defaults() {
-    Serial.print("Resetting settings, EEPROM version was: ");
-    Serial.print(version, HEX);
-    Serial.print(", Firmware version is");
-    Serial.print(required_magic, HEX);
-    Serial.println(".");
+    LOGMEV("Resetting settings, EEPROM version was:  %X, Firmware version is %X.", version, HEX, required_magic, HEX);
 
     ethernet.reset_defaults();
     auth.reset_defaults();

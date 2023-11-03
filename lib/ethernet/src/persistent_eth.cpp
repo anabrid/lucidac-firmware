@@ -40,8 +40,7 @@ void ethernet::UserDefinedEthernet::read_from_json(JsonObjectConst serialized_co
         use_dhcp = serialized_conf["use_dhcp"];
 
     if(serialized_conf.containsKey("hostname")) {
-        std::string _hostname = serialized_conf["hostname"];
-        hostname = _hostname.c_str(); // maybe there is a better way...
+        hostname = serialized_conf["hostname"].as<std::string>().c_str();
     }
 
     for(int i=0; i<4; i++) {

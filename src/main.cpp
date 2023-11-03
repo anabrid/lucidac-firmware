@@ -110,7 +110,7 @@ bool handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out, auth::
     // No handler for message known
     success = false;
     msg_out["error"] = "Unknown message type.";
-  } else if(!user_context.cando(requiredClearance)) {
+  } else if(!user_context.can_do(requiredClearance)) {
     success = false;
     msg_out["error"] = "User is not authorized for action";
   } else if(msg_type == "login") {
@@ -125,7 +125,7 @@ bool handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out, auth::
     envelope_out["success"] = false;
     envelope_out["error"] = msg_out["error"];
     envelope_out.remove("msg");
-    Serial.println("Error while handling message.");
+    LOG_ALWAYS("Error while handling message.");
   }
 
   // If message generated a response or an error, actually sent it out

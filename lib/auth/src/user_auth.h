@@ -43,6 +43,8 @@ enum class SecurityLevel {
   RequiresNothing
 };
 
+using User = std::string;
+
 /**
  * A simple plaintext Username+Password authentification scheme backed against
  * the EEPROM UserSettings. It lacks group managament but treats the username
@@ -53,21 +55,21 @@ enum class SecurityLevel {
  * the distributor.
  **/
 class UserPasswordAuthentification {
-  std::map<std::string, std::string> db;
+  std::map<User, std::string> db;
 public:
   static constexpr const char* admin = "admin";
 
-  bool isdisabled() const {
+  bool is_disabled() const {
     #ifdef ANABRID_UNSAFE_INTERNET
       return true;
     #else
       return db.empty();
     #endif
   }
-  bool isvalid(std::string user, std::string pwd) { return isdisabled() || (db.count(user) && db[user] == pwd); }
+  bool is_valid(const User &user, const std::string &pwd) { return is_disabled() || (db.count(user) && db[user] == pwd); }
 
-  bool cando(std::string user, SecurityLevel task) const {
-    if(isdisabled()) return true;
+  bool can_do(const User& user, SecurityLevel task) const {
+    if(is_disabled()) return true;
     if(task == SecurityLevel::RequiresAdmin) return user == admin;
     if(task == SecurityLevel::RequiresLogin) return !user.empty();
     /* if RequiresNothing */ return true;
@@ -84,9 +86,8 @@ public:
   void status(JsonObject target);
 };
 
-/// Some basic information about the remote station. Currently only distinguishes between
-/// an IP and "no IP", which represents the local terminal
-class RemoteIdentifier { // : public Printable {
+/// Some basic information about the remote station. We interpret 0.0.0.0 als a local terminal.
+class RemoteIdentifier { // : public Printable { // no inheritance for POD
 public:
   IPAddress ip;
   bool isLocal() const { return ip[0] == 0 && ip[1] == 0 && ip[2] == 0 && ip[3] == 0; } // (uint32_t)ip) doesnt work
@@ -104,20 +105,20 @@ public:
 class AuthentificationContext {
   UserPasswordAuthentification& auth;
   RemoteIdentifier _remote;
-  std::string _user;
+  User _user;
 public:
-  AuthentificationContext(UserPasswordAuthentification& auth, std::string user) : auth(auth), _user(user) {}
+  AuthentificationContext(UserPasswordAuthentification& auth, User user) : auth(auth), _user(user) {}
   AuthentificationContext(UserPasswordAuthentification& auth) : auth(auth) {}
 
   void set_remote_identifier(RemoteIdentifier r) { _remote = r; }
 
-  bool cando(SecurityLevel task) const { return auth.cando(_user, task); }
-  bool hasBetterClearenceThen(std::string other) const {
+  bool can_do(SecurityLevel task) const { return auth.can_do(_user, task); }
+  bool hasBetterClearenceThen(const User& other) const {
     return 
-       (cando(SecurityLevel::RequiresAdmin) && !auth.cando(other, SecurityLevel::RequiresAdmin)) ||
-       (cando(SecurityLevel::RequiresLogin) && !auth.cando(other, SecurityLevel::RequiresLogin));
+       (can_do(SecurityLevel::RequiresAdmin) && !auth.can_do(other, SecurityLevel::RequiresAdmin)) ||
+       (can_do(SecurityLevel::RequiresLogin) && !auth.can_do(other, SecurityLevel::RequiresLogin));
   }
-  void login(std::string user) { _user = user; }
+  void login(const User &user) { _user = user; }
 
 	size_t printTo(Print& p) const {
     return p.print(_user.empty() ? "[nobody]" : _user.c_str()) + p.print("@") + _remote.printTo(p);

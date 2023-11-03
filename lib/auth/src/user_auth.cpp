@@ -22,7 +22,7 @@ void auth::UserPasswordAuthentification::write_to_json(JsonObject target) {
 }
 
 void auth::UserPasswordAuthentification::status(JsonObject target) {
-  target["enabled"] = !isdisabled();
+  target["enabled"] = !is_disabled();
   auto users = target.createNestedArray("users");
   for(auto const &kv : db) users.add(kv.first);
   // don't tell the passwords!
@@ -39,7 +39,7 @@ bool msg::handlers::LoginHandler::handle(JsonObjectConst msg_in, JsonObject &msg
     // always have admin permissions. It is not that interesting in a TCP/IP connection.
     msg_out["error"] = "Login can only upgrade privileges but you wold loose. Open a new connection instead.";
     return false;
-  } else if(!auth.isvalid(new_user, msg_in["password"])) {
+  } else if(!auth.is_valid(new_user, msg_in["password"])) {
     msg_out["error"] = "Invalid username or password.";
 
     // todo: besseren DEBUG flag für finden, vgl. https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/merge_requests/3#note_2361
