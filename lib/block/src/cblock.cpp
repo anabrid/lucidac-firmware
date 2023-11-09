@@ -77,6 +77,8 @@ bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   if (factor > MAX_REAL_FACTOR or factor < MIN_REAL_FACTOR) {
     set_upscaling(idx, true);
     factor = factor / UPSCALING;
+  } else {
+    set_upscaling(idx, false);
   }
   factors_[idx] = decltype(f_coeffs)::value_type::float_to_raw(factor);
   return true;
@@ -107,8 +109,8 @@ void blocks::CBlock::write_upscaling_to_hardware() {
 
 void blocks::CBlock::reset(bool keep_calibration) {
   FunctionBlock::reset(keep_calibration);
-  for (auto &factor : factors_) {
-    factor = decltype(f_coeffs)::value_type::RAW_ZERO << 2;
+  for (size_t i = 0; i < NUM_COEFF; i++) {
+    set_factor(i, 0.f);
   }
 }
 
