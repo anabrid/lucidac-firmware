@@ -31,6 +31,7 @@
 // A logging macro, which accepts an optional LOG_FLAG (e.g. ANABRID_DEBUG_INIT) and a message.
 #define LOG(LOG_FLAG, message) LOG_##LOG_FLAG(message)
 #define LOG_ERROR(message) __LOG(message)
+#define LOG_ALWAYS(message) __LOG(message)
 
 // Unfortunately, we need to define the actual logging macro for each LOG_FLAG we want to use.
 // Possibly, we can do some macro magic in the future.
@@ -46,4 +47,16 @@
 #define LOG_ANABRID_DEBUG_INIT(message) __LOG(message)
 #else
 #define LOG_ANABRID_DEBUG_INIT(message) ((void)0)
+#endif
+
+#ifdef ANABRID_DEBUG_STATE
+#define LOG_ANABRID_DEBUG_STATE(message) __LOG(message)
+#else
+#define LOG_ANABRID_DEBUG_STATE(message) ((void)0)
+#endif
+
+#ifdef ANABRID_DEBUG_DAQ
+#define LOG_ANABRID_DEBUG_DAQ(message) __LOG(message)
+#else
+#define LOG_ANABRID_DEBUG_DAQ(message) ((void)0)
 #endif

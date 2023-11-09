@@ -49,6 +49,7 @@ public:
 
   static const SPISettings DEFAULT_SPI_SETTINGS;
   static uint16_t float_to_raw(float value);
+  static float raw_to_float(uint16_t value);
 
   using DataFunction::DataFunction;
   explicit DAC60508(bus::addr_t address);

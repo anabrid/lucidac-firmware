@@ -1,0 +1,127 @@
+// Copyright (c) 2023 anabrid GmbH
+// Contact: https://www.anabrid.com/licensing/
+//
+// This file is part of the model-1 hybrid-controller firmware.
+//
+// ANABRID_BEGIN_LICENSE:GPL
+// Commercial License Usage
+// Licensees holding valid commercial anabrid licenses may use this file in
+// accordance with the commercial license agreement provided with the
+// Software or, alternatively, in accordance with the terms contained in
+// a written agreement between you and Anabrid GmbH. For licensing terms
+// and conditions see https://www.anabrid.com/licensing. For further
+// information use the contact form at https://www.anabrid.com/contact.
+//
+// GNU General Public License Usage
+// Alternatively, this file may be used under the terms of the GNU
+// General Public License version 3 as published by the Free Software
+// Foundation and appearing in the file LICENSE.GPL3 included in the
+// packaging of this file. Please review the following information to
+// ensure the GNU General Public License version 3 requirements
+// will be met: https://www.gnu.org/licenses/gpl-3.0.html.
+// For Germany, additional rules exist. Please consult /LICENSE.DE
+// for further agreements.
+// ANABRID_END_LICENSE
+
+#pragma once
+
+#include <string>
+#include <vector>
+
+#include <Arduino.h>
+#include <ArduinoJson.h>
+
+namespace entities {
+
+class Entity {
+protected:
+  std::string entity_id;
+
+public:
+  Entity() = default;
+
+  explicit Entity(std::string entityId) : entity_id(std::move(entityId)) {}
+
+  const std::string &get_entity_id() const { return entity_id; }
+
+  virtual std::vector<Entity *> get_child_entities() = 0;
+
+  virtual Entity *get_child_entity(const std::string &child_id) = 0;
+
+  Entity *resolve_child_entity(std::string paths[], size_t len) {
+    auto resolved_entity = this;
+    for (size_t path_depth = 0; path_depth < len; path_depth++) {
+      resolved_entity = resolved_entity->get_child_entity(paths[path_depth]);
+      if (!resolved_entity) {
+        return nullptr;
+      }
+    }
+    return resolved_entity;
+  }
+
+  Entity *resolve_child_entity(JsonArrayConstIterator begin, JsonArrayConstIterator end) {
+    auto resolved_entity = this;
+    for (auto sub_path = begin; sub_path != end; ++sub_path) {
+      resolved_entity = resolved_entity->get_child_entity((*sub_path).as<std::string>());
+      if (!resolved_entity) {
+        return nullptr;
+      }
+    }
+    return resolved_entity;
+  }
+
+  Entity *resolve_child_entity(JsonArrayConst path) {
+    return resolve_child_entity(path.begin(), path.end());
+  }
+
+  bool config_from_json(JsonObjectConst cfg) {
+#ifdef ANABRID_DEBUG_ENTITY_CONFIG
+    Serial.println(__PRETTY_FUNCTION__);
+#endif
+    if (cfg.isNull())
+      return false;
+    if (!config_self_from_json(cfg))
+      return false;
+    if (!config_children_from_json(cfg))
+      return false;
+    return true;
+  }
+
+  void config_to_json(JsonObject &cfg, bool recursive = true) {
+    config_self_to_json(cfg);
+    if (recursive)
+      config_children_to_json(cfg);
+  }
+
+protected:
+  virtual bool config_self_from_json(JsonObjectConst cfg) = 0;
+
+  bool config_children_from_json(JsonObjectConst &cfg) {
+    for (JsonPairConst keyval : cfg) {
+      if (keyval.key().c_str()[0] == '/' and keyval.key().size() > 1) {
+        std::string child_id(keyval.key().c_str() + 1);
+        auto child_entity = get_child_entity(child_id);
+        if (!child_entity)
+          return false;
+        if (!child_entity->config_from_json(keyval.value()))
+          return false;
+      }
+    }
+    return true;
+  }
+
+  virtual void config_self_to_json(JsonObject &cfg) {
+#ifdef ANABRID_DEBUG_ENTITY_CONFIG
+    Serial.println(__PRETTY_FUNCTION__);
+#endif
+  }
+
+  void config_children_to_json(JsonObject &cfg) {
+    for (auto child : get_child_entities()) {
+      auto child_cfg = cfg.createNestedObject(std::string("/") + child->get_entity_id());
+      child->config_to_json(child_cfg, true);
+    }
+  }
+};
+
+} // namespace entities

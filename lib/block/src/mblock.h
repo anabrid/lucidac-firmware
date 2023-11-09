@@ -102,6 +102,7 @@ public:
   static constexpr uint8_t TIME_FACTOR_SYNC_FUNC_IDX = 4;
   static constexpr uint8_t TIME_FACTOR_RESET_FUNC_IDX = 5;
 
+  static constexpr uint8_t NUM_INTEGRATORS = 8;
   static constexpr unsigned int DEFAULT_TIME_FACTOR = 10000;
 
 private:
@@ -123,6 +124,23 @@ public:
   bool set_time_factor(uint8_t int_idx, unsigned int k);
 
   void write_to_hardware() override;
+
+  bool config_self_from_json(JsonObjectConst cfg) override;
+
+protected:
+  void config_self_to_json(JsonObject &cfg) override;
+};
+
+class MMulBlock : public MBlock {
+public:
+  static constexpr uint8_t NUM_MULTIPLIERS = 4;
+public:
+  using MBlock::MBlock;
+
+  void write_to_hardware() override;
+
+protected:
+  bool config_self_from_json(JsonObjectConst cfg) override;
 };
 
 } // namespace blocks

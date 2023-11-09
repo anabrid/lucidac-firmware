@@ -27,6 +27,7 @@
 
 #include "blocks.h"
 #include "daq.h"
+#include "entity.h"
 
 namespace lucidac {
 
@@ -34,37 +35,40 @@ namespace lucidac {
  * The Lucidac class represents all (most) hardware of the Lucidac.
  * It serves as the primary entry point for on-microcontroller programming.
  **/
-class LUCIDAC {
+class LUCIDAC : public entities::Entity {
 public:
-  blocks::MBlock* m1block = nullptr;
-  blocks::MBlock* m2block = nullptr;
-  blocks::UBlock* ublock = nullptr;
-  blocks::CBlock* cblock = nullptr;
-  blocks::IBlock* iblock = nullptr;
+  blocks::MBlock *m1block = nullptr;
+  blocks::MBlock *m2block = nullptr;
+  blocks::UBlock *ublock = nullptr;
+  blocks::CBlock *cblock = nullptr;
+  blocks::IBlock *iblock = nullptr;
 
-  LUCIDAC();
+  explicit LUCIDAC(uint8_t cluster_idx = 0);
+  // TODO: Delete copy and assignment operators
+  //LUCIDAC(LUCIDAC const &) = delete;
+  //LUCIDAC &operator=(LUCIDAC const &) = delete;
 
   bool init();
   auto get_blocks();
 
-  bool calibrate(daq::BaseDAQ* daq);
+  bool calibrate(daq::BaseDAQ *daq);
 
   void write_to_hardware();
 
   /**
    * Register a route throught the lucidac.
-   * 
+   *
    * Note that this does not immediately configure hardware but just prepares the
    * in-memory representations of the individual blocks. Use write_to_hardware() to
    * flush all blocks.
-   * 
+   *
    * Note that previously existing routes (also from previous IC/OP cycles) most
    * certainly still exist both in-memory representation and in the hardware. Use
    * reset() to flush both of them.
-   * 
+   *
    * Note that this currently yields undefined behaviour if a route on the
    * same u_out already exists.
-   * 
+   *
    * @arg u_in Row index [0..15] for U-Block input (corresponding to some M-Block output)
    * @arg u_out Column index [0..31] to use for routing through U/C/I block
    * @arg c_factor Coefficient value [-20,+20] for coefficient at position idx=u_out
@@ -81,8 +85,14 @@ public:
 
   void reset(bool keep_calibration);
 
+  std::vector<Entity *> get_child_entities() override;
+
+  Entity *get_child_entity(const std::string &child_id) override;
+
+  bool config_self_from_json(JsonObjectConst cfg) override;
+
 protected:
-  bool calibrate_offsets_ublock_initial(daq::BaseDAQ* daq);
+  bool calibrate_offsets_ublock_initial(daq::BaseDAQ *daq);
 };
 
-}
+} // namespace lucidac

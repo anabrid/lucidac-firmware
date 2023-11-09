@@ -26,7 +26,7 @@
 #include "cblock.h"
 
 blocks::CBlock::CBlock(uint8_t clusterIdx)
-    : FunctionBlock(clusterIdx),
+    : FunctionBlock("C", clusterIdx),
       f_coeffs{
           functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 0),
           functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 1),
@@ -111,5 +111,57 @@ void blocks::CBlock::reset(bool keep_calibration) {
   FunctionBlock::reset(keep_calibration);
   for (size_t i = 0; i < NUM_COEFF; i++) {
     set_factor(i, 0.f);
+  }
+}
+
+bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
+#ifdef ANABRID_DEBUG_ENTITY_CONFIG
+  Serial.println(__PRETTY_FUNCTION__);
+#endif
+  if (cfg.containsKey("elements")) {
+    // Handle an array of factors
+    if (cfg["elements"].is<JsonArrayConst>()) {
+      auto factors = cfg["elements"].as<JsonArrayConst>();
+      if (factors.size() != NUM_COEFF)
+        return false;
+      uint8_t idx = 0;
+      for (JsonVariantConst factor : factors) {
+        if (!factor.is<float>()) {
+          return false;
+        }
+        set_factor(idx++, factor.as<float>());
+      }
+    }
+    // Handle a mapping of factors
+    if (cfg["elements"].is<JsonObjectConst>()) {
+      serializeJson(cfg, Serial);
+      for (JsonPairConst keyval : cfg["elements"].as<JsonObjectConst>()) {
+        // Keys define index of factor to change
+        // TODO: Check conversion from string to number
+        auto idx = std::stoul(keyval.key().c_str());
+        // Values can either be direct factor float values or {"factor": 0.42} objects
+        if (keyval.value().is<JsonObjectConst>() and keyval.value().as<JsonObjectConst>().containsKey("factor")) {
+          if (!set_factor(idx, keyval.value().as<JsonObjectConst>()["factor"].as<float>()))
+            return false;
+        }
+        else if (keyval.value().is<float>()) {
+          if (!set_factor(idx, keyval.value().as<float>()))
+            return false;
+        } else {
+          return false;
+        }
+      }
+    }
+  }
+
+  // The combination of checks above must not ignore any valid config dictionary
+  return true;
+}
+
+void blocks::CBlock::config_self_to_json(JsonObject &cfg) {
+  Entity::config_self_to_json(cfg);
+  auto factors_cfg = cfg.createNestedArray("elements");
+  for (auto factor : factors_) {
+    factors_cfg.add(decltype(f_coeffs)::value_type::raw_to_float(factor));
   }
 }

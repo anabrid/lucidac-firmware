@@ -33,19 +33,19 @@ namespace msg {
 namespace handlers {
 
 class MessageHandler {
-  static std::map<std::string, MessageHandler *> handler_registry;
-
 public:
-  static MessageHandler*get(std::string msg_type);
   virtual bool handle(JsonObjectConst msg_in, JsonObject &msg_out) = 0;
 };
 
-class PingRequestHandler : public MessageHandler {
+class Registry {
+  static std::map<std::string, MessageHandler *> _registry;
+
 public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  static MessageHandler *get(const std::string& msg_type);
+  static bool set(const std::string& msg_type, msg::handlers::MessageHandler *handler, bool overwrite = false);
 };
 
-class GetEntitiesRequestHandler : public MessageHandler {
+class PingRequestHandler : public MessageHandler {
 public:
   bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };

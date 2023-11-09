@@ -1,0 +1,204 @@
+{
+  "MIntBlock": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "elements": {
+        "oneOf": [
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#integrator_config"
+            },
+            "minItems": 8,
+            "maxItems": 8
+          },
+          {
+            "type": "object",
+            "minProperties": 0,
+            "maxProperties": 8,
+            "patternProperties": {
+              "^[0-7]$": {
+                "$ref": "#integrator_config"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "additionalProperties": false,
+    "definitions": {
+      "integrator_config": {
+        "$id": "#integrator_config",
+        "type": "object",
+        "properties": {
+          "ic": {
+            "type": "number",
+            "minimum": -1.0,
+            "maximum": 1.0
+          },
+          "k": {
+            "enum": [
+              100,
+              10000
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "UBlock": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "outputs": {
+        "oneOf": [
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#input_spec"
+            },
+            "minItems": 32,
+            "maxItems": 32
+          },
+          {
+            "type": "object",
+            "minProperties": 0,
+            "maxProperties": 31,
+            "patternProperties": {
+              "^(?:0?[0-9]|1[0-9]|2[0-9]|3[0-1])$": {
+                "$ref": "#input_spec"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "alt_signals": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        }
+      }
+    },
+    "additionalProperties": false,
+    "definitions": {
+      "input": {
+        "$id": "#input",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 15
+      },
+      "input_spec": {
+        "$id": "#input_spec",
+        "oneOf": [
+          {
+            "$ref": "#input"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    }
+  },
+  "CBlock": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "elements": {
+        "oneOf": [
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#factor"
+            },
+            "minItems": 32,
+            "maxItems": 32
+          },
+          {
+            "type": "object",
+            "minProperties": 0,
+            "maxProperties": 31,
+            "patternProperties": {
+              "^(?:0?[0-9]|1[0-9]|2[0-9]|3[0-1])$": {
+                "$ref": "#factor"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "additionalProperties": false,
+    "definitions": {
+      "factor": {
+        "$id": "#factor",
+        "type": "number",
+        "minimum": -20.0,
+        "maximum": 20.0
+      }
+    }
+  },
+  "IBlock": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "outputs": {
+        "oneOf": [
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#input_spec"
+            },
+            "minItems": 0,
+            "maxItems": 16
+          },
+          {
+            "type": "object",
+            "minProperties": 0,
+            "maxProperties": 15,
+            "patternProperties": {
+              "^(?:0?[0-9]|1[0-5])$": {
+                "$ref": "#input_spec"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "additionalProperties": false,
+    "definitions": {
+      "input": {
+        "$id": "#input",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 31
+      },
+      "input_spec": {
+        "$id": "#input_spec",
+        "oneOf": [
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#input"
+            },
+            "minItems": 32,
+            "maxItems": 32
+          },
+          {
+            "$ref": "#input"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    }
+  }
+}

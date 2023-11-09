@@ -55,22 +55,27 @@ public:
 
 } // namespace functions
 
-
 /**
  * The Lucidac I-Block (I for Current; the Implicit Summing Block) is
  * represented by this class.
- * 
+ *
  * This class provides an in-memory representation of the bit matrix,
  * neat way of manipulating it and flushing it out to the hardware.
- * 
+ *
  * As a Lucidac can only have a single I-Block, this is kind of a singleton.
  * Typical usage happens via the Lucidac class.
- * 
- * @TODO: Should ensure that there is no more then one bit per line,
- *        cf. https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/issues/8
- * 
+ *
  **/
 class IBlock : public FunctionBlock {
+protected:
+  void reset_outputs();
+
+  bool _connect_from_json(const JsonVariantConst &input_spec, uint8_t output);
+
+  void config_self_to_json(JsonObject &cfg) override;
+
+  bool _is_connected(uint8_t input, uint8_t output);
+
 public:
   static constexpr uint8_t BLOCK_IDX = bus::I_BLOCK_IDX;
   static constexpr uint8_t IMATRIX_COMMAND_SR_FUNC_IDX = 1;
@@ -88,37 +93,47 @@ public:
   ::functions::TriggerFunction f_imatrix_sync;
 
   explicit IBlock(const uint8_t clusterIdx)
-      : FunctionBlock(clusterIdx), outputs{0}, f_cmd{bus::idx_to_addr(clusterIdx, BLOCK_IDX,
-                                                                      IMATRIX_COMMAND_SR_FUNC_IDX)},
+      : FunctionBlock("I", clusterIdx), outputs{0}, f_cmd{bus::idx_to_addr(clusterIdx, BLOCK_IDX,
+                                                                           IMATRIX_COMMAND_SR_FUNC_IDX)},
         f_imatrix_reset{bus::idx_to_addr(clusterIdx, BLOCK_IDX, IMATRIX_RESET_FUNC_IDX)},
         f_imatrix_sync{bus::idx_to_addr(clusterIdx, BLOCK_IDX, IMATRIX_SYNC_FUNC_IDX)} {}
 
   bus::addr_t get_block_address() override;
 
   void write_to_hardware() override;
+
   bool init() override;
+
   void reset(bool keep_calibration) override;
 
   /**
    * Connects an input line [0..31] to an output line [0..15]
    * by setting an appropriate bit/switch in the respective position
    * in the matrix.
-   * 
+   *
    * Note that this function only manipulates the in-memory representation
    * and does not immediately write outs to hardware.
-   * 
+   *
    * Note that calls to connect() only add bits to the existing configuration.
    * Use reset() to reset the matrix.
-   * 
+   *
    * The flag `exlusive` disconnects all other inputs from the chosen output.
    *
    * @returns false in case of invalid input, true else.
-   * 
+   *
    **/
   bool connect(uint8_t input, uint8_t output, bool exclusive = false, bool allow_input_splitting = false);
 
   //! Whether an input is connected to an output.
   bool is_connected(uint8_t input, uint8_t output);
+
+  //! Disconnect one input from an output. Fails for invalid arguments or if no input is connected.
+  bool disconnect(uint8_t input, uint8_t output);
+
+  //! Disconnect all inputs from an output. Fails for invalid arguments.
+  bool disconnect(uint8_t output);
+
+  bool config_self_from_json(JsonObjectConst cfg) override;
 };
 
 } // namespace blocks

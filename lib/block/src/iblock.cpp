@@ -24,7 +24,9 @@
 // ANABRID_END_LICENSE
 
 #include "iblock.h"
+
 #include "functions.h"
+#include "logging.h"
 
 void blocks::functions::ICommandRegisterFunction::write_to_hardware() const {
   begin_communication();
@@ -111,6 +113,7 @@ void blocks::IBlock::write_to_hardware() {
 }
 
 bool blocks::IBlock::init() {
+  LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   if (!FunctionBlock::init()) {
     return false;
   };
@@ -121,10 +124,14 @@ bool blocks::IBlock::init() {
 
 bus::addr_t blocks::IBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
 
+bool blocks::IBlock::_is_connected(uint8_t input, uint8_t output) {
+  return outputs[output] & INPUT_BITMASK(input);
+}
+
 bool blocks::IBlock::is_connected(uint8_t input, uint8_t output) {
   if (output >= NUM_OUTPUTS or input >= NUM_INPUTS)
     return false;
-  return outputs[output] & INPUT_BITMASK(input);
+  return _is_connected(input, output);
 }
 
 bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool allow_input_splitting) {
@@ -143,7 +150,7 @@ bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool
   if (!allow_input_splitting) {
     for (size_t other_output_idx = 0; other_output_idx < outputs.size(); other_output_idx++) {
       if (output == other_output_idx)
-        continue ;
+        continue;
       if (is_connected(input, other_output_idx)) {
         return false;
       }
@@ -157,9 +164,101 @@ bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool
   return true;
 }
 
-void blocks::IBlock::reset(bool keep_calibration) {
-  FunctionBlock::reset(keep_calibration);
+void blocks::IBlock::reset_outputs() {
   for (auto &output : outputs) {
     output = 0;
+  }
+}
+
+void blocks::IBlock::reset(bool keep_calibration) {
+  FunctionBlock::reset(keep_calibration);
+  reset_outputs();
+}
+
+bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
+#ifdef ANABRID_DEBUG_ENTITY_CONFIG
+  Serial.println(__PRETTY_FUNCTION__);
+#endif
+  if (cfg.containsKey("outputs")) {
+    // Handle a mapping of output to list of inputs
+    // This only overrides outputs that are specifically mentioned
+    if (cfg["outputs"].is<JsonObjectConst>()) {
+      for (JsonPairConst keyval : cfg["outputs"].as<JsonObjectConst>()) {
+        // Key defines output
+        // TODO: Check conversion from string to number
+        auto output = std::stoul(keyval.key().c_str());
+        // Disconnect also sanity checks output index for us
+        if (!disconnect(output))
+          return false;
+        // Input may be given as list or as a single number
+        if (!_connect_from_json(keyval.value(), output))
+          return false;
+      }
+    }
+    // Handle a list of outputs
+    // This must overwrite all outputs, so we clear all of them
+    if (cfg["outputs"].is<JsonArrayConst>()) {
+      auto outputs_json = cfg["outputs"].as<JsonArrayConst>();
+      if (outputs_json.size() != NUM_OUTPUTS)
+        return false;
+      reset_outputs();
+      uint8_t idx = 0;
+      for (JsonVariantConst input_spec : outputs_json) {
+        // Input may be given as list or as a single number
+        if (!_connect_from_json(input_spec, idx++))
+          return false;
+      }
+    }
+  }
+  return true;
+}
+
+bool blocks::IBlock::_connect_from_json(const JsonVariantConst &input_spec, uint8_t output) {
+  if (input_spec.isNull()) {
+    // Output is already disconnected from outer code
+  } else if (input_spec.is<JsonArrayConst>()) {
+    for (auto input : input_spec.as<JsonArrayConst>()) {
+      if (!input.is<uint8_t>())
+        return false;
+      if (!connect(input, output))
+        return false;
+    }
+  } else if (input_spec.is<uint8_t>()) {
+    if (!connect(input_spec, output))
+      return false;
+  } else {
+    return false;
+  }
+  return true;
+}
+
+bool blocks::IBlock::disconnect(uint8_t input, uint8_t output) {
+  // Fail if input was not connected
+  if (!is_connected(input, output))
+    return false;
+  outputs[output] &= ~INPUT_BITMASK(input);
+  return true;
+}
+
+bool blocks::IBlock::disconnect(uint8_t output) {
+  if (output >= NUM_OUTPUTS)
+    return false;
+  outputs[output] = 0;
+  return true;
+}
+
+void blocks::IBlock::config_self_to_json(JsonObject &cfg) {
+  Entity::config_self_to_json(cfg);
+  // Save outputs into cfg
+  auto outputs_cfg = cfg.createNestedArray("outputs");
+  for (uint8_t output = 0; output < NUM_OUTPUTS; output++) {
+    if (outputs[output]) {
+      auto inputs_cfg = outputs_cfg.createNestedArray();
+      for (uint8_t input = 0; input < NUM_INPUTS; input++)
+        if (_is_connected(input, output))
+          inputs_cfg.add(input);
+    } else {
+      outputs_cfg.add(nullptr);
+    }
   }
 }

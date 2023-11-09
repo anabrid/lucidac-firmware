@@ -25,26 +25,31 @@
 
 #include "message_handlers.h"
 
-std::map<std::string, msg::handlers::MessageHandler *> msg::handlers::MessageHandler::handler_registry{
-    {"ping", new PingRequestHandler{}},
-    {"get_entities", new GetEntitiesRequestHandler{}}
-};
+std::map<std::string, msg::handlers::MessageHandler *> msg::handlers::Registry::_registry{
+    {"ping", new PingRequestHandler{}}};
 
-msg::handlers::MessageHandler *msg::handlers::MessageHandler::get(std::string msg_type) {
-  auto found = handler_registry.find(msg_type);
-  if (found != handler_registry.end()) {
+msg::handlers::MessageHandler *msg::handlers::Registry::get(const std::string &msg_type) {
+  auto found = _registry.find(msg_type);
+  if (found != _registry.end()) {
     return found->second;
   } else {
     return nullptr;
   }
 }
 
-bool msg::handlers::PingRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  msg_out["now"] = 43;
-  return false;
+bool msg::handlers::Registry::set(const std::string &msg_type, msg::handlers::MessageHandler *handler,
+                                  bool overwrite) {
+  auto found = _registry.find(msg_type);
+  if (found != _registry.end() && !overwrite) {
+    return false;
+  } else {
+    // TODO: Overwritten message handlers should be freed
+    _registry[msg_type] = handler;
+    return true;
+  }
 }
 
-bool msg::handlers::GetEntitiesRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  msg_out["06-00-00-00-00-00"] = serialized(R"({"blocks": {"0": {"class": 1, "type": 0, "variant": 0, "version": 0}, "1": {"class": 1, "type": 1, "variant": 0, "version": 0}, "2": {"class": 1, "type": 2, "variant": 0, "version": 0}, "3": {"class": 1, "type": 3, "variant": 0, "version": 0}, "4": {"class": 1, "type": 4, "variant": 0, "version": 0}}})");
-  return true;
+bool msg::handlers::PingRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+  msg_out["now"] = "2007-08-31T16:47+01:00";
+  return false;
 }
