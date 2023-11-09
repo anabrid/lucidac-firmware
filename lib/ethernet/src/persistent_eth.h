@@ -25,48 +25,40 @@
 
 #pragma once
 
+#include <Ethernet.h>
+#include <QNEthernet.h>
 #include <ArduinoJson.h>
-#include <map>
+#include <cstring>
 
-#include "user_auth.h"
+#include "message_handlers.h"
 
+namespace net = qindesign::network;
 
-namespace msg {
+namespace ethernet {
 
-namespace handlers {
+std::string system_mac_as_string(); //< Own mac address in Canonical Format AA-BB-CC-DD-EE-FF
 
-class MessageHandler {
+void status(JsonObject &msg_out);
+
+class UserDefinedEthernet {
 public:
-  /**
-   * @return Whether the handling was successful or not 
-   **/
-  virtual bool handle(JsonObjectConst msg_in, JsonObject &msg_out) = 0;
+
+  int server_port;    ///< TCP Ethernet Server port
+  bool use_dhcp;      ///< DHCP client vs static IP configuration
+
+  String hostname;    ///< used only for DHCP client. Maximum 250 characters.
+
+  IPAddress
+      static_ipaddr,   ///< used only when use_dhcp=false
+      static_netmask,  ///< used only when use_dhcp=false
+      static_gw;       ///< used only when use_dhcp=false
+
+  void reset_defaults();
+
+  void read_from_json(JsonObjectConst serialized_conf);
+  void write_to_json(JsonObject target);
+
+  void begin(net::EthernetServer *server);
 };
 
-class Registry {
-  static std::map<std::string, MessageHandler *> _registry;
-  static std::map<std::string, auth::SecurityLevel> _clearance;
-
-public:
-  static MessageHandler *get(const std::string& msg_type);
-  static auth::SecurityLevel requiredClearance(const std::string& msg_type);
-  static bool set(const std::string& msg_type, msg::handlers::MessageHandler *handler, auth::SecurityLevel minimumClearance);
-
-  static void dump(); // for debugging: Print Registry configuration to Serial
-};
-
-class PingRequestHandler : public MessageHandler {
-public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-class GetSystemStatus : public MessageHandler {
-  auth::UserPasswordAuthentification& _auth;
-public:
-  GetSystemStatus(auth::UserPasswordAuthentification& auth) : _auth(auth) {}
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-} // namespace handlers
-
-} // namespace msg
+} // namespace ethernet

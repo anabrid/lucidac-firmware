@@ -27,3 +27,6 @@ _deps
 # External projects
 *-prefix/
 .vscode/
+
+# Doxygen output
+docs/html
