@@ -32,7 +32,7 @@ upload_docs:
   stage: release
   # TODO: Change to a specialized image
   image: svenk/latex
-  dependencies:
+  needs: # instead of "dependencies:", should go faster
     - build_docs
   script:
     - chmod 600 "$SSH_PRIVATE_KEY_FILE_STAGING"
