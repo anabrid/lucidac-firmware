@@ -20,11 +20,14 @@ the `artifacts.zip` and lookup the file in `.pio/build/teensy41/firmware.hex`
 Install the teensy flashing utility `teensy-loader-cli`
 and the udev rules from https://www.pjrc.com/teensy/00-teensy.rules
 to allow flashing the firmware image without prior building at your computer.
+If you have the platformio teensy package installed, you can also find the flashing utility in `$HOME/.platformio/packages/tool-teensy/teensy_loader_cli`.
 
 Connect your hybrid controller via the USB port to your computer
 and press the small flash button on the teensy board.
 
 Execute `teensy_loader_cli --mcu=TEENSY41 firmware.hex` to flash your hybrid controller.
+
+
 
 ### Find the hybrid controller in the network
 
