@@ -80,6 +80,12 @@ void msg::handlers::Registry::dump() {
   Serial.println();
 }
 
+void msg::handlers::Registry::write_handler_names_to(JsonArray &target) {
+  for(auto const &kv : _registry) {
+    if(kv.second) target.add(kv.first);
+  }
+}
+
 bool msg::handlers::PingRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
   msg_out["now"] = "2007-08-31T16:47+01:00";
   // Note, with some initial NTP call we could get micro-second time resolution if we need it
@@ -97,6 +103,15 @@ bool msg::handlers::GetSystemStatus::handle(JsonObjectConst msg_in, JsonObject &
 
   auto oeth = msg_out.createNestedObject("ethernet");
   ethernet::status(oeth);
+
+  return true;
+}
+
+bool msg::handlers::HelpHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+  msg_out["human_readable_info"] = "This is a JSON-Lines protocol described at https://anabrid.dev/docs/pyanabrid-redac/redac/protocol.html";
+
+  auto types_list = msg_out.createNestedArray("available_types");
+  msg::handlers::Registry::write_handler_names_to(types_list);
 
   return true;
 }

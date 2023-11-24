@@ -70,6 +70,7 @@ void setup() {
 
   // Register message handler
   msg::handlers::Registry::set("hack", new HackMessageHandler(), auth::SecurityLevel::RequiresNothing);
+  msg::handlers::Registry::set("help", new msg::handlers::HelpHandler(), auth::SecurityLevel::RequiresNothing);
   msg::handlers::Registry::set("reset", new msg::handlers::ResetRequestHandler(carrier_), auth::SecurityLevel::RequiresLogin); // TODO: Should probably be called "reset_config" or so, cf. reset_settings
   msg::handlers::Registry::set("set_config", new msg::handlers::SetConfigMessageHandler(carrier_), auth::SecurityLevel::RequiresLogin);
   msg::handlers::Registry::set("get_config", new msg::handlers::GetConfigMessageHandler(carrier_), auth::SecurityLevel::RequiresLogin);
@@ -110,7 +111,7 @@ bool handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out, auth::
   if (!msg_handler) {
     // No handler for message known
     success = false;
-    msg_out["error"] = "Unknown message type.";
+    msg_out["error"] = "Unknown message type. Try this message: {'type':'help'}.";
   } else if(!user_context.can_do(requiredClearance)) {
     success = false;
     msg_out["error"] = "User is not authorized for action";
