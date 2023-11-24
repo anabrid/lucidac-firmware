@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <cstring>
 
+#include "distributor.h"
 #include "carrier.h"
 #include "client.h"
 #include "logging.h"
@@ -43,7 +44,7 @@ void setup() {
     // Wait for Serial, but not forever
   }
 
-  LOG_ALWAYS("LUCIDAC Hybrid Controller Firmware (dev branch)");
+  LOG_ALWAYS(dist::ident());
 
   LOG(ANABRID_DEBUG_INIT, "Loading settings from EEPROM...");
   settings.read_from_eeprom();

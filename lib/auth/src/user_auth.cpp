@@ -3,9 +3,8 @@
 #include "distributor.h"
 
 void auth::UserPasswordAuthentification::reset_defaults() {
-  dist::Distributor dist;
   db.clear();
-  db[admin] = dist.default_admin_password().c_str();
+  db[admin] = DEFAULT_ADMIN_PASSWORD;
 }
 
 void auth::UserPasswordAuthentification::read_from_json(JsonObjectConst serialized_conf) {

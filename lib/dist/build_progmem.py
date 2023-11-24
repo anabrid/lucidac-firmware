@@ -1,13 +1,22 @@
 # This is a pio build script (see also scons.org)
 # and can also be used as a standlone python3 script.
-
+#
 # The purpose of this script is to build distributor-specific
 # data into the ROM. These data are not subject to be changed
-# by users or their settings.
-
-# Within the Pio build process,
-# this python script is not invoked regularly as a seperate process but
-# within the pio code. Therefore, magic such as this one can be called:
+# by users or their settings. The data is stored as a simple
+# key-value "database"/dictionary.
+#
+# Note that Teensy 3 is 32bit ARM and any string literals defined
+# with "const" go automatically into flash memory, there is no more
+# need for PROGMEM, F() and similar.
+#
+# Note that we want to foster reproducable builds (deterministic
+# compilation), thus things as build time, build system paths or
+# the build system hostname is not included.
+#
+# Within the Pio build process, this python script is not invoked
+# regularly as a seperate process but within the pio code.
+# Therefore, magic such as Import("env") can be evaluated within pio.
 
 try:
   # the following code demonstrates how to access build system variables.
@@ -22,86 +31,134 @@ except NameError:
   build_system = {}
   build_flags = []
 
-import pathlib, json, textwrap, uuid, pprint
-
-rel_filename = "src/distributor_values.cpp"
-abs_filename = "lib/dist/" + rel_filename
-
+import pathlib, json, textwrap, uuid, pprint, subprocess, datetime
+  
+rel_src_dir = "src" # without trailing slash
+abs_src_dir = pathlib.Path("lib/dist") / rel_src_dir
 
 try:
   project_dir = pathlib.Path(__file__).parent.resolve().parent.parent
-  abs_filename = project_dir / abs_filename
+  abs_src_dir = project_dir / abs_src_dir
 except NameError:
   # pio environment does not know __file__. However, in PIO, all paths
   # are relative to the project folder, therefore things are fine.
   pass
 
-print(f"OEM distribution generating infos at {abs_filename}")
+print(f"OEM distribution generating infos at {abs_src_dir}")
+
+# Easily generate version strings out of git working directory/repository information.
+# Basically a nicer "git describe --tags" or similar.
+# For alternatives to setuptools_scm, see https://setuptools-git-versioning.readthedocs.io/en/stable/differences.html
+# Many of these packages require some python files in the repo which we probably don't want in this
+# C++-first repository. I think we should keep this as simple as possible.
+try:
+  import setuptools_scm as scm
+  firmware_version = scm.get_version()
+except ModuleNotFoundError:
+  print("lib/dist/build_progmem.py: WARN Missing python setuptools_scm package, falling back to simplified version guessing")
+  # We could also use "git describe" to simply access the latest git tag. However, the user should just install
+  # the module and all is fine. The "0.0.0" is by intention to have some nonsaying version string but keeping
+  # consistent with what setuptools_scm generates.
+  firmware_version = "0.0.0+g" + subprocess.check_output("git rev-parse --short HEAD".split()).decode("utf-8").strip()
+
+# Use the current commit time as date approximator.  
+firmware_version_date = datetime.datetime.fromtimestamp(int(subprocess.check_output("git log -1 --format=%ct".split()).decode("utf-8").strip()))
+
+rename_keys = lambda dct, prefix='',suffix='': {prefix+k+suffix:v for k,v in dct.items()}
 
 # The following data are exemplaric and will be replaced with actual data one day.
 
-item = {
-    "OEM": "anabrid",
-    "model": {
-        "name": "LUCIDAC",
-    },
-    "build_system": {
-      "name": "pio",
-      "env": build_system,
-      "build_flags": build_flags,
-    },
-    "device_serials": {
-        "serial_number": "123",
-        "uuid": "26051bb5-7cb7-43fd-8d64-e24fdfa14489",
-        "registration_link": "https://anabrid.com/sn/lucidac/123/26051bb5-7cb7-43fd-8d64-e24fdfa14489"
-    },
-    "versions": { # semantic versioning
-        "firmware": [ 0, 0, 1 ],
-        "protocol": [ 0, 0, 1 ]
-    },
-    "passwords": {
-        "admin": "Iesh8Sae"
-    },
-}
+distdb = dict(
+    OEM = "anabrid",
+    OEM_MODEL_NAME = "LUCIDAC",
+
+    # hardware revision should actually be detectable from the boards but if
+    # it is not, this would be a place to describe it
+
+    OEM_HARDWARE_REVISION = "LUCIDAC-v1.2.3",
+
+    BUILD_SYSTEM_NAME = "pio",
+    **rename_keys(build_system, prefix="BUILD_SYSTEM_"),
+    BUILD_FLAGS = " ".join(build_flags),
+
+    # These values are supposed to be determined when the device finishes
+    # self-tests and leaves the house, similar to THAT serial number procedure.
+    DEVICE_SERIAL_NUMBER = "123",
+    DEVICE_SERIAL_UUID = "26051bb5-7cb7-43fd-8d64-e24fdfa14489",
+    DEVICE_SERIAL_REGISTRATION_LINK = "https://anabrid.com/sn/lucidac/123/26051bb5-7cb7-43fd-8d64-e24fdfa14489",
+    DEFAULT_ADMIN_PASSWORD = "Iesh8Sae",
+
+    # the previous fields are actually secrets and should only be told on a secret channel.
+    SENSITIVE_FIELDS = 'DEVICE_SERIAL_UUID DEVICE_SERIAL_REGISTRATION_LINK DEFAULT_ADMIN_PASSWORD',
+
+    FIRMWARE_VERSION = firmware_version,
+    FIRMWARE_DATE = firmware_version_date.isoformat(),
+
+    PROTOCOL_VERSION = "0.0.1", # FIXME
+    PROTOCOL_DATE = firmware_version_date.isoformat(), # FIXME
+)
 
 # uncomment this line to inspect the full data
 # pprint.pprint(item)
 
-nl = "\n"
-esc = lambda s: s.replace('"', '\\"')
-sugar = lambda fun: lambda **kv: "".join(fun(k,v) for k,v in kv.items())
-cfunc = lambda retval, body: sugar(lambda funcname, v: f"{retval} dist::Distributor::{funcname}() const "+"{ return "+body(v)+"; }")
+for k,v in distdb.items():
+  assert isinstance(v,str), f"Expected {k} to be string but it is: {v}"
 
-cstring = cfunc("String", lambda s: '"'+s.replace('"', '\\"')+'"')
-cuuid = cfunc("utils::UUID", lambda uuid_as_string: "utils::UUID{"+",".join(hex(b) for b in uuid.UUID(uuid_as_string).bytes)+"}")
-cversion = cfunc("utils::Version", lambda version_list: "utils::Version{"+', '.join(map(str,version_list))+"}")
+nl, quote = "\n", '"'
+esc = lambda s: s.replace(quote, '\\"')
 
-#cstring = lambda **kv: "".join(k+" = F(\""+esc(v)+"\");"+nl for k,v in kv.items())
-#cuuid = lambda **kv: "".join(k+" = UUID{"+",".join(hex(b) for b in uuid.UUID(v).bytes)+"};"+nl for k,v in kv.items())
-#cversion = lambda **kv: "".join(k+" = Version{"+', '.join(map(str,v))+"};"+nl for k,v in kv.items())
+distdb_as_variables = "\n".join(f"const char {k}[] PROGMEM = {quote}{esc(v)}{quote};" for k,v in distdb.items())
+distdb_variable_lookup = "\n".join(f"  if(strcmp_P(key, (PGM_P)F({quote}{k}{quote}) )) return {k};" for k,v in distdb.items())
+distdb_as_defines = "\n".join(f"#define {k} {quote}{esc(v)}{quote}" for k,v in distdb.items())
 
+distdb_as_json_string_esc = esc(json.dumps(distdb));
 
-cpp_code = \
-"""// This file was written by dist/build_progmem.py and is not supposed to be git-versioned
+public_distdb = { k:v for k,v in distdb.items() if not k in distdb["SENSITIVE_FIELDS"].split() }
+secret_distdb = { k:v for k,v in distdb.items() if     k in distdb["SENSITIVE_FIELDS"].split() }
+distdb_public_as_json_string_esc = esc(json.dumps(public_distdb))
 
-#include <avr/pgmspace.h> // F() macro, PROGMEM
+distdb_public_json_defines = "\n".join(f"  target[{quote}{k}{quote}] = {k};" for k,v in public_distdb.items())
+distdb_secret_json_defines = "\n".join(f"    target[{quote}{k}{quote}] = {k};" for k,v in secret_distdb.items())
 
+code_files = {}
+
+code_files["distributor_generated.h"] = \
+"""
+// This file was written by dist/build_progmem.py and is not supposed to be git-versioned
+
+// This file is not supposed to be included directly. Include "distributor.h" instead.
+
+%(distdb_as_defines)s
+
+#define distdb_AS_JSON "%(distdb_as_json_string_esc)s"
+
+#define distdb_PUBLIC_AS_JSON "%(distdb_public_as_json_string_esc)s"
+
+"""
+
+code_files["distributor_generated.cpp"] = \
+"""
 #include "distributor.h"
 
-""" + "\n".join([
-  cstring(oem_name=item["OEM"]),
-  cstring(model_name=item["model"]["name"]),
-  cstring(appliance_serial_number=item["device_serials"]["serial_number"]),
-  cuuid(appliance_serial_uuid=item["device_serials"]["uuid"]),
-  cstring(appliance_registration_link=item["device_serials"]["registration_link"]),
-  cversion(firmware_version=item["versions"]["firmware"]),
-  cversion(protocol_version=item["versions"]["protocol"]),
-  cstring(default_admin_password=item["passwords"]["admin"]),
-]) + nl
+const char* dist::ident() {
+  return OEM_MODEL_NAME " Hybrid Controller (" FIRMWARE_VERSION ")";
+}
 
+const char* dist::as_json(bool include_secrets) {
+  return include_secrets ? distdb_AS_JSON : distdb_PUBLIC_AS_JSON;
+}
 
-pathlib.Path(abs_filename).write_text(cpp_code)
+void dist::write_to_json(JsonObject target, bool include_secrets) {
+%(distdb_public_json_defines)s
+  if(include_secrets) {
+%(distdb_secret_json_defines)s
+  }
+}
+"""
+
+for fname, content in code_files.items():
+  pathlib.Path(abs_src_dir / fname).write_text(content % locals())
 
 # just to make sure the generated code does not touch the git repository.
-dist_src = pathlib.Path(abs_filename).parent.parent
-(dist_src / ".gitignore").write_text(rel_filename + "\n")
+lib_dist_dir = pathlib.Path(abs_src_dir).parent
+(lib_dist_dir / ".gitignore").write_text("".join( f"{rel_src_dir}/{fname}\n" for fname in code_files.keys()))

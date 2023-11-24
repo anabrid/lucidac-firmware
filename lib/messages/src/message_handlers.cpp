@@ -90,8 +90,7 @@ bool msg::handlers::PingRequestHandler::handle(JsonObjectConst msg_in, JsonObjec
 
 bool msg::handlers::GetSystemStatus::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
   auto odist = msg_out.createNestedObject("dist");
-  dist::Distributor d;
-  d.write_to_json(odist, /* include_secrets */ false);
+  dist::write_to_json(odist, /* include_secrets */ false);
 
   auto oauth = msg_out.createNestedObject("auth");
   _auth.status(oauth);
