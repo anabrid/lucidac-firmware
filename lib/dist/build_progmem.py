@@ -45,6 +45,7 @@ except NameError:
   pass
 
 print(f"OEM distribution generating infos at {abs_src_dir}")
+warn = lambda msg: print("lib/dist/build_progmem.py: WARN ", msg)
 
 # Easily generate version strings out of git working directory/repository information.
 # Basically a nicer "git describe --tags" or similar.
@@ -55,7 +56,7 @@ try:
   import setuptools_scm as scm
   firmware_version = scm.get_version()
 except ModuleNotFoundError:
-  print("lib/dist/build_progmem.py: WARN Missing python setuptools_scm package, falling back to simplified version guessing")
+  warn("Missing python setuptools_scm package, falling back to simplified version guessing")
   # We could also use "git describe" to simply access the latest git tag. However, the user should just install
   # the module and all is fine. The "0.0.0" is by intention to have some nonsaying version string but keeping
   # consistent with what setuptools_scm generates.
@@ -66,6 +67,7 @@ try:
   unix_timestamp = subprocess.getoutput("which git >&/dev/null && git log -1 --format=%ct || echo failure".split()).strip()
   firmware_version_date = datetime.datetime.fromtimestamp(int(unix_timestamp)).isoformat()
 except ValueError:
+  warn("No git available, have no information about version and date at all.")
   firmware_version_date = 'unavailable'
 
 rename_keys = lambda dct, prefix='',suffix='': {prefix+k+suffix:v for k,v in dct.items()}
