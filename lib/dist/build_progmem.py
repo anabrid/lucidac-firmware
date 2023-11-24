@@ -59,10 +59,14 @@ except ModuleNotFoundError:
   # We could also use "git describe" to simply access the latest git tag. However, the user should just install
   # the module and all is fine. The "0.0.0" is by intention to have some nonsaying version string but keeping
   # consistent with what setuptools_scm generates.
-  firmware_version = "0.0.0+g" + subprocess.check_output("git rev-parse --short HEAD".split()).decode("utf-8").strip()
+  firmware_version = "0.0.0+g" + subprocess.getoutput("which git >&/dev/null && git rev-parse --short HEAD || echo no-git-avail").strip()
 
 # Use the current commit time as date approximator.  
-firmware_version_date = datetime.datetime.fromtimestamp(int(subprocess.check_output("git log -1 --format=%ct".split()).decode("utf-8").strip()))
+try:
+  unix_timestamp = subprocess.getoutput("which git >&/dev/null && git log -1 --format=%ct || echo failure".split()).strip()
+  firmware_version_date = datetime.datetime.fromtimestamp(int(unix_timestamp)).isoformat()
+except ValueError:
+  firmware_version_date = 'unavailable'
 
 rename_keys = lambda dct, prefix='',suffix='': {prefix+k+suffix:v for k,v in dct.items()}
 
@@ -92,10 +96,10 @@ distdb = dict(
     SENSITIVE_FIELDS = 'DEVICE_SERIAL_UUID DEVICE_SERIAL_REGISTRATION_LINK DEFAULT_ADMIN_PASSWORD',
 
     FIRMWARE_VERSION = firmware_version,
-    FIRMWARE_DATE = firmware_version_date.isoformat(),
+    FIRMWARE_DATE = firmware_version_date,
 
     PROTOCOL_VERSION = "0.0.1", # FIXME
-    PROTOCOL_DATE = firmware_version_date.isoformat(), # FIXME
+    PROTOCOL_DATE = firmware_version_date, # FIXME
 )
 
 # uncomment this line to inspect the full data
