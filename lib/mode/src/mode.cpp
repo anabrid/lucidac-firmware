@@ -84,7 +84,8 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   //
 
   // Sanity check ic_time_ns, which must be countable by a 16bit timer at CLK_FREQ
-  if (ic_time_ns < 100 or ic_time_ns >= 0xFFFF * 2000 / CLK_FREQ_MHz)
+  // TODO: Change IC timer to a two-stage timer like the OP timer to increase maximum IC time
+  if (ic_time_ns < 100 or ic_time_ns >= 270001)
     return false;
   // We can change FLEXIO_SHIFTCTL_TIMPOL to only have to divide by 1000, but it does not matter much.
   uint32_t num_ic_clocks = ic_time_ns * CLK_FREQ_MHz / 2000;
