@@ -138,12 +138,10 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
     // Don't use float-type pow
     // Also divider can't be larger than 273, otherwise pre-scaler > 2^16
     unsigned int divider = 1;
-    if (order_of_magnitude >= 4)
-      divider = 10;
     if (order_of_magnitude >= 6)
-      divider = 100;
+      divider = 10;
     if (order_of_magnitude >= 8)
-      divider = 250;
+      divider = 100;
 
     auto t_op = ++_t_idx;
     if (t_op >= 8)
