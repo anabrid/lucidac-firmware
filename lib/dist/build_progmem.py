@@ -60,11 +60,11 @@ except ModuleNotFoundError:
   # We could also use "git describe" to simply access the latest git tag. However, the user should just install
   # the module and all is fine. The "0.0.0" is by intention to have some nonsaying version string but keeping
   # consistent with what setuptools_scm generates.
-  firmware_version = "0.0.0+g" + subprocess.getoutput("which git >&/dev/null && git rev-parse --short HEAD || echo no-git-avail").strip()
+  firmware_version = "0.0.0+g" + subprocess.getoutput("which git >/dev/null && git rev-parse --short HEAD || echo no-git-avail").strip()
 
 # Use the current commit time as date approximator.  
 try:
-  unix_timestamp = subprocess.getoutput("which git >&/dev/null && git log -1 --format=%ct || echo failure".split()).strip()
+  unix_timestamp = subprocess.getoutput("which git >/dev/null && git log -1 --format=%ct || echo failure".split()).strip()
   firmware_version_date = datetime.datetime.fromtimestamp(int(unix_timestamp)).isoformat()
 except ValueError:
   warn("No git available, have no information about version and date at all.")
