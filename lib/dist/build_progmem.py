@@ -29,7 +29,7 @@ try:
 except NameError:
   # pure python does not know 'Import' (is not defined in pure Python).
   build_system = {}
-  build_flags = []
+  build_flags = []    
 
 import pathlib, json, textwrap, uuid, pprint, subprocess, datetime
   
@@ -146,15 +146,19 @@ code_files["distributor_generated.cpp"] = \
 """
 #include "distributor.h"
 
-const char* dist::ident() {
+// Interestingly, FLASHMEM and PROGMEM *do* have an effect in Teensy,
+// which is whether functions are copied into ICTM RAM or not. If not provided,
+// it is up to the compiler (linker) to decide where to put stuff.
+
+FLASHMEM const char* dist::ident() {
   return OEM_MODEL_NAME " Hybrid Controller (" FIRMWARE_VERSION ")";
 }
 
-const char* dist::as_json(bool include_secrets) {
+FLASHMEM const char* dist::as_json(bool include_secrets) {
   return include_secrets ? distdb_AS_JSON : distdb_PUBLIC_AS_JSON;
 }
 
-void dist::write_to_json(JsonObject target, bool include_secrets) {
+FLASHMEM void dist::write_to_json(JsonObject target, bool include_secrets) {
 %(distdb_public_json_defines)s
   if(include_secrets) {
 %(distdb_secret_json_defines)s
