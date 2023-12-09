@@ -354,8 +354,11 @@ float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
 }
 
 const char *daq::BaseDAQ::raw_to_str(uint16_t raw) {
-  return helpers::normalized_to_float_str_arr[raw_to_normalized(raw)];
+  size_t normalized_bracketed = 
+    max(min(raw_to_normalized(raw), helpers::normalized_to_float_str_arr.size()), 0);
+  return helpers::normalized_to_float_str_arr[normalized_bracketed];
 }
+
 
 std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, unsigned int delay_us) {
   utils::RunningAverageVec<NUM_CHANNELS> avg;

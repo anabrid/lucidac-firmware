@@ -7,6 +7,8 @@
 #include <Arduino.h>
 #include <limits>
 
+#include "logging.h"
+
 void mode::ManualControl::init() {
   digitalWriteFast(PIN_MODE_IC, HIGH);
   digitalWriteFast(PIN_MODE_OP, HIGH);
@@ -95,8 +97,10 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   // Sanity check op_time_ns, which we will count with two 16bit timers (=32bit) at CLK_FREQ
   // Just limit to 1 second for now, the actual math is slightly more complicated
   // Also, we don't really want to do extremely short OP times (for now?)
-  if (op_time_ns < 100 or op_time_ns > 1'000'000'000)
+  if (op_time_ns < 100 or op_time_ns > 1'000'000'000) {
+    LOG_ERROR("FlexIOControl: Requested op_time_ns cannot be represented by 16bit.");
     return false;
+  }
 
   // Configure a timer to set an input pin high, signaling end of op_time
   if (op_time_ns < 0xFFFFull * 1000ull / CLK_FREQ_MHz) {
