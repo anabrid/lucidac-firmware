@@ -66,8 +66,10 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
 
   // Sanity check ic_time_ns, which must be countable by a 16bit timer at CLK_FREQ
   // TODO: Change IC timer to a two-stage timer like the OP timer to increase maximum IC time
-  if (ic_time_ns < 100 or ic_time_ns >= 270001)
+  if (ic_time_ns < 100 or ic_time_ns >= 270001) {
+    LOG_ERROR("FlexIOControl: Requested ic_time_ns cannot be represented by 16bit.");
     return false;
+  }
   // We can change FLEXIO_SHIFTCTL_TIMPOL to only have to divide by 1000, but it does not matter much.
   uint32_t num_ic_clocks = ic_time_ns * CLK_FREQ_MHz / 2000;
   // There is a constant delay (1-2 FlexIO cycles) before enabling the timer, which we correct here
@@ -98,7 +100,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   // Just limit to 1 second for now, the actual math is slightly more complicated
   // Also, we don't really want to do extremely short OP times (for now?)
   if (op_time_ns < 100 or op_time_ns > 1'000'000'000) {
-    LOG_ERROR("FlexIOControl: Requested op_time_ns cannot be represented by 16bit.");
+    LOG_ERROR("FlexIOControl: Requested op_time_ns cannot be represented by 32bit.");
     return false;
   }
 

@@ -266,8 +266,10 @@ bool daq::FlexIODAQ::init(unsigned int) {
   // Enable dma channel
   dma::channel.enable();
 
-  if (dma::channel.error())
+  if (dma::channel.error()) {
+    LOG_ERROR("dma::channel.error");
     return false;
+  }
 
   return true;
 }
