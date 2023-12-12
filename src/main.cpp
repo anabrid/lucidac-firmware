@@ -122,9 +122,12 @@ bool handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out, auth::
     success = msg_handler->handle(envelope_in["msg"].as<JsonObjectConst>(), msg_out);
   }
 
+  // Always include a success field for replies (out of band notifications won't run throught
+  // this method, for example client::RunStateChangeNotificationHandler::handle)
+  envelope_out["success"] = success;
+
   if (!success) {
     // Message could not be handled, mark envelope as unsuccessful
-    envelope_out["success"] = false;
     envelope_out["error"] = msg_out["error"];
     envelope_out.remove("msg");
     LOG_ALWAYS("Error while handling message.");
