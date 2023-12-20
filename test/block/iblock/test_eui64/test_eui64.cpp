@@ -18,29 +18,29 @@ void tearDown() {
   // clean stuff up here
 }
 
-void test_uuid_address() {
+void test_eui64_address() {
   // I_BLOCK_IDX is 0, but block idx start at 1, so address is 1.
   TEST_ASSERT_EQUAL(0b000000'0001, chip.address);
 }
 
-void test_read_uuid() {
-  std::array<uint8_t, 8> uuid_is{1, 1, 1, 1, 1, 1, 1, 1};
+void test_read_eui64() {
+  std::array<uint8_t, 8> eui64_is{1, 1, 1, 1, 1, 1, 1, 1};
   // For development carrier board I use
-  std::array<uint8_t, 8> uuid_should{0, 0b00000100, 0b10100011, 0b00001011,
+  std::array<uint8_t, 8> eui64_should{0, 0b00000100, 0b10100011, 0b00001011,
                                      0, 0b00010100, 0b10101000, 0b10111101};
 
-  // Read UUID
-  chip.read_from_hardware(offsetof(metadata::MetadataMemoryLayoutV1, uuid),
-                          sizeof(metadata::MetadataMemoryLayoutV1::uuid), uuid_is.data());
+  // Read eui64
+  chip.read_from_hardware(offsetof(metadata::MetadataMemoryLayoutV1, eui64),
+                          sizeof(metadata::MetadataMemoryLayoutV1::eui64), eui64_is.data());
 
-  // Check UUID
-  TEST_ASSERT_EQUAL_UINT8_ARRAY(uuid_should.data(), uuid_is.data(), uuid_should.size());
+  // Check eui64
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(eui64_should.data(), eui64_is.data(), eui64_should.size());
 }
 
 void setup() {
   UNITY_BEGIN();
-  RUN_TEST(test_uuid_address);
-  RUN_TEST(test_read_uuid);
+  RUN_TEST(test_eui64_address);
+  RUN_TEST(test_read_eui64);
   UNITY_END();
 }
 

@@ -21,7 +21,7 @@ typedef struct __attribute__((packed)) MetadataMemoryLayoutV1 {
   const uint8_t entity_variant;
   const uint8_t entity_version;
   const uint8_t entity_data[256 - 14];
-  const uint8_t uuid[8];
+  const uint8_t eui64[8];
 
   uint8_t get_memory_version() const { return (_memory_version_and_size & 0xE000) >> 13; }
 
