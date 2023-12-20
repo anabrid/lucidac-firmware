@@ -7,6 +7,13 @@
 #include "local_bus.h"
 #include "metadata.h"
 
+/**
+ * The 74LVC138AD is a 3-Line to 8-Line decoder/Demultiplexer.
+ * Actually this class provides access to the 25AA02E64 2K SPI Bus Serial EEPROM
+ * with EUI-64 Node Identity, holding 2048 bits = 256 bytes of meta data and identification
+ * material (see also Deliverable D3.2 section 3.1). This is represented by the
+ * the MetadataMemory<256> base class.
+ **/
 class MetadataMemory74LVC138AD : public metadata::MetadataMemory<256> {
 public:
   explicit MetadataMemory74LVC138AD(bus::addr_t address)

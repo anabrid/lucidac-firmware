@@ -9,6 +9,11 @@
 
 namespace functions {
 
+/**
+ * The AD5452 is the 12-Bit Multiplying DAC, used in the C-Block
+ * (one AD5452 per lane). This class encapsulates the SPI programming
+ * access to the chip.
+ **/
 class AD5452 : public DataFunction {
 public:
   static const SPISettings DEFAULT_SPI_SETTINGS;

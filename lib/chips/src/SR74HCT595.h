@@ -9,6 +9,10 @@
 
 namespace functions {
 
+/**
+ * The SR74HCT595 is an 8-Bit Shift Register with 3-State Output Registers.
+ * It is used for instance at the MIntBlock and the CBlock.
+ **/
 class SR74HCT595 : public DataFunction {
 public:
   static const SPISettings DEFAULT_SPI_SETTINGS;

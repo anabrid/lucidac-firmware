@@ -12,6 +12,9 @@
 
 namespace metadata {
 
+/**
+ * This structure describes the 256 byte memory of the 25AA02E64 EEPROMs in Memory Version 1.
+ **/
 typedef struct __attribute__((packed)) MetadataMemoryLayoutV1 {
   const uint16_t _memory_version_and_size;
   const uint16_t _entity_class_and_type;
@@ -25,6 +28,11 @@ typedef struct __attribute__((packed)) MetadataMemoryLayoutV1 {
   uint16_t get_memory_size() const { return _memory_version_and_size & 0x1FFF; }
 } MetadataMemoryLayoutV1;
 
+/**
+ * The abstract metadata memory class allows to represent different EEPROM sizes, for instance
+ * does the 25AA02E64 hold 256 bytes while 25AA02E32 holds only 128 bytes. However, the extension
+ * rather looks into bigger then smaller EEPROMs.
+ **/
 template <std::size_t dataSize> class MetadataMemory : public functions::_old_DataFunction {
 private:
   std::array<uint8_t, dataSize> data;

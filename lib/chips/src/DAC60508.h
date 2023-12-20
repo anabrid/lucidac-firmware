@@ -9,6 +9,11 @@
 
 namespace functions {
 
+/**
+ * The DAC60508 is the 12-Bit 8-channel DAC, used in the MInt-Block
+ * for the initial conditions. This class encapsulates the SPI programming
+ * access to the chip.
+ **/
 class DAC60508 : public DataFunction {
 public:
   static constexpr uint8_t REG_NOOP = 0;
