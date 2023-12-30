@@ -13,6 +13,9 @@
 #include "user_login.h"
 #include "run_manager.h"
 
+#include "hashflash.h"
+
+
 utils::SerialLineReader serial_line_reader;
 net::EthernetServer server;
 carrier::Carrier carrier_;
@@ -45,6 +48,10 @@ void setup() {
   }
 
   LOG_ALWAYS(dist::ident());
+  LOGV("Flash image (%d bytes) sha256 sum: %s\n",
+      utils::flashimagelen(),
+      utils::sha256_to_string(utils::hash_flash_sha256()).c_str()
+  );
 
   LOG(ANABRID_DEBUG_INIT, "Loading settings from EEPROM...");
   settings.read_from_eeprom();

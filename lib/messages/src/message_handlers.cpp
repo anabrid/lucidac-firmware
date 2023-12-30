@@ -7,6 +7,7 @@
 #include "persistent_eth.h"
 #include "user_auth.h"
 #include "distributor.h"
+#include "hashflash.h"
 
 std::map<std::string, msg::handlers::MessageHandler *> msg::handlers::Registry::_registry{
     {"ping", new PingRequestHandler{}}};
@@ -76,6 +77,10 @@ bool msg::handlers::PingRequestHandler::handle(JsonObjectConst msg_in, JsonObjec
 bool msg::handlers::GetSystemStatus::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
   auto odist = msg_out.createNestedObject("dist");
   dist::write_to_json(odist, /* include_secrets */ false);
+
+  auto oflash = msg_out.createNestedObject("flashimage");
+  oflash["size"] = utils::flashimagelen();
+  oflash["sha256sum"] = utils::sha256_to_string(utils::hash_flash_sha256());
 
   auto oauth = msg_out.createNestedObject("auth");
   _auth.status(oauth);
