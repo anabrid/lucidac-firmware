@@ -71,6 +71,13 @@ void ethernet::UserDefinedEthernet::begin(net::EthernetServer *server) {
 
     LOG2("MAC: ", ethernet::system_mac_as_string().c_str())
 
+    // This build flag basically solves a "deadlock" if a no DHCP server is
+    // available but the teensy is configured for dhcp.
+    #ifdef ANABRID_SKIP_DHCP
+    use_dhcp = false;
+    LOG_ALWAYS("Skipping DHCP due to build flag ANABRID_SKIP_DHCP");
+    #endif
+
     if(use_dhcp) {
         LOG2("DHCP with Hostname: ", hostname);
         net::Ethernet.setHostname(hostname.c_str());
