@@ -12,8 +12,6 @@ extern unsigned long _flashimagelen;
 constexpr unsigned long flash_origin = 0x60000000;
 
 namespace utils {
-    using sha256_t = std::array<uint8_t, 32>;
-
     /**
      * Returns the number of bytes of the flash image. This is identical to the output of
      * 
@@ -43,26 +41,6 @@ namespace utils {
         return checksum;
     }
 
-    inline std::string sha256_to_string(const sha256_t& hash) {
-        char out64[64+1]; // 0-terminated
-        for(int pin=0; pin<32; pin++) {
-            int pout = 2*pin;
-            std::sprintf(out64+pout, "%02x", hash[pin]);
-        }
-        return std::string(out64);
-    }
-
-    // a git-like 7 character short string
-    inline std::string sha256_short_hash(const sha256_t& hash) {
-        return sha256_to_string(hash).substr(0,7);
-    }
-
-    // allow kind of git-like hash comparison
-    inline bool sha256_test_short(std::string a, std::string b) {
-        if(a.length() == 7 && b.length() >= 7) return a == b.substr(0,7);
-        if(a.length() == 64 && b.length() == 64) return a == b;
-        return false;
-    }
 }
 
 #endif /* UTILS_HASH_FLASH_H */

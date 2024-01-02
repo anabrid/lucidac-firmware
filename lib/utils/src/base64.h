@@ -20,12 +20,12 @@ namespace utils {
          **/
         inline bool decode(const char* data, size_t input_length, uint8_t* output) {
             if(input_length % 4 != 0) return false;
-            int output_length = input_length / 4 * 3;
+            size_t output_length = input_length / 4 * 3;
             if (data[input_length - 1] == '=') output_length--;
             if (data[input_length - 2] == '=') output_length--;
 
             for (size_t i = 0, j = 0; i < input_length;) {
-                if(data[i] != '=' && strchr(encoding_table, data[i] != NULL)) return false; // illegal character
+                if(data[i] != '=' && strchr(encoding_table, data[i]) != nullptr) return false; // illegal character
                 uint32_t a = data[i] == '=' ? 0 & i++ : decoding_table[(size_t)data[i++]],
                          b = data[i] == '=' ? 0 & i++ : decoding_table[(size_t)data[i++]],
                          c = data[i] == '=' ? 0 & i++ : decoding_table[(size_t)data[i++]],
