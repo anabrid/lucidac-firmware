@@ -44,6 +44,7 @@
 #define LOG_ANABRID_DEBUG_DAQ(message) ((void)0)
 #endif
 
+
 // moved here from main in order to use at other places
 #define _ERROR_OUT_                                                                                           \
   while (true) {                                                                                              \

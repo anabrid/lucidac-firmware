@@ -15,6 +15,7 @@
 
 #include "hashflash.h"
 #include "plugin.h"
+#include "flasher.h"
 
 utils::SerialLineReader serial_line_reader;
 net::EthernetServer server;
@@ -96,6 +97,11 @@ void setup() {
   msg::handlers::Registry::set("load_plugin", new msg::handlers::LoadPluginHandler(), auth::SecurityLevel::RequiresAdmin);
   msg::handlers::Registry::set("plugin_status", new msg::handlers::PluginStatusHandler(), auth::SecurityLevel::RequiresNothing);
   msg::handlers::Registry::set("unload_plugin", new msg::handlers::UnloadPluginHandler(), auth::SecurityLevel::RequiresAdmin);
+
+  msg::handlers::Registry::set("ota_update_init", new msg::handlers::FlasherInitHandler(), auth::SecurityLevel::RequiresAdmin);
+  msg::handlers::Registry::set("ota_update_stream", new msg::handlers::FlasherDataHandler(), auth::SecurityLevel::RequiresAdmin);
+  msg::handlers::Registry::set("ota_update_complete", new msg::handlers::FlasherCompleteHandler(), auth::SecurityLevel::RequiresAdmin);
+  msg::handlers::Registry::set("ota_update_status", new msg::handlers::FlasherStatusHandler(), auth::SecurityLevel::RequiresNothing);
 
   //LOG("msg::handlers::Registry set up with handlers")
   //msg::handlers::Registry::dump();

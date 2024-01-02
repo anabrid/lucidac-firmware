@@ -105,6 +105,7 @@ void ethernet::UserDefinedEthernet::begin(net::EthernetServer *server) {
 void ethernet::status(JsonObject &msg_out) {
     msg_out["interfaceStatus"] = net::Ethernet.interfaceStatus();
     msg_out["mac"] = ethernet::system_mac_as_string();
+    //msg_out["tcp_port"] = net::Ethernet.server_port;
 
     auto ip = msg_out.createNestedObject("ip");
     dump_ip(net::Ethernet.localIP(), ip.createNestedArray("local"));
