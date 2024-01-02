@@ -51,6 +51,18 @@ namespace utils {
         }
         return std::string(out64);
     }
+
+    // a git-like 7 character short string
+    inline std::string sha256_short_hash(const sha256_t& hash) {
+        return sha256_to_string(hash).substr(0,7);
+    }
+
+    // allow kind of git-like hash comparison
+    inline bool sha256_test_short(std::string a, std::string b) {
+        if(a.length() == 7 && b.length() >= 7) return a == b.substr(0,7);
+        if(a.length() == 64 && b.length() == 64) return a == b;
+        return false;
+    }
 }
 
 #endif /* UTILS_HASH_FLASH_H */
