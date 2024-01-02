@@ -6,13 +6,14 @@
 #include "plugin.h"
 #include "hashflash.h"
 #include "base64.h"
+#include "logging.h"
 
 using namespace loader;
 using namespace utils;
 
 #ifdef ANABRID_ENABLE_GLOBAL_PLUGIN_LOADER
 constexpr static int the_memsize = 1024; //< number of bytes permanently hold
-uint8_t GlobalPluginLoader_Storage[GlobalPluginLoader::the_memsize];
+uint8_t GlobalPluginLoader_Storage[the_memsize];
 #endif
 
 // Memory alignment in a similar syntax to the linker ". = align(4)"
@@ -57,6 +58,9 @@ GlobalPluginLoader::GlobalPluginLoader() {
     prepare_mpu();
     load_addr = align(GlobalPluginLoader_Storage, 4);
     memsize = the_memsize - disalignment(GlobalPluginLoader_Storage, 4);
+    LOGMEV("Preparing MPU and %d bytes memory", memsize);
+    #else
+    LOGMEV("Skipping due to missing ANABRID_ENABLE_GLOBAL_PLUGIN_LOADER", "dummy");
     #endif
 }
 
@@ -96,16 +100,18 @@ std::string shortened_hexdump(uint8_t* mem, size_t size) {
 }
 
 void loader::convertToJson(const GlobalPluginLoader &src, JsonVariant dst) {
-    auto msg = dst.as<JsonObject>();
-    msg["type"] = "GlobalPluginLoader";
-    msg["load_addr"] = src.load_addr;
-    msg["memsize"] = src.memsize;
+    dst["type"] = "GlobalPluginLoader";
+    #ifndef ANABRID_ENABLE_GLOBAL_PLUGIN_LOADER
+    dst["hint"] = "Set ANABRID_ENABLE_GLOBAL_PLUGIN_LOADER debug feature flag to enable this loader";
+    #else
+    dst["load_addr"] = (uint32_t) src.load_addr;
+    dst["memsize"] = src.memsize;
 
-    msg["can_load"] = src.can_load();
-    msg["is_loaded"] = src.plugin.has_value();
+    dst["can_load"] = src.can_load();
+    dst["is_loaded"] = src.plugin.has_value();
 
     if(src.plugin) {
-        auto plugin = msg.createNestedObject("plugin");
+        auto plugin = dst.createNestedObject("plugin");
         plugin["size"] = src.plugin->size;
         utils::sha256 plugin_checksum(src.plugin->load_addr, src.plugin->size);
         plugin["sha256sum"] = plugin_checksum.to_string();
@@ -113,6 +119,7 @@ void loader::convertToJson(const GlobalPluginLoader &src, JsonVariant dst) {
         // can probably skip that
         plugin["hexdump"] = shortened_hexdump(src.plugin->load_addr, src.plugin->size);
     }
+    #endif
 }
 
 void dispatch(uint8_t* callee, Function::Returns ret_type, JsonVariant ret) {
@@ -210,5 +217,6 @@ bool msg::handlers::PluginStatusHandler::handle(JsonObjectConst msg_in, JsonObje
     auto oflash = msg_out.createNestedObject("flashimage");
     oflash["size"] = utils::flashimagelen();
     oflash["sha256sum"] = utils::sha256_to_string(utils::hash_flash_sha256());
+    return true;
 }
 
