@@ -55,7 +55,7 @@ void prepare_mpu() {
 GlobalPluginLoader::GlobalPluginLoader() {
     #ifdef ANABRID_ENABLE_GLOBAL_PLUGIN_LOADER
     prepare_mpu();
-    plugin.load_addr = align(GlobalPluginLoader_Storage, 4);
+    load_addr = align(GlobalPluginLoader_Storage, 4);
     memsize = the_memsize - disalignment(GlobalPluginLoader_Storage, 4);
     #endif
 }
@@ -87,6 +87,34 @@ void loader::convertFromJson(JsonVariantConst src, Function& f) {
     }
 }
 
+std::string shortened_hexdump(uint8_t* mem, size_t size) {
+    constexpr size_t inspect_bytes = 3;
+    char ret[2*inspect_bytes + 3]; // AABBCC...DDEEFF
+    for(size_t i=0; i<inspect_bytes; i++) sprintf(ret+2*i, "%x", mem[i]);
+    for(size_t i=0; i<inspect_bytes; i++) sprintf(ret+sizeof(ret)-2*(i+1), "%x", mem[i]);
+    return std::string(ret);
+}
+
+void loader::convertToJson(const GlobalPluginLoader &src, JsonVariant dst) {
+    auto msg = dst.as<JsonObject>();
+    msg["type"] = "GlobalPluginLoader";
+    msg["load_addr"] = src.load_addr;
+    msg["memsize"] = src.memsize;
+
+    msg["can_load"] = src.can_load();
+    msg["is_loaded"] = src.plugin.has_value();
+
+    if(src.plugin) {
+        auto plugin = msg.createNestedObject("plugin");
+        plugin["size"] = src.plugin->size;
+        utils::sha256 plugin_checksum(src.plugin->load_addr, src.plugin->size);
+        plugin["sha256sum"] = plugin_checksum.to_string();
+
+        // can probably skip that
+        plugin["hexdump"] = shortened_hexdump(src.plugin->load_addr, src.plugin->size);
+    }
+}
+
 void dispatch(uint8_t* callee, Function::Returns ret_type, JsonVariant ret) {
     switch(ret_type) {
           case Function::Returns::None: {
@@ -107,60 +135,62 @@ void dispatch(uint8_t* callee, Function::Returns ret_type, JsonVariant ret) {
 #define return_err(msg) { msg_out["error"] = msg; return false; }
 
 bool loader::SinglePluginLoader::load_and_execute(JsonObjectConst msg_in, JsonObject &msg_out) {
+    if(plugin) return_err("Already have plugin loaded, can only load one plugin at a time. Call unload before.");
     if(!can_load()) return_err("PluginLoader cannot load code. This is currently most likely due to the missing compile time flag ANABRID_ENABLE_GLOBAL_PLUGIN_LOADER");
     if(!msg_in.containsKey("entry")) return_err("Requiring entry point \"entry\"=0x1234 even if it is just 0.");
 
-    // Load address verification
-    if(msg_in["load_addr"] != plugin.load_addr) return_err("Require load address for verification. This SinglePluginLoader can only load from: [todo]");
+    // Load address verification, to ensure correct linking
+    if(msg_in["load_addr"] != load_addr) return_err("Require matching load address for verification. This SinglePluginLoader can only load from: [todo]");
     auto firmeware_hash = sha256_to_string(hash_flash_sha256());
     if(utils::sha256_test_short(msg_in["firmware_sha256"], firmeware_hash)) return_err("ABI mismatch: You built against [your firmware sha256] but we run [our sha256]");
 
     // Function pointer registration
-    plugin.entry = msg_in["entry"];
-    plugin.has_exit = msg_in.containsKey("exit");
-    if(plugin.has_exit) plugin.exit = msg_in["exit"];
+    Plugin new_plugin;
+    new_plugin.load_addr = load_addr;
+    new_plugin.entry = msg_in["entry"];
+    if(msg_in.containsKey("exit")) {
+        new_plugin.exit = msg_in["exit"].as<Function>();
+    }
 
     // Actual code submission
     // For the time being, expect base64 encoded data.
     // TODO: For slightly larger payloads (mind the typical 1024byte JsonObject maximum size in the code),
     //       a multi-step transmission has to be introduced.
-    auto payload = msg_in["payload"].as<std::string>();
-    int payload_bin_size = payload.size() / 4 * 3;
-    if(!load(payload_bin_size)) return_err("Payload too large or some code is already loaded.");
-    if(!base64().decode(payload.c_str(), payload.size(), plugin.load_addr)) { unload(); return_err("Could not decode base64-encoded payload."); }
+    auto base64_payload = msg_in["payload"].as<std::string>();
+    new_plugin.size = base64_payload.size() / 4 * 3;
+    if(!load(new_plugin)) return_err("Payload too large or some code is already loaded.");
+    if(!base64().decode(base64_payload.c_str(), base64_payload.size(), new_plugin.load_addr)) { unload(); return_err("Could not decode base64-encoded payload."); }
 
     // Code execution
-    uint8_t* entry_point = assert_callable(plugin.load_addr + plugin.entry.addr);
+    uint8_t* entry_point = assert_callable(plugin->load_addr + plugin->entry.addr);
     if(!entry_point) { unload(); return_err("Entry point address not properly aligned"); }
-    dispatch(entry_point, plugin.entry.ret_type, msg_out["returns"].as<JsonVariant>());
+    dispatch(entry_point, plugin->entry.ret_type, msg_out["returns"].as<JsonVariant>());
+
+    // Plugins which are actually RPC.
+    if(msg_in.containsKey("immediately_unload")) unload();
 
     return true;
 }
 
 bool loader::SinglePluginLoader::unload(JsonObjectConst msg_in, JsonObject &msg_out) {
-    if(!plugin.is_loaded()) { return_err("Cannot unload, nothing loaded"); }
-    if(plugin.has_exit) {
+    if(!plugin) { return_err("Cannot unload, nothing loaded"); }
+    if(plugin->exit) {
         // Code execution
-        uint8_t* exit_point = assert_callable(plugin.load_addr + plugin.exit.addr);
+        uint8_t* exit_point = assert_callable(plugin->load_addr + plugin->exit->addr);
         if(!exit_point) { unload(); return_err("Exit point address not properly aligned"); }
-        dispatch(exit_point, plugin.exit.ret_type, msg_out["returns"].as<JsonVariant>());
+        dispatch(exit_point, plugin->exit->ret_type, msg_out["returns"].as<JsonVariant>());
     }
     unload();
     return true;
 }
 
 
-bool loader::SinglePluginLoader::load(size_t code_len) { 
-    if(plugin.is_loaded()) unload();
-    if(code_len > memsize) return false;
-    plugin.size = code_len; return true;
+bool loader::SinglePluginLoader::load(const Plugin &new_plugin) {
+    if(plugin) return false; // call unload() first.
+    if(new_plugin.size > memsize) return false;
+    plugin = new_plugin; // copy
+    return true;
 }
-
-bool SinglePluginLoader::load(uint8_t* code, size_t code_len) {
-    if(!load(code_len)) return false;
-    memcpy(plugin.load_addr, code, code_len);
-}
-
 
 
 PluginLoader _loader; // Singleton here just for the message handlers.
@@ -172,3 +202,13 @@ bool msg::handlers::LoadPluginHandler::handle(JsonObjectConst msg_in, JsonObject
 bool msg::handlers::UnloadPluginHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
     return _loader.unload(msg_in, msg_out);
 }
+
+bool msg::handlers::PluginStatusHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+    auto loader_list = msg_out.createNestedArray("loaders");
+    loader_list.add(_loader);
+
+    auto oflash = msg_out.createNestedObject("flashimage");
+    oflash["size"] = utils::flashimagelen();
+    oflash["sha256sum"] = utils::sha256_to_string(utils::hash_flash_sha256());
+}
+

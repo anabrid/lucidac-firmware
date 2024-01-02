@@ -14,7 +14,7 @@
 #include "run_manager.h"
 
 #include "hashflash.h"
-
+#include "plugin.h"
 
 utils::SerialLineReader serial_line_reader;
 net::EthernetServer server;
@@ -92,6 +92,10 @@ void setup() {
 
   msg::handlers::Registry::set("status", new msg::handlers::GetSystemStatus(settings.auth), auth::SecurityLevel::RequiresNothing);
   msg::handlers::Registry::set("login", new msg::handlers::LoginHandler(settings.auth), auth::SecurityLevel::RequiresNothing);
+
+  msg::handlers::Registry::set("load_plugin", new msg::handlers::LoadPluginHandler(), auth::SecurityLevel::RequiresAdmin);
+  msg::handlers::Registry::set("plugin_status", new msg::handlers::PluginStatusHandler(), auth::SecurityLevel::RequiresNothing);
+  msg::handlers::Registry::set("unload_plugin", new msg::handlers::UnloadPluginHandler(), auth::SecurityLevel::RequiresAdmin);
 
   //LOG("msg::handlers::Registry set up with handlers")
   //msg::handlers::Registry::dump();

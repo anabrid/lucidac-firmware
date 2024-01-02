@@ -1,10 +1,14 @@
 #ifndef PLUGIN_LOADER_H
 #define PLUGIN_LOADER_H
 
-#include "ArduinoJson.h"
+#include <ArduinoJson.h>
+#include <etl/optional.h>
+
 #include "message_handlers.h"
 
+
 namespace loader {
+    using etl::optional;
     
     /**
      * A jumpable function, ie something with a signature "ret_type foo();", located at relative or absolute
@@ -14,11 +18,12 @@ namespace loader {
      * Could also support calling arguments such as ... well the same, basically. And then any combination :D
      **/
     struct Function {
-        uint32_t addr = 0x0;
-        enum class Returns { None, Bool, Int, String, JsonObject } ret_type = Returns::None;
-
+        enum class Returns { None, Bool, Int, String, JsonObject };
         typedef void (None_f)(); typedef bool (Bool_f)();  typedef int (Int_f)();
         typedef std::string (String_f)(); typedef JsonObject (JsonObject_f)();
+
+        uint32_t addr = 0x0;
+        Returns ret_type = Returns::None;
     };
     
     void convertFromJson(JsonVariantConst src, Function& f);
@@ -42,15 +47,13 @@ namespace loader {
      * message handlers on their own.
      **/
     struct Plugin {
-        uint8_t *load_addr=0; //< Absolute address in memory where the plugin is loaded to.
-        uint32_t size=0;      //< Actual size of plugin memory image
-        Function entry, exit;  //< entry and exit points. their addr are relative to load_addr.
-        bool has_exit=false;   //< Whether the exit Function exists. Mimics std::optional<Function> exit.
-
-        bool can_load() { return !load_addr || size; }
-        bool is_loaded() { return size; }
-      
-        // should write a signature function here which returns a checksum like CRC.
+        uint8_t *load_addr=0;    //< Absolute address in memory where the plugin is loaded to.
+        uint32_t size=0;         //< Actual size of plugin memory image
+        Function entry;          //< entry points ("constructor function"). entry.addr is relative to load_addr.
+        optional<Function> exit; //< destructor function. entry.addr is relative to load_addr.
+       
+        bool can_load() const { return !load_addr || size; }
+        // bool is_loaded() const { return size; }
     };
     
     /**
@@ -59,13 +62,15 @@ namespace loader {
      * Currently there is only one implementation, anyway.
      **/
     struct SinglePluginLoader {
-        Plugin plugin;  //< The single plugin managed. It's load_addr defines the memory address.
-        int memsize;    //< The maximum memory size managed/accessible/available by this loader
+        optional<Plugin> plugin;  //< The slot for a single managed plugin (if loaded). It's load_addr defines the memory address.
+        uint8_t* load_addr=0;     //< Absolute address of the memory segment. It is always (plugin->load_addr = load_addr).
+        uint32_t memsize=0;       //< The maximum memory size managed/accessible/available by this loader. It is always (plugin->size <= memsize).
         
-        bool can_load() { return plugin.can_load(); }
-        virtual bool load(uint8_t* code, size_t code_len); // convenience function, put code in place, returns true if success
-        virtual bool load(size_t code_len);
-        void unload() { plugin.size = 0; } // frees memory, does not call unloader.
+        bool can_load() const { return plugin ? plugin->can_load() : (load_addr!=0); }
+        //virtual bool load(uint8_t* code, size_t code_len); // convenience function, put code in place, returns true if success
+        //virtual bool load(size_t code_len);
+        bool load(const Plugin& new_plugin);
+        void unload() { plugin.reset(); } // frees memory, does not call unloader.
         
         virtual bool load_and_execute(JsonObjectConst msg_in, JsonObject &msg_out); /// load from protocol message, returns a reply msg
         //virtual void show(JsonObjectConst msg_in, JsonObject &msg_out); /// show what is currently there
@@ -92,6 +97,8 @@ namespace loader {
 
     using PluginLoader = GlobalPluginLoader;
 
+    void convertToJson(const GlobalPluginLoader& src, JsonVariant dst);
+
     
     /*
     
@@ -113,6 +120,11 @@ namespace handlers {
 
 
 class LoadPluginHandler : public MessageHandler {
+public:
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+};
+
+class PluginStatusHandler : public MessageHandler {
 public:
   bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
