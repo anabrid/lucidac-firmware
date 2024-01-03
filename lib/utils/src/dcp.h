@@ -47,11 +47,13 @@ namespace utils {
         std::string short_string() const { return to_string().substr(0,7); }
     };
 
-    // allow kind of git-like hash comparison
+    // compares two hashes, where any kind of abbreviation is allowed, in particular the famous
+    // "git short hashes" which are only the first 7 digits. To make this useful, the shorter
+    // has should not be too short.
     inline bool sha256_test_short(std::string a, std::string b) {
-        if(a.length() == 7 && b.length() >= 7) return a == b.substr(0,7);
-        if(a.length() == 64 && b.length() == 64) return a == b;
-        return false;
+        auto& longer  = a.length() > b.length() ? a : b,
+              shorter = a.length() > b.length() ? b : a;
+        return shorter == longer.substr(0, shorter.length());
     }
 
     // note: Could expose further functions, such as prhash(out_hash, 32) for a

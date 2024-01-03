@@ -86,6 +86,9 @@ pio test -v --filter integrated/test_sinusoidal
 
 For other tests, try `pio test --list-tests`.
 
+Hint: On some systems you have to run the tests with `sudo` while the regular uploading and monitoring does
+not require sudo.
+
 ## Using the actual TCP/IP main code
 Make sure the IP adress written in `src/main.cpp` is connectable for you (i.e. you are in
 the same network).
