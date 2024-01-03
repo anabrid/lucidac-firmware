@@ -228,6 +228,7 @@ int flash_erase_block( uint32_t start, uint32_t size )
 //******************************************************************************
 int flash_write_block( uint32_t addr, uint8_t *data, uint32_t count )
 {
+  if(!IN_FLASH(addr)) return 4; // sanity check
   // static (aligned) variables to guarantee 32-bit or 64-bit-aligned writes
   #if (FLASH_WRITE_SIZE == 4)				// #if 4-byte writes
   static uint32_t buf __attribute__ ((aligned (4)));	//   4-byte buffer
@@ -338,10 +339,8 @@ bool msg::handlers::FlasherDataHandler::handle(JsonObjectConst msg_in, JsonObjec
   LOGV("Loaded %zu bytes to RAM, ready for flash writing", payload_bin_size);
 
   // The write bases on the assumption that the buffer is completely erased.
-  /*
-  int error = flash_write_block(upgrade->bytes_transmitted, decoded_buffer, payload_bin_size);
+  int error = flash_write_block(upgrade->buffer_addr + upgrade->bytes_transmitted, decoded_buffer, payload_bin_size);
   if(error) return_errf("flash_write_block() error %02X", error);
-  */
 
   upgrade->bytes_transmitted += payload_bin_size;
   return true;
@@ -352,9 +351,16 @@ bool msg::handlers::FlasherStatusHandler::handle(JsonObjectConst msg_in, JsonObj
   if(upgrade) {
     msg_out["name"] = upgrade->name;
     msg_out["size"] = upgrade->imagelen;
-    msg_out["sha256sum"] = utils::sha256_to_string(upgrade->upstream_hash);
+    msg_out["upstream_hash"] = utils::sha256_to_string(upgrade->upstream_hash);
     msg_out["bytes_transmitted"] = upgrade->bytes_transmitted;
     msg_out["transfer_completed"] = upgrade->transfer_completed();
+
+    if(upgrade->transfer_completed()) {
+      auto actual_hash = utils::hash_sha256((uint8_t*)upgrade->buffer_addr, upgrade->imagelen);
+      msg_out["hash_correct"] = actual_hash == upgrade->upstream_hash;
+      // the following is mostly for debugging
+      msg_out["actual_hash"] = utils::sha256_to_string(actual_hash);
+    }
 
     // just to always have this information, cf below
     msg_out["buffer_addr"] = upgrade->buffer_addr;
@@ -378,17 +384,18 @@ bool msg::handlers::FlasherAbortHandler::handle(JsonObjectConst msg_in, JsonObje
 bool msg::handlers::FlasherCompleteHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
   if(!upgrade->transfer_completed()) return_err("Require transfer to be completed");
 
-  auto actual_hash = utils::hash_sha256((uint8_t*)upgrade->buffer_addr, upgrade->buffer_size);
+  LOG_ALWAYS("Checking new firmware image hash...");
+  auto actual_hash = utils::hash_sha256((uint8_t*)upgrade->buffer_addr, upgrade->imagelen);
   if(actual_hash != upgrade->upstream_hash) return_err("Corrupted upload data, hash mismatch. Please try again (start new init)");
 
-  // do the actual move and actually never return.
+  LOG_ALWAYS("Moving new firmware image into place and rebooting...");
 
   // move new program from buffer to flash, free buffer, and reboot
-  // flash_move( FLASH_BASE_ADDR, buffer_addr, hex.max-hex.min );
-  // should not return from flash_move(), but put REBOOT here as reminder
-  // REBOOT;
+  flash_move( FLASH_BASE_ADDR, upgrade->buffer_addr, upgrade->imagelen);
 
-  return true; // this is actually never reached
+  // will not return from flash_move(). This is actually never reached.
+  // return statement only to surpress compiler warnings.
+  return true;
 }
 
 
