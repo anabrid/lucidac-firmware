@@ -34,6 +34,7 @@ namespace loader {
              buffer_size=0; ///< identical to imagelen but increaed to next sector boundary
 
     FirmwareBuffer();
+    ~FirmwareBuffer();
   };
 
 } // ns loader
@@ -49,6 +50,11 @@ public:
 };
 
 class FlasherDataHandler : public MessageHandler {
+public:
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+};
+
+class FlasherAbortHandler : public MessageHandler {
 public:
   bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };

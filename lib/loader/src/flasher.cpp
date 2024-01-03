@@ -17,8 +17,9 @@
 #include <malloc.h>		// malloc(), free()
 #include <string.h>		// memset()
 
-#include "base64.h"
+#include "etl_base64.h"
 #include "flasher.h"
+#include "logging.h"
 
 
 // [<------- code ------->][<--------- buffer --------->][<-- FLASH_RESERVE -->]
@@ -31,7 +32,9 @@
 #define FLASH_SIZE        (0x800000)     // 8MB
 #define FLASH_SECTOR_SIZE (0x1000)       // 4KB sector size
 #define FLASH_WRITE_SIZE  (4)            // 4-byte/32-bit writes
-#define FLASH_RESERVE     (4*FLASH_SECTOR_SIZE) // reserve top of flash
+// teensy has 256KB reserve top of flash for EEPROM+LED blink restore program
+// however, we make another big 256KB reserve because of LittleFS storage below.
+#define FLASH_RESERVE     (80*FLASH_SECTOR_SIZE)
 #define FLASH_BASE_ADDR   (0x60000000)   // code starts here
 
 #define IN_FLASH(a) ((a) >= FLASH_BASE_ADDR && (a) < FLASH_BASE_ADDR + FLASH_SIZE)
@@ -39,38 +42,41 @@
 // reboot is the same for all ARM devices
 #define CPU_RESTART_ADDR	((uint32_t *)0xE000ED0C)
 #define CPU_RESTART_VAL		(0x5FA0004)
-#define REBOOT			    (*CPU_RESTART_ADDR = CPU_RESTART_VAL)
+#define REBOOT			      (*CPU_RESTART_ADDR = CPU_RESTART_VAL)
 
 #define RAMFUNC __attribute__ ((section(".fastrun"), noinline, noclone, optimize("Os") ))
 
 RAMFUNC int flash_sector_not_erased( uint32_t address );
 
 // from cores\Teensy4\eeprom.c  --  use these functions at your own risk!!!
+extern "C" {
 void eepromemu_flash_write(void *addr, const void *data, uint32_t len);
 void eepromemu_flash_erase_sector(void *addr);
 void eepromemu_flash_erase_32K_block(void *addr);
 void eepromemu_flash_erase_64K_block(void *addr);
+}
 
 // functions used to move code from buffer to program flash (must be in RAM)
 RAMFUNC void flash_move( uint32_t dst, uint32_t src, uint32_t size );
 
 // functions that can be in flash
+void firmware_buffer_free( uint32_t buffer_addr, uint32_t buffer_size );
 int  flash_write_block( uint32_t addr, char *data, uint32_t count );
 int  flash_erase_block( uint32_t address, uint32_t size );
 
 static int leave_interrupts_disabled = 0;
 
-//******************************************************************************
 // compute addr/size for firmware buffer and return NO/RAM/FLASH_BUFFER_TYPE
-//******************************************************************************
+// buffer will begin at first sector ABOVE code and below FLASH_RESERVE
+// start at bottom of FLASH_RESERVE and work down until non-erased flash found
 void firmware_buffer_init(uint32_t *buffer_addr, uint32_t *buffer_size )
 {
-  // buffer will begin at first sector ABOVE code and below FLASH_RESERVE
-  // start at bottom of FLASH_RESERVE and work down until non-erased flash found
   *buffer_addr = FLASH_BASE_ADDR + FLASH_SIZE - FLASH_RESERVE - 4;
+  LOGMEV("Search starting at 0x%0X", *buffer_addr);
   while (*buffer_addr > 0 && *((uint32_t *)*buffer_addr) == 0xFFFFFFFF)
     *buffer_addr -= 4;
   *buffer_addr += 4; // first address above code
+  LOGMEV("Found first non-erased flash byte at 0x%0X", *buffer_addr);
 
   // increase buffer_addr to next sector boundary (if not on a sector boundary)
   if ((*buffer_addr % FLASH_SECTOR_SIZE) > 0)
@@ -78,33 +84,31 @@ void firmware_buffer_init(uint32_t *buffer_addr, uint32_t *buffer_size )
   *buffer_size = FLASH_BASE_ADDR - *buffer_addr + FLASH_SIZE - FLASH_RESERVE;
 }
 
+/*
+ * TODO: It is currently very important that any started upload is either completed or aborted.
+ *       Abandoned uploads lead to leftovers in the FLASH which hinder the current buffer detection scheme
+ *       to identify them as available.
+ * 
+ * It is quite easy to do this: Just use utils::flashimagelen() and erase everything
+ * until the FLASH_RESERVE. That should probably be a measure to take if the buffer init
+ * fails.
+ *
+ */
+
 loader::FirmwareBuffer::FirmwareBuffer() {
-    firmware_buffer_init(&buffer_addr, &buffer_size);
+  // TODO: This function should look for leftovers of abandoned file transfers, see above.
+  firmware_buffer_init(&buffer_addr, &buffer_size);
 }
 
-//******************************************************************************
-// compute addr/size for firmware buffer and return NO/RAM/FLASH_BUFFER_TYPE
-//******************************************************************************
+loader::FirmwareBuffer::~FirmwareBuffer() {
+  firmware_buffer_free(buffer_addr, buffer_size);
+}
+
 void firmware_buffer_free( uint32_t buffer_addr, uint32_t buffer_size )
 {
   flash_erase_block( buffer_addr, buffer_size );
 }
 
-//******************************************************************************
-// search buffer for string FLASH_ID to verify code was built for correct TARGET
-
-// TODO: DELETE.
-
-//******************************************************************************
-int check_flash_id( uint32_t buffer, uint32_t size )
-{
-  const uint32_t bufferSize = buffer + size - FLASH_ID_LEN;
-  for (uint32_t i = buffer; i < bufferSize; ++i) {
-    if (strncmp((char *)i, FLASH_ID, FLASH_ID_LEN) == 0)
-      return 1;
-  }
-  return 0;
-}
 
 //******************************************************************************
 // flash_sector_not_erased()	returns 0 if erased and !0 (error) if NOT erased
@@ -279,17 +283,21 @@ int flash_write_block( uint32_t addr, uint8_t *data, uint32_t count )
 loader::FirmwareBuffer *upgrade;
 void delete_upgrade() { delete upgrade; upgrade = nullptr; }
 
-// no of bytes to transfer in a single chunk. Note that this unit is limited by the
-// maximum JSON Documentsize anyway, which is around 1024 bytes.
-constexpr size_t static max_chunk_size = 1024;
+// no of base64 symbols to transfer in a single chunk. Note that this unit is limited by the
+// maximum JSON Documentsize anyway, which is currently 4096 bytes.
+// Note: number_of_bytes = max_chunk_size * 3/4 and we require number_of_bytes%4 == 0.
+// TODO: Communicate this somewhere centrally
+constexpr size_t static json_overhead = 0xff; // for {'bla'}
+constexpr size_t static base64_chunk_size = 4096 / 2; //- json_overhead;
+constexpr size_t static bin_chunk_size = base64_chunk_size * 3/4;
 
 bool msg::handlers::FlasherInitHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
   if(upgrade) return_err("Firmware upgrade already running. Cancel it before doing another one");
 
   upgrade = new loader::FirmwareBuffer();
   upgrade->name = msg_in["name"].as<std::string>();
-  upgrade->imagelen = msg_in["size"];
-  upgrade->upstream_hash = utils::parse_sha256(msg_in["sha256sum"]);
+  upgrade->imagelen = msg_in["imagelen"];
+  upgrade->upstream_hash = utils::parse_sha256(msg_in["upstream_hash"]);
   upgrade->bytes_transmitted = 0;
 
   if(upgrade->imagelen > upgrade->buffer_size) {
@@ -298,29 +306,42 @@ bool msg::handlers::FlasherInitHandler::handle(JsonObjectConst msg_in, JsonObjec
       upgrade->imagelen, upgrade->buffer_size);
   }
 
-  // only interesting for debugging
-  msg_out["buffer_addr"] = upgrade->buffer_addr;
-  msg_out["buffer_size"] = upgrade->buffer_size;
+  // Tell the client a suitable chunk size (in base64-encoded).
+  // The JsonDocuments in main.cpp have length 4096.
+  msg_out["bin_chunk_size"] = bin_chunk_size;
+  msg_out["encoding"] = "binary-base64";
   return true;
 }
 
 bool msg::handlers::FlasherDataHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  if(upgrade) return_err("No firmware upgrade running.");
+  if(!upgrade) return_err("No firmware upgrade running.");
   if(upgrade->transfer_completed()) return_err("Transfer already completed");
 
-  uint8_t decoded_buffer[max_chunk_size] __attribute__ ((aligned (4)));
+  uint8_t decoded_buffer[bin_chunk_size] __attribute__ ((aligned (4)));
   auto base64_payload = msg_in["payload"].as<std::string>();
-  auto payload_bin_size = base64_payload.size() / 4 * 3;
-  if(payload_bin_size > max_chunk_size)
-    return_errf("Chunk size too large. Given %zu bytes > buffer size %zu bytes", payload_bin_size, max_chunk_size);
+  auto payload_base64_size = base64_payload.size(); // / 4 * 3;
+  if(!payload_base64_size) return_err("Missing payload.");
+  if((payload_base64_size % 4) != 0) return_err("Payload has not correct length to be base64-encoded.");
+    //return_err("Chunk not 32-bit aligned. Expecting buffer size multiples of 4 bytes.");
+  auto payload_bin_size = etl::base64::decode(base64_payload.c_str(), base64_payload.length(), decoded_buffer, bin_chunk_size);
+  if(!payload_bin_size) return_err("Could not decode base64-encoded payload.");
+
+  LOGV("payload_base64_size=%d, payload_bin_size=%d", payload_base64_size, payload_bin_size);
+
+  if(payload_bin_size > bin_chunk_size)
+    return_errf("Chunk size too large. Given %zu bytes > buffer size %zu bytes", payload_bin_size, bin_chunk_size);
   if(upgrade->bytes_transmitted + payload_bin_size > upgrade->imagelen)
     return_errf("Chunk size too large, yields to image size %zu bytes but only %zu announced.", upgrade->bytes_transmitted + payload_bin_size, upgrade->imagelen);
   if((payload_bin_size % 4) != 0)
     return_err("Chunk not 32-bit aligned. Expecting buffer size multiples of 4 bytes.");
-  if(!utils::base64().decode(base64_payload.c_str(), base64_payload.size(), decoded_buffer)) return_err("Could not decode base64-encoded payload.");
 
+  LOGV("Loaded %zu bytes to RAM, ready for flash writing", payload_bin_size);
+
+  // The write bases on the assumption that the buffer is completely erased.
+  /*
   int error = flash_write_block(upgrade->bytes_transmitted, decoded_buffer, payload_bin_size);
   if(error) return_errf("flash_write_block() error %02X", error);
+  */
 
   upgrade->bytes_transmitted += payload_bin_size;
   return true;
@@ -334,13 +355,23 @@ bool msg::handlers::FlasherStatusHandler::handle(JsonObjectConst msg_in, JsonObj
     msg_out["sha256sum"] = utils::sha256_to_string(upgrade->upstream_hash);
     msg_out["bytes_transmitted"] = upgrade->bytes_transmitted;
     msg_out["transfer_completed"] = upgrade->transfer_completed();
+
+    // just to always have this information, cf below
+    msg_out["buffer_addr"] = upgrade->buffer_addr;
+    msg_out["buffer_size"] = upgrade->buffer_size;
   } else {
     // inform about upgrade capabilities
     uint32_t potential_buffer_addr, potential_buffer_size;
     firmware_buffer_init(&potential_buffer_addr, &potential_buffer_size); // is non-destructive = w/o side effects
-    msg_out["ota_upgrade_buffer_addr"] = potential_buffer_addr;
-    msg_out["ota_upgrade_buffer_size"] = potential_buffer_size;
+    msg_out["buffer_addr"] = potential_buffer_addr;
+    msg_out["buffer_size"] = potential_buffer_size;
   }
+  return true;
+}
+
+bool msg::handlers::FlasherAbortHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+  if(!upgrade) return_err("No upgrade running which I could abort");
+  delete_upgrade();
   return true;
 }
 

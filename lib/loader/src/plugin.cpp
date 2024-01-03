@@ -3,10 +3,12 @@
 #include "imxrt.h" // framework-arduinoteensy/cores/teensy4
 #include "teensy_startup.h"
 
+#include "etl_base64.h"
+
 #include "plugin.h"
 #include "hashflash.h"
-#include "base64.h"
 #include "logging.h"
+#include "align.h"
 
 using namespace loader;
 using namespace utils;
@@ -16,13 +18,6 @@ constexpr static int the_memsize = 1024; //< number of bytes permanently hold
 uint8_t GlobalPluginLoader_Storage[the_memsize];
 #endif
 
-// Memory alignment in a similar syntax to the linker ". = align(4)"
-// example usage: uint8_t* mem = align((uintptr_t)mem, 4)
-uintptr_t align(uintptr_t base, uint8_t exp) { return (base + exp - 1) & ~(exp - 1); }
-uint8_t*  align(uint8_t*  base, uint8_t exp) { return (uint8_t*)align((uintptr_t)base, exp); }
-
-// Returns the number of bytes "lost" by alignment. It is 0 <= disalignment <= exp.
-uintptr_t disalignment(uint8_t* base, uint8_t exp) { return align(base,exp) - base;  }
 
 /**
  * At the time being, we completely disable the Memory Protection Unit in order
@@ -63,19 +58,6 @@ GlobalPluginLoader::GlobalPluginLoader() {
     LOGMEV("Skipping due to missing ANABRID_ENABLE_GLOBAL_PLUGIN_LOADER", "dummy");
     #endif
 }
-
-/**
- * ARM32 requires callable addresses to be memory aligned. This should be ensured
- * by both the plugin linker and a properly aligned memory chunk. Returns NULLPTR if not
- * callable.
- * Furthermore, since jumping to addr results in a BLX instruction, it requires
- * bit 1 to be set for the correct thumb instructionset. This either works by +1 or &1.
- **/
-uint8_t* assert_callable(uint8_t* addr) {
-    if(disalignment(addr, 4) != 0) return 0;
-    return addr + 1;
-}
-
 
 void loader::convertFromJson(JsonVariantConst src, Function& f) {
     if(src.is<int>()) {
@@ -166,7 +148,8 @@ bool loader::SinglePluginLoader::load_and_execute(JsonObjectConst msg_in, JsonOb
     auto base64_payload = msg_in["payload"].as<std::string>();
     new_plugin.size = base64_payload.size() / 4 * 3;
     if(!load(new_plugin)) return_err("Payload too large or some code is already loaded.");
-    if(!base64().decode(base64_payload.c_str(), base64_payload.size(), new_plugin.load_addr)) { unload(); return_err("Could not decode base64-encoded payload."); }
+    auto length_decoded = etl::base64::decode(base64_payload.c_str(), base64_payload.length(), new_plugin.load_addr, new_plugin.size);
+    if(length_decoded != new_plugin.size) { unload(); return_err("Could not decode base64-encoded payload."); }
 
     // Code execution
     uint8_t* entry_point = assert_callable(plugin->load_addr + plugin->entry.addr);

@@ -26,8 +26,9 @@ try:
   interesting_fields = ["BOARD", "BOARD_MCU", "BOARD_F_CPU", "BUILD_TYPE", "UPLOAD_PROTOCOL"]
   build_system = { k: env.Dictionary(k) for k in interesting_fields }
   build_flags = env.Dictionary('BUILD_FLAGS') # is a list
-except NameError:
-  # pure python does not know 'Import' (is not defined in pure Python).
+except (NameError, KeyError):
+  # NameError: pure python does not know 'Import' (is not defined in pure Python).
+  # KeyError: doesn't know some of the interesting_fields keys
   build_system = {}
   build_flags = []    
 

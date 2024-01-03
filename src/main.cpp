@@ -100,6 +100,7 @@ void setup() {
 
   msg::handlers::Registry::set("ota_update_init", new msg::handlers::FlasherInitHandler(), auth::SecurityLevel::RequiresAdmin);
   msg::handlers::Registry::set("ota_update_stream", new msg::handlers::FlasherDataHandler(), auth::SecurityLevel::RequiresAdmin);
+  msg::handlers::Registry::set("ota_update_abort", new msg::handlers::FlasherAbortHandler(), auth::SecurityLevel::RequiresAdmin);
   msg::handlers::Registry::set("ota_update_complete", new msg::handlers::FlasherCompleteHandler(), auth::SecurityLevel::RequiresAdmin);
   msg::handlers::Registry::set("ota_update_status", new msg::handlers::FlasherStatusHandler(), auth::SecurityLevel::RequiresNothing);
 
