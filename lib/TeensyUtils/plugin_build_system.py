@@ -4,7 +4,6 @@
 
 # cf. ~/.platformio/platforms/teensy/builder/main.py
 
-print("Hi from plugin_build_system")
 
 from os.path import join, basename
 from SCons.Script import AlwaysBuild
@@ -21,7 +20,7 @@ for k,v in env.Dictionary().items():
     fh.write("%s = %s = %s\n" % (k, v, env.subst('$'+k)))
 fh.close()
 
-
+me = "TeensyUtils/plugin_build_system.py"
 
 ###############################################################################
 # Job 1) Build firmware.elf.a
@@ -37,7 +36,7 @@ env.Append(
         "-Wl,--out-implib," + target_elf_a
     ],
 )
-print("lib/loader/plugin_build_system.py will also build ", basename(env.subst(target_elf_a)))
+print(me, "will also build", basename(env.subst(target_elf_a)))
 
 ###############################################################################
 # Job 2) Build firmware.bin
@@ -49,14 +48,31 @@ print("lib/loader/plugin_build_system.py will also build ", basename(env.subst(t
 
 # target_bin = env.ElfToBin(join("$BUILD_DIR", "${PROGNAME}"), target_elf) # doesn't work
 # AlwaysBuild(target_bin) # doesn't work
-  
-env.AddPostAction(
+
+Import("projenv") # defines projenv
+
+global_env = DefaultEnvironment()
+
+# well, this used to work as an extra_scripts = post:lib/loader/...py
+# within the platformio.ini, but it doesn't from library.json.
+global_env.AddPostAction(
     "$BUILD_DIR/${PROGNAME}.elf",
-    env.VerboseAction(" ".join([
+    global_env.VerboseAction(" ".join([
         "$OBJCOPY", "-O", "binary", "-I", "ihex",
         "$BUILD_DIR/${PROGNAME}.elf", "$BUILD_DIR/${PROGNAME}.bin"
     ]), "Building $BUILD_DIR/${PROGNAME}.bin")
 )
+
+def post_program_action(source, target, env):
+    print("Program has been built, yeah")
+    program_path = target[0].get_abspath()
+    print("Program path ", target)
+
+global_env.AddPostAction("$PROGPATH", post_program_action)
+
+# arghl, I hate pio.
+
+print(me, "will also TRY to build", "firmware.bin")
 
 ###############################################################################
 # Job 3) Extract CFlags, etc for a custom Makefile

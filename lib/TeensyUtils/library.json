@@ -9,6 +9,6 @@
     },
     "license": "MIT OR GPL-2.0-or-later",
     "build": {
-        
+        "extraScript": "plugin_build_system.py"
     }
 }
