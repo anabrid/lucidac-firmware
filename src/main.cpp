@@ -12,6 +12,7 @@
 #include "user_auth.h"
 #include "user_login.h"
 #include "run_manager.h"
+#include "daq.h"
 
 #include "hashflash.h"
 #include "plugin.h"
@@ -84,6 +85,7 @@ void setup() {
   msg::handlers::Registry::set("get_config", new msg::handlers::GetConfigMessageHandler(carrier_), auth::SecurityLevel::RequiresLogin);
   msg::handlers::Registry::set("get_entities", new msg::handlers::GetEntitiesRequestHandler(carrier_), auth::SecurityLevel::RequiresLogin);
   msg::handlers::Registry::set("start_run", new msg::handlers::StartRunRequestHandler(run::RunManager::get()), auth::SecurityLevel::RequiresLogin);
+  msg::handlers::Registry::set("one-shot-daq", new msg::handlers::OneshotDAQHandler(), auth::SecurityLevel::RequiresNothing);
 
   // TODO: It would be somewhat cleaner if the Hybrid Controller settings would be just part of the get_config/set_config idiom
   //   because with this notation, we double the need for setters and getters.

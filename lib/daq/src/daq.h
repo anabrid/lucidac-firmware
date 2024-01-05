@@ -13,6 +13,7 @@
 #include "daq_base.h"
 #include "run.h"
 #include "serializer.h"
+#include "message_handlers.h"
 
 /// @brief Routines for Data Aquisition (DAQ) / Analog2Digital converters (ADCs)
 namespace daq {
@@ -91,3 +92,16 @@ public:
 };
 
 } // namespace daq
+
+
+namespace msg {
+namespace handlers {
+
+class OneshotDAQHandler : public MessageHandler {
+public:
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+};
+
+
+} // ns handlers
+} // ns msg
