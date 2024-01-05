@@ -24,24 +24,10 @@ public:
   static RunManager &get() { return _instance; }
 
   void run_next(run::RunStateChangeHandler *state_change_handler, run::RunDataHandler *run_data_handler);
+
+  // exposed end-user function
+  int start_run(JsonObjectConst msg_in, JsonObject &msg_out);
 };
 
 } // namespace run
 
-namespace msg {
-
-namespace handlers {
-
-class StartRunRequestHandler : public MessageHandler {
-protected:
-  run::RunManager &manager;
-
-public:
-  explicit StartRunRequestHandler(run::RunManager &run_manager) : manager(run_manager) {}
-
-  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-} // namespace handlers
-
-} // namespace msg

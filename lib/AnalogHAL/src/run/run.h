@@ -9,7 +9,6 @@
 #include <string>
 
 #include "daq/daq_base.h"
-#include "message_handlers.h"
 #include "mode/mode.h"
 
 namespace run {

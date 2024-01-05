@@ -10,7 +10,6 @@
 
 #include "carrier/cluster.h"
 #include "entities/entity.h"
-#include "message_handlers.h"
 
 using namespace lucidac;
 
@@ -36,50 +35,12 @@ public:
   void write_to_hardware();
 
   static Carrier& get();
+
+  // functions exposed to end user
+  int set_config(JsonObjectConst msg_in, JsonObject &msg_out);
+  int get_config(JsonObjectConst msg_in, JsonObject &msg_out);
+  int get_entities(JsonObjectConst msg_in, JsonObject &msg_out);
+  int reset(JsonObjectConst msg_in, JsonObject &msg_out);
 };
 
 } // namespace carrier
-
-namespace msg {
-namespace handlers {
-
-using namespace carrier;
-
-class CarrierMessageHandlerBase : public msg::handlers::MessageHandler {
-protected:
-  Carrier &carrier;
-
-public:
-  explicit CarrierMessageHandlerBase(Carrier &carrier);
-};
-
-class SetConfigMessageHandler : public CarrierMessageHandlerBase {
-public:
-  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
-
-  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-class GetConfigMessageHandler : public CarrierMessageHandlerBase {
-public:
-  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
-
-  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-class GetEntitiesRequestHandler : public CarrierMessageHandlerBase {
-public:
-  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
-
-  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-class ResetRequestHandler : public CarrierMessageHandlerBase {
-public:
-  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
-
-  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-} // namespace handlers
-} // namespace msg

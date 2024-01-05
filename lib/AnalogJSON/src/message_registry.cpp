@@ -4,27 +4,17 @@
 
 #include "message_registry.h"
 
-#include "user/user_ethernet.h"
-#include "user/user_auth.h"
-#include "user/user_settings.h"
-#include "user/user_auth.h"
-#include "dist/distributor.h"
-#include "loader/hashflash.h"
-#include "loader/plugin.h"
-#include "loader/flasher.h"
-
-#include "carrier/carrier.h"
-#include "client/client.h"
-#include "run/run.h"
-#include "run/run_manager.h"
-
-#include "utils/serial_lines.h"
 #include "utils/logging.h"
 
 #include "handlers/loader_flasher.h"
 #include "handlers/loader_plugin.h"
 #include "handlers/user_login.h"
 #include "handlers/user_settings.h"
+#include "handlers/carrier.h"
+#include "handlers/run_manager.h"
+#include "handlers/help.h"
+#include "handlers/ping.h"
+#include "handlers/status.h"
 
 
 // allocate singleton storage
@@ -119,56 +109,3 @@ void msg::handlers::DynamicRegistry::write_handler_names_to(JsonArray &target) {
     if(kv.second.handler) target.add(kv.first);
   }
 }
-
-int msg::handlers::PingRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  msg_out["now"] = "2007-08-31T16:47+01:00";
-  // Note, with some initial NTP call we could get micro-second time resolution if we need it
-  // for whatever reason.
-  msg_out["micros"] = micros();
-  return success;
-}
-
-int msg::handlers::GetSystemStatus::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  bool do_all = msg_in.size()==0;
-
-  if(do_all || msg_in["dist"].as<bool>()) {
-    auto odist = msg_out.createNestedObject("dist");
-    dist::write_to_json(odist, /* include_secrets */ false);
-  }
-
-  if(do_all || msg_in["flashimage"].as<bool>()) {
-    msg_out["flashimage"] = loader::flashimage();
-  }
-
-  if(do_all || msg_in["auth"].as<bool>()) {
-    auto oauth = msg_out.createNestedObject("auth");
-    _auth.status(oauth);
-  }
-
-  if(do_all || msg_in["ethernet"].as<bool>()) {
-    auto oeth = msg_out.createNestedObject("ethernet");
-    user::ethernet::status(oeth);
-  }
-
-  if(do_all || msg_in["plugin"].as<bool>()) {
-    auto loader_list = msg_out["plugin"].createNestedArray("loaders");
-    loader_list.add(loader::PluginLoader);
-  }
-
-  if(do_all || msg_in["flasher"].as<bool>()) {
-    auto oflasher = msg_out.createNestedObject("flasher");
-    loader::FirmwareFlasher::get().status(oflasher);
-  }
-
-  return success;
-}
-
-int msg::handlers::HelpHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  msg_out["human_readable_info"] = "This is a JSON-Lines protocol described at https://anabrid.dev/docs/pyanabrid-redac/redac/protocol.html";
-
-  auto types_list = msg_out.createNestedArray("available_types");
-  msg::handlers::Registry.write_handler_names_to(types_list);
-
-  return success;
-}
-

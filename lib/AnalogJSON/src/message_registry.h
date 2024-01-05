@@ -48,22 +48,6 @@ public:
 // the singleton instance
 extern DynamicRegistry Registry;
 
-class PingRequestHandler : public MessageHandler {
-public:
-  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-class GetSystemStatus : public MessageHandler {
-  user::auth::UserPasswordAuthentification& _auth;
-public:
-  GetSystemStatus(user::auth::UserPasswordAuthentification& auth) : _auth(auth) {}
-  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-class HelpHandler : public MessageHandler {
-public:
-  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
 
 } // namespace handlers
 

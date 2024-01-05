@@ -60,13 +60,14 @@ carrier::Carrier &carrier::Carrier::get() {
   return carrier_;
 }
 
-msg::handlers::CarrierMessageHandlerBase::CarrierMessageHandlerBase(Carrier &carrier) : carrier(carrier) {}
+constexpr int error(int i) { return i; } // just some syntactic suggar
+constexpr int success = 0;
 
-int msg::handlers::SetConfigMessageHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
 #ifdef ANABRID_DEBUG_COMMS
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  auto self_entity_id = carrier.get_entity_id();
+  auto self_entity_id = get_entity_id();
   if (!msg_in.containsKey("entity") or !msg_in.containsKey("config")) {
     msg_out["error"] = "Malformed message.";
     return error(1);
@@ -89,7 +90,7 @@ int msg::handlers::SetConfigMessageHandler::handle(JsonObjectConst msg_in, JsonO
   }
 
   // Path may be to one of our sub-entities
-  auto resolved_entity = carrier.resolve_child_entity(path + 1, path_depth - 1);
+  auto resolved_entity = resolve_child_entity(path + 1, path_depth - 1);
   if (!resolved_entity) {
     msg_out["error"] = "No entity at that path.";
     return error(4);
@@ -103,11 +104,11 @@ int msg::handlers::SetConfigMessageHandler::handle(JsonObjectConst msg_in, JsonO
   }
 
   // Actually write to hardware
-  carrier.write_to_hardware();
+  write_to_hardware();
   return write_success ? success : error(6);
 }
 
-int msg::handlers::GetConfigMessageHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+int carrier::Carrier::get_config(JsonObjectConst msg_in, JsonObject &msg_out) {
 #ifdef ANABRID_DEBUG_COMMS
   Serial.println(__PRETTY_FUNCTION__);
 #endif
@@ -118,18 +119,18 @@ int msg::handlers::GetConfigMessageHandler::handle(JsonObjectConst msg_in, JsonO
   // Message may contain path to sub-entity
   entities::Entity *entity = nullptr;
   if (!msg_in.containsKey("entity") or msg_in["entity"].isNull()) {
-    entity = &carrier;
+    entity = this;
   } else if (msg_in["entity"].is<JsonArrayConst>()) {
     auto path = msg_in["entity"].as<JsonArrayConst>();
     if (!path.size()) {
-      entity = &carrier;
-    } else if (path[0].as<std::string>() != carrier.get_entity_id()) {
+      entity = this;
+    } else if (path[0].as<std::string>() != get_entity_id()) {
       msg_out["error"] = "Entity lives on another carrier.";
       return error(1);
     } else {
       auto path_begin = path.begin();
       ++path_begin;
-      entity = carrier.resolve_child_entity(path_begin, path.end());
+      entity = resolve_child_entity(path_begin, path.end());
       if (!entity) {
         msg_out["error"] = "Invalid entity path.";
         return error(2);
@@ -148,19 +149,19 @@ int msg::handlers::GetConfigMessageHandler::handle(JsonObjectConst msg_in, JsonO
   return success;
 }
 
-int msg::handlers::GetEntitiesRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+int carrier::Carrier::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
   auto serialized_data = R"({"00-00-00-00-00-00": {"/0": {"/M0": {"class": 2, "type": 0, "variant": 0, "version": 0}, "/M1": {"class": 2, "type": 1, "variant": 0, "version": 0}, "/U": {"class": 3, "type": 0, "variant": 0, "version": 0}, "/C": {"class": 4, "type": 0, "variant": 0, "version": 0}, "/I": {"class": 5, "type": 0, "variant": 0, "version": 0}, "class": 1, "type": 3, "variant": 0, "version": 0}, "class": 0, "type": 0, "variant": 0, "version": 0}})";
-  std::memcpy((void*)(serialized_data + 2), (void*)(carrier.get_entity_id().c_str()), 17);
+  std::memcpy((void*)(serialized_data + 2), (void*)(get_entity_id().c_str()), 17);
   msg_out["entities"] = serialized(serialized_data);
   return success;
 }
 
-int msg::handlers::ResetRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  for (auto &cluster : carrier.clusters) {
+int carrier::Carrier::reset(JsonObjectConst msg_in, JsonObject &msg_out) {
+  for (auto &cluster : clusters) {
     cluster.reset(msg_in["keep_calibration"] | true);
   }
   if (msg_in["sync"] | true) {
-    carrier.write_to_hardware();
+    write_to_hardware();
   }
   return success;
 }
