@@ -1,0 +1,20 @@
+#pragma once
+
+#include <Arduino.h>
+#include <IPAddress.h>
+
+#include "Printable.h"
+
+namespace utils {
+
+  // note that in general we should use Arduinos String instead of STL std::string on MCUs.
+
+  String toString(IPAddress& ip ){
+    // this code is terribly inefficient, should replaced by working on a char[16].
+    return String(ip[0]) + String(".") +\
+           String(ip[1]) + String(".") +\
+           String(ip[2]) + String(".") +\
+           String(ip[3])  ;
+  }
+  
+}

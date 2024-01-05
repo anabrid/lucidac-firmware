@@ -1,17 +1,17 @@
 #include <Arduino.h>
 #include <cstring>
 
-#include "distributor.h"
-#include "client.h"
-#include "logging.h"
+#include "dist/distributor.h"
+#include "client/client.h"
+#include "utils/logging.h"
 #include "message_registry.h"
-#include "user_auth.h"
-#include "user_settings.h"
-#include "run_manager.h"
+#include "user/user_auth.h"
+#include "user/user_settings.h"
+#include "run/run_manager.h"
 
 #include "protocol.h"
 
-#include "hashflash.h"
+#include "loader/hashflash.h"
 
 net::EthernetServer server;
 

@@ -1,0 +1,166 @@
+// Copyright (c) 2023 anabrid GmbH
+// Contact: https://www.anabrid.com/licensing/
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
+
+#include "carrier/carrier.h"
+#include "utils/logging.h"
+#include "user/user_ethernet.h"
+
+carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}) {}
+
+bool carrier::Carrier::init() {
+  LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
+  entity_id = user::ethernet::system_mac_as_string();
+  if (entity_id.empty())
+    return false;
+  for (auto &cluster : clusters) {
+    if (!cluster.init())
+      return false;
+  }
+  return true;
+}
+
+bool carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
+#ifdef ANABRID_DEBUG_ENTITY_CONFIG
+  Serial.println(__PRETTY_FUNCTION__);
+#endif
+  // Carrier has no own configuration parameters currently
+  // TODO: Have an option to fail on unexpected configuration
+  return true;
+}
+
+entities::Entity *carrier::Carrier::get_child_entity(const std::string &child_id) {
+  // TODO: Use additional arguments of stoul to check if only part of the string was used
+  auto cluster_idx = std::stoul(child_id);
+  if (cluster_idx < 0 or clusters.size() < cluster_idx)
+    return nullptr;
+  return &clusters[cluster_idx];
+}
+
+std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
+#ifdef ANABRID_DEBUG_ENTITY
+  Serial.println(__PRETTY_FUNCTION__);
+#endif
+  std::vector<entities::Entity *> children;
+  for (auto &cluster : clusters) {
+    children.push_back(&cluster);
+  }
+  return children;
+}
+
+void carrier::Carrier::write_to_hardware() {
+  for (auto &cluster : clusters) {
+    cluster.write_to_hardware();
+  }
+}
+
+// singleton
+carrier::Carrier carrier_;
+carrier::Carrier &carrier::Carrier::get() {
+  return carrier_;
+}
+
+msg::handlers::CarrierMessageHandlerBase::CarrierMessageHandlerBase(Carrier &carrier) : carrier(carrier) {}
+
+int msg::handlers::SetConfigMessageHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+#ifdef ANABRID_DEBUG_COMMS
+  Serial.println(__PRETTY_FUNCTION__);
+#endif
+  auto self_entity_id = carrier.get_entity_id();
+  if (!msg_in.containsKey("entity") or !msg_in.containsKey("config")) {
+    msg_out["error"] = "Malformed message.";
+    return error(1);
+  }
+
+  // Convert JSON array of possible anything to string array
+  auto path_json = msg_in["entity"].as<JsonArrayConst>();
+  auto path_depth = path_json.size();
+  std::string path[path_depth];
+  copyArray(path_json, path, path_depth);
+
+  // Sanity check path, which must at least be addressed to us
+  if (!path_depth) {
+    msg_out["error"] = "Invalid entity path.";
+    return error(2);
+  }
+  if (path[0] != self_entity_id) {
+    msg_out["error"] = "Message intended for another carrier.";
+    return error(3);
+  }
+
+  // Path may be to one of our sub-entities
+  auto resolved_entity = carrier.resolve_child_entity(path + 1, path_depth - 1);
+  if (!resolved_entity) {
+    msg_out["error"] = "No entity at that path.";
+    return error(4);
+  }
+
+  bool write_success = resolved_entity->config_from_json(msg_in["config"]);
+  if (!write_success && msg_out["error"].isNull()) {
+    // TODO: Never reachable due to msg_out["error"].isNull()
+    msg_out["error"] = "Error applying configuration to entity.";
+    return error(5);
+  }
+
+  // Actually write to hardware
+  carrier.write_to_hardware();
+  return write_success ? success : error(6);
+}
+
+int msg::handlers::GetConfigMessageHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+#ifdef ANABRID_DEBUG_COMMS
+  Serial.println(__PRETTY_FUNCTION__);
+#endif
+  auto recursive = true;
+  if (msg_in.containsKey("recursive"))
+    recursive = msg_in["recursive"].as<bool>();
+
+  // Message may contain path to sub-entity
+  entities::Entity *entity = nullptr;
+  if (!msg_in.containsKey("entity") or msg_in["entity"].isNull()) {
+    entity = &carrier;
+  } else if (msg_in["entity"].is<JsonArrayConst>()) {
+    auto path = msg_in["entity"].as<JsonArrayConst>();
+    if (!path.size()) {
+      entity = &carrier;
+    } else if (path[0].as<std::string>() != carrier.get_entity_id()) {
+      msg_out["error"] = "Entity lives on another carrier.";
+      return error(1);
+    } else {
+      auto path_begin = path.begin();
+      ++path_begin;
+      entity = carrier.resolve_child_entity(path_begin, path.end());
+      if (!entity) {
+        msg_out["error"] = "Invalid entity path.";
+        return error(2);
+      }
+    }
+  } else {
+    msg_out["error"] = "Invalid entity path.";
+    return error(3);
+  }
+
+  // Save entity path back into response
+  msg_out["entity"] = msg_in["entity"];
+  // Save config into response
+  auto cfg = msg_out.createNestedObject("config");
+  entity->config_to_json(cfg, recursive);
+  return success;
+}
+
+int msg::handlers::GetEntitiesRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+  auto serialized_data = R"({"00-00-00-00-00-00": {"/0": {"/M0": {"class": 2, "type": 0, "variant": 0, "version": 0}, "/M1": {"class": 2, "type": 1, "variant": 0, "version": 0}, "/U": {"class": 3, "type": 0, "variant": 0, "version": 0}, "/C": {"class": 4, "type": 0, "variant": 0, "version": 0}, "/I": {"class": 5, "type": 0, "variant": 0, "version": 0}, "class": 1, "type": 3, "variant": 0, "version": 0}, "class": 0, "type": 0, "variant": 0, "version": 0}})";
+  std::memcpy((void*)(serialized_data + 2), (void*)(carrier.get_entity_id().c_str()), 17);
+  msg_out["entities"] = serialized(serialized_data);
+  return success;
+}
+
+int msg::handlers::ResetRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+  for (auto &cluster : carrier.clusters) {
+    cluster.reset(msg_in["keep_calibration"] | true);
+  }
+  if (msg_in["sync"] | true) {
+    carrier.write_to_hardware();
+  }
+  return success;
+}
