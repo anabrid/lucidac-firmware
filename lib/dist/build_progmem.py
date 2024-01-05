@@ -23,7 +23,7 @@ try:
   # we don't make use of them right now.
   Import("env")
   #print(env.Dump())
-  interesting_fields = ["BOARD", "BOARD_MCU", "BOARD_F_CPU", "BUILD_TYPE", "UPLOAD_PROTOCOL"]
+  interesting_fields = ["BOARD", "BOARD_MCU", "BUILD_TYPE", "UPLOAD_PROTOCOL"]
   build_system = { k: env.Dictionary(k) for k in interesting_fields }
   build_flags = env.Dictionary('BUILD_FLAGS') # is a list
 except (NameError, KeyError):
@@ -48,26 +48,16 @@ except NameError:
 print(f"OEM distribution generating infos at {abs_src_dir}")
 warn = lambda msg: print("lib/dist/build_progmem.py: WARN ", msg)
 
-# Easily generate version strings out of git working directory/repository information.
-# Basically a nicer "git describe --tags" or similar.
-# For alternatives to setuptools_scm, see https://setuptools-git-versioning.readthedocs.io/en/stable/differences.html
-# Many of these packages require some python files in the repo which we probably don't want in this
-# C++-first repository. I think we should keep this as simple as possible.
-try:
-  import setuptools_scm as scm
-  firmware_version = scm.get_version()
-except ModuleNotFoundError:
-  warn("Missing python setuptools_scm package, falling back to simplified version guessing")
-  # We could also use "git describe" to simply access the latest git tag. However, the user should just install
-  # the module and all is fine. The "0.0.0" is by intention to have some nonsaying version string but keeping
-  # consistent with what setuptools_scm generates.
-  firmware_version = "0.0.0+g" + subprocess.getoutput("which git >/dev/null && git rev-parse --short HEAD || echo no-git-avail").strip()
+firmware_version = subprocess.getoutput("which git >/dev/null && git describe --tags || echo no-git-avail").strip()
+# For alternatives, see https://setuptools-git-versioning.readthedocs.io/en/stable/differences.html
+# but in the end they all call external git and parse the output.
 
 # Use the current commit time as date approximator.  
 try:
-  unix_timestamp = subprocess.getoutput("which git >/dev/null && git log -1 --format=%ct || echo failure".split()).strip()
+  unix_timestamp = subprocess.getoutput("which git >/dev/null && git log -1 --format=%ct || echo failure").strip()
   firmware_version_date = datetime.datetime.fromtimestamp(int(unix_timestamp)).isoformat()
 except ValueError:
+  print("Read: ", unix_timestamp)
   warn("No git available, have no information about version and date at all.")
   firmware_version_date = 'unavailable'
 
