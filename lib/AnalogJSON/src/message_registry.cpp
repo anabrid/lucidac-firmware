@@ -8,7 +8,6 @@
 #include "user/user_auth.h"
 #include "user/user_settings.h"
 #include "user/user_auth.h"
-#include "user/user_login.h"
 #include "dist/distributor.h"
 #include "loader/hashflash.h"
 #include "loader/plugin.h"
@@ -21,6 +20,11 @@
 
 #include "utils/serial_lines.h"
 #include "utils/logging.h"
+
+#include "handlers/loader_flasher.h"
+#include "handlers/loader_plugin.h"
+#include "handlers/user_login.h"
+#include "handlers/user_settings.h"
 
 
 // allocate singleton storage
@@ -153,7 +157,7 @@ int msg::handlers::GetSystemStatus::handle(JsonObjectConst msg_in, JsonObject &m
 
   if(do_all || msg_in["flasher"].as<bool>()) {
     auto oflasher = msg_out.createNestedObject("flasher");
-    loader::FirmwareBuffer::status(oflasher);
+    loader::FirmwareFlasher::get().status(oflasher);
   }
 
   return success;

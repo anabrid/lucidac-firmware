@@ -9,8 +9,6 @@
 #include <ArduinoJson.h>
 #include <cstring>
 
-#include "message_handlers.h"
-
 namespace net = qindesign::network;
 
 namespace user {

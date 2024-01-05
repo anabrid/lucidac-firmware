@@ -1,5 +1,4 @@
 #include "user/user_auth.h"
-#include "user/user_login.h"
 #include "dist/distributor.h"
 
 void user::auth::UserPasswordAuthentification::reset_defaults() {
@@ -27,10 +26,10 @@ void user::auth::UserPasswordAuthentification::status(JsonObject target) {
   // don't tell the passwords!
 }
 
-int msg::handlers::LoginHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out, user::auth::AuthentificationContext& user_context) {
+int user::auth::UserPasswordAuthentification::login(JsonObjectConst msg_in, JsonObject &msg_out, user::auth::AuthentificationContext& user_context) {
   #ifdef ANABRID_UNSAFE_INTERNET
   msg_out["error"] = "No authentification neccessary. Auth system is disabled in this firmware build.";
-  return -2;
+  return 10;
   #else
   std::string new_user = msg_in["user"];
   if(user_context.hasBetterClearenceThen(new_user)) {
@@ -38,7 +37,7 @@ int msg::handlers::LoginHandler::handle(JsonObjectConst msg_in, JsonObject &msg_
     // always have admin permissions. It is not that interesting in a TCP/IP connection.
     msg_out["error"] = "Login can only upgrade privileges but you wold loose. Open a new connection instead.";
     return 1;
-  } else if(!auth.is_valid(new_user, msg_in["password"])) {
+  } else if(!is_valid(new_user, msg_in["password"])) {
     msg_out["error"] = "Invalid username or password.";
 
     // todo: besseren DEBUG flag für finden, vgl. https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/merge_requests/3#note_2361
@@ -47,7 +46,7 @@ int msg::handlers::LoginHandler::handle(JsonObjectConst msg_in, JsonObject &msg_
     Serial.println("Since authentificiation failed and debug mode is on, this is the list of currently allowed passwords:");
     // TODO: Use LOG statements instead of Serial.print.
     StaticJsonDocument<500> kvmap;
-    auth.write_to_json(kvmap.to<JsonObject>());
+    write_to_json(kvmap.to<JsonObject>());
     serializeJson(kvmap, Serial);
     Serial.println();
     #endif
@@ -59,7 +58,7 @@ int msg::handlers::LoginHandler::handle(JsonObjectConst msg_in, JsonObject &msg_
     // TODO: Somehow this line doesn't show up.
     Serial.print("New authentification: "); user_context.printTo(Serial); Serial.println();
     
-    return success;
+    return 0;
   }
   #endif  
 }

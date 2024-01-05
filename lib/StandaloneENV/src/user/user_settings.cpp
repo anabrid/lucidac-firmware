@@ -37,14 +37,21 @@ void user::settings::JsonFlashUserSettings::read_from_json(JsonObjectConst seria
     
     if(serialized_conf.containsKey("passwords"))
         auth.read_from_json(serialized_conf["passwords"]);
+}
 
+void user::settings::JsonFlashUserSettings::set(JsonObjectConst serialized_conf,
+                                                           JsonObject &msg_out) {
+    read_from_json(serialized_conf);
+    write_to_json(msg_out.createNestedObject("updated_config"));
+    msg_out["available_bytes"] = eeprom_size;
+    msg_out["consumed_bytes"] = write_to_eeprom();
 }
 
 void user::settings::JsonFlashUserSettings::write_to_json(JsonObject target) {
-    target["version"] = version;
+  target["version"] = version;
 
-    ethernet.write_to_json(target.createNestedObject("ethernet"));
-    auth.write_to_json(target.createNestedObject("passwords"));
+  ethernet.write_to_json(target.createNestedObject("ethernet"));
+  auth.write_to_json(target.createNestedObject("passwords"));
 }
 
 void user::settings::JsonFlashUserSettings::read_from_eeprom() {
@@ -75,22 +82,4 @@ size_t user::settings::JsonFlashUserSettings::write_to_eeprom() {
       consumed_size, eeprom_size, 100.0 * consumed_size/eeprom_size);
 
     return consumed_size;
-}
-
-int msg::handlers::GetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-    user::UserSettings.write_to_json(msg_out);
-    return success;
-}
-
-int msg::handlers::SetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-    user::UserSettings.read_from_json(msg_in);
-    user::UserSettings.write_to_json(msg_out.createNestedObject("updated_config"));
-    msg_out["available_bytes"] = eeprom_size;
-    msg_out["consumed_bytes"] = user::UserSettings.write_to_eeprom();
-    return success;
-}
-
-int msg::handlers::ResetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-    user::UserSettings.reset_defaults();
-    return success;
 }

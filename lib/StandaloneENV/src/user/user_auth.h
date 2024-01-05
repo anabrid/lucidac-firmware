@@ -25,6 +25,8 @@ enum class SecurityLevel {
 
 using User = std::string;
 
+class AuthentificationContext; // defined below
+
 /**
  * A simple plaintext Username+Password authentification scheme backed against
  * the EEPROM UserSettings. It lacks group managament but treats the username
@@ -64,6 +66,9 @@ public:
 
   // if you want to let (any) remote users know something, use this
   void status(JsonObject target);
+
+  // Carry out an actual login
+  int login(JsonObjectConst msg_in, JsonObject &msg_out, AuthentificationContext& user_context);
 };
 
 /// Some basic information about the remote station. We interpret 0.0.0.0 als a local terminal.

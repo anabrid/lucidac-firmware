@@ -184,11 +184,3 @@ int loader::SinglePluginLoader::load(const Plugin &new_plugin) {
 
 // instantiate global singleton here.
 loader::GlobalPluginLoader loader::PluginLoader;
-
-int msg::handlers::LoadPluginHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-    return error(loader::PluginLoader.load_and_execute(msg_in, msg_out));
-}
-
-int msg::handlers::UnloadPluginHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-    return error(loader::PluginLoader.unload(msg_in, msg_out));
-}

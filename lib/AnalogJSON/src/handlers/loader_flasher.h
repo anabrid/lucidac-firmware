@@ -13,7 +13,7 @@ public:
 
 class FlasherDataHandler : public MessageHandler {
 public:
-  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override  { loader::FirmwareFlasher::get().handle(msg_in, msg_out); }
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override  { loader::FirmwareFlasher::get().stream(msg_in, msg_out); }
 };
 
 class FlasherAbortHandler : public MessageHandler {

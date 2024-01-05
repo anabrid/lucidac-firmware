@@ -32,23 +32,3 @@ namespace dist {
 } // namespace dist
 
 #include "distributor_generated.h"
-
-namespace msg {
-
-namespace handlers {
-
-// see messages/src/message_handlers.h for the msg::handlers::GetSystemStatus::handle
-// which also includes the distributor information
-
-/*
-class GetDistributorHandler : public SettingsHandler {
-public:
-  using SettingsHandler::SettingsHandler;
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-*/
-
-} // namespace handlers
-
-} // namespace msg 
