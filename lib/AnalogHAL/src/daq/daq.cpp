@@ -407,3 +407,30 @@ std::array<float, daq::NUM_CHANNELS> daq::OneshotDAQ::sample() {
 }
 
 float daq::OneshotDAQ::sample(uint8_t index) { return sample()[index]; }
+
+bool msg::handlers::OneshotDAQHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+  daq::OneshotDAQ daq{};
+  std::array<float, daq::NUM_CHANNELS> data{};
+
+  auto do_sample_avg = msg_in["sample_avg"];
+  if(do_sample_avg) {
+    data = daq.sample_avg(do_sample_avg["size_samples"], do_sample_avg["avg_us"]);
+  } else {
+    data = daq.sample();
+  }
+
+  if(msg_in.containsKey("channel")) {
+    uint8_t channel = msg_in["channel"];
+    if(channel < 0 || channel >= daq::NUM_CHANNELS) {
+      msg_out["error"] = "Channel has to be a single number.";
+      return false;
+    }
+
+    msg_out["data"] = data[channel];
+    return true;
+  } else {
+    auto data_json = msg_out.createNestedArray("data");
+    copyArray(data.data(), data.size(), data_json);
+    return true;
+  }
+}

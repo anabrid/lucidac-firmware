@@ -91,3 +91,16 @@ public:
 };
 
 } // namespace daq
+
+
+namespace msg {
+namespace handlers {
+
+class OneshotDAQHandler : public MessageHandler {
+public:
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+};
+
+
+} // ns handlers
+} // ns msg
