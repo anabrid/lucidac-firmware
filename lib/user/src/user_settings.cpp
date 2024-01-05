@@ -2,7 +2,10 @@
 #include <StreamUtils.hpp>
 
 #include "logging.h"
-#include "eeprom.h"
+#include "user_settings.h"
+
+// global singleton storage
+user::settings::UserSettingsImplementation user::UserSettings;
 
 
 // Teensy EEPROM is 4KB in size. This class claims the beginning
@@ -18,7 +21,7 @@ static constexpr int
 // thus the arbitrary nonzero 0xAA prefix.
 static constexpr uint64_t required_magic = 0xAA00;
 
-void eeprom::UserSettings::reset_defaults() {
+void user::settings::JsonFlashUserSettings::reset_defaults() {
     LOGMEV("Resetting settings, EEPROM version was:  %X, Firmware version is %X.", version, HEX, required_magic, HEX);
 
     ethernet.reset_defaults();
@@ -28,7 +31,7 @@ void eeprom::UserSettings::reset_defaults() {
     write_to_eeprom();
 }
 
-void eeprom::UserSettings::read_from_json(JsonObjectConst serialized_conf) {
+void user::settings::JsonFlashUserSettings::read_from_json(JsonObjectConst serialized_conf) {
     if(serialized_conf.containsKey("ethernet"))
         ethernet.read_from_json(serialized_conf["ethernet"]);
     
@@ -37,14 +40,14 @@ void eeprom::UserSettings::read_from_json(JsonObjectConst serialized_conf) {
 
 }
 
-void eeprom::UserSettings::write_to_json(JsonObject target) {
+void user::settings::JsonFlashUserSettings::write_to_json(JsonObject target) {
     target["version"] = version;
 
     ethernet.write_to_json(target.createNestedObject("ethernet"));
     auth.write_to_json(target.createNestedObject("passwords"));
 }
 
-void eeprom::UserSettings::read_from_eeprom() {
+void user::settings::JsonFlashUserSettings::read_from_eeprom() {
     StaticJsonDocument<eeprom_size> deserialized_conf;
     StreamUtils::EepromStream eepromStream(eeprom_address, eeprom_size);
     auto error = deserializeJson(deserialized_conf, eepromStream);
@@ -62,7 +65,7 @@ void eeprom::UserSettings::read_from_eeprom() {
     }
 }
 
-size_t eeprom::UserSettings::write_to_eeprom() {
+size_t user::settings::JsonFlashUserSettings::write_to_eeprom() {
     StaticJsonDocument<eeprom_size> serialized_conf;
     write_to_json(serialized_conf.to<JsonObject>());
     StreamUtils::EepromStream eepromStream(eeprom_address, eeprom_size);
@@ -75,19 +78,19 @@ size_t eeprom::UserSettings::write_to_eeprom() {
 }
 
 bool msg::handlers::GetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-    settings.write_to_json(msg_out);
+    user::UserSettings.write_to_json(msg_out);
     return true;
 }
 
 bool msg::handlers::SetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-    settings.read_from_json(msg_in);
-    settings.write_to_json(msg_out.createNestedObject("updated_config"));
+    user::UserSettings.read_from_json(msg_in);
+    user::UserSettings.write_to_json(msg_out.createNestedObject("updated_config"));
     msg_out["available_bytes"] = eeprom_size;
-    msg_out["consumed_bytes"] = settings.write_to_eeprom();
+    msg_out["consumed_bytes"] = user::UserSettings.write_to_eeprom();
     return true;
 }
 
 bool msg::handlers::ResetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-    settings.reset_defaults();
+    user::UserSettings.reset_defaults();
     return true;
 }

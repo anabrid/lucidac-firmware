@@ -130,7 +130,7 @@ bool loader::SinglePluginLoader::load_and_execute(JsonObjectConst msg_in, JsonOb
 
     // Load address verification, to ensure correct linking
     if(msg_in["load_addr"] != load_addr) return_err("Require matching load address for verification. This SinglePluginLoader can only load from: [todo]");
-    auto firmeware_hash = sha256_to_string(hash_flash_sha256());
+    auto firmeware_hash = loader::flashimage::sha256sum().to_string();
     if(utils::sha256_test_short(msg_in["firmware_sha256"], firmeware_hash)) return_err("ABI mismatch: You built against [your firmware sha256] but we run [our sha256]");
 
     // Function pointer registration
@@ -182,24 +182,13 @@ bool loader::SinglePluginLoader::load(const Plugin &new_plugin) {
     return true;
 }
 
-
-PluginLoader _loader; // Singleton here just for the message handlers.
+// instantiate global singleton here.
+loader::GlobalPluginLoader loader::PluginLoader;
 
 bool msg::handlers::LoadPluginHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-    return _loader.load_and_execute(msg_in, msg_out);
+    return loader::PluginLoader.load_and_execute(msg_in, msg_out);
 }
 
 bool msg::handlers::UnloadPluginHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-    return _loader.unload(msg_in, msg_out);
+    return loader::PluginLoader.unload(msg_in, msg_out);
 }
-
-bool msg::handlers::PluginStatusHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-    auto loader_list = msg_out.createNestedArray("loaders");
-    loader_list.add(_loader);
-
-    auto oflash = msg_out.createNestedObject("flashimage");
-    oflash["size"] = utils::flashimagelen();
-    oflash["sha256sum"] = utils::sha256_to_string(utils::hash_flash_sha256());
-    return true;
-}
-

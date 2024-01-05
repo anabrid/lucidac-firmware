@@ -4,7 +4,7 @@
 
 #include "carrier.h"
 #include "logging.h"
-#include "persistent_eth.h"
+#include "user_ethernet.h"
 
 #include <QNEthernet.h>
 
@@ -12,7 +12,7 @@ carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}) {}
 
 bool carrier::Carrier::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
-  entity_id = ethernet::system_mac_as_string();
+  entity_id = user::ethernet::system_mac_as_string();
   if (entity_id.empty())
     return false;
   for (auto &cluster : clusters) {
@@ -54,6 +54,12 @@ void carrier::Carrier::write_to_hardware() {
   for (auto &cluster : clusters) {
     cluster.write_to_hardware();
   }
+}
+
+// singleton
+carrier::Carrier carrier_;
+carrier::Carrier &carrier::Carrier::get() {
+  return carrier_;
 }
 
 msg::handlers::CarrierMessageHandlerBase::CarrierMessageHandlerBase(Carrier &carrier) : carrier(carrier) {}

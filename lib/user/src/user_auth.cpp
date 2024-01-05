@@ -2,32 +2,32 @@
 #include "user_login.h"
 #include "distributor.h"
 
-void auth::UserPasswordAuthentification::reset_defaults() {
+void user::auth::UserPasswordAuthentification::reset_defaults() {
   db.clear();
   db[admin] = DEFAULT_ADMIN_PASSWORD;
 }
 
-void auth::UserPasswordAuthentification::read_from_json(JsonObjectConst serialized_conf) {
+void user::auth::UserPasswordAuthentification::read_from_json(JsonObjectConst serialized_conf) {
   db.clear();
   for (JsonPairConst kv : serialized_conf) {
     db[kv.key().c_str()] = kv.value().as<std::string>();
   }
 }
 
-void auth::UserPasswordAuthentification::write_to_json(JsonObject target) {
+void user::auth::UserPasswordAuthentification::write_to_json(JsonObject target) {
   for(auto const& kv : db) {
     target[kv.first] = kv.second;
   }
 }
 
-void auth::UserPasswordAuthentification::status(JsonObject target) {
+void user::auth::UserPasswordAuthentification::status(JsonObject target) {
   target["enabled"] = !is_disabled();
   auto users = target.createNestedArray("users");
   for(auto const &kv : db) users.add(kv.first);
   // don't tell the passwords!
 }
 
-bool msg::handlers::LoginHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out, auth::AuthentificationContext& user_context) {
+bool msg::handlers::LoginHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out, user::auth::AuthentificationContext& user_context) {
   #ifdef ANABRID_UNSAFE_INTERNET
   msg_out["error"] = "No authentification neccessary. Auth system is disabled in this firmware build.";
   return false;

@@ -11,6 +11,7 @@
 #include <map>
 
 
+namespace user {
 namespace auth {
 
 /**
@@ -105,4 +106,5 @@ public:
 };
 
 } // namespace auth
+} // namespace user
 

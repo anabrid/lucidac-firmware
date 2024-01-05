@@ -13,12 +13,16 @@
 
 namespace net = qindesign::network;
 
+namespace user {
 namespace ethernet {
 
 std::string system_mac_as_string(); //< Own mac address in Canonical Format AA-BB-CC-DD-EE-FF
 
 void status(JsonObject &msg_out);
 
+/**
+ *  Persistent user-defined ethernet settings.
+ **/
 class UserDefinedEthernet {
 public:
 
@@ -41,3 +45,4 @@ public:
 };
 
 } // namespace ethernet
+} // namespace user

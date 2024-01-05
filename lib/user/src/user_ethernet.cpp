@@ -1,9 +1,9 @@
 #include <ArduinoJson.h>
 
 #include "logging.h"
-#include "persistent_eth.h"
+#include "user_ethernet.h"
 
-std::string ethernet::system_mac_as_string() {
+std::string user::ethernet::system_mac_as_string() {
   uint8_t mac[6];
   qindesign::network::Ethernet.macAddress(mac);
   char mac_str[20];
@@ -15,7 +15,7 @@ void dump_ip(const IPAddress& ip, JsonArray target) {
     for(int i=0; i<4; i++) target[i] = ip[i];
 }
 
-void ethernet::UserDefinedEthernet::reset_defaults() {
+void user::ethernet::UserDefinedEthernet::reset_defaults() {
   server_port = 5732;
   use_dhcp = true;
 
@@ -33,7 +33,7 @@ void ethernet::UserDefinedEthernet::reset_defaults() {
   static_gw = IPAddress(192, 168, 1, 1);
 }
 
-void ethernet::UserDefinedEthernet::read_from_json(JsonObjectConst serialized_conf) {
+void user::ethernet::UserDefinedEthernet::read_from_json(JsonObjectConst serialized_conf) {
     if(serialized_conf.containsKey("server_port"))
         server_port = serialized_conf["server_port"];
     if(serialized_conf.containsKey("use_dhcp"))
@@ -53,7 +53,7 @@ void ethernet::UserDefinedEthernet::read_from_json(JsonObjectConst serialized_co
     }
 }
 
-void ethernet::UserDefinedEthernet::write_to_json(JsonObject target) {
+void user::ethernet::UserDefinedEthernet::write_to_json(JsonObject target) {
     target["server_port"] = server_port;
     target["use_dhcp"] = use_dhcp;
     // TODO: Ensure that hostname is not longer then 250 chars, which is both an
@@ -66,10 +66,10 @@ void ethernet::UserDefinedEthernet::write_to_json(JsonObject target) {
     }
 }
 
-void ethernet::UserDefinedEthernet::begin(net::EthernetServer *server) {
+void user::ethernet::UserDefinedEthernet::begin(net::EthernetServer *server) {
     *server = net::EthernetServer(server_port);
 
-    LOG2("MAC: ", ethernet::system_mac_as_string().c_str())
+    LOG2("MAC: ", user::ethernet::system_mac_as_string().c_str())
 
     // This build flag basically solves a "deadlock" if a no DHCP server is
     // available but the teensy is configured for dhcp.
@@ -102,9 +102,9 @@ void ethernet::UserDefinedEthernet::begin(net::EthernetServer *server) {
     (*server).begin();
 }
 
-void ethernet::status(JsonObject &msg_out) {
+void user::ethernet::status(JsonObject &msg_out) {
     msg_out["interfaceStatus"] = net::Ethernet.interfaceStatus();
-    msg_out["mac"] = ethernet::system_mac_as_string();
+    msg_out["mac"] = user::ethernet::system_mac_as_string();
     //msg_out["tcp_port"] = net::Ethernet.server_port;
 
     auto ip = msg_out.createNestedObject("ip");

@@ -6,10 +6,11 @@
 #include <ArduinoJson.h>
 
 #include "message_handlers.h"
-#include "persistent_eth.h"
+#include "user_ethernet.h"
 #include "user_auth.h"
 
-namespace eeprom {
+namespace user {
+namespace settings {
 
 /**
  * Persistent user-changable configuration of the Teensy Microcontroller.
@@ -18,14 +19,14 @@ namespace eeprom {
  * Values will be hold in the instance and synced to the EEPROM only via calls
  * to read_from_eeprom() or write_to_eeprom().
  **/
-class UserSettings {
+class JsonFlashUserSettings {
   uint64_t version;   ///< Version identifier on EEPROM to check validity
 
 public:
 
   // Settings are managed in their relevant subclasses.
-  ethernet::UserDefinedEthernet ethernet;
-  auth::UserPasswordAuthentification auth;
+  user::ethernet::UserDefinedEthernet ethernet;
+  user::auth::UserPasswordAuthentification auth;
   // put other persistent entities here...
 
   void reset_defaults();   ///< reset to system default (also calls write_to_eeprom)
@@ -38,37 +39,31 @@ public:
 
 };
 
-} // namespace eeprom
+using UserSettingsImplementation = JsonFlashUserSettings;
 
+} // namespace settings
 
-// TODO: I find this namespacing style really weird.
-//       Why name a class "msg::handlers::FooRequestHandler" and not just "foo::FooRequestHandler"
+extern settings::UserSettingsImplementation UserSettings;
+} // namespace user
+
 
 namespace msg {
 
 namespace handlers {
 
-class SettingsHandler : public MessageHandler {
-public:
-  eeprom::UserSettings& settings;
-  SettingsHandler(eeprom::UserSettings& settings) : settings(settings) {}
-};
 
-class GetSettingsHandler : public SettingsHandler {
+class GetSettingsHandler : public MessageHandler {
 public:
-  using SettingsHandler::SettingsHandler;
   bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
-class SetSettingsHandler : public SettingsHandler {
+class SetSettingsHandler : public MessageHandler {
 public:
-  using SettingsHandler::SettingsHandler;
   bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
-class ResetSettingsHandler : public SettingsHandler {
+class ResetSettingsHandler : public MessageHandler {
 public:
-  using SettingsHandler::SettingsHandler;
   bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 

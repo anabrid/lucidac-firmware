@@ -95,7 +95,9 @@ namespace loader {
         GlobalPluginLoader();
     };
 
-    using PluginLoader = GlobalPluginLoader;
+
+    extern GlobalPluginLoader PluginLoader;
+    //using PluginLoader = GlobalPluginLoader;
 
     void convertToJson(const GlobalPluginLoader& src, JsonVariant dst);
 
@@ -120,11 +122,6 @@ namespace handlers {
 
 
 class LoadPluginHandler : public MessageHandler {
-public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-class PluginStatusHandler : public MessageHandler {
 public:
   bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };

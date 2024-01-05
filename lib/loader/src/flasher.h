@@ -33,6 +33,8 @@ namespace loader {
     uint32_t buffer_addr=0, ///< buffer on flash for new image
              buffer_size=0; ///< identical to imagelen but increaed to next sector boundary
 
+    static void status(JsonObject& msg_out);
+
     FirmwareBuffer();
     ~FirmwareBuffer();
   };

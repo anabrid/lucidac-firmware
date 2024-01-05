@@ -34,6 +34,8 @@ public:
   bool config_self_from_json(JsonObjectConst cfg) override;
 
   void write_to_hardware();
+
+  static Carrier& get();
 };
 
 } // namespace carrier

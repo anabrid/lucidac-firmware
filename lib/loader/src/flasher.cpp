@@ -100,9 +100,8 @@ loader::FirmwareBuffer::FirmwareBuffer() {
   firmware_buffer_init(&buffer_addr, &buffer_size);
 }
 
-loader::FirmwareBuffer::~FirmwareBuffer() {
-  firmware_buffer_free(buffer_addr, buffer_size);
-}
+
+loader::FirmwareBuffer::~FirmwareBuffer() { firmware_buffer_free(buffer_addr, buffer_size); }
 
 void firmware_buffer_free( uint32_t buffer_addr, uint32_t buffer_size )
 {
@@ -346,7 +345,7 @@ bool msg::handlers::FlasherDataHandler::handle(JsonObjectConst msg_in, JsonObjec
   return true;
 }
 
-bool msg::handlers::FlasherStatusHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+void loader::FirmwareBuffer::status(JsonObject &msg_out) {
   msg_out["is_upgrade_running"] = bool(upgrade);
   if(upgrade) {
     msg_out["name"] = upgrade->name;
@@ -372,7 +371,6 @@ bool msg::handlers::FlasherStatusHandler::handle(JsonObjectConst msg_in, JsonObj
     msg_out["buffer_addr"] = potential_buffer_addr;
     msg_out["buffer_size"] = potential_buffer_size;
   }
-  return true;
 }
 
 bool msg::handlers::FlasherAbortHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
