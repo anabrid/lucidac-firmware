@@ -88,19 +88,9 @@ public:
 
   /// Extracts a single number of a full word capture.
   float sample(uint8_t index) override;
+
+  // Call via protocol
+  int sample(JsonObjectConst msg_in, JsonObject &msg_out);
 };
 
 } // namespace daq
-
-
-namespace msg {
-namespace handlers {
-
-class OneshotDAQHandler : public MessageHandler {
-public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-
-} // ns handlers
-} // ns msg

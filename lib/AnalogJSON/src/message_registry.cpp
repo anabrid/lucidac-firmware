@@ -6,16 +6,16 @@
 
 #include "utils/logging.h"
 
+#include "handlers/carrier.h"
+#include "handlers/daq.h"
+#include "handlers/help.h"
 #include "handlers/loader_flasher.h"
 #include "handlers/loader_plugin.h"
+#include "handlers/ping.h"
+#include "handlers/run_manager.h"
+#include "handlers/status.h"
 #include "handlers/user_login.h"
 #include "handlers/user_settings.h"
-#include "handlers/carrier.h"
-#include "handlers/run_manager.h"
-#include "handlers/help.h"
-#include "handlers/ping.h"
-#include "handlers/status.h"
-
 
 // allocate singleton storage
 msg::handlers::DynamicRegistry msg::handlers::Registry;
@@ -32,23 +32,25 @@ void msg::handlers::DynamicRegistry::init() {
   set("get_config",           500, new GetConfigMessageHandler(carrier::Carrier::get()), SecurityLevel::RequiresLogin);
   set("get_entities",         600, new GetEntitiesRequestHandler(carrier::Carrier::get()), SecurityLevel::RequiresLogin);
   set("start_run",            700, new StartRunRequestHandler(run::RunManager::get()), SecurityLevel::RequiresLogin);
+  set("one_shot_daq",         800, new OneshotDAQHandler(), SecurityLevel::RequiresNothing);
+
 
   // TODO: It would be somewhat cleaner if the Hybrid Controller settings would be just part of the get_config/set_config idiom
   //   because with this notation, we double the need for setters and getters.
-  set("get_settings",        1000, new GetSettingsHandler(), SecurityLevel::RequiresAdmin);
-  set("update_settings",     1100, new SetSettingsHandler(), SecurityLevel::RequiresAdmin);
-  set("reset_settings",      1200, new ResetSettingsHandler(), SecurityLevel::RequiresAdmin);
+  set("get_settings",        2000, new GetSettingsHandler(), SecurityLevel::RequiresAdmin);
+  set("update_settings",     2100, new SetSettingsHandler(), SecurityLevel::RequiresAdmin);
+  set("reset_settings",      2200, new ResetSettingsHandler(), SecurityLevel::RequiresAdmin);
 
-  set("status",              2000, new GetSystemStatus(user::UserSettings.auth), SecurityLevel::RequiresNothing);
-  set("login",               2100, new LoginHandler(user::UserSettings.auth), SecurityLevel::RequiresNothing);
+  set("status",              3000, new GetSystemStatus(user::UserSettings.auth), SecurityLevel::RequiresNothing);
+  set("login",               3100, new LoginHandler(user::UserSettings.auth), SecurityLevel::RequiresNothing);
 
-  set("load_plugin",         3100, new LoadPluginHandler(), SecurityLevel::RequiresAdmin);
-  set("unload_plugin",       3200, new UnloadPluginHandler(), SecurityLevel::RequiresAdmin);
+  set("load_plugin",         4100, new LoadPluginHandler(), SecurityLevel::RequiresAdmin);
+  set("unload_plugin",       4200, new UnloadPluginHandler(), SecurityLevel::RequiresAdmin);
 
-  set("ota_update_init",     4000, new FlasherInitHandler(), SecurityLevel::RequiresAdmin);
-  set("ota_update_stream",   4100, new FlasherDataHandler(), SecurityLevel::RequiresAdmin);
-  set("ota_update_abort",    4200, new FlasherAbortHandler(), SecurityLevel::RequiresAdmin);
-  set("ota_update_complete", 4300, new FlasherCompleteHandler(), SecurityLevel::RequiresAdmin);
+  set("ota_update_init",     5000, new FlasherInitHandler(), SecurityLevel::RequiresAdmin);
+  set("ota_update_stream",   5100, new FlasherDataHandler(), SecurityLevel::RequiresAdmin);
+  set("ota_update_abort",    5200, new FlasherAbortHandler(), SecurityLevel::RequiresAdmin);
+  set("ota_update_complete", 5300, new FlasherCompleteHandler(), SecurityLevel::RequiresAdmin);
 }
 
 msg::handlers::MessageHandler *msg::handlers::DynamicRegistry::get(const std::string &msg_type) {
