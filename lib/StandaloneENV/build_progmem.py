@@ -33,20 +33,21 @@ except (NameError, KeyError):
   build_flags = []    
 
 import pathlib, json, textwrap, uuid, pprint, subprocess, datetime
-  
-rel_src_dir = "src" # without trailing slash
-abs_src_dir = pathlib.Path("lib/dist") / rel_src_dir
+
+lib_dir = pathlib.Path("./").resolve()
+rel_src_dir = "src/dist" # without trailing slash
+abs_src_dir = pathlib.Path(lib_dir) / rel_src_dir
 
 try:
-  project_dir = pathlib.Path(__file__).parent.resolve().parent.parent
-  abs_src_dir = project_dir / abs_src_dir
+  lib_dir = pathlib.Path(__file__).parent.resolve()
+  abs_src_dir = lib_dir / rel_src_dir
 except NameError:
   # pio environment does not know __file__. However, in PIO, all paths
-  # are relative to the project folder, therefore things are fine.
+  # are relative to... well, where? the project folder, therefore things are fine.
   pass
 
 print(f"OEM distribution generating infos at {abs_src_dir}")
-warn = lambda msg: print("lib/dist/build_progmem.py: WARN ", msg)
+warn = lambda msg: print("StandaloneENV/build_progmem.py: WARN ", msg)
 
 firmware_version = subprocess.getoutput("which git >/dev/null && git describe --tags || echo no-git-avail").strip()
 # For alternatives, see https://setuptools-git-versioning.readthedocs.io/en/stable/differences.html
@@ -135,7 +136,7 @@ code_files["distributor_generated.h"] = \
 
 code_files["distributor_generated.cpp"] = \
 """
-#include "distributor.h"
+#include "dist/distributor.h"
 
 // Interestingly, FLASHMEM and PROGMEM *do* have an effect in Teensy,
 // which is whether functions are copied into ICTM RAM or not. If not provided,
@@ -161,5 +162,4 @@ for fname, content in code_files.items():
   pathlib.Path(abs_src_dir / fname).write_text(content % locals())
 
 # just to make sure the generated code does not touch the git repository.
-lib_dist_dir = pathlib.Path(abs_src_dir).parent
-(lib_dist_dir / ".gitignore").write_text("".join( f"{rel_src_dir}/{fname}\n" for fname in code_files.keys()))
+(lib_dir / ".gitignore").write_text("".join( f"{rel_src_dir}/{fname}\n" for fname in code_files.keys()))

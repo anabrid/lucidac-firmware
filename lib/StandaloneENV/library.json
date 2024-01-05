@@ -1,0 +1,14 @@
+{
+    "name": "StandaloneENV",
+    "version": "0.0.0",
+    "description": "Convenience classes for the standalone LUCIDAC environment",
+    "authors": {
+        "name": "Anabrid GmbH",
+        "email": "hello@anabrid.com",
+        "url": "https://anabrid.com/"
+    },
+    "license": "MIT OR GPL-2.0-or-later",
+    "build": {
+        "extraScript": "build_progmem.py"
+    }
+}
