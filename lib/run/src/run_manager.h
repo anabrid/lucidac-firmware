@@ -39,7 +39,7 @@ protected:
 public:
   explicit StartRunRequestHandler(run::RunManager &run_manager) : manager(run_manager) {}
 
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 } // namespace handlers

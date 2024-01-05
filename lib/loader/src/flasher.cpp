@@ -275,10 +275,10 @@ int flash_write_block( uint32_t addr, uint8_t *data, uint32_t count )
 // Actual user frontend code
 //******************************************************************************
 
-#define return_err(msg) { msg_out["error"] = msg; return false; }
-#define return_errf(msg,...) {\
+#define return_err(code, msg) { msg_out["error"] = msg; return error(code); }
+#define return_errf(code, msg,...) {\
   char msgbuf[1000]; snprintf(msgbuf, sizeof(msgbuf), msg, __VA_ARGS__);\
-  msg_out["error"] = msgbuf; return false; }
+  msg_out["error"] = msgbuf; return error(code); }
 
 loader::FirmwareBuffer *upgrade;
 void delete_upgrade() { delete upgrade; upgrade = nullptr; }
@@ -291,8 +291,8 @@ constexpr size_t static json_overhead = 0xff; // for {'bla'}
 constexpr size_t static base64_chunk_size = 4096 / 2; //- json_overhead;
 constexpr size_t static bin_chunk_size = base64_chunk_size * 3/4;
 
-bool msg::handlers::FlasherInitHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  if(upgrade) return_err("Firmware upgrade already running. Cancel it before doing another one");
+int msg::handlers::FlasherInitHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+  if(upgrade) return_err(1, "Firmware upgrade already running. Cancel it before doing another one");
 
   upgrade = new loader::FirmwareBuffer();
   upgrade->name = msg_in["name"].as<std::string>();
@@ -302,7 +302,7 @@ bool msg::handlers::FlasherInitHandler::handle(JsonObjectConst msg_in, JsonObjec
 
   if(upgrade->imagelen > upgrade->buffer_size) {
     delete_upgrade();
-    return_errf("New firmware image too large for OTA upgrade process. Image size: %zu bytes > Buffer size: %ld bytes",
+    return_errf(2, "New firmware image too large for OTA upgrade process. Image size: %zu bytes > Buffer size: %ld bytes",
       upgrade->imagelen, upgrade->buffer_size);
   }
 
@@ -310,39 +310,39 @@ bool msg::handlers::FlasherInitHandler::handle(JsonObjectConst msg_in, JsonObjec
   // The JsonDocuments in main.cpp have length 4096.
   msg_out["bin_chunk_size"] = bin_chunk_size;
   msg_out["encoding"] = "binary-base64";
-  return true;
+  return success;
 }
 
-bool msg::handlers::FlasherDataHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  if(!upgrade) return_err("No firmware upgrade running.");
-  if(upgrade->transfer_completed()) return_err("Transfer already completed");
+int msg::handlers::FlasherDataHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+  if(!upgrade) return_err(1, "No firmware upgrade running.");
+  if(upgrade->transfer_completed()) return_err(2, "Transfer already completed");
 
   uint8_t decoded_buffer[bin_chunk_size] __attribute__ ((aligned (4)));
   auto base64_payload = msg_in["payload"].as<std::string>();
   auto payload_base64_size = base64_payload.size(); // / 4 * 3;
-  if(!payload_base64_size) return_err("Missing payload.");
-  if((payload_base64_size % 4) != 0) return_err("Payload has not correct length to be base64-encoded.");
+  if(!payload_base64_size) return_err(3, "Missing payload.");
+  if((payload_base64_size % 4) != 0) return_err(4, "Payload has not correct length to be base64-encoded.");
     //return_err("Chunk not 32-bit aligned. Expecting buffer size multiples of 4 bytes.");
   auto payload_bin_size = etl::base64::decode(base64_payload.c_str(), base64_payload.length(), decoded_buffer, bin_chunk_size);
-  if(!payload_bin_size) return_err("Could not decode base64-encoded payload.");
+  if(!payload_bin_size) return_err(2, "Could not decode base64-encoded payload.");
 
   LOGV("payload_base64_size=%d, payload_bin_size=%d", payload_base64_size, payload_bin_size);
 
   if(payload_bin_size > bin_chunk_size)
-    return_errf("Chunk size too large. Given %zu bytes > buffer size %zu bytes", payload_bin_size, bin_chunk_size);
+    return_errf(6, "Chunk size too large. Given %zu bytes > buffer size %zu bytes", payload_bin_size, bin_chunk_size);
   if(upgrade->bytes_transmitted + payload_bin_size > upgrade->imagelen)
-    return_errf("Chunk size too large, yields to image size %zu bytes but only %zu announced.", upgrade->bytes_transmitted + payload_bin_size, upgrade->imagelen);
+    return_errf(7, "Chunk size too large, yields to image size %zu bytes but only %zu announced.", upgrade->bytes_transmitted + payload_bin_size, upgrade->imagelen);
   if((payload_bin_size % 4) != 0)
-    return_err("Chunk not 32-bit aligned. Expecting buffer size multiples of 4 bytes.");
+    return_err(8, "Chunk not 32-bit aligned. Expecting buffer size multiples of 4 bytes.");
 
   LOGV("Loaded %zu bytes to RAM, ready for flash writing", payload_bin_size);
 
   // The write bases on the assumption that the buffer is completely erased.
-  int error = flash_write_block(upgrade->buffer_addr + upgrade->bytes_transmitted, decoded_buffer, payload_bin_size);
-  if(error) return_errf("flash_write_block() error %02X", error);
+  int write_error = flash_write_block(upgrade->buffer_addr + upgrade->bytes_transmitted, decoded_buffer, payload_bin_size);
+  if(write_error) return_errf(50+write_error, "flash_write_block() error %02X", write_error);
 
   upgrade->bytes_transmitted += payload_bin_size;
-  return true;
+  return success;
 }
 
 void loader::FirmwareBuffer::status(JsonObject &msg_out) {
@@ -373,18 +373,18 @@ void loader::FirmwareBuffer::status(JsonObject &msg_out) {
   }
 }
 
-bool msg::handlers::FlasherAbortHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  if(!upgrade) return_err("No upgrade running which I could abort");
+int msg::handlers::FlasherAbortHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+  if(!upgrade) return_err(1, "No upgrade running which I could abort");
   delete_upgrade();
   return true;
 }
 
-bool msg::handlers::FlasherCompleteHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  if(!upgrade->transfer_completed()) return_err("Require transfer to be completed");
+int msg::handlers::FlasherCompleteHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+  if(!upgrade->transfer_completed()) return_err(1,"Require transfer to be completed");
 
   LOG_ALWAYS("Checking new firmware image hash...");
   auto actual_hash = utils::hash_sha256((uint8_t*)upgrade->buffer_addr, upgrade->imagelen);
-  if(actual_hash != upgrade->upstream_hash) return_err("Corrupted upload data, hash mismatch. Please try again (start new init)");
+  if(actual_hash != upgrade->upstream_hash) return_err(2,"Corrupted upload data, hash mismatch. Please try again (start new init)");
 
   LOG_ALWAYS("Moving new firmware image into place and rebooting...");
 
@@ -393,7 +393,7 @@ bool msg::handlers::FlasherCompleteHandler::handle(JsonObjectConst msg_in, JsonO
 
   // will not return from flash_move(). This is actually never reached.
   // return statement only to surpress compiler warnings.
-  return true;
+  return success;
 }
 
 

@@ -57,28 +57,28 @@ class SetConfigMessageHandler : public CarrierMessageHandlerBase {
 public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
 
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 class GetConfigMessageHandler : public CarrierMessageHandlerBase {
 public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
 
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 class GetEntitiesRequestHandler : public CarrierMessageHandlerBase {
 public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
 
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 class ResetRequestHandler : public CarrierMessageHandlerBase {
 public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
 
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 } // namespace handlers

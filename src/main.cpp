@@ -19,10 +19,10 @@ net::EthernetServer server;
 
 class HackMessageHandler : public msg::handlers::MessageHandler {
 public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
     std::string command = msg_in["command"];
     if (command.empty())
-      return false;
+      return 1;
 
     // Slave mode for transferring IC/OP signals
     if (command == "slave") {
@@ -31,7 +31,7 @@ public:
       pinMode(mode::PIN_MODE_OP, INPUT);
     }
 
-    return true;
+    return success;
   }
 };
 
@@ -116,12 +116,13 @@ void loop() {
         Serial.println(error.c_str());
       } else {
         auto envelope_out_obj = envelope_out.to<JsonObject>();
-        if(msg::protocol::handleMessage(envelope_in.as<JsonObjectConst>(), envelope_out_obj, user_context)) {
+        int error_code = msg::protocol::handleMessage(envelope_in.as<JsonObjectConst>(), envelope_out_obj, user_context);
+        //if(error_code == msg::handlers::MessageHandler::success) {
           serializeJson(envelope_out_obj, Serial);
           serializeJson(envelope_out_obj, connection);
           if (!connection.writeFully("\n"))
             break;
-        }
+        //}
       }
 
       msg::protocol::process_serial_input();

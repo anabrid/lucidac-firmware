@@ -27,17 +27,17 @@ void user::auth::UserPasswordAuthentification::status(JsonObject target) {
   // don't tell the passwords!
 }
 
-bool msg::handlers::LoginHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out, user::auth::AuthentificationContext& user_context) {
+int msg::handlers::LoginHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out, user::auth::AuthentificationContext& user_context) {
   #ifdef ANABRID_UNSAFE_INTERNET
   msg_out["error"] = "No authentification neccessary. Auth system is disabled in this firmware build.";
-  return false;
+  return -2;
   #else
   std::string new_user = msg_in["user"];
   if(user_context.hasBetterClearenceThen(new_user)) {
     // This case avoids users from locking themself out of the serial console where they
     // always have admin permissions. It is not that interesting in a TCP/IP connection.
     msg_out["error"] = "Login can only upgrade privileges but you wold loose. Open a new connection instead.";
-    return false;
+    return 1;
   } else if(!auth.is_valid(new_user, msg_in["password"])) {
     msg_out["error"] = "Invalid username or password.";
 
@@ -52,14 +52,14 @@ bool msg::handlers::LoginHandler::handle(JsonObjectConst msg_in, JsonObject &msg
     Serial.println();
     #endif
 
-    return false;
+    return 2;
   } else {
     user_context.login(new_user);
 
     // TODO: Somehow this line doesn't show up.
     Serial.print("New authentification: "); user_context.printTo(Serial); Serial.println();
     
-    return true;
+    return success;
   }
   #endif  
 }

@@ -54,17 +54,17 @@ namespace handlers {
 
 class GetSettingsHandler : public MessageHandler {
 public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 class SetSettingsHandler : public MessageHandler {
 public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 class ResetSettingsHandler : public MessageHandler {
 public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 } // namespace handlers

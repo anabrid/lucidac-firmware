@@ -77,20 +77,20 @@ size_t user::settings::JsonFlashUserSettings::write_to_eeprom() {
     return consumed_size;
 }
 
-bool msg::handlers::GetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+int msg::handlers::GetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
     user::UserSettings.write_to_json(msg_out);
-    return true;
+    return success;
 }
 
-bool msg::handlers::SetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+int msg::handlers::SetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
     user::UserSettings.read_from_json(msg_in);
     user::UserSettings.write_to_json(msg_out.createNestedObject("updated_config"));
     msg_out["available_bytes"] = eeprom_size;
     msg_out["consumed_bytes"] = user::UserSettings.write_to_eeprom();
-    return true;
+    return success;
 }
 
-bool msg::handlers::ResetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+int msg::handlers::ResetSettingsHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
     user::UserSettings.reset_defaults();
-    return true;
+    return success;
 }

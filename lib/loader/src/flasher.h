@@ -48,27 +48,27 @@ namespace handlers {
 
 class FlasherInitHandler : public MessageHandler {
 public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 class FlasherDataHandler : public MessageHandler {
 public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 class FlasherAbortHandler : public MessageHandler {
 public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 class FlasherCompleteHandler : public MessageHandler {
 public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 class FlasherStatusHandler : public MessageHandler {
 public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 

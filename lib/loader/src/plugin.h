@@ -69,12 +69,12 @@ namespace loader {
         bool can_load() const { return plugin ? plugin->can_load() : (load_addr!=0); }
         //virtual bool load(uint8_t* code, size_t code_len); // convenience function, put code in place, returns true if success
         //virtual bool load(size_t code_len);
-        bool load(const Plugin& new_plugin);
+        int load(const Plugin& new_plugin); ///< returns 0 on success
         void unload() { plugin.reset(); } // frees memory, does not call unloader.
         
-        virtual bool load_and_execute(JsonObjectConst msg_in, JsonObject &msg_out); /// load from protocol message, returns a reply msg
+        virtual int load_and_execute(JsonObjectConst msg_in, JsonObject &msg_out); /// load from protocol message, gives out reply msg, returns 0 on success
         //virtual void show(JsonObjectConst msg_in, JsonObject &msg_out); /// show what is currently there
-        virtual bool unload(JsonObjectConst msg_in, JsonObject &msg_out); /// unload from protocol message, returns a reply msg
+        virtual int unload(JsonObjectConst msg_in, JsonObject &msg_out); /// unload from protocol message, gives out reply msg, returns 0 on success
     };
     
     /**
@@ -123,12 +123,12 @@ namespace handlers {
 
 class LoadPluginHandler : public MessageHandler {
 public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 class UnloadPluginHandler : public MessageHandler {
 public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 

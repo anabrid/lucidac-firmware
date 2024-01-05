@@ -13,8 +13,8 @@ class LoginHandler : public MessageHandler {
 public:
   user::auth::UserPasswordAuthentification& auth;
   LoginHandler(user::auth::UserPasswordAuthentification& _auth) : auth(_auth) {}
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out, user::auth::AuthentificationContext& user_context);
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) { return false; } // never use this method.
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out, user::auth::AuthentificationContext& user_context);
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) { return -1; } // never use this method.
 };
 
 

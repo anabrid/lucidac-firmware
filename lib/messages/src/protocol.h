@@ -6,7 +6,13 @@
 namespace msg {
 namespace protocol {
 
-    bool handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out, user::auth::AuthentificationContext &user_context);
+    /**
+     * Handles a message, according to the registry.
+     * Passes return codes as they appear from the handlers.
+     * 
+     * TODO: Could be a method of the Message Registry
+     **/
+    int handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out, user::auth::AuthentificationContext &user_context);
 
     void process_serial_input();
 

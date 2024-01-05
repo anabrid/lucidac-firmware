@@ -25,14 +25,19 @@ class DynamicRegistry {
   struct RegistryEntry { // "named tuple"
     MessageHandler* handler;
     user::auth::SecurityLevel clearance;
+    int result_code_prefix; // Some decimal error code prefix, inspired by errno, HRESULT, etc.
   };
 
   std::map<std::string, RegistryEntry> entries;
 
+  int result_code_counter = 1, result_code_increment = 100;
+
 public:
   MessageHandler *get(const std::string& msg_type);
   user::auth::SecurityLevel requiredClearance(const std::string& msg_type);
+
   bool set(const std::string& msg_type, MessageHandler *handler, user::auth::SecurityLevel minimumClearance);
+  bool set(const std::string& msg_type, int result_code_prefix, MessageHandler *handler, user::auth::SecurityLevel minimumClearance);
 
   void dump(); //< for debugging: Print Registry configuration to Serial
   void write_handler_names_to(JsonArray& target); ///< for structured output
@@ -45,19 +50,19 @@ extern DynamicRegistry Registry;
 
 class PingRequestHandler : public MessageHandler {
 public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 class GetSystemStatus : public MessageHandler {
   user::auth::UserPasswordAuthentification& _auth;
 public:
   GetSystemStatus(user::auth::UserPasswordAuthentification& auth) : _auth(auth) {}
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 class HelpHandler : public MessageHandler {
 public:
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 } // namespace handlers
