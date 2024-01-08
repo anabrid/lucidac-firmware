@@ -1,5 +1,6 @@
 #include "handlers/status.h"
 
+#include <Arduino.h>
 #include "user/user_ethernet.h"
 #include "user/user_auth.h"
 #include "dist/distributor.h"
@@ -8,6 +9,10 @@
 
 int msg::handlers::GetSystemStatus::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
   bool do_all = msg_in.size()==0;
+
+  if(do_all || msg_in["time"].as<bool>()) {
+    msg_out["time"]["uptime_millis"] = millis();
+  }
 
   if(do_all || msg_in["dist"].as<bool>()) {
     auto odist = msg_out.createNestedObject("dist");

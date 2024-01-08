@@ -1,5 +1,7 @@
 #include "message_handlers.h"
+
 #include "carrier/carrier.h"
+#include "loader/flasher.h" // reboot()
 
 namespace msg {
 namespace handlers {
@@ -46,7 +48,13 @@ public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
 
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
-    return error(carrier.reset(msg_in, msg_out));
+    // TODO: resetting the Teensy itself and not only the carrier should be executed somewhere more suitable.
+    if(msg_in["reboot"]) {
+      loader::reboot(); // does actually not return
+      return success;
+    } else {
+      return error(carrier.reset(msg_in, msg_out));
+    }
   }
 };
 

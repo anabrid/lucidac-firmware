@@ -45,6 +45,8 @@
 #define CPU_RESTART_VAL		(0x5FA0004)
 #define REBOOT			      (*CPU_RESTART_ADDR = CPU_RESTART_VAL)
 
+void loader::reboot() { REBOOT; }
+
 #define RAMFUNC __attribute__ ((section(".fastrun"), noinline, noclone, optimize("Os") ))
 
 RAMFUNC int flash_sector_not_erased( uint32_t address );
@@ -401,3 +403,4 @@ int loader::FirmwareFlasher::complete(JsonObjectConst msg_in, JsonObject &msg_ou
   // return statement only to surpress compiler warnings.
   return success;
 }
+

@@ -5,6 +5,9 @@
 
 namespace loader {
 
+  // Just a little generic Teensy reboot routine
+  void reboot();
+
   /**
    * The Flasher-X over-the-air firmware upgrade process is a small code snippet originally dating from
    * https://github.com/joepasquariello/FlasherX. The basic idea is to use the free flash image as a buffer
