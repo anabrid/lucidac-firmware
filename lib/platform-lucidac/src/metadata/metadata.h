@@ -28,8 +28,8 @@
 #include <array>
 #include <cstdint>
 
-#include "functions.h"
-#include "local_bus.h"
+#include "bus/bus.h"
+#include "bus/functions.h"
 
 namespace metadata {
 

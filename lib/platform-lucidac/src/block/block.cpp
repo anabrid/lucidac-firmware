@@ -24,8 +24,8 @@
 // ANABRID_END_LICENSE
 
 #include "block.h"
-#include "functions.h"
-#include "local_bus.h"
+#include "bus/bus.h"
+#include "bus/functions.h"
 
 void blocks::CScaleSwitchFunction::write_to_hardware() const {
   begin_communication();

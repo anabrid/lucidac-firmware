@@ -25,7 +25,7 @@
 
 #include "iblock.h"
 
-#include "functions.h"
+#include "bus/functions.h"
 #include "logging.h"
 
 void blocks::functions::ICommandRegisterFunction::write_to_hardware() const {

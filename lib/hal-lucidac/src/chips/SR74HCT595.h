@@ -25,8 +25,7 @@
 
 #pragma once
 
-#include "functions.h"
-
+#include "bus/functions.h"
 
 namespace functions {
 

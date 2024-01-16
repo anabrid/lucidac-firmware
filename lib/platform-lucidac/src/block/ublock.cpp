@@ -25,7 +25,7 @@
 
 #include <algorithm>
 
-#include "functions.h"
+#include "bus/functions.h"
 #include "ublock.h"
 
 void blocks::utils::shift_5_left(uint8_t *buffer, size_t size) {

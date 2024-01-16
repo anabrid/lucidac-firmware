@@ -24,7 +24,7 @@
 // ANABRID_END_LICENSE
 
 #include "cluster.h"
-#include "local_bus.h"
+#include "bus/bus.h"
 #include "logging.h"
 #include "running_avg.h"
 

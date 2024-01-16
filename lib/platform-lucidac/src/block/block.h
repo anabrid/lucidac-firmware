@@ -29,8 +29,8 @@
 #include <cstdint>
 
 #include "block/base.h"
-#include "functions.h"
-#include "local_bus.h"
+#include "bus/bus.h"
+#include "bus/functions.h"
 
 namespace blocks {
 

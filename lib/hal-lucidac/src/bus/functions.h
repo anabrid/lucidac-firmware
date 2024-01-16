@@ -30,7 +30,7 @@
 #include <core_pins.h>
 #include <cstdint>
 
-#include "local_bus.h"
+#include "bus.h"
 
 namespace functions {
 

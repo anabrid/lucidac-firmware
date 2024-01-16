@@ -27,10 +27,10 @@
 
 #include <cstdint>
 
+#include "block/base.h"
+#include "bus/bus.h"
 #include "chips/DAC60508.h"
 #include "chips/SR74HCT595.h"
-#include "block/base.h"
-#include "local_bus.h"
 
 namespace blocks {
 

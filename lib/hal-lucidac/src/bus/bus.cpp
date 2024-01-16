@@ -23,7 +23,7 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#include "local_bus.h"
+#include "bus.h"
 
 #include "io/ioregister.h"
 #include "logging.h"

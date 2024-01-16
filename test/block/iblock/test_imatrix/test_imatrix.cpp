@@ -27,8 +27,8 @@
 #include <unity.h>
 
 #include "block/iblock.h"
-#include "functions.h"
-#include "local_bus.h"
+#include "bus/bus.h"
+#include "bus/functions.h"
 
 using namespace bus;
 using namespace blocks;

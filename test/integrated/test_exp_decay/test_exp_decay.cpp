@@ -26,8 +26,8 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#include "bus/bus.h"
 #include "daq.h"
-#include "local_bus.h"
 #include "mode.h"
 
 #define private public
