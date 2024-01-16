@@ -27,7 +27,7 @@
 #include <unity.h>
 
 #include "bus/bus.h"
-#include "daq.h"
+#include "daq/daq.h"
 #include "mode/mode.h"
 
 #define private public

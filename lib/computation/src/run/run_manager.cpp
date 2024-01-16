@@ -25,7 +25,7 @@
 
 #include "run_manager.h"
 
-#include "daq.h"
+#include "daq/daq.h"
 #include "logging.h"
 
 run::RunManager run::RunManager::_instance{};

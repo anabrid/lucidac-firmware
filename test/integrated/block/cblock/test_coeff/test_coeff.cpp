@@ -26,7 +26,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "daq.h"
+#include "daq/daq.h"
 #include "lucidac.h"
 #include "mode/mode.h"
 

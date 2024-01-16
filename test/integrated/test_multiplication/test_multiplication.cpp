@@ -27,7 +27,7 @@
 #include <unity.h>
 
 #include "carrier/cluster.h"
-#include "daq.h"
+#include "daq/daq.h"
 
 using namespace lucidac;
 using namespace blocks;

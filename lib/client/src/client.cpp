@@ -27,7 +27,7 @@
 
 #include <bitset>
 
-#include "daq.h"
+#include "daq/daq.h"
 #include "run/run.h"
 
 void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange change, const run::Run &run) {

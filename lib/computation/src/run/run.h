@@ -29,7 +29,7 @@
 #include <queue>
 #include <string>
 
-#include "daq_base.h"
+#include "daq/base.h"
 #include "message_handlers.h"
 #include "mode/mode.h"
 

@@ -31,7 +31,7 @@
 #include <DMAChannel.h>
 #include <FlexIO_t4.h>
 
-#include "daq_base.h"
+#include "base.h"
 #include "run/run.h"
 #include "serializer.h"
 

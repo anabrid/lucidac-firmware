@@ -26,7 +26,7 @@
 #pragma once
 
 #include "block/blocks.h"
-#include "daq.h"
+#include "daq/daq.h"
 #include "entity/entity.h"
 
 namespace lucidac {

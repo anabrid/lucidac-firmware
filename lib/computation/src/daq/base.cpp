@@ -23,7 +23,7 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#include "daq_base.h"
+#include "base.h"
 
 daq::DAQConfig daq::DAQConfig::from_json(JsonObjectConst &&json) {
   DAQConfig daq_config;

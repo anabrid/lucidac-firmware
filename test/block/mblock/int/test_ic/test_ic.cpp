@@ -27,7 +27,7 @@
 #include <unity.h>
 
 #include "block/mblock.h"
-#include "daq.h"
+#include "daq/daq.h"
 #include "mode/mode.h"
 
 using namespace blocks;

@@ -30,7 +30,7 @@
 #include <QNEthernetUDP.h>
 
 #include "carrier/carrier.h"
-#include "daq.h"
+#include "daq/daq.h"
 #include "run/run.h"
 
 namespace net = qindesign::network;
