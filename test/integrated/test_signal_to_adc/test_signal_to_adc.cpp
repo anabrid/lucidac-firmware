@@ -26,7 +26,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "cluster.h"
+#include "carrier/cluster.h"
 #include "daq.h"
 #include "mode.h"
 

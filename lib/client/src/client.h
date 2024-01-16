@@ -29,7 +29,7 @@
 #include <QNEthernetClient.h>
 #include <QNEthernetUDP.h>
 
-#include "carrier.h"
+#include "carrier/carrier.h"
 #include "daq.h"
 #include "run.h"
 

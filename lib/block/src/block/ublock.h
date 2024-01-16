@@ -28,8 +28,8 @@
 #include <array>
 #include <cstdint>
 
-#include "analog.h"
 #include "block/base.h"
+#include "carrier/analog.h"
 #include "functions.h"
 #include "local_bus.h"
 

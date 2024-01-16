@@ -2,7 +2,7 @@
 #include <ArduinoJson.h>
 #include <QNEthernet.h>
 
-#include "carrier.h"
+#include "carrier/carrier.h"
 #include "client.h"
 #include "logging.h"
 #include "message_handlers.h"
