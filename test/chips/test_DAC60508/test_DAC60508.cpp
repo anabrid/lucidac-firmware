@@ -27,7 +27,7 @@
 #include <unity.h>
 
 #define protected public
-#include "DAC60508.h"
+#include "chips/DAC60508.h"
 #include "functions.h"
 
 using namespace functions;

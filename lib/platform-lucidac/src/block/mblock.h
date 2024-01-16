@@ -27,8 +27,8 @@
 
 #include <cstdint>
 
-#include "DAC60508.h"
-#include "SR74HCT595.h"
+#include "chips/DAC60508.h"
+#include "chips/SR74HCT595.h"
 #include "block/base.h"
 #include "local_bus.h"
 
