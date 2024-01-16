@@ -31,7 +31,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "74LVC138AD.tpl.hpp"
+#include "metadata/74LVC138AD.tpl.hpp"
 
 MetadataMemory74LVC138AD chip{bus::idx_to_addr(0, bus::M2_BLOCK_IDX, 0)};
 
