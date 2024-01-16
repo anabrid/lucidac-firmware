@@ -34,8 +34,8 @@ except (NameError, KeyError):
 
 import pathlib, json, textwrap, uuid, pprint, subprocess, datetime
 
-# lib_dir = pathlib.Path("./").resolve() # use this if called from library.json
-lib_dir = pathlib.Path("./lib/controller/").resolve() # use this if called from platform.ini
+lib_dir = pathlib.Path("./").resolve() # use this if called from library.json
+#lib_dir = pathlib.Path("./lib/controller/").resolve() # use this if called from platform.ini
 rel_src_dir = "src/build" # without trailing slash
 abs_src_dir = pathlib.Path(lib_dir) / rel_src_dir
 

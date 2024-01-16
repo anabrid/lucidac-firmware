@@ -1,7 +1,7 @@
 {
-    "name": "StandaloneENV",
+    "name": "Controller-LUCIDAC",
     "version": "0.0.0",
-    "description": "Convenience classes for the standalone LUCIDAC environment",
+    "description": "Utility/Maintenance/Plumbing classes for the LUCIDAC Teensy Controller and (PlatformIO) build system",
     "authors": {
         "name": "Anabrid GmbH",
         "email": "hello@anabrid.com",
@@ -9,6 +9,6 @@
     },
     "license": "MIT OR GPL-2.0-or-later",
     "build": {
-        "extraScript": "build_progmem.py"
+        "extraScript": "build_distributor.py"
     }
 }
