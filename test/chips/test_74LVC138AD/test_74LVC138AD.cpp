@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "74LVC138AD.tpl.hpp"
+#include "metadata/74LVC138AD.tpl.hpp"
 
 MetadataMemory74LVC138AD chip{bus::board_function_to_addr(0)};
 

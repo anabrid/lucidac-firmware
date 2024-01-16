@@ -6,10 +6,10 @@
 #include <unity.h>
 
 #define private public
-#include "mblock.h"
-#include "ublock.h"
-#include "cblock.h"
-#include "iblock.h"
+#include "block/cblock.h"
+#include "block/iblock.h"
+#include "block/mblock.h"
+#include "block/ublock.h"
 
 using namespace blocks;
 

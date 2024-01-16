@@ -5,9 +5,9 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "functions.h"
-#include "iblock.h"
-#include "local_bus.h"
+#include "block/iblock.h"
+#include "bus/bus.h"
+#include "bus/functions.h"
 
 using namespace bus;
 using namespace blocks;

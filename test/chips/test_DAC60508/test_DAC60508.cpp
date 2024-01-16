@@ -6,8 +6,8 @@
 #include <unity.h>
 
 #define protected public
-#include "DAC60508.h"
-#include "functions.h"
+#include "bus/functions.h"
+#include "chips/DAC60508.h"
 
 using namespace functions;
 

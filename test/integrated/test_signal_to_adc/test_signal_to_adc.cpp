@@ -5,9 +5,9 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "cluster.h"
-#include "daq.h"
-#include "mode.h"
+#include "carrier/cluster.h"
+#include "daq/daq.h"
+#include "mode/mode.h"
 
 using namespace lucidac;
 using namespace blocks;

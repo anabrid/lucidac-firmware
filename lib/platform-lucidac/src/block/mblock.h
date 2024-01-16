@@ -8,7 +8,7 @@
 
 #include "chips/DAC60508.h"
 #include "chips/SR74HCT595.h"
-#include "block/base_block.h"
+#include "block/base.h"
 #include "bus/bus.h"
 
 namespace blocks {

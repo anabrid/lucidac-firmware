@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "local_bus.h"
+#include "bus/bus.h"
 
 using namespace bus;
 

@@ -5,9 +5,9 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "daq.h"
-#include "mblock.h"
-#include "mode.h"
+#include "block/mblock.h"
+#include "daq/daq.h"
+#include "mode/mode.h"
 
 using namespace blocks;
 using namespace daq;

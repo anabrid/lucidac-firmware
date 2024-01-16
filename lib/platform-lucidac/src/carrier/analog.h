@@ -20,45 +20,14 @@
 // ensure the GNU General Public License version 3 requirements
 // will be met: https://www.gnu.org/licenses/gpl-3.0.html.
 // For Germany, additional rules exist. Please consult /LICENSE.DE
-// for further ublock_signal_switcher.cppagreements.
+// for further agreements.
 // ANABRID_END_LICENSE
 
-#include <Arduino.h>
-#include <unity.h>
+#pragma once
 
-#include "block/ublock.h"
-#include "bus/bus.h"
+namespace analog {
 
-using namespace blocks;
+/// Lucidac Reference voltage (Analog Unit)
+constexpr float REF_VOLTAGE = 2.048; 
 
-void setUp() {
-  // set stuff up here
-  bus::init();
 }
-
-void tearDown() {
-  // clean stuff up here
-}
-
-void test_function() {
-  UBlock ublock{0};
-  TEST_ASSERT_EQUAL(0, ublock.get_alt_signals());
-
-  TEST_ASSERT(ublock.use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF));
-  TEST_ASSERT_EQUAL(UBlock::ALT_SIGNAL_REF_HALF, ublock.get_alt_signals());
-
-  TEST_ASSERT_FALSE(ublock.use_alt_signals(UBlock::MAX_ALT_SIGNAL + 1));
-
-  TEST_ASSERT(ublock.use_alt_signals(UBlock::ALT_SIGNAL_ACL7));
-  TEST_ASSERT_EQUAL(UBlock::ALT_SIGNAL_REF_HALF | UBlock::ALT_SIGNAL_ACL7, ublock.get_alt_signals());
-
-  ublock.write_alt_signal_to_hardware();
-}
-
-void setup() {
-  UNITY_BEGIN();
-  RUN_TEST(test_function);
-  UNITY_END();
-}
-
-void loop() {}

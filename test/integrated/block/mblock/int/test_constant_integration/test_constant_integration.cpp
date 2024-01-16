@@ -5,9 +5,9 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "daq.h"
-#include "lucidac.h"
-#include "mode.h"
+#include "carrier/carrier.h"
+#include "daq/daq.h"
+#include "mode/mode.h"
 
 #include "test_common.h"
 

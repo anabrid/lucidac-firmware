@@ -8,7 +8,7 @@
 #include <cstdint>
 
 #include "block/analog.h"
-#include "block/base_block.h"
+#include "block/base.h"
 #include "bus/functions.h"
 #include "bus/bus.h"
 

@@ -6,7 +6,7 @@
 #include <unity.h>
 
 #define protected public
-#include "daq.h"
+#include "daq/daq.h"
 
 using namespace daq;
 OneshotDAQ DAQ{};

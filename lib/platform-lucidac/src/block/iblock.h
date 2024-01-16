@@ -7,7 +7,7 @@
 #include <array>
 #include <cstdint>
 
-#include "block/base_block.h"
+#include "block/base.h"
 #include "bus/functions.h"
 #include "bus/bus.h"
 
