@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "blocks.h"
+#include "block/blocks.h"
 #include "daq.h"
 #include "entity.h"
 

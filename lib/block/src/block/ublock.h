@@ -29,7 +29,7 @@
 #include <cstdint>
 
 #include "analog.h"
-#include "base_block.h"
+#include "block/base.h"
 #include "functions.h"
 #include "local_bus.h"
 

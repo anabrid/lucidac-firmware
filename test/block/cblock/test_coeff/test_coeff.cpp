@@ -28,8 +28,8 @@
 
 #define private public
 #define protected public
-#include "block.h"
-#include "cblock.h"
+#include "block/block.h"
+#include "block/cblock.h"
 #include "functions.h"
 
 functions::TriggerFunction switcher_sync{bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_SYNC)};

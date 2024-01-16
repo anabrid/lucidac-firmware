@@ -28,10 +28,10 @@
 #include <array>
 #include <cstdint>
 
-#include "base_block.h"
-#include "local_bus.h"
 #include "AD5452.h"
 #include "SR74HCT595.h"
+#include "block/base.h"
+#include "local_bus.h"
 
 namespace blocks {
 

@@ -29,7 +29,7 @@
 
 #include "DAC60508.h"
 #include "SR74HCT595.h"
-#include "base_block.h"
+#include "block/base.h"
 #include "local_bus.h"
 
 namespace blocks {

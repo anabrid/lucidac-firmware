@@ -26,8 +26,8 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#include "block/mblock.h"
 #include "daq.h"
-#include "mblock.h"
 #include "mode.h"
 
 using namespace blocks;
