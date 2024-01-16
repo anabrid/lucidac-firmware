@@ -27,7 +27,7 @@
 
 #include "block/blocks.h"
 #include "daq.h"
-#include "entity.h"
+#include "entity/entity.h"
 
 namespace lucidac {
 

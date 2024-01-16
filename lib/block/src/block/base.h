@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "entity.h"
+#include "entity/entity.h"
 #include "local_bus.h"
 
 namespace blocks {

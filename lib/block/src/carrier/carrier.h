@@ -30,7 +30,7 @@
 #include <array>
 
 #include "cluster.h"
-#include "entity.h"
+#include "entity/entity.h"
 #include "message_handlers.h"
 
 using namespace lucidac;
