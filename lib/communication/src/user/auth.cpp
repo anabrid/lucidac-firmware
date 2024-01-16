@@ -6,7 +6,7 @@ void user::auth::UserPasswordAuthentification::reset_defaults() {
   #ifdef DEFAULT_ADMIN_PASSWORD
   db[admin] = DEFAULT_ADMIN_PASSWORD;
   #else
-  db[admin] = 'no-default-set';
+  db[admin] = "no-default-set";
   #endif
 }
 

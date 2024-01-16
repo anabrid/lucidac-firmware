@@ -20,7 +20,6 @@
 
 try:
   # the following code demonstrates how to access build system variables.
-  # we don't make use of them right now.
   Import("env")
   #print(env.Dump())
   interesting_fields = ["BOARD", "BOARD_MCU", "BUILD_TYPE", "UPLOAD_PROTOCOL"]
@@ -32,7 +31,8 @@ except (NameError, KeyError):
   build_system = {}
   build_flags = []    
 
-import pathlib, json, textwrap, uuid, pprint, subprocess, datetime
+# all the following libs are python built-ins:
+import pathlib, json, textwrap, uuid, pprint, subprocess, datetime, re
 
 lib_dir = pathlib.Path("./").resolve() # use this if called from library.json
 #lib_dir = pathlib.Path("./lib/controller/").resolve() # use this if called from platform.ini
@@ -48,20 +48,25 @@ except NameError:
   pass
 
 print(f"OEM distribution generating infos at {abs_src_dir}")
-warn = lambda msg: print("StandaloneENV/build_progmem.py: WARN ", msg)
+warn = lambda msg: print("controller/build_distributor.py: WARN ", msg)
 
+# Read off the current firmware version from the latest git tag. There are alternatives, see
+# https://setuptools-git-versioning.readthedocs.io/en/stable/differences.html for a list, but
+# in the end they all call external git and parse the output.
 firmware_version = subprocess.getoutput("which git >/dev/null && git describe --tags || echo no-git-avail").strip()
-# For alternatives, see https://setuptools-git-versioning.readthedocs.io/en/stable/differences.html
-# but in the end they all call external git and parse the output.
+firmware_version_useful = bool(re.match("\d+\.\d+-\d+.*", firmware_version)) # a proper string is for instance "0.2-80-g302f016"
+not_available = "N/A" # placeholder string used instead
+if not firmware_version_useful: firmware_version = not_available # instead of subprocess garbage
 
-# Use the current commit time as date approximator.  
+# Use the current commit time as firmware date approximator.
+# Do not use the current time, as we want to have reproducable builds.
 try:
   unix_timestamp = subprocess.getoutput("which git >/dev/null && git log -1 --format=%ct || echo failure").strip()
   firmware_version_date = datetime.datetime.fromtimestamp(int(unix_timestamp)).isoformat()
 except ValueError:
   print("Read: ", unix_timestamp)
   warn("No git available, have no information about version and date at all.")
-  firmware_version_date = 'unavailable'
+  firmware_version_date = not_available
 
 rename_keys = lambda dct, prefix='',suffix='': {prefix+k+suffix:v for k,v in dct.items()}
 
