@@ -1,17 +1,16 @@
 #include <Arduino.h>
 #include <cstring>
 
-#include "dist/distributor.h"
-#include "client/client.h"
+#include "build/distributor.h"
+#include "protocol/client.h"
 #include "utils/logging.h"
-#include "message_registry.h"
-#include "user/user_auth.h"
-#include "user/user_settings.h"
+#include "protocol/registry.h"
+#include "protocol/handler.h"
+#include "user/auth.h"
+#include "user/settings.h"
 #include "run/run_manager.h"
 
-#include "protocol.h"
-
-#include "loader/hashflash.h"
+#include "utils/hashflash.h"
 
 net::EthernetServer server;
 
@@ -85,7 +84,7 @@ void loop() {
   net::EthernetClient connection = server.accept();
   auto &run_manager = run::RunManager::get();
 
-  msg::protocol::process_serial_input();
+  msg::process_serial_input();
 
   if (connection) {
 
@@ -116,7 +115,7 @@ void loop() {
         Serial.println(error.c_str());
       } else {
         auto envelope_out_obj = envelope_out.to<JsonObject>();
-        int error_code = msg::protocol::handleMessage(envelope_in.as<JsonObjectConst>(), envelope_out_obj, user_context);
+        int error_code = msg::handleMessage(envelope_in.as<JsonObjectConst>(), envelope_out_obj, user_context);
         //if(error_code == msg::handlers::MessageHandler::success) {
           serializeJson(envelope_out_obj, Serial);
           serializeJson(envelope_out_obj, connection);
@@ -125,7 +124,7 @@ void loop() {
         //}
       }
 
-      msg::protocol::process_serial_input();
+      msg::process_serial_input();
 
       // Fake run for now
       if (!run::RunManager::get().queue.empty()) {
