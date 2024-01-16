@@ -30,8 +30,8 @@
 #include <string>
 
 #include "daq/base.h"
-#include "message_handlers.h"
 #include "mode/mode.h"
+#include "protocol/handler.h"
 
 namespace run {
 

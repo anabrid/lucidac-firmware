@@ -31,7 +31,7 @@
 
 #include "cluster.h"
 #include "entity/entity.h"
-#include "message_handlers.h"
+#include "protocol/handler.h"
 
 using namespace lucidac;
 

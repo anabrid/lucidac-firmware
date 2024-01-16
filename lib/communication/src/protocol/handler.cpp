@@ -23,7 +23,7 @@
 // for further agreements.
 // ANABRID_END_LICENSE
 
-#include "message_handlers.h"
+#include "handler.h"
 
 std::map<std::string, msg::handlers::MessageHandler *> msg::handlers::Registry::_registry{
     {"ping", new PingRequestHandler{}}};

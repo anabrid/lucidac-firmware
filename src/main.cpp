@@ -5,7 +5,7 @@
 #include "carrier/carrier.h"
 #include "client.h"
 #include "logging.h"
-#include "message_handlers.h"
+#include "protocol/handler.h"
 #include "run/run.h"
 #include "run/run_manager.h"
 
