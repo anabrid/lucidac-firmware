@@ -31,7 +31,7 @@
 
 #include "carrier/carrier.h"
 #include "daq.h"
-#include "run.h"
+#include "run/run.h"
 
 namespace net = qindesign::network;
 

@@ -32,7 +32,7 @@
 #include <FlexIO_t4.h>
 
 #include "daq_base.h"
-#include "run.h"
+#include "run/run.h"
 #include "serializer.h"
 
 /// @brief Routines for Data Aquisition (DAQ) / Analog2Digital converters (ADCs)

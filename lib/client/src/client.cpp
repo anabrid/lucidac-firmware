@@ -28,7 +28,7 @@
 #include <bitset>
 
 #include "daq.h"
-#include "run.h"
+#include "run/run.h"
 
 void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange change, const run::Run &run) {
   envelope_out.clear();
