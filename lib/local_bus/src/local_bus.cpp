@@ -25,7 +25,7 @@
 
 #include "local_bus.h"
 
-#include "ioregister.h"
+#include "io/ioregister.h"
 #include "logging.h"
 
 SPIClass &bus::spi = SPI1;
