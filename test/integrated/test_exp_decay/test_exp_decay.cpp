@@ -28,7 +28,7 @@
 
 #include "bus/bus.h"
 #include "daq.h"
-#include "mode.h"
+#include "mode/mode.h"
 
 #define private public
 #include "block/cblock.h"

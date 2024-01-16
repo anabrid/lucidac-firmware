@@ -31,7 +31,7 @@
 
 #include "daq_base.h"
 #include "message_handlers.h"
-#include "mode.h"
+#include "mode/mode.h"
 
 namespace run {
 

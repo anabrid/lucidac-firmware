@@ -28,7 +28,7 @@
 
 #include "daq.h"
 #include "lucidac.h"
-#include "mode.h"
+#include "mode/mode.h"
 
 using namespace blocks;
 using namespace daq;

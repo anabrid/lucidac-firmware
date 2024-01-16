@@ -28,7 +28,7 @@
 
 #include "daq.h"
 #include "lucidac.h"
-#include "mode.h"
+#include "mode/mode.h"
 
 #include "test_common.h"
 

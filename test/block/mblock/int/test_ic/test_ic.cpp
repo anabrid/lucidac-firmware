@@ -28,7 +28,7 @@
 
 #include "block/mblock.h"
 #include "daq.h"
-#include "mode.h"
+#include "mode/mode.h"
 
 using namespace blocks;
 using namespace daq;
