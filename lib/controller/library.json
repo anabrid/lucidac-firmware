@@ -9,6 +9,6 @@
     },
     "license": "MIT OR GPL-2.0-or-later",
     "build": {
-        "extraScript": "build_distributor.py"
+        "extraScript": "build.py"
     }
 }
