@@ -46,13 +46,13 @@ typedef struct __attribute__((packed)) MetadataMemoryLayoutV1 {
   uint16_t get_memory_size() const { return _memory_version_and_size & 0x1FFF; }
 } MetadataMemoryLayoutV1;
 
-template <std::size_t dataSize> class MetadataMemory : public functions::_old_DataFunction {
+template <std::size_t dataSize> class MetadataMemory : public functions::DataFunction {
 private:
   std::array<uint8_t, dataSize> data;
 
 public:
-  explicit MetadataMemory(const unsigned short address, const SPISettings spi_settings)
-      : functions::_old_DataFunction(address, spi_settings), data{0} {}
+  explicit MetadataMemory(const unsigned short address, const SPISettings& spi_settings)
+      : functions::DataFunction(address, spi_settings), data{0} {}
 
   virtual size_t read_from_hardware(size_t byte_offset, size_t length, uint8_t *buffer) const = 0;
   size_t read_from_hardware() { return read_from_hardware(0, data.size(), data.data()); };

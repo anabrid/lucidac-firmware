@@ -106,9 +106,9 @@ public:
   static constexpr unsigned int DEFAULT_TIME_FACTOR = 10000;
 
 private:
-  functions::DAC60508 f_ic_dac;
-  ::functions::SR74HCT595 f_time_factor;
-  ::functions::TriggerFunction f_time_factor_sync;
+  const functions::DAC60508 f_ic_dac;
+  const functions::SR74HCT595 f_time_factor;
+  const functions::TriggerFunction f_time_factor_sync;
   std::array<uint16_t, 8> ic_raw;
   std::array<unsigned int, 8> time_factors;
 
