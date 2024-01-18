@@ -28,11 +28,10 @@
 
 #define protected public
 #define private public
-#include "block/block.h"
 #include "block/cblock.h"
 #include "bus/functions.h"
 
-blocks::CScaleSwitchFunction switcher{bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER)};
+functions::SR74HCT595 switcher_shift_reg{bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER)};
 functions::TriggerFunction switcher_sync{bus::idx_to_addr(0,bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_SYNC)};
 functions::TriggerFunction switcher_clear{bus::idx_to_addr(0,bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_CLEAR)};
 
@@ -53,13 +52,12 @@ void test_init() {
 }
 
 void test_address() {
-  TEST_ASSERT_EQUAL(0b100001'0010, switcher.address);
+  TEST_ASSERT_EQUAL(0b100001'0010, switcher_shift_reg.address);
 }
 
 void test_function() {
-  switcher.data = 0b10001010'10001010'11111111'10001010;
-  //switcher.data = 0b11111111'11111111'11111111'11111111;
-  switcher.write_to_hardware();
+  switcher_shift_reg.transfer32(0b10001010'10001010'11111111'10001010);
+  //switcher_shift_reg.data = 0b11111111'11111111'11111111'11111111;
   switcher_sync.trigger();
 
   //delayMicroseconds(1);
