@@ -26,8 +26,8 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "local_bus.h"
-#include "ublock.h"
+#include "block/ublock.h"
+#include "bus/bus.h"
 
 using namespace blocks;
 

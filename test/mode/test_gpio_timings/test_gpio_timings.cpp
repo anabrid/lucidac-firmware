@@ -26,7 +26,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "mode.h"
+#include "mode/mode.h"
 
 using namespace mode;
 

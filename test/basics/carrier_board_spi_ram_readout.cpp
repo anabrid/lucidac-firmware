@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "local_bus.h"
+#include "bus/bus.h"
 
 void setup()
 {

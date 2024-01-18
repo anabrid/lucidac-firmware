@@ -28,9 +28,9 @@
 
 #define protected public
 #define private public
-#include "block.h"
-#include "cblock.h"
-#include "functions.h"
+#include "block/block.h"
+#include "block/cblock.h"
+#include "bus/functions.h"
 
 blocks::CScaleSwitchFunction switcher{bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER)};
 functions::TriggerFunction switcher_sync{bus::idx_to_addr(0,bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_SYNC)};
