@@ -26,8 +26,8 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "cluster.h"
-#include "daq.h"
+#include "carrier/cluster.h"
+#include "daq/daq.h"
 
 using namespace lucidac;
 using namespace blocks;

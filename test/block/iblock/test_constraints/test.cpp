@@ -26,7 +26,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "iblock.h"
+#include "block/iblock.h"
 
 using namespace blocks;
 

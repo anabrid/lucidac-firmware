@@ -27,8 +27,8 @@
 #include <unity.h>
 
 #define protected public
-#include "functions.h"
-#include "AD5452.h"
+#include "bus/functions.h"
+#include "chips/AD5452.h"
 
 using namespace functions;
 

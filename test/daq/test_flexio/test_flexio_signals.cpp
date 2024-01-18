@@ -12,7 +12,7 @@
 // Include daq.h with all private members made public,
 // to inspect internal variables without additional hassle.
 #define private public
-#include "daq.h"
+#include "daq/daq.h"
 
 constexpr uint8_t PIN_LED = 13;
 

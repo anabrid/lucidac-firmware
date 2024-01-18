@@ -26,15 +26,15 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "daq.h"
-#include "local_bus.h"
-#include "mode.h"
+#include "bus/bus.h"
+#include "daq/daq.h"
+#include "mode/mode.h"
 
 #define private public
-#include "mblock.h"
-#include "ublock.h"
-#include "cblock.h"
-#include "iblock.h"
+#include "block/cblock.h"
+#include "block/iblock.h"
+#include "block/mblock.h"
+#include "block/ublock.h"
 
 using namespace daq;
 using namespace blocks;

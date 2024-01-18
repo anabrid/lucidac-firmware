@@ -27,7 +27,7 @@
 #include <unity.h>
 
 #define private public
-#include "mblock.h"
+#include "block/mblock.h"
 
 using namespace blocks;
 
