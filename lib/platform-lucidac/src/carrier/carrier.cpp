@@ -4,13 +4,15 @@
 
 #include "carrier/carrier.h"
 #include "utils/logging.h"
-#include "user/ethernet.h"
+#include "user/settings.h"
+
+#include <cstring>
 
 carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}) {}
 
 bool carrier::Carrier::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
-  entity_id = user::ethernet::system_mac_as_string();
+  entity_id = user::UserSettings.ethernet.mac;
   if (entity_id.empty())
     return false;
   for (auto &cluster : clusters) {

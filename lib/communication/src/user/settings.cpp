@@ -33,7 +33,7 @@ void user::settings::JsonFlashUserSettings::reset_defaults() {
 
 void user::settings::JsonFlashUserSettings::read_from_json(JsonObjectConst serialized_conf) {
     if(serialized_conf.containsKey("ethernet"))
-        ethernet.read_from_json(serialized_conf["ethernet"]);
+        ethernet = serialized_conf["ethernet"];
     
     if(serialized_conf.containsKey("passwords"))
         auth.read_from_json(serialized_conf["passwords"]);
@@ -49,8 +49,7 @@ void user::settings::JsonFlashUserSettings::set(JsonObjectConst serialized_conf,
 
 void user::settings::JsonFlashUserSettings::write_to_json(JsonObject target) {
   target["version"] = version;
-
-  ethernet.write_to_json(target.createNestedObject("ethernet"));
+  target["ethernet"] = ethernet;
   auth.write_to_json(target.createNestedObject("passwords"));
 }
 

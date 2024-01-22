@@ -7,42 +7,73 @@
 #include <Ethernet.h>
 #include <QNEthernet.h>
 #include <ArduinoJson.h>
-#include <cstring>
+#include <string>
 
 namespace net = qindesign::network;
 
 namespace user {
 namespace ethernet {
 
-std::string system_mac_as_string(); //< Own mac address in Canonical Format AA-BB-CC-DD-EE-FF
+/// Represents Ethernet Mac address
+struct MacAddress {
+  uint8_t mac[6] = {0};
+  void reset(); ///< set to system default (stored in teensy HW_OCOTP_MAC1 and ...MAC0)
+  operator std::string() const;
+  bool fromString(const char* str);
+  uint8_t &operator[](size_t i) { return mac[i]; }
+  const uint8_t &operator[](size_t i) const { return mac[i]; }
+  /// Handy access to system default/permanent mac address (one time programmed)
+  static MacAddress otp() { MacAddress mac; mac.reset(); return mac; }
+};
 
+std::string toString(const MacAddress& mac, char sep='-'); ///< Canonical Format AA-BB-CC-DD-EE-FF
+std::string toString(const IPAddress& ip); ///< Canonical Format 123.45.6.7
+
+bool valid(const MacAddress& mac); ///< All zero mac bytes considered invalid (0-0-0-0-0-0)
+bool valid(const IPAddress& ip);   ///< All zero IP bytes considered invalid (0.0.0.0)
+
+/// This status contains only "static" QNEthernet information, unrelated to UserDefinedEthernet instances
 void status(JsonObject &msg_out);
 
 /**
- *  Persistent user-defined ethernet settings.
+ * Persistent user-defined ethernet settings.
+ * 
+ * \note Changing these settings only takes place after reboot of the microcontroller.
  **/
 class UserDefinedEthernet {
 public:
+  /// Initializes with default values which are always valid and serve as a fallback
+  /// if invalid options are given. Default values are defined at build time in the code.
+  UserDefinedEthernet();
 
-  int server_port;    ///< TCP Ethernet Server port
-  bool use_dhcp;      ///< DHCP client vs static IP configuration
+  uint16_t server_port;///< TCP Ethernet Server port
+  bool use_dhcp;       ///< DHCP client vs static IP configuration
 
-  String hostname;    ///< used only for DHCP client. Maximum 250 characters.
+  MacAddress mac;      ///< Custom MAC address. Defaults to original permanent system Mac.
+
+  std::string hostname; ///< used only for DHCP client. Maximum 250 characters.
 
   IPAddress
-      static_ipaddr,   ///< used only when use_dhcp=false
-      static_netmask,  ///< used only when use_dhcp=false
-      static_gw;       ///< used only when use_dhcp=false
+      static_ipaddr,   ///< own ip address, used only when use_dhcp=false
+      static_netmask,  ///< netmask; used only when use_dhcp=false
+      static_gw,       ///< gateway address; used only when use_dhcp=false
+      static_dns;      ///< DNS server address; used only when use_dhcp=false
 
-  // TODO: Also store static_dns server name for resolving.
-
+  /// Resets this instance to the default values.
   void reset_defaults();
-
-  void read_from_json(JsonObjectConst serialized_conf);
-  void write_to_json(JsonObject target);
 
   void begin(net::EthernetServer *server);
 };
 
+void convertFromJson(JsonVariantConst serialized_conf, UserDefinedEthernet& ude);
+void convertToJson(const UserDefinedEthernet& ude, JsonVariant serialized);
+
+void convertFromJson(JsonVariantConst serialized_mac, MacAddress& mac);
+void convertToJson(const MacAddress& mac, JsonVariant serialized_mac);
+
 } // namespace ethernet
 } // namespace user
+
+// must be defined in global namespace, where Arduinos IPAddress lives
+void convertFromJson(JsonVariantConst ipjson, IPAddress& ip);
+void convertToJson(const IPAddress& ip, JsonVariant ipjson);

@@ -17,9 +17,6 @@ namespace carrier {
 
 class Carrier : public entities::Entity {
 public:
-  static std::string get_system_mac();
-
-public:
   std::array<LUCIDAC, 1> clusters;
 
   Carrier();
