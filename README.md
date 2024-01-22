@@ -9,106 +9,13 @@ It is supposed to run on a [Teensy 4.1](https://www.pjrc.com/teensy/), i.e. a 32
 This project uses [PlatformIO](https://platformio.org/) for the build system (`pio` in
 short). PlatformIO helps for building, flashing and can also be used within various IDEs.
 
-## Getting started as a USER
+\note
+A good point to start reading the documentation is the guide [getting started as a user](#getting-started).
 
-This section is intended for users of the LUCIDAC, who want to use it as is.
-Users are generally only interested in communicating with a "ready to use" Teensy
-microcontroller. The user needs are to build or flash an image onto the microcontroller.
-
-###  Flashing the latest firmware
-
-If necessary, you can download the latest stable firmware from the releases page
-or the latest development version from the build artifacts.
-In the moment, this is *not* the [Gitlab project releases](https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/releases)
-but instead the [Gitlab project jobs](https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/jobs) built
-artifacts, i.e. you should go to https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/artifacts
-and look for the latest artifact from the *dev branch*. You can download
-the `artifacts.zip` and lookup the file in `.pio/build/teensy41/firmware.hex`
-
-Install the [teensy flashing utility](https://www.pjrc.com/teensy/loader_cli.html)
-`teensy-loader-cli` to allow flashing the firmware image without prior building at your computer.
-Don't forget to apply the [udev rules](https://www.pjrc.com/teensy/00-teensy.rules) if
-you work on a Linux computer which was not connected to a Teensy before.
-If you have the platformio teensy package installed, you can also find the flashing utility in `$HOME/.platformio/packages/tool-teensy/teensy_loader_cli`.
-
-Connect your hybrid controller via the USB port to your computer
-and press the small flash button on the teensy board.
-
-Execute `teensy_loader_cli --mcu=TEENSY41 firmware.hex` to flash your hybrid controller.
-
-
-
-### Find the hybrid controller in the network
-
-By default, the hybrid controller configures its IPv4 network address via DHCP.
-You will need the IP address to connect to it. By default, it listens on TCP port 5732.
-
-The hybrid controller will send debug information, including its IP address,
-via the USB-serial connection.
-After a restart, use `cat /dev/ttyACM0` or similar to access the debug output.
-Please note that debug output is not buffered and may not be visible if you are too slow.
-
-You can also find the IP address by asking your system administrator
-or watching your DHCP logs. You can also perform a network scan such as 
-`nmap -v -A -p 5732 192.168.1.1-255` to search for computers in your (exemplaric)
-`192.168.1.1/24` network listening on port 5732.
-
-### Using your LUCIDAC
-
-Use the `pyanabrid-redac` python package to interact with your LUCIDAC. It currently lives
-at https://lab.analogparadigm.com/redac/software/pyanabrid-redac/
-as well as https://lab.analogparadigm.com/pyanabrid/.
-
-## Getting started as a Developer
-
-This section is intended for developers of the LUCIDAC, who are looking to adapt and build the firmware themselves.
-
-Follow the respective platformio (`pio` in short) documentations to install the required dependencies and tools for developement.
-
-Follow https://docs.platformio.org/en/latest/core/installation/methods/installer-script.html#installation-installer-script
-for Linux & Commandline. You can also use the *platformio*  from your respective plattform (for instance
-`apt-get install platformio` on Ubuntu). For the VSCode IDE integration, see
-https://docs.platformio.org/en/latest/integration/ide/vscode.html
-
-### Linux-relevant hints for Teensy via USB
-When you start on a fresh Linux PC, you need to make sure to be able to reach out to the Teensy via USB
-via the `/dev/ttyACM0` file. You can grab them at https://www.pjrc.com/teensy/00-teensy.rules . You should
-also ensure to be in the correct user group to access this file; after adding yourself to the group (such as
-`sudo gpasswd -a YOUR-LOCAL-USERNAME dialout`), you have to sign out and sign in again on your desktop.
-
-### Hello World from the test suite
-When you start with `pio`, make sure to *always* run it from the root directory of this repository. You can make
-a first *hello world* with this command:
-
-```
-pio test -v --filter integrated/test_sinusoidal
-```
-
-For other tests, try `pio test --list-tests`.
-
-Hint: On some systems you have to run the tests with `sudo` while the regular uploading and monitoring does
-not require sudo.
-
-## Using the actual TCP/IP main code
-Make sure the IP adress written in `src/main.cpp` is connectable for you (i.e. you are in
-the same network).
-
-Use the IDE plugin or run `pio run --target=upload`.
-
-You can monitor the serial output for debugging at `pio device monitor` which prints the IP
-and Mac address the device is listening on. Use this way or
-`arp` to detect the Mac address of your teensy network interface.
-
-For testing the network access ("hello world"), you can ping the Teensy and also use the following code in your local terminal:
-
-```
-(echo '{ "_id": 42, "_type": "get_config", "msg": { "entity": ["04-E9-E5-14-74-BF"], "recursive": true } }'; sleep 1) | nc 123.456.789.123 5732
-```
-
-In order to use this code, you have to replace the Mac addrress `04-E9-E5-14-74-BF` by the one from your teensy and the IP adress by the one you are using. You can leave the TCP port `5732` as is.
-
-You should get some output like this one:
-
-```
-{"id":"null","type":"get_config","msg":{"entity":["04-E9-E5-0D-CB-93"],"config":{"/0":{"/M0":{"elements":[{"ic":-1,"k":10000},{"ic":-1,"k":10000},{"ic":-1,"k":10000},{"ic":-1,"k":10000},{"ic":-1,"k":10000},{"ic":-1,"k":10000},{"ic":-1,"k":10000},{"ic":-1,"k":10000}]},"/M1":{},"/U":{"outputs":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]},"/C":{"elements":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},"/I":{"outputs":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}}}}}
-```
+<!--
+  This project uses Doxygen for documentation. Please read the generated documentation,
+  either locally by running "make docs && open docs/html/index.html" or the published
+  docs in the internet.
+  
+  You can also read the individual markdown files at the docs/ directory.
+-->

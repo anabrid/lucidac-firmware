@@ -34,6 +34,8 @@ public:
       static_netmask,  ///< used only when use_dhcp=false
       static_gw;       ///< used only when use_dhcp=false
 
+  // TODO: Also store static_dns server name for resolving.
+
   void reset_defaults();
 
   void read_from_json(JsonObjectConst serialized_conf);

@@ -51,6 +51,8 @@ void user::ethernet::UserDefinedEthernet::read_from_json(JsonObjectConst seriali
         if(serialized_conf.containsKey("static_gw"))
             static_gw[i] = serialized_conf["static_gw"][i];
     }
+
+    // TODO: Communicate that changing these settings only takes place after reboot.
 }
 
 void user::ethernet::UserDefinedEthernet::write_to_json(JsonObject target) {
