@@ -1,8 +1,7 @@
 stages:
   - build
   - release
-
-
+  
 build_job:
   stage: build
   image:
@@ -19,6 +18,9 @@ build_job:
     expire_in: 4 weeks
 
 build_docs:
+  variables:
+    # clone submodules which are currently only relevant for docs
+    GIT_SUBMODULE_STRATEGY: normal
   stage: build
   image: alpine # suggested in https://gitlab.com/pages/doxygen but shitty
   script:
