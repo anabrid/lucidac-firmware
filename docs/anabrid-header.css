@@ -1,0 +1,53 @@
+
+/* Unfinished work: Continue at some point */
+#anabrid-header {
+    display: none;
+}
+
+/* Apply a reset CSS within the #anabrid-header scope  */
+#anabrid-header {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 100%;
+    font: inherit;
+    background: inherit;
+    
+    list-style: none;
+    
+}
+
+#anabrid-header * {
+    margin: inherit;
+    padding: inherit;
+    border: inherit;
+    font-size: inherit;
+    font: inherit;
+    background: inherit;
+    
+    list-style: none;
+}
+
+
+#anabrid-header .logo {
+    height: 1.5em;
+}
+
+#anabrid-header .anabrid-navbar {
+    list-style: none;
+    display: flex;
+    flex-direction: row;
+    padding: .23em;
+    align-items: center;
+}
+
+#anabrid-header .anabrid-navbar li {
+    list-style: none;
+    display: inline-block;
+}
+
+#anabrid-main-content {
+    position: relative;
+    overflow: hidden; /* Avoid content going above, not below */
+}
