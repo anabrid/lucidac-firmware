@@ -73,9 +73,10 @@ void msg::process_serial_input() {
     Serial.println(error.c_str());
   } else {
     auto envelope_out_obj = envelope_out.to<JsonObject>();
-    if(handleMessage(envelope_in.as<JsonObjectConst>(), envelope_out_obj, admin_context)) {
+    int error_code = msg::handleMessage(envelope_in.as<JsonObjectConst>(), envelope_out_obj, admin_context);
+    //if(error_code == msg::handlers::MessageHandler::success) {
       serializeJson(envelope_out_obj, Serial);
       Serial.println();
-    }
+    //}
   }
 }
