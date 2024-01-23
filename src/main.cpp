@@ -6,6 +6,7 @@
 #include "utils/logging.h"
 #include "protocol/registry.h"
 #include "protocol/handler.h"
+#include "protocol/protocol.h"
 #include "user/auth.h"
 #include "user/settings.h"
 #include "run/run_manager.h"
@@ -74,6 +75,8 @@ void setup() {
   //LOG("msg::handlers::DynamicRegistry set up with handlers")
   //msg::handlers::DynamicRegistry::dump();
 
+  msg::JsonLinesProtocol::get().init(4096); // Envelope size
+
   // Done.
   LOG(ANABRID_DEBUG_INIT, "Initialization done.");
 }
@@ -83,47 +86,29 @@ void loop() {
   net::EthernetClient connection = server.accept();
   auto &run_manager = run::RunManager::get();
 
-  msg::process_serial_input();
+  static user::auth::AuthentificationContext
+    admin_context{user::UserSettings.auth, user::auth::UserPasswordAuthentification::admin},
+    user_context {user::UserSettings.auth};
+
+  msg::JsonLinesProtocol::get().process_serial_input(admin_context);
 
   if (connection) {
+    LOG2("Client connected from ", connection.remoteIP());
 
-    Serial.print("Client connected from ");
-    connection.remoteIP().printTo(Serial);
-    Serial.println();
-
-    user::auth::AuthentificationContext user_context{ user::UserSettings.auth };
     user_context.set_remote_identifier( user::auth::RemoteIdentifier{ connection.remoteIP() } );
 
-    // Reserve space for JSON communication
-    // TODO: This must probably be global for all clients
-    // TODO: Find out whether they should become rally global or really local (i.e. just before deserializeJson)
-    DynamicJsonDocument envelope_in(4096), envelope_out(4096);
-
     // Bind things to this client specifically
-    // TODO: This should also report to the Serial console when no connection takes place
+    /// @todo This should also report to the Serial console when no connection takes place
+    auto &envelope_out = *msg::JsonLinesProtocol::get().envelope_out;
     client::RunStateChangeNotificationHandler run_state_change_handler{connection, envelope_out};
     client::RunDataNotificationHandler run_data_handler{carrier::Carrier::get(), connection, envelope_out};
 
     // Handle incoming messages
     while (connection) {
-      auto error = deserializeJson(envelope_in, connection);
-      if (error == DeserializationError::Code::EmptyInput) {
-        Serial.print(".");
-      } else if (error) {
-        Serial.print("Error while parsing JSON:");
-        Serial.println(error.c_str());
-      } else {
-        auto envelope_out_obj = envelope_out.to<JsonObject>();
-        int error_code = msg::handleMessage(envelope_in.as<JsonObjectConst>(), envelope_out_obj, user_context);
-        //if(error_code == msg::handlers::MessageHandler::success) {
-          serializeJson(envelope_out_obj, Serial);
-          serializeJson(envelope_out_obj, connection);
-          if (!connection.writeFully("\n"))
-            break;
-        //}
-      }
+      if(msg::JsonLinesProtocol::get().process_tcp_input(connection, user_context))
+        break;
 
-      msg::process_serial_input();
+      msg::JsonLinesProtocol::get().process_serial_input(admin_context);
 
       // Fake run for now
       if (!run::RunManager::get().queue.empty()) {
@@ -134,6 +119,6 @@ void loop() {
 
     // would be a good idea to move the fake run queue lines here.
 
-    Serial.println("Client disconnected.");
+    Serial.println("# Client disconnected.");
   }
 }

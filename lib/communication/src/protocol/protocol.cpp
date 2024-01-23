@@ -7,9 +7,47 @@
 #include "user/settings.h"
 
 #include "handlers/user_login.h"
+#include "protocol.h"
+
+#include <algorithm> 
+#include <cctype>
+#include <locale>
 
 
-int msg::handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out, user::auth::AuthentificationContext &user_context) {
+void trim(char *str) {
+  int start = 0, end = strlen(str) - 1;
+
+  // Remove leading whitespace
+  while (isspace(str[start])) {
+    start++;
+  }
+
+  // Remove trailing whitespace
+  while (end > start && isspace(str[end])) {
+    end--;
+  }
+
+  // If the string was trimmed, adjust the null terminator
+  if (start > 0 || end < (strlen(str) - 1)) {
+    memmove(str, str + start, end - start + 1);
+    str[end - start + 1] = '\0';
+  }
+}
+
+void msg::JsonLinesProtocol::init(size_t envelope_size) {
+  envelope_in = new DynamicJsonDocument(envelope_size);
+  envelope_out = new DynamicJsonDocument(envelope_size);
+}
+
+msg::JsonLinesProtocol &msg::JsonLinesProtocol::get() {
+  static JsonLinesProtocol obj;
+  return obj;
+}
+
+void msg::JsonLinesProtocol::handleMessage(user::auth::AuthentificationContext &user_context) {
+  auto envelope_out = this->envelope_out->to<JsonObject>();
+  auto envelope_in = this->envelope_in->as<JsonObjectConst>();
+
   // Unpack metadata from envelope
   std::string msg_id = envelope_in["id"];
   std::string msg_type = envelope_in["type"];
@@ -51,32 +89,40 @@ int msg::handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out, us
 
   // If message generated a response or an error, actually sent it out
   // return (!msg_out.isNull() or !envelope_out["success"].as<bool>());
-  return return_code;
 }
-
 
 utils::SerialLineReader serial_line_reader;
 
-void msg::process_serial_input() {
+void msg::JsonLinesProtocol::process_serial_input(user::auth::AuthentificationContext &user_context) {
   char* line = serial_line_reader.line_available();
   if(!line) return;
 
-  static user::auth::AuthentificationContext admin_context{user::UserSettings.auth, user::auth::UserPasswordAuthentification::admin};
-  DynamicJsonDocument envelope_in(4096), envelope_out(4096);
-  auto error = deserializeJson(envelope_in, line);
+  auto error = deserializeJson(*envelope_in, line);
   if (error == DeserializationError::Code::EmptyInput) {
     // do nothing, just ignore empty input.
   } else if(error) {
-    Serial.print("Serial input: Malformed JSON provided, input was: '");
-    Serial.print(line); // strings with \r should be trimmed, they somewhat destroy the output.
-    Serial.print("'. Error message: ");
+    trim(line); // for not-destroying the output
+    Serial.printf("# Serial input malformed: %s. Input was: '%s'\n", error.c_str(), line);
+  } else {
+    handleMessage(user_context);
+    serializeJson(envelope_out->as<JsonObject>(), Serial);
+    Serial.println();
+  }
+}
+
+bool msg::JsonLinesProtocol::process_tcp_input(net::EthernetClient& connection, user::auth::AuthentificationContext &user_context) {
+  auto error = deserializeJson(*envelope_in, connection);
+  if (error == DeserializationError::Code::EmptyInput) {
+    Serial.print(".");
+  } else if (error) {
+    Serial.print("Error while parsing JSON: ");
     Serial.println(error.c_str());
   } else {
-    auto envelope_out_obj = envelope_out.to<JsonObject>();
-    int error_code = msg::handleMessage(envelope_in.as<JsonObjectConst>(), envelope_out_obj, admin_context);
-    //if(error_code == msg::handlers::MessageHandler::success) {
-      serializeJson(envelope_out_obj, Serial);
-      Serial.println();
-    //}
+    handleMessage(user_context);
+    serializeJson(envelope_out->as<JsonObject>(), Serial);
+    serializeJson(envelope_out->as<JsonObject>(), connection);
+    if (!connection.writeFully("\n"))
+      return true; // break;
   }
+  return false;
 }
