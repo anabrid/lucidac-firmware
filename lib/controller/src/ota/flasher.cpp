@@ -298,7 +298,18 @@ constexpr size_t static json_overhead = 0xff; // for {'bla'}
 constexpr size_t static base64_chunk_size = 4096 / 2; //- json_overhead;
 constexpr size_t static bin_chunk_size = base64_chunk_size * 3/4;
 
+// OTA Flashing allows anybody on the network to run code on the microcontroller. This must
+// not be enabled in unsafe networks without any user access checking. The following define flag
+// based code is a minimal guard against attacks, uses have to *opt-in* whether they want to
+// enable this feature or not.
+#ifdef ANABRID_ENABLE_OTA_FLASHING
+#define RETURN_IF_FLASHING_NOT_ENABLED
+#else 
+#define RETURN_IF_FLASHING_NOT_ENABLED return_err(0, "OTA Flashing is disabled in this firmware build")
+#endif
+
 int loader::FirmwareFlasher::init(JsonObjectConst msg_in, JsonObject &msg_out) {
+  RETURN_IF_FLASHING_NOT_ENABLED;
   if(upgrade) return_err(1, "Firmware upgrade already running. Cancel it before doing another one");
 
   upgrade = new loader::FirmwareBuffer();
@@ -321,6 +332,7 @@ int loader::FirmwareFlasher::init(JsonObjectConst msg_in, JsonObject &msg_out) {
 }
 
 int loader::FirmwareFlasher::stream(JsonObjectConst msg_in, JsonObject &msg_out) {
+  RETURN_IF_FLASHING_NOT_ENABLED;
   if(!upgrade) return_err(1, "No firmware upgrade running.");
   if(upgrade->transfer_completed()) return_err(2, "Transfer already completed");
 
@@ -353,6 +365,10 @@ int loader::FirmwareFlasher::stream(JsonObjectConst msg_in, JsonObject &msg_out)
 }
 
 void loader::FirmwareFlasher::status(JsonObject &msg_out) {
+  #ifndef ANABRID_ENABLE_OTA_FLASHING
+  msg_out["disabled"] = "OTA flashing is disabled due to absence of firmware build flag ANABRID_ENABLE_OTA_FLASHING";
+  return;
+  #endif
   msg_out["is_upgrade_running"] = bool(upgrade);
   if(upgrade) {
     msg_out["name"] = upgrade->name;
@@ -381,12 +397,14 @@ void loader::FirmwareFlasher::status(JsonObject &msg_out) {
 }
 
 int loader::FirmwareFlasher::abort(JsonObjectConst msg_in, JsonObject &msg_out) {
+  RETURN_IF_FLASHING_NOT_ENABLED;
   if(!upgrade) return_err(1, "No upgrade running which I could abort");
   delete_upgrade();
   return true;
 }
 
 int loader::FirmwareFlasher::complete(JsonObjectConst msg_in, JsonObject &msg_out) {
+  RETURN_IF_FLASHING_NOT_ENABLED;
   if(!upgrade->transfer_completed()) return_err(1,"Require transfer to be completed");
 
   LOG_ALWAYS("Checking new firmware image hash...");
