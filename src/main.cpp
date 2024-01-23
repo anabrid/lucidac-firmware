@@ -14,8 +14,7 @@
 
 net::EthernetServer server;
 
-
-
+/// @ingroup MessageHandlers
 class HackMessageHandler : public msg::handlers::MessageHandler {
 public:
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
@@ -57,7 +56,7 @@ void setup() {
 
   // Initialize carrier board
   LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
-  if (!carrier::Carrier::get().init()) {
+  if (!carrier::Carrier::get().init(user::UserSettings.ethernet.mac)) {
     LOG_ERROR("Error initializing carrier board.");
     _ERROR_OUT_
   }

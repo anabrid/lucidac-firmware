@@ -7,6 +7,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <array>
+#include <string>
 
 #include "carrier/cluster.h"
 #include "entity/entity.h"
@@ -15,13 +16,24 @@ using namespace lucidac;
 
 namespace carrier {
 
+/**
+ * \brief Top-level hierarchy controlled by a single microcontroller
+ * 
+ * A Carrier (also refered to as module holder, base board or mother board) contains
+ * one microcontroller and multiple clusters, where the clusers hold the actual analog
+ * computing hardware.
+ * 
+ * \ingroup Singletons
+ **/
 class Carrier : public entities::Entity {
 public:
   std::array<LUCIDAC, 1> clusters;
 
   Carrier();
 
-  bool init();
+  /// Initializes the carrier: Passes the Ethernet mac address as entity id
+  /// and initializes all clusters.
+  bool init(std::string mac_addr);
 
   std::vector<Entity *> get_child_entities() override;
 
@@ -31,13 +43,15 @@ public:
 
   void write_to_hardware();
 
-  static Carrier& get();
+  static Carrier& get(); ///< Singleton access
 
-  // functions exposed to end user
+  ///@addtogroup User-Functions
+  ///@{
   int set_config(JsonObjectConst msg_in, JsonObject &msg_out);
   int get_config(JsonObjectConst msg_in, JsonObject &msg_out);
   int get_entities(JsonObjectConst msg_in, JsonObject &msg_out);
   int reset(JsonObjectConst msg_in, JsonObject &msg_out);
+  ///@}
 };
 
 } // namespace carrier
