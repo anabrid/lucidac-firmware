@@ -25,7 +25,7 @@ public:
 
   void run_next(run::RunStateChangeHandler *state_change_handler, run::RunDataHandler *run_data_handler);
 
-  // exposed end-user function
+  ///@ingroup User-Functions
   int start_run(JsonObjectConst msg_in, JsonObject &msg_out);
 };
 

@@ -45,10 +45,10 @@ namespace loader {
      * message handlers on their own.
      **/
     struct Plugin {
-        uint8_t *load_addr=0;    //< Absolute address in memory where the plugin is loaded to.
-        uint32_t size=0;         //< Actual size of plugin memory image
-        Function entry;          //< entry points ("constructor function"). entry.addr is relative to load_addr.
-        optional<Function> exit; //< destructor function. entry.addr is relative to load_addr.
+        uint8_t *load_addr=0;    ///< Absolute address in memory where the plugin is loaded to.
+        uint32_t size=0;         ///< Actual size of plugin memory image
+        Function entry;          ///< entry points ("constructor function"). entry.addr is relative to load_addr.
+        optional<Function> exit; ///< destructor function. entry.addr is relative to load_addr.
        
         bool can_load() const { return !load_addr || size; }
         // bool is_loaded() const { return size; }
@@ -58,21 +58,25 @@ namespace loader {
      * The SinglePluginLoader can only load a single plugin at a given time. He is typically limited by
      * his memory size and layout, i.e. he does not use some memory mangament data structure (a heap, stack, tree, etc).
      * Currently there is only one implementation, anyway.
+     * \ingroup Singletons
      **/
     struct SinglePluginLoader {
-        optional<Plugin> plugin;  //< The slot for a single managed plugin (if loaded). It's load_addr defines the memory address.
-        uint8_t* load_addr=0;     //< Absolute address of the memory segment. It is always (plugin->load_addr = load_addr).
-        uint32_t memsize=0;       //< The maximum memory size managed/accessible/available by this loader. It is always (plugin->size <= memsize).
+        optional<Plugin> plugin;  ///< The slot for a single managed plugin (if loaded). It's load_addr defines the memory address.
+        uint8_t* load_addr=0;     ///< Absolute address of the memory segment. It is always (plugin->load_addr = load_addr).
+        uint32_t memsize=0;       ///< The maximum memory size managed/accessible/available by this loader. It is always (plugin->size <= memsize).
         
         bool can_load() const { return plugin ? plugin->can_load() : (load_addr!=0); }
         //virtual bool load(uint8_t* code, size_t code_len); // convenience function, put code in place, returns true if success
         //virtual bool load(size_t code_len);
         int load(const Plugin& new_plugin); ///< returns 0 on success
-        void unload() { plugin.reset(); } // frees memory, does not call unloader.
+        void unload() { plugin.reset(); } ///< frees memory, does not call unloader.
         
-        virtual int load_and_execute(JsonObjectConst msg_in, JsonObject &msg_out); /// load from protocol message, gives out reply msg, returns 0 on success
-        //virtual void show(JsonObjectConst msg_in, JsonObject &msg_out); /// show what is currently there
-        virtual int unload(JsonObjectConst msg_in, JsonObject &msg_out); /// unload from protocol message, gives out reply msg, returns 0 on success
+        ///@addtogroup User-Functions
+        ///@{
+        virtual int load_and_execute(JsonObjectConst msg_in, JsonObject &msg_out); ///< load from protocol message, gives out reply msg, returns 0 on success
+        //virtual void show(JsonObjectConst msg_in, JsonObject &msg_out); ///< show what is currently there
+        virtual int unload(JsonObjectConst msg_in, JsonObject &msg_out); ///< unload from protocol message, gives out reply msg, returns 0 on success
+        ///@}
     };
     
     /**

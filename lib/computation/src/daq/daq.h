@@ -91,6 +91,7 @@ public:
   float sample(uint8_t index) override;
 
   // Call via protocol
+  ///@ingroup User-Functions
   int sample(JsonObjectConst msg_in, JsonObject &msg_out);
 };
 

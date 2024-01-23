@@ -1,6 +1,8 @@
 #include "imxrt.h"
 
-/* Memory Processing Unit macros from framework-arduinoteensy/cores/teensy4/startup.c  */
+/** \file
+ * Memory Processing Unit macros from framework-arduinoteensy/cores/teensy4/startup.c
+ **/
 
 
 #define NOEXEC		SCB_MPU_RASR_XN

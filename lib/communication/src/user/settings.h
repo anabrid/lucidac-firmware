@@ -19,6 +19,8 @@ namespace settings {
  * 
  * Values will be hold in the instance and synced to the EEPROM only via calls
  * to read_from_eeprom() or write_to_eeprom().
+ * 
+ * \ingroup Singletons
  **/
 class JsonFlashUserSettings {
   uint64_t version;   ///< Version identifier on EEPROM to check validity

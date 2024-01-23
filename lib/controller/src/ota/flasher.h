@@ -5,7 +5,7 @@
 
 namespace loader {
 
-  // Just a little generic Teensy reboot routine
+  /// Just a little generic Teensy reboot routine
   void reboot();
 
   /**
@@ -23,11 +23,13 @@ namespace loader {
    * The primary interface to the over-the-air firmware upgrade are the messages below, so this class is
    * actually only exposed to make a bit more transparent to the user what kind of data are stored during
    * an update.
+   * 
+   * \ingroup Singletons
    **/
   struct FirmwareBuffer {
-    std::string name; // only used for name association
-    size_t imagelen=0;
-    utils::sha256_t upstream_hash;
+    std::string name; ///< only used for name association
+    size_t imagelen=0; ///< Size of image as defined by user, for checking after transmission
+    utils::sha256_t upstream_hash; ///< Hash as defined by user, for checking after transmission
 
     size_t bytes_transmitted=0; // (4-aligned)
     bool transfer_completed() { return imagelen == bytes_transmitted; }
@@ -39,15 +41,22 @@ namespace loader {
     ~FirmwareBuffer();
   };
 
+  /**
+   * Actual "frontend" for flashing
+   * \ingroup Singletons
+   **/
   class FirmwareFlasher {
     FirmwareBuffer *upgrade;
-    void delete_upgrade() { delete upgrade; upgrade = nullptr; }
+    void delete_upgrade() { delete upgrade; upgrade = nullptr; } ///< Abort an running upgrade
   public:
+    ///@addtogroup User-Functions
+    ///@{
     int init(JsonObjectConst msg_in, JsonObject &msg_out);
     int stream(JsonObjectConst msg_in, JsonObject &msg_out);
     int abort(JsonObjectConst msg_in, JsonObject &msg_out);
     int complete(JsonObjectConst msg_in, JsonObject &msg_out);
     void status(JsonObject& msg_out);
+    ///@}
 
     static FirmwareFlasher& get();
   };

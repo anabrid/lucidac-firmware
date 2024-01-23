@@ -13,6 +13,10 @@ namespace msg {
 
 namespace handlers {
 
+/**
+ * A MessageHandler is a kind of event handler interface that acts like a closure.
+ * That is, the class itself is abstract.
+ **/
 class MessageHandler {
 public:
   constexpr static int success = 0;
@@ -27,6 +31,9 @@ public:
 
 
   /**
+   * The actual handler method gets a message and returns a message next to
+   * the status code.
+   * 
    * @return An error code. 0 means the handling was successful, any nonzero
    *         value means something specific to the handler. Handlers should
    *         define their error values as constants.
