@@ -5,6 +5,7 @@
 namespace msg {
 namespace handlers {
 
+/// @ingroup MessageHandlers
 class GetSystemStatus : public MessageHandler {
   user::auth::UserPasswordAuthentification& _auth;
 public:

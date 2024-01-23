@@ -7,7 +7,7 @@ namespace msg {
 
 namespace handlers {
 
-
+/// @ingroup MessageHandlers
 class GetSettingsHandler : public MessageHandler {
 public:
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
@@ -16,6 +16,7 @@ public:
 }
 };
 
+/// @ingroup MessageHandlers
 class SetSettingsHandler : public MessageHandler {
 public:
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
@@ -24,6 +25,7 @@ public:
 }
 };
 
+/// @ingroup MessageHandlers
 class ResetSettingsHandler : public MessageHandler {
 public:
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {

@@ -5,6 +5,7 @@
 namespace msg {
 namespace handlers {
 
+/// @ingroup MessageHandlers
 class HelpHandler : public MessageHandler {
 public:
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {

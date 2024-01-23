@@ -17,7 +17,7 @@ void user::auth::UserPasswordAuthentification::read_from_json(JsonObjectConst se
   }
 }
 
-void user::auth::UserPasswordAuthentification::write_to_json(JsonObject target) {
+void user::auth::UserPasswordAuthentification::write_to_json(JsonObject target) const {
   for(auto const& kv : db) {
     target[kv.first] = kv.second;
   }
@@ -66,3 +66,5 @@ int user::auth::UserPasswordAuthentification::login(JsonObjectConst msg_in, Json
   }
   #endif  
 }
+
+

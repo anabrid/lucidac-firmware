@@ -8,6 +8,7 @@ namespace handlers {
 
 using namespace carrier;
 
+/// @ingroup MessageHandlers
 class CarrierMessageHandlerBase : public msg::handlers::MessageHandler {
 protected:
   Carrier &carrier;
@@ -16,6 +17,7 @@ public:
   explicit CarrierMessageHandlerBase(Carrier &carrier) : carrier(carrier) {}
 };
 
+/// @ingroup MessageHandlers
 class SetConfigMessageHandler : public CarrierMessageHandlerBase {
 public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
@@ -25,6 +27,7 @@ public:
   }
 };
 
+/// @ingroup MessageHandlers
 class GetConfigMessageHandler : public CarrierMessageHandlerBase {
 public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
@@ -34,6 +37,7 @@ public:
   }
 };
 
+/// @ingroup MessageHandlers
 class GetEntitiesRequestHandler : public CarrierMessageHandlerBase {
 public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
@@ -43,6 +47,7 @@ public:
   }
 };
 
+/// @ingroup MessageHandlers
 class ResetRequestHandler : public CarrierMessageHandlerBase {
 public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;

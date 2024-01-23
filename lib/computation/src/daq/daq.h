@@ -79,6 +79,7 @@ public:
 /**
  * Do single captures with the ADC.
  * This class is meant to be used as quasi Singleton standalone.
+ * \ingroup Singletons
  **/
 class OneshotDAQ : public BaseDAQ {
 public:

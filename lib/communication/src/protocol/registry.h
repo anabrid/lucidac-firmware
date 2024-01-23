@@ -20,6 +20,8 @@ namespace handlers {
  * 
  * The DynamicRegistry implementation uses an heap-allocated std::map as well as
  * Handlers which can be null pointers.
+ * 
+ * \ingroup Singletons
  **/
 class DynamicRegistry {
   struct RegistryEntry { // "named tuple"
@@ -57,7 +59,7 @@ extern DynamicRegistry Registry;
   * Handles a message, according to the registry.
   * Passes return codes as they appear from the handlers.
   * 
-  * TODO: Could be a method of the Message Registry
+  * \todo Could be a method of the Message Registry
   **/
 int handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out, user::auth::AuthentificationContext &user_context);
 

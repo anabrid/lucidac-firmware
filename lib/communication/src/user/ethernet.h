@@ -39,6 +39,7 @@ void status(JsonObject &msg_out);
  * Persistent user-defined ethernet settings.
  * 
  * \note Changing these settings only takes place after reboot of the microcontroller.
+ * \ingroup Singletons
  **/
 class UserDefinedEthernet {
 public:

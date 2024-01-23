@@ -35,8 +35,8 @@ public:
   void read_from_json(JsonObjectConst serialized_conf);
   void write_to_json(JsonObject target);
 
+  // Update configuration with a user call.
   void set(JsonObjectConst serialized_conf, JsonObject& msg_out);
-
 
   void read_from_eeprom(); ///< read configuration from eeprom
   size_t write_to_eeprom();  ///< serialize configuration to eeprom, @returns consumed bytes in eeprom

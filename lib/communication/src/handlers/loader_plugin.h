@@ -5,7 +5,7 @@ namespace msg {
 
 namespace handlers {
 
-
+/// @ingroup MessageHandlers
 class LoadPluginHandler : public MessageHandler {
 public:
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
@@ -13,6 +13,7 @@ public:
     }
 };
 
+/// @ingroup MessageHandlers
 class UnloadPluginHandler : public MessageHandler {
 public:
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {

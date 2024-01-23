@@ -9,6 +9,7 @@ namespace msg {
 
 namespace handlers {
 
+/// @ingroup MessageHandlers
 class LoginHandler : public MessageHandler {
 public:
   user::auth::UserPasswordAuthentification& auth;

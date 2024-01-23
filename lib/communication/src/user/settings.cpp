@@ -36,7 +36,7 @@ void user::settings::JsonFlashUserSettings::read_from_json(JsonObjectConst seria
         ethernet = serialized_conf["ethernet"];
     
     if(serialized_conf.containsKey("passwords"))
-        auth.read_from_json(serialized_conf["passwords"]);
+        auth = serialized_conf["passwords"];
 }
 
 void user::settings::JsonFlashUserSettings::set(JsonObjectConst serialized_conf,
@@ -50,7 +50,7 @@ void user::settings::JsonFlashUserSettings::set(JsonObjectConst serialized_conf,
 void user::settings::JsonFlashUserSettings::write_to_json(JsonObject target) {
   target["version"] = version;
   target["ethernet"] = ethernet;
-  auth.write_to_json(target.createNestedObject("passwords"));
+  target["passwords"] = auth;
 }
 
 void user::settings::JsonFlashUserSettings::read_from_eeprom() {

@@ -3,7 +3,7 @@
 namespace msg {
 namespace handlers {
 
-
+/// @ingroup MessageHandlers
 class PingRequestHandler : public MessageHandler {
 public:
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override  {

@@ -5,6 +5,7 @@ namespace msg {
 
 namespace handlers {
 
+/// @ingroup MessageHandlers
 class StartRunRequestHandler : public MessageHandler {
 protected:
   run::RunManager &manager;

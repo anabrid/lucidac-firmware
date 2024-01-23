@@ -35,6 +35,8 @@ class AuthentificationContext; // defined below
  * 
  * Class also to be used within the UserSettings, syncs both with EEPROM and
  * the distributor.
+ * 
+ * \ingroup Singletons
  **/
 class UserPasswordAuthentification {
   std::map<User, std::string> db;
@@ -62,7 +64,7 @@ public:
   // note that these serializations deal with the sensitive user+password information
   // and are only used for eeprom::UserSettings.
   void read_from_json(JsonObjectConst serialized_conf);
-  void write_to_json(JsonObject target);
+  void write_to_json(JsonObject target) const;
 
   // if you want to let (any) remote users know something, use this
   void status(JsonObject target);
@@ -70,6 +72,10 @@ public:
   // Carry out an actual login
   int login(JsonObjectConst msg_in, JsonObject &msg_out, AuthentificationContext& user_context);
 };
+
+// some syntactic sugar
+inline void convertFromJson(JsonVariantConst serialized_conf, UserPasswordAuthentification& upa) { upa.read_from_json(serialized_conf); }
+inline void convertToJson(const UserPasswordAuthentification& upa, JsonVariant serialized) { upa.write_to_json(serialized); }
 
 /// Some basic information about the remote station. We interpret 0.0.0.0 als a local terminal.
 class RemoteIdentifier { // : public Printable { // no inheritance for POD
