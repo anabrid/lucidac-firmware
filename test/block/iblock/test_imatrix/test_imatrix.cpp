@@ -9,16 +9,16 @@
 #include "bus/bus.h"
 #include "bus/functions.h"
 
-using namespace bus;
 using namespace blocks;
-using namespace blocks::functions;
+using namespace bus;
+using namespace functions;
 
 ::functions::TriggerFunction imatrix_reset{idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_RESET_FUNC_IDX)};
 ::functions::TriggerFunction imatrix_cmd_sr_rest{
     idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_COMMAND_SR_RESET_FUNC_IDX)};
 ::functions::TriggerFunction imatrix_sync{idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_SYNC_FUNC_IDX)};
 
-ICommandRegisterFunction imatrix_cmd_sr{
+functions::ICommandRegisterFunction imatrix_cmd_sr{
     idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_COMMAND_SR_FUNC_IDX)};
 
 void setUp() {
@@ -64,8 +64,7 @@ void test_function() {
 
   // Set I1 Matrix input 0 to output 0
   // This should connect BL_OUT.0 to MBL_IN.0
-  imatrix_cmd_sr.data = 0b0'000'0000'0'000'0000'0'000'0000'1'000'0000;
-  imatrix_cmd_sr.write_to_hardware();
+  imatrix_cmd_sr.transfer32(0b0'000'0000'0'000'0000'0'000'0000'1'000'0000);
 
   delayMicroseconds(1);
   imatrix_sync.trigger();

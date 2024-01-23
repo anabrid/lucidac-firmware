@@ -44,10 +44,10 @@ public:
   static constexpr float MIN_FACTOR = MIN_REAL_FACTOR*UPSCALING;
 
 protected:
-  std::array<::functions::AD5452, NUM_COEFF> f_coeffs;
-  ::functions::SR74HCT595 f_upscaling;
-  ::functions::TriggerFunction f_upscaling_sync;
-  ::functions::TriggerFunction f_upscaling_clear;
+  std::array<const functions::AD5452, NUM_COEFF> f_coeffs;
+  const functions::SR74HCT595 f_upscaling;
+  const functions::TriggerFunction f_upscaling_sync;
+  const functions::TriggerFunction f_upscaling_clear;
 
   std::array<uint16_t, NUM_COEFF> factors_{{0}};
   uint32_t upscaling_{0};

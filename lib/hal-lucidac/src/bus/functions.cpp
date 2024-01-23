@@ -10,19 +10,6 @@ void functions::Function::set_address() const { bus::address_function(address); 
 
 void functions::Function::release_address() const { bus::release_address(); }
 
-void functions::_old_DataFunction::begin_communication() const {
-  bus::spi.beginTransaction(spi_settings);
-  set_address();
-}
-
-void functions::_old_DataFunction::end_communication() const {
-  release_address();
-  bus::spi.endTransaction();
-}
-
-functions::_old_DataFunction::_old_DataFunction(const unsigned short address, const SPISettings &spiSettings)
-    : Function(address), spi_settings(spiSettings) {}
-
 void functions::TriggerFunction::trigger() const {
   set_address();
   delayNanoseconds(2 * 42);
@@ -49,7 +36,7 @@ uint8_t functions::DataFunction::transfer(uint8_t data) const {
   return ret;
 }
 
-void functions::DataFunction::transfer(const void *mosi_buf, void *miso_buf, size_t count) {
+void functions::DataFunction::transfer(const void *mosi_buf, void *miso_buf, size_t count) const {
   begin_communication();
   bus::spi.transfer(mosi_buf, miso_buf, count);
   end_communication();

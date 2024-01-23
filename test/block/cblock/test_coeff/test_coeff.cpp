@@ -19,23 +19,23 @@ auto base_addr = bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::COEFF_BAS
 
 blocks::CBlock cblock{0};
 
-std::array<blocks::CCoeffFunction, 32> coeffs{
-    blocks::CCoeffFunction{base_addr, 0},  blocks::CCoeffFunction{base_addr, 1},
-    blocks::CCoeffFunction{base_addr, 2},  blocks::CCoeffFunction{base_addr, 3},
-    blocks::CCoeffFunction{base_addr, 4},  blocks::CCoeffFunction{base_addr, 5},
-    blocks::CCoeffFunction{base_addr, 6},  blocks::CCoeffFunction{base_addr, 7},
-    blocks::CCoeffFunction{base_addr, 8},  blocks::CCoeffFunction{base_addr, 9},
-    blocks::CCoeffFunction{base_addr, 10}, blocks::CCoeffFunction{base_addr, 11},
-    blocks::CCoeffFunction{base_addr, 12}, blocks::CCoeffFunction{base_addr, 13},
-    blocks::CCoeffFunction{base_addr, 14}, blocks::CCoeffFunction{base_addr, 15},
-    blocks::CCoeffFunction{base_addr, 16}, blocks::CCoeffFunction{base_addr, 17},
-    blocks::CCoeffFunction{base_addr, 18}, blocks::CCoeffFunction{base_addr, 19},
-    blocks::CCoeffFunction{base_addr, 20}, blocks::CCoeffFunction{base_addr, 21},
-    blocks::CCoeffFunction{base_addr, 22}, blocks::CCoeffFunction{base_addr, 23},
-    blocks::CCoeffFunction{base_addr, 24}, blocks::CCoeffFunction{base_addr, 25},
-    blocks::CCoeffFunction{base_addr, 26}, blocks::CCoeffFunction{base_addr, 27},
-    blocks::CCoeffFunction{base_addr, 28}, blocks::CCoeffFunction{base_addr, 29},
-    blocks::CCoeffFunction{base_addr, 30}, blocks::CCoeffFunction{base_addr, 31}};
+std::array<functions::AD5452, 32> coeffs{
+    functions::AD5452{base_addr, 0},  functions::AD5452{base_addr, 1},
+    functions::AD5452{base_addr, 2},  functions::AD5452{base_addr, 3},
+    functions::AD5452{base_addr, 4},  functions::AD5452{base_addr, 5},
+    functions::AD5452{base_addr, 6},  functions::AD5452{base_addr, 7},
+    functions::AD5452{base_addr, 8},  functions::AD5452{base_addr, 9},
+    functions::AD5452{base_addr, 10}, functions::AD5452{base_addr, 11},
+    functions::AD5452{base_addr, 12}, functions::AD5452{base_addr, 13},
+    functions::AD5452{base_addr, 14}, functions::AD5452{base_addr, 15},
+    functions::AD5452{base_addr, 16}, functions::AD5452{base_addr, 17},
+    functions::AD5452{base_addr, 18}, functions::AD5452{base_addr, 19},
+    functions::AD5452{base_addr, 20}, functions::AD5452{base_addr, 21},
+    functions::AD5452{base_addr, 22}, functions::AD5452{base_addr, 23},
+    functions::AD5452{base_addr, 24}, functions::AD5452{base_addr, 25},
+    functions::AD5452{base_addr, 26}, functions::AD5452{base_addr, 27},
+    functions::AD5452{base_addr, 28}, functions::AD5452{base_addr, 29},
+    functions::AD5452{base_addr, 30}, functions::AD5452{base_addr, 31}};
 
 void setUp() {
   // This is called before *each* test.
@@ -71,8 +71,7 @@ void test_function() {
   // at least for coeff@14, the -4.8V are independent of input signal BL_IN.14
 
   for (auto c : coeffs) {
-    c.data = 1024 << 2;
-    c.write_to_hardware();
+    c.set_scale(static_cast<uint16_t>(1024<<2));
   }
 
 }

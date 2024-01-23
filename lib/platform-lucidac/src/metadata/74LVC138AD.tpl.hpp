@@ -38,3 +38,5 @@ public:
     return length;
   }
 };
+
+const SPISettings MetadataMemory74LVC138AD::DEFAULT_SPI_SETTINGS{4'000'000, MSBFIRST, SPI_MODE0};

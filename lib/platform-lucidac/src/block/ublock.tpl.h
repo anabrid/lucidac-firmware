@@ -12,7 +12,7 @@
 //       The template provides little advantage here.
 
 template <unsigned int num_of_outputs>
-void blocks::functions::UMatrixFunction<num_of_outputs>::transfer(std::array<uint8_t, num_of_outputs> outputs) const {
+void functions::UMatrixFunction<num_of_outputs>::transfer(std::array<uint8_t, num_of_outputs> outputs) const {
   constexpr uint8_t NUM_BYTES = num_of_outputs*5/8;
   uint8_t buffer[NUM_BYTES] = {}; // initialized with zeros
 

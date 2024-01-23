@@ -7,11 +7,12 @@
 
 #include "block/ublock.h"
 
+using namespace functions;
 using namespace blocks;
-using namespace blocks::functions;
 
 UBlock uBlock{0};
-UOffsetLoader offset_loader { bus::idx_to_addr(0, UBlock::BLOCK_IDX, 0) };
+UOffsetLoader offset_loader{bus::idx_to_addr(0, UBlock::BLOCK_IDX, 0), UBlock::OFFSETS_DATA_FUNC_IDX,
+                            UBlock::OFFSETS_LOAD_BASE_FUNC_IDX};
 
 void setUp() {
   // set stuff up here
@@ -44,27 +45,27 @@ void test_load_trigger() {
 
 void test_function() {
   uBlock.use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF);
-  uBlock.connect(7,0);
-  uBlock.connect(7,1);
-  uBlock.connect(7,2);
+  uBlock.connect(7, 0);
+  uBlock.connect(7, 1);
+  uBlock.connect(7, 2);
   uBlock.write_to_hardware();
 
-  offset_loader.set_offset_and_write_to_hardware(0,0);
-  offset_loader.set_offset_and_write_to_hardware(1,511);
-  offset_loader.set_offset_and_write_to_hardware(2,1023);
+  offset_loader.set_offset_and_write_to_hardware(0, 0);
+  offset_loader.set_offset_and_write_to_hardware(1, 511);
+  offset_loader.set_offset_and_write_to_hardware(2, 1023);
 }
 
 void test_offset_from_block() {
   uBlock.reset_offsets();
   uBlock.use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF);
-  uBlock.connect(7,3);
-  uBlock.connect(7,4);
-  uBlock.connect(7,5);
+  uBlock.connect(7, 3);
+  uBlock.connect(7, 4);
+  uBlock.connect(7, 5);
   uBlock.write_to_hardware();
 
   TEST_ASSERT(uBlock.set_offset(3, 0.0f));
-  //TEST_ASSERT(uBlock.set_offset(3, -0.010f/lucidac::REF_VOLTAGE));
-  //TEST_ASSERT(uBlock.set_offset(3, +0.0481f/lucidac::REF_VOLTAGE));
+  // TEST_ASSERT(uBlock.set_offset(3, -0.010f/lucidac::REF_VOLTAGE));
+  // TEST_ASSERT(uBlock.set_offset(3, +0.0481f/lucidac::REF_VOLTAGE));
   uBlock.write_offsets_to_hardware();
 }
 

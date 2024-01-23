@@ -6,6 +6,7 @@
 
 #include <ArduinoJson.h>
 #include <map>
+#include <string>
 
 #include "handler.h"
 #include "user/auth.h"

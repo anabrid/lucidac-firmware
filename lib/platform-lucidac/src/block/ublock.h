@@ -12,8 +12,6 @@
 #include "bus/functions.h"
 #include "bus/bus.h"
 
-namespace blocks {
-
 namespace utils {
 
 void shift_5_left(uint8_t *buffer, size_t size);
@@ -22,41 +20,16 @@ void shift_5_left(uint8_t *buffer, size_t size);
 
 namespace functions {
 
-class _old_UMatrixFunction : public ::functions::_old_DataFunction {
+template <std::size_t num_of_outputs> class UMatrixFunction : public functions::DataFunction {
 public:
-  static constexpr char number_of_inputs = 16;
-  static constexpr char number_of_outputs = 32;
+  static const SPISettings DEFAULT_SPI_SETTINGS;
 
-private:
-  std::array<uint8_t, number_of_outputs> outputs{};
-
-public:
-  static constexpr uint8_t BYTESTREAM_SIZE = 20;
-
-  _old_UMatrixFunction(unsigned short address, const SPISettings &spiSettings,
-                       const std::array<uint8_t, number_of_outputs> &outputs);
-  _old_UMatrixFunction(unsigned short address, const SPISettings &spiSettings);
-
-  void sync_to_hardware() const;
-};
-
-template <std::size_t num_of_outputs> class UMatrixFunction : public ::functions::DataFunction {
-public:
-  using ::functions::DataFunction::DataFunction;
+  using DataFunction::DataFunction;
+  explicit UMatrixFunction(bus::addr_t address);
 
   //! Convert an output array to data packets and transfer to chip.
   //! Timing: ~5microseconds
   void transfer(std::array<uint8_t, num_of_outputs> outputs) const;
-};
-
-class USignalSwitchFunction : public ::functions::_old_DataFunction {
-  // TODO: Add one abstraction layer
-public:
-  uint16_t data{0};
-
-  using ::functions::_old_DataFunction::_old_DataFunction;
-
-  void write_to_hardware() const;
 };
 
 class UOffsetLoader {
@@ -72,11 +45,12 @@ public:
   static constexpr uint16_t ZERO_OFFSET_RAW = 511;
 
 protected:
-  ::functions::DataFunction f_offsets;
-  std::array<::functions::TriggerFunction, 4> f_triggers;
+  DataFunction f_offsets;
+  std::array<TriggerFunction, 4> f_triggers;
 
 public:
-  explicit UOffsetLoader(bus::addr_t ublock_address);
+  UOffsetLoader(bus::addr_t ublock_address, uint8_t offsets_data_func_idx,
+                         uint8_t offsets_load_base_func_idx);
 
   static uint16_t build_cmd_word(uint8_t chip_output_idx, uint16_t offset_raw);
   static uint16_t offset_to_raw(float offset);
@@ -87,6 +61,8 @@ public:
 };
 
 } // namespace functions
+
+namespace blocks {
 
 /**
  * The Lucidac U-Block (U for Voltage) is represented by this class.
@@ -147,21 +123,20 @@ public:
   __attribute__((unused)) static constexpr uint8_t ALT_SIGNAL_REF_HALF_INPUT = 7;
   static constexpr uint16_t MAX_ALT_SIGNAL = ALT_SIGNAL_REF_HALF;
 
-  static const SPISettings UMATRIX_FUNC_SPI_SETTINGS;
   static const SPISettings ALT_SIGNAL_FUNC_SPI_SETTINGS;
 
 protected:
   const functions::UMatrixFunction<NUM_OF_OUTPUTS> f_umatrix;
-  const ::functions::TriggerFunction f_umatrix_sync;
+  const functions::TriggerFunction f_umatrix_sync;
   // Reset disables all output, but rest of logic is unchanged according to datasheet.
   // But I don't really know what that means. Data is still shifted out after a reset
   // and the enable-bits in the data are still set.
   // The datasheet calls the RESET pin OUTPUT ENABLE, so it probably is simply that.
   // Meaning it is completely useless.
-  const ::functions::TriggerFunction f_umatrix_reset;
-  const ::functions::DataFunction f_alt_signal;
-  const ::functions::TriggerFunction f_alt_signal_clear;
-  const ::functions::TriggerFunction f_alt_signal_sync;
+  const functions::TriggerFunction f_umatrix_reset;
+  const functions::DataFunction f_alt_signal;
+  const functions::TriggerFunction f_alt_signal_clear;
+  const functions::TriggerFunction f_alt_signal_sync;
   const functions::UOffsetLoader f_offset_loader;
 
   std::array<uint8_t, NUM_OF_OUTPUTS> output_input_map;
