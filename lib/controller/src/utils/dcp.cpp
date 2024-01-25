@@ -1,5 +1,9 @@
 /**
+ * \file
+ * 
  * Hardware-accelerated CRC32, SHA1 and SHA256 (cryptographic) hashing for Teensy 4.
+ * DCP stands for Data Co-Processor and provides hardware acceleration for cryptographic
+ * algorithms.
  * Used for creating checksums of data. Performance is like 70MByte/sec with input
  * data coming from flash, so it is pretty neat.
  * 
@@ -19,6 +23,10 @@
  *    According to https://forum.pjrc.com/threads/54711-Teensy-4-0-First-Beta-Test?p=197722&viewfull=1#post197722
  *    The code basically stems straight from the NXP SDK.
  *    This is the first code which produced a correct checksum/hash for me.
+ * 
+ * \note
+ * The NXP SDK is BSD-3 licensed, see https://github.com/nxp-mcuxpresso/mcux-sdk
+ * This code ultimately originates from https://github.com/nxp-mcuxpresso/mcux-sdk/blob/main/drivers/dcp/fsl_dcp.c
  * 
  * Usage: Look out for utils::hash_sha256() at the end of this file.
  **/
