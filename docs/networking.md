@@ -28,6 +28,8 @@ The following limitations apply to the current networking stack:
 * The QNEthernet library does not update the lease after it elapsed. This is important 
   for DHCP servers with a short lease time.
 * No support for static routes (routing tables), only a single default gateway.
+* Currently, the code implements only a "non-forking", blocking TCP/IP Server. That means only
+  one (ingoing) TCP connection at a time is allowed.
 
 ## Connecting via USB
 
