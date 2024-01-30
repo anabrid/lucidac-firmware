@@ -1376,6 +1376,9 @@ HTML_EXTRA_FILES      += docs/doxygen-awesome-css/doxygen-awesome-fragment-copy-
 HTML_EXTRA_FILES      += docs/doxygen-awesome-css/doxygen-awesome-paragraph-link.js
 HTML_EXTRA_FILES      += docs/doxygen-awesome-css/doxygen-awesome-interactive-toc.js
 
+# TODO: Is there any way to include all figures without specifying each one?
+HTML_EXTRA_FILES      += docs/figures/LUCI-Isometric.png
+
 
 # The HTML_COLORSTYLE tag can be used to specify if the generated HTML output
 # should be rendered with a dark or light theme.
