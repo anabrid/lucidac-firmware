@@ -7,7 +7,7 @@
 #include <bitset>
 
 #include "daq/daq.h"
-#include "logging.h"
+#include "utils/logging.h"
 #include "run/run.h"
 
 void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange change, const run::Run &run) {
