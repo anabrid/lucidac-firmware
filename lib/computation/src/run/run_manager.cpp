@@ -34,6 +34,7 @@ void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunD
   // TODO: Improve handling of queue, especially the queue.pop() later.
   auto run = queue.front();
   run_data_handler->prepare(run);
+  bool daq_error = false;
 
   daq::FlexIODAQ daq_{run, run.daq_config, run_data_handler};
   daq_.reset();
@@ -52,25 +53,35 @@ void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunD
   delayMicroseconds(1);
 
   while (!mode::FlexIOControl::is_done()) {
-    if(!daq_.stream()) {
+    if (!daq_.stream()) {
       LOG_ERROR("Streaming error, most likely data overflow.");
-      break ;
+      daq_error = true;
+      break;
     }
   }
   mode::FlexIOControl::to_end();
 
-  // Sometimes, DMA was not yet done, e.g. op_time = 6000.
-  // TODO: Handle this better by checking for DMA completeness.
-  delayMicroseconds(5);
-  //if(!daq_.stream()) {
-  //  LOG_ERROR("Streaming error, most likely data overflow.");
-  //}
+  // When a data sample must be gathered very close to the end of OP duration,
+  // it takes about 1 microseconds for it to end up in the DMA buffer.
+  // This is hard to check for, since the DMA active flag is only set once the DMA
+  // is triggered by the last CLK pulse, which is after around 1 microsecond.
+  // Easiest solution is to wait for it.
+  delayMicroseconds(1);
+  // Stream out remaining partially filled buffer
+  if (!daq_.stream(true)) {
+    LOG_ERROR("Streaming error during final partial stream.");
+    daq_error = true;
+  }
 
   auto actual_op_time = mode::FlexIOControl::get_actual_op_time();
 
   // Finalize data acquisition
   if (!daq_.finalize()) {
     LOG_ERROR("Error while finalizing data acquisition.")
+    daq_error = true;
+  }
+
+  if (daq_error) {
     auto change = run.to(RunState::ERROR, actual_op_time);
     state_change_handler->handle(change, run);
     queue.pop();

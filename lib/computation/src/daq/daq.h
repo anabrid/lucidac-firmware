@@ -39,10 +39,13 @@
 namespace daq {
 
 namespace dma {
+
 // BUFFER_SIZE *must* be a power-of-two number of bytes
 constexpr size_t BUFFER_SIZE = 32 * NUM_CHANNELS;
+
 std::array<volatile uint32_t, BUFFER_SIZE> get_buffer();
-}
+
+} // namespace dma
 
 class BaseDAQ {
 protected:
@@ -62,21 +65,22 @@ public:
   std::array<float, NUM_CHANNELS> sample_avg(size_t samples, unsigned int delay_us);
 };
 
-
-class ContinuousDAQ: public BaseDAQ {
+class ContinuousDAQ : public BaseDAQ {
 protected:
-  run::Run& run;
+  run::Run &run;
   DAQConfig daq_config;
-  run::RunDataHandler* run_data_handler{};
+  run::RunDataHandler *run_data_handler{};
 
 public:
   ContinuousDAQ(run::Run &run, const DAQConfig &daq_config, run::RunDataHandler *run_data_handler);
 
-  bool stream();
+  static unsigned int get_number_of_data_vectors_in_buffer();
+
+  bool stream(bool partial = false);
 };
 
-
 class FlexIODAQ : public ContinuousDAQ {
+private:
   FlexIOHandler *flexio;
 
   uint8_t _flexio_pin_cnvst;
@@ -85,7 +89,7 @@ class FlexIODAQ : public ContinuousDAQ {
   std::array<uint8_t, NUM_CHANNELS> _flexio_pins_miso;
 
 public:
-  FlexIODAQ(run::Run& run, DAQConfig &daq_config, run::RunDataHandler *run_data_handler);
+  FlexIODAQ(run::Run &run, DAQConfig &daq_config, run::RunDataHandler *run_data_handler);
 
   bool init(unsigned int) override;
   bool finalize();
