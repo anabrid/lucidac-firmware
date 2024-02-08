@@ -60,6 +60,10 @@ public:
   RunDataNotificationHandler(carrier::Carrier &carrier, net::EthernetClient &client,
                              DynamicJsonDocument &envelopeOut);
 
+  static size_t calculate_inner_buffer_length(size_t inner_count);
+  static size_t calculate_outer_buffer_position(size_t outer_count, size_t inner_count);
+  static size_t calculate_total_buffer_length(size_t outer_count, size_t inner_count);
+
   void init() override;
   void prepare(run::Run &run) override;
   void handle(volatile uint32_t *data, size_t outer_count, size_t inner_count, const run::Run &run) override;

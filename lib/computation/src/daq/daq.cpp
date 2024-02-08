@@ -48,31 +48,53 @@ void interrupt() {
 }
 
 std::array<volatile uint32_t, BUFFER_SIZE> get_buffer() { return buffer; }
+
 } // namespace dma
 
 ContinuousDAQ::ContinuousDAQ(run::Run &run, const daq::DAQConfig &daq_config,
                              run::RunDataHandler *run_data_handler)
     : run(run), daq_config(daq_config), run_data_handler(run_data_handler) {}
 
-bool ContinuousDAQ::stream() {
+unsigned int ContinuousDAQ::get_number_of_data_vectors_in_buffer() {
+  // Note that this does not consider whether these have been streamed out yet
+  return dma::channel.TCD->BITER - dma::channel.TCD->CITER;
+}
+
+bool ContinuousDAQ::stream(bool partial) {
+  // Pointer to the part of the buffer which (may) contain partial data at end of acquisition time
+  static auto partial_buffer_part = dma::buffer.data();
+
   if (!daq_config)
     return true;
   if (dma::overflow_data)
     return false;
 
-  auto active_buffer_part = dma::buffer.data();
-  volatile bool *data_flag_to_clear;
+  // Default values for streaming
+  volatile uint32_t* active_buffer_part;
+  size_t outer_count = dma::BUFFER_SIZE / daq_config.get_num_channels() / 2;
+
+  // Change streaming parameters depending on whether the first or second half of buffer is streamed
   if (dma::first_data) {
-    data_flag_to_clear = &dma::first_data;
+    active_buffer_part = dma::buffer.data();
+    partial_buffer_part = dma::buffer.data() + dma::BUFFER_SIZE / 2;
+    dma::first_data = false;
   } else if (dma::last_data) {
-    active_buffer_part += dma::BUFFER_SIZE / 2;
-    data_flag_to_clear = &dma::last_data;
+    active_buffer_part = dma::buffer.data() + dma::BUFFER_SIZE / 2;
+    partial_buffer_part = dma::buffer.data();
+    dma::last_data = false;
+  } else if (partial) {
+    // Stream the remaining partially filled part of the buffer.
+    // This should be done exactly once, after the data acquisition stopped.
+    active_buffer_part = partial_buffer_part;
+    outer_count = get_number_of_data_vectors_in_buffer();
+    if (!outer_count) {
+      return true;
+    }
   } else
     return true;
 
-  run_data_handler->handle(active_buffer_part, dma::BUFFER_SIZE / daq_config.get_num_channels() / 2,
+  run_data_handler->handle(active_buffer_part, outer_count,
                            daq_config.get_num_channels(), run);
-  *data_flag_to_clear = false;
   return true;
 }
 
