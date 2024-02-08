@@ -28,6 +28,7 @@
 #include <bitset>
 
 #include "daq/daq.h"
+#include "logging.h"
 #include "run/run.h"
 
 void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange change, const run::Run &run) {
@@ -51,6 +52,28 @@ client::RunDataNotificationHandler::RunDataNotificationHandler(carrier::Carrier 
 
 void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t outer_count,
                                                 size_t inner_count, const run::Run &run) {
+  // Streaming happens in equal-sized chunk, except possibly for the last one.
+  // For the last one, we may have to move the MESSAGE_END and send out less data.
+  auto new_buffer_length = calculate_total_buffer_length(outer_count, inner_count);
+  if (new_buffer_length < actual_buffer_length) {
+    // Calculate position after the last of the now fewer outer_count data packages.
+    auto new_end_of_data = calculate_outer_buffer_position(outer_count, inner_count);
+    // Fill buffer behind with zeros
+    memset(str_buffer + new_end_of_data, '\0', actual_buffer_length - new_buffer_length);
+    // Copy MESSAGE_END after last data package
+    memcpy(str_buffer + new_end_of_data - sizeof(',' /* trailing comma */), MESSAGE_END,
+           sizeof(MESSAGE_END) - 1);
+    // Add a newline
+    *(str_buffer + new_end_of_data + sizeof(MESSAGE_END) - 2) = '\n';
+    // From now, only send out that much data
+    actual_buffer_length = new_buffer_length;
+  } else if (new_buffer_length > actual_buffer_length) {
+    // This should never happen, since we would need to call prepare() again,
+    // which we do not want.
+    LOG_ERROR("RunDataNotificationHandler::handle should not have to increase buffer size.")
+    return;
+  }
+
   // digitalWriteFast(LED_BUILTIN, HIGH);
   auto buffer = str_buffer + BUFFER_LENGTH_STATIC;
   size_t inner_length = 3 + inner_count * 7 - 1;
@@ -86,12 +109,7 @@ void client::RunDataNotificationHandler::prepare(run::Run &run) {
   // TODO: Do not access daq::dma::BUFFER_SIZE directly, probably make it a template parameter.
   size_t outer_count = daq::dma::BUFFER_SIZE / inner_count / 2;
 
-  // For each inner array, we need '[],', inner_count*6 for 'sD.FFF' and (inner_count-1) bytes for all ','.
-  size_t inner_length = 3 + inner_count * 7 - 1;
-  // For message end, we need a few more bytes.
-  actual_buffer_length = BUFFER_LENGTH_STATIC + outer_count * inner_length - sizeof(',' /* trailing comma */) +
-                         sizeof(MESSAGE_END) - sizeof('\0' /* null byte in MESSAGE_END */) +
-                         sizeof('\n' /* newline */);
+  actual_buffer_length = calculate_total_buffer_length(outer_count, inner_count);
   memset(str_buffer + BUFFER_LENGTH_STATIC, '-', actual_buffer_length - BUFFER_LENGTH_STATIC);
   memcpy(str_buffer + BUFFER_IDX_RUN_ID, run.id.c_str(), BUFFER_LENGTH_RUN_ID);
   auto buffer = str_buffer + BUFFER_LENGTH_STATIC - 1;
@@ -106,4 +124,24 @@ void client::RunDataNotificationHandler::prepare(run::Run &run) {
   }
   memcpy(buffer, MESSAGE_END, sizeof(MESSAGE_END) - 1);
   str_buffer[actual_buffer_length - 1] = '\n';
+}
+
+size_t client::RunDataNotificationHandler::calculate_inner_buffer_length(size_t inner_count) {
+  // For each inner array, we need '[],', inner_count*6 for 'sD.FFF' and (inner_count-1) bytes for all ','.
+  return 3 + inner_count * 7 - 1;
+}
+
+size_t client::RunDataNotificationHandler::calculate_outer_buffer_position(size_t outer_count,
+                                                                           size_t inner_count) {
+  // Returns the position of the N-th outer data package
+  auto inner_length = calculate_inner_buffer_length(inner_count);
+  return BUFFER_LENGTH_STATIC + outer_count * inner_length;
+}
+
+size_t client::RunDataNotificationHandler::calculate_total_buffer_length(size_t outer_count,
+                                                                         size_t inner_count) {
+  auto inner_length = calculate_inner_buffer_length(inner_count);
+  // For message end, we need a few more bytes.
+  return BUFFER_LENGTH_STATIC + outer_count * inner_length - sizeof(',' /* trailing comma */) +
+         sizeof(MESSAGE_END) - sizeof('\0' /* null byte in MESSAGE_END */) + sizeof('\n' /* newline */);
 }

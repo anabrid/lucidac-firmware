@@ -130,6 +130,14 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
     flexio->port().TIMCFG[t_op] =
         FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(0b110) | FLEXIO_TIMCFG_TIMENA(6);
     flexio->port().TIMCMP[t_op] = op_time_ns * CLK_FREQ_MHz / 1000;
+
+    // Reset second timer used when going towards higher op_times
+    auto t_op_second = ++_t_idx;
+    if (t_op_second >= 8)
+      return false;
+    flexio->port().TIMCTL[t_op_second] = 0;
+    flexio->port().TIMCFG[t_op_second] = 0;
+    flexio->port().TIMCMP[t_op_second] = 0;
   } else {
     // Configure first timer as pre-scaler
     // But we want to pre-scale as much as possible, even though we then lose resolution

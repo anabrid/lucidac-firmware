@@ -50,6 +50,9 @@ class DAQConfig {
   bool sample_op_end = true;
 
 public:
+  DAQConfig() = default;
+  DAQConfig(uint8_t num_channels, unsigned int sample_rate);
+
   uint8_t get_num_channels() const;
   unsigned int get_sample_rate() const;
   bool should_sample_op() const;

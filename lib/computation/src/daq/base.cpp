@@ -25,6 +25,11 @@
 
 #include "base.h"
 
+daq::DAQConfig::DAQConfig(uint8_t num_channels, unsigned int sample_rate)
+    : num_channels(num_channels), sample_rate(sample_rate) {
+  // CARE: num_channels must be power-of-two and the object should be checked with is_valid() afterwards
+}
+
 daq::DAQConfig daq::DAQConfig::from_json(JsonObjectConst &&json) {
   DAQConfig daq_config;
   // Return default if no options are given
