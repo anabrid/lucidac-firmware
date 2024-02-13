@@ -16,6 +16,7 @@
 #include "handlers/status.h"
 #include "handlers/user_login.h"
 #include "handlers/user_settings.h"
+#include "handlers/mode_manual.h"
 
 // allocate singleton storage
 msg::handlers::DynamicRegistry msg::handlers::Registry;
@@ -24,15 +25,20 @@ void msg::handlers::DynamicRegistry::init() {
   using namespace user::auth;
   using namespace msg::handlers;
 
-  // Register message handler
+  // Basics
   set("ping",                 100, new PingRequestHandler{}, SecurityLevel::RequiresNothing);
   set("help",                 200, new HelpHandler(), SecurityLevel::RequiresNothing);
   set("reset",                300, new ResetRequestHandler(carrier::Carrier::get()), SecurityLevel::RequiresLogin); // TODO: Should probably be called "reset_config" or so, cf. reset_settings
+
+  // Carrier and RunManager things
   set("set_config",           400, new SetConfigMessageHandler(carrier::Carrier::get()), SecurityLevel::RequiresLogin);
   set("get_config",           500, new GetConfigMessageHandler(carrier::Carrier::get()), SecurityLevel::RequiresLogin);
   set("get_entities",         600, new GetEntitiesRequestHandler(carrier::Carrier::get()), SecurityLevel::RequiresLogin);
   set("start_run",            700, new StartRunRequestHandler(run::RunManager::get()), SecurityLevel::RequiresLogin);
+
+  // manual hardware access
   set("one_shot_daq",         800, new OneshotDAQHandler(), SecurityLevel::RequiresNothing);
+  set("manual_mode",          900, new ManualControlHandler(), SecurityLevel::RequiresNothing);
 
 
   // TODO: It would be somewhat cleaner if the Hybrid Controller settings would be just part of the get_config/set_config idiom
