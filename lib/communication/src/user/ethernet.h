@@ -60,6 +60,8 @@ public:
       static_gw,       ///< gateway address; used only when use_dhcp=false
       static_dns;      ///< DNS server address; used only when use_dhcp=false
 
+  uint32_t connection_timeout_ms; ///< Time after idling connections time out.
+
   /// Resets this instance to the default values.
   void reset_defaults();
 

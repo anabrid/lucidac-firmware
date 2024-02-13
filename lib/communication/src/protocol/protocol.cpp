@@ -2,6 +2,7 @@
 
 #include "utils/logging.h"
 #include "utils/serial_lines.h"
+#include "utils/durations.h"
 
 #include "user/auth.h"
 #include "user/settings.h"
@@ -125,4 +126,38 @@ bool msg::JsonLinesProtocol::process_tcp_input(net::EthernetClient& connection, 
       return true; // break;
   }
   return false;
+}
+
+void msg::MulticlientServer::loop() {
+  net::EthernetClient client_socket = server->accept();
+
+  if(client_socket) {
+    Client client { {}, client_socket, {user::UserSettings.auth} };
+    client.user_context.set_remote_identifier( user::auth::RemoteIdentifier{ client_socket.remoteIP() } );
+    clients.push_back(client);
+    LOG4("Client ", clients.size()-1, " connected from ", client_socket.remoteIP());
+  }
+
+  // using iterator instead range-based loop because EthernetClient lacks == operator
+  // so we use list::erase instead of list::remove.
+  for(auto client = clients.begin(); client != clients.end(); client++) {
+    const auto client_idx = std::distance(clients.begin(), client);
+    if(client->socket) {
+      if(client->socket.available() > 0) {
+        msg::JsonLinesProtocol::get().process_tcp_input(client->socket, client->user_context);
+        client->last_contact.reset();
+      } else if(!client->socket.connected()) {
+        client->socket.stop();
+      } else if(client->last_contact.expired(user::UserSettings.ethernet.connection_timeout_ms)) {
+        LOG5("Client ", client_idx, ", timed out after ", user::UserSettings.ethernet.connection_timeout_ms, " ms of idling");
+        client->socket.stop();
+      }
+    } else {
+      LOG5("Client ", client_idx, ", was ", client->user_context, ", disconnected");
+      client->socket.close();
+      clients.erase(client);
+      return; // iterator invalidated, better start loop() freshly.
+    }
+  }
+
 }

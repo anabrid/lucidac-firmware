@@ -5,14 +5,15 @@
 #pragma once
 
 #include <ArduinoJson.h>
+#include <list>
 
 #include "protocol/handler.h"
 #include "user/auth.h"
 #include "user/ethernet.h"
+#include "utils/durations.h"
+
 
 namespace msg {
-
-
 /**
  * Speaks the JsonLines protocol over serial or TCP/IP.
  * Handles messages according to the global msg::handler::Registry.
@@ -28,7 +29,18 @@ public:
     void handleMessage(user::auth::AuthentificationContext &user_context);
     void process_serial_input(user::auth::AuthentificationContext &user_context);
     bool process_tcp_input(net::EthernetClient& stream, user::auth::AuthentificationContext &user_context);
+};
 
+struct MulticlientServer {
+    struct Client {
+        utils::duration last_contact; ///< Tracking lifetime with millis() to time-out a connection.
+        net::EthernetClient socket;
+        user::auth::AuthentificationContext user_context;
+    };
+
+    std::list<Client> clients;
+    net::EthernetServer* server;
+    void loop();
 };
 
 } // namespace msg

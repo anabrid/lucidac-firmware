@@ -14,7 +14,8 @@
 
 #include "utils/hashflash.h"
 
-net::EthernetServer server;
+net::EthernetServer eth_server;
+msg::MulticlientServer multi_server;
 
 /// @ingroup MessageHandlers
 class HackMessageHandler : public msg::handlers::MessageHandler {
@@ -54,7 +55,8 @@ void setup() {
   LOG_START("UserPasswordAuthentification: "); LOG_JSON(user::UserSettings.auth.status); LOG_END();
 
   LOG(ANABRID_DEBUG_INIT, "Starting up Ethernet...");
-  user::UserSettings.ethernet.begin(&server);
+  user::UserSettings.ethernet.begin(&eth_server);
+  multi_server.server = &eth_server; // TODO: Make nicer
 
   // Initialize carrier board
   LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
@@ -82,43 +84,12 @@ void setup() {
   LOG(ANABRID_DEBUG_INIT, "Initialization done.");
 }
 
-std::list<net::EthernetClient> clients;
-
 void loop() {
-  net::EthernetClient connection = server.accept();
+  multi_server.loop();
 
   static user::auth::AuthentificationContext
-    admin_context{user::UserSettings.auth, user::auth::UserPasswordAuthentification::admin},
-    user_context {user::UserSettings.auth};
-
-  uint32_t foo = millis();
-
+    admin_context{user::UserSettings.auth, user::auth::UserPasswordAuthentification::admin};
   msg::JsonLinesProtocol::get().process_serial_input(admin_context);
-
-  if (connection) {
-    clients.push_back(connection);
-    LOG4("Client ", clients.size()-1, " connected from ", connection.remoteIP());
-  }
-
-  // using iterator instead range-based loop because EthernetClient lacks == operator
-  // so we use list::erase instead of list::remove.
-  for(auto client = clients.begin(); client != clients.end(); client++) {
-    const auto client_idx = std::distance(clients.begin(), client);
-    if(*client) {
-      if(client->available() > 0) {
-        // have some data to process
-        user_context.set_remote_identifier( user::auth::RemoteIdentifier{ client->remoteIP() } );
-        msg::JsonLinesProtocol::get().process_tcp_input(*client, user_context);
-      } else if(!client->connected()) {
-        client->stop();
-      }
-    } else {
-      LOG5("Client ", client_idx, ", was ", user_context, "disconnected");
-      client->close();
-      clients.erase(client);
-      break; // iterator invalidated, better start fresh loop().
-    }
-  }
 
   /*
     
