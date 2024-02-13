@@ -62,6 +62,7 @@
 #define LOG2(a, b) { Serial.print("# "); Serial.print(a); Serial.println(b); }
 #define LOG3(a, b,c ) { Serial.print("# "); Serial.print(a); Serial.print(b); Serial.println(c); }
 #define LOG4(a, b, c, d) { Serial.print("# "); Serial.print(a); Serial.print(b); Serial.print(c); Serial.println(d); }
+#define LOG5(a, b, c, d, e) { Serial.print("# "); Serial.print(a); Serial.print(b); Serial.print(c); Serial.print(d); Serial.println(e); }
 
 // arbitrary length logging or "Printable" classes
 #define LOG_START(message) { Serial.print("# "); Serial.print(message); }

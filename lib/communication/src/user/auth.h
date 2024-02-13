@@ -93,7 +93,7 @@ public:
  * Note that we do not support logouts. Logout happens when the context object is destroyed.
  * The scope is typically given by the TCP/IP session.
  **/
-class AuthentificationContext {
+class AuthentificationContext : public Printable {
   UserPasswordAuthentification& auth;
   RemoteIdentifier _remote;
   User _user;
@@ -111,7 +111,7 @@ public:
   }
   void login(const User &user) { _user = user; }
 
-	size_t printTo(Print& p) const {
+  size_t printTo(Print& p) const override {
     return p.print(_user.empty() ? "[nobody]" : _user.c_str()) + p.print("@") + _remote.printTo(p);
   }
 };

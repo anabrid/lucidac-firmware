@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <cstring>
+#include <list>
 
 #include "build/distributor.h"
 #include "protocol/client.h"
@@ -81,32 +82,55 @@ void setup() {
   LOG(ANABRID_DEBUG_INIT, "Initialization done.");
 }
 
+std::list<net::EthernetClient> clients;
 
 void loop() {
   net::EthernetClient connection = server.accept();
-  auto &run_manager = run::RunManager::get();
 
   static user::auth::AuthentificationContext
     admin_context{user::UserSettings.auth, user::auth::UserPasswordAuthentification::admin},
     user_context {user::UserSettings.auth};
 
+  uint32_t foo = millis();
+
   msg::JsonLinesProtocol::get().process_serial_input(admin_context);
 
   if (connection) {
-    LOG2("Client connected from ", connection.remoteIP());
+    clients.push_back(connection);
+    LOG4("Client ", clients.size()-1, " connected from ", connection.remoteIP());
+  }
 
-    user_context.set_remote_identifier( user::auth::RemoteIdentifier{ connection.remoteIP() } );
+  // using iterator instead range-based loop because EthernetClient lacks == operator
+  // so we use list::erase instead of list::remove.
+  for(auto client = clients.begin(); client != clients.end(); client++) {
+    const auto client_idx = std::distance(clients.begin(), client);
+    if(*client) {
+      if(client->available() > 0) {
+        // have some data to process
+        user_context.set_remote_identifier( user::auth::RemoteIdentifier{ client->remoteIP() } );
+        msg::JsonLinesProtocol::get().process_tcp_input(*client, user_context);
+      } else if(!client->connected()) {
+        client->stop();
+      }
+    } else {
+      LOG5("Client ", client_idx, ", was ", user_context, "disconnected");
+      client->close();
+      clients.erase(client);
+      break; // iterator invalidated, better start fresh loop().
+    }
+  }
 
+  /*
+    
     // Bind things to this client specifically
     /// @todo This should also report to the Serial console when no connection takes place
+
+    /// @todo This won't work any more with multiple connections. Runs need to remember the
+    ///       session where they were started. Or otherwise report to all sessions.
     auto &envelope_out = *msg::JsonLinesProtocol::get().envelope_out;
     client::RunStateChangeNotificationHandler run_state_change_handler{connection, envelope_out};
     client::RunDataNotificationHandler run_data_handler{carrier::Carrier::get(), connection, envelope_out};
 
-    // Handle incoming messages
-    while (connection) {
-      if(msg::JsonLinesProtocol::get().process_tcp_input(connection, user_context))
-        break;
 
       msg::JsonLinesProtocol::get().process_serial_input(admin_context);
 
@@ -118,7 +142,5 @@ void loop() {
     }
 
     // would be a good idea to move the fake run queue lines here.
-
-    Serial.println("# Client disconnected.");
-  }
+  */
 }
