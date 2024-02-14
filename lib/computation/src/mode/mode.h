@@ -82,6 +82,7 @@ public:
   static void to_pause();
   static void to_end();
 
+  static bool is_idle();
   static bool is_done();
 
   static void delay_till_done();
