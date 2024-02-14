@@ -51,14 +51,21 @@ void testfile(awot::Request& req, awot::Response& res) {
   #endif
 }
 
-void api_preflight(awot::Request& req, awot::Response& res) {
+void api_preflight(awot::Request& req, awot::Response& res, bool set_status=true) {
   res.set("Server", "LucidacWebServer/" FIRMWARE_VERSION);
   res.set("Content-Type", "application/json");
-  res.set("Access-Control-Allow-Origin", "*"); // Disable CORS for the time being
+  // Disable CORS for the time being
+  // Note the maximum number of headers of the lib (can be avoided by directly printing)
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Credentials", "true");
+  res.set("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Origin, Cookie, Set-Cookie, Content-Type, Server");  
+  if(set_status)
+    res.status(200);
 }
 
 void api(awot::Request& req, awot::Response& res) {
-  api_preflight(req, res);
+  api_preflight(req, res, /* status*/ false);
 
   // the following mimics the function
   // msg::JsonLinesProtocol::get().process_tcp_input(req, user::auth::AuthentificationContext());
