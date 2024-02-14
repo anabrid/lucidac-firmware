@@ -21,12 +21,12 @@ class RunStateChangeNotificationHandler : public run::RunStateChangeHandler {
 public:
   // TODO: This can become invalid on disconnects
   // TODO: Possibly needs locking/synchronizing with other writes
-  net::EthernetClient &client;
+  Print &target; // net::EthernetClient &client;
   DynamicJsonDocument &envelope_out;
 
 public:
-  RunStateChangeNotificationHandler(net::EthernetClient &client, DynamicJsonDocument &envelopeOut)
-      : client(client), envelope_out(envelopeOut) {}
+  RunStateChangeNotificationHandler(Print &target, DynamicJsonDocument &envelopeOut)
+      : target(target), envelope_out(envelopeOut) {}
 
   void handle(run::RunStateChange change, const run::Run &run) override;
 };
@@ -36,7 +36,7 @@ public:
   // TODO: This can become invalid on disconnects
   // TODO: Possibly needs locking/synchronizing with other writes
   carrier::Carrier& carrier;
-  net::EthernetClient &client;
+  Print &target; //net::EthernetClient &client;
   DynamicJsonDocument &envelope_out;
 
 private:
@@ -57,7 +57,7 @@ private:
   size_t actual_buffer_length = BUFFER_LENGTH;
 
 public:
-  RunDataNotificationHandler(carrier::Carrier &carrier, net::EthernetClient &client,
+  RunDataNotificationHandler(carrier::Carrier &carrier, Print &target,
                              DynamicJsonDocument &envelopeOut);
 
   static size_t calculate_inner_buffer_length(size_t inner_count);

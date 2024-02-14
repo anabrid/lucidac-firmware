@@ -26,7 +26,7 @@ public:
   ///       Returns 0 if can run.
   static int can_manual_control() {
     if(!run::RunManager::get().queue.empty()) return 1;
-    if(!mode::FlexIOControl::is_done()) return 2;
+    if(!mode::FlexIOControl::is_done() && !mode::FlexIOControl::is_idle()) return 3;
     // maybe further checks neccessary.
     return 0;
   }

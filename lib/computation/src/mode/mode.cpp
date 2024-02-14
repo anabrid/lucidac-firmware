@@ -300,6 +300,11 @@ unsigned long long mode::FlexIOControl::get_actual_op_time() {
   return (TMR1_CNTR2 * 0xFFFF + TMR1_CNTR1) * 671 / 100;
 }
 
+bool mode::FlexIOControl::is_idle() {
+  auto flexio = FlexIOHandler::flexIOHandler_list[0];
+  return flexio->port().SHIFTSTATE == s_idle;
+}
+
 bool mode::FlexIOControl::is_done() {
   auto flexio = FlexIOHandler::flexIOHandler_list[0];
   return flexio->port().SHIFTSTATE == s_end;

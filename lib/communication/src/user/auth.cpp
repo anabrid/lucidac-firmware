@@ -1,5 +1,6 @@
 #include "user/auth.h"
 #include "build/distributor.h"
+#include "auth.h"
 
 void user::auth::UserPasswordAuthentification::reset_defaults() {
   db.clear();
@@ -67,4 +68,7 @@ int user::auth::UserPasswordAuthentification::login(JsonObjectConst msg_in, Json
   #endif  
 }
 
+// The following snippet is here instead of in auth.h to avoid a circular depency
 
+#include "user/settings.h"
+user::auth::AuthentificationContext::AuthentificationContext() : auth(user::UserSettings.auth) {}

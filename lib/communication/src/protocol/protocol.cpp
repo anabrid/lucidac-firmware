@@ -2,6 +2,7 @@
 
 #include "utils/logging.h"
 #include "utils/serial_lines.h"
+#include "utils/durations.h"
 
 #include "user/auth.h"
 #include "user/settings.h"
@@ -125,4 +126,54 @@ bool msg::JsonLinesProtocol::process_tcp_input(net::EthernetClient& connection, 
       return true; // break;
   }
   return false;
+}
+
+void msg::MulticlientServer::loop() {
+  net::EthernetClient client_socket = server->accept();
+
+  if(client_socket) {
+    // note that the following code copies "socket" object multiple times. When using pointers into
+    // the struct, do not use the pointer to the wrong version.
+    // TODO: Clean up code.
+    Client client;
+    client.socket = client_socket;
+    client.user_context.set_remote_identifier( user::auth::RemoteIdentifier{ client_socket.remoteIP() } );
+
+    // note there is also net::EthernetClient::maxSockets(), which is dominated by basic system constraints.
+    // This limit here is rather dominated by application level constraints and can probably be a counter
+    // measure against ddos attacks.
+    if(clients.size() == user::UserSettings.ethernet.max_connections) {
+      LOG5("Cannot accept client from ", client_socket.remoteIP(), " because maximum number of connections (",
+        user::UserSettings.ethernet.max_connections, ") already reached.");
+      client_socket.stop();
+    } else {
+      clients.push_back(client);
+      JsonLinesProtocol::get().broadcast.add(&(std::prev(clients.end())->socket));
+      LOG4("Client ", clients.size()-1, " connected from ", client_socket.remoteIP());
+    }
+  }
+
+  // using iterator instead range-based loop because EthernetClient lacks == operator
+  // so we use list::erase instead of list::remove.
+  for(auto client = clients.begin(); client != clients.end(); client++) {
+    const auto client_idx = std::distance(clients.begin(), client);
+    if(client->socket) {
+      if(client->socket.available() > 0) {
+        msg::JsonLinesProtocol::get().process_tcp_input(client->socket, client->user_context);
+        client->last_contact.reset();
+      } else if(!client->socket.connected()) {
+        client->socket.stop();
+      } else if(client->last_contact.expired(user::UserSettings.ethernet.connection_timeout_ms)) {
+        LOG5("Client ", client_idx, ", timed out after ", user::UserSettings.ethernet.connection_timeout_ms, " ms of idling");
+        client->socket.stop();
+      }
+    } else {
+      LOG5("Client ", client_idx, ", was ", client->user_context, ", disconnected");
+      client->socket.close();
+      JsonLinesProtocol::get().broadcast.remove(&client->socket);
+      clients.erase(client);
+      return; // iterator invalidated, better start loop() freshly.
+    }
+  }
+
 }

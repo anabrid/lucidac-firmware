@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <cstring>
+#include <list>
 
 #include "build/distributor.h"
 #include "protocol/client.h"
@@ -10,10 +11,12 @@
 #include "user/auth.h"
 #include "user/settings.h"
 #include "run/run_manager.h"
-
 #include "utils/hashflash.h"
 
-net::EthernetServer server;
+
+
+net::EthernetServer eth_server;
+msg::MulticlientServer multi_server;
 
 /// @ingroup MessageHandlers
 class HackMessageHandler : public msg::handlers::MessageHandler {
@@ -53,7 +56,8 @@ void setup() {
   LOG_START("UserPasswordAuthentification: "); LOG_JSON(user::UserSettings.auth.status); LOG_END();
 
   LOG(ANABRID_DEBUG_INIT, "Starting up Ethernet...");
-  user::UserSettings.ethernet.begin(&server);
+  user::UserSettings.ethernet.begin(&eth_server);
+  multi_server.server = &eth_server; // TODO: Make nicer
 
   // Initialize carrier board
   LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
@@ -81,44 +85,27 @@ void setup() {
   LOG(ANABRID_DEBUG_INIT, "Initialization done.");
 }
 
-
 void loop() {
-  net::EthernetClient connection = server.accept();
-  auto &run_manager = run::RunManager::get();
+  multi_server.loop();
 
   static user::auth::AuthentificationContext
-    admin_context{user::UserSettings.auth, user::auth::UserPasswordAuthentification::admin},
-    user_context {user::UserSettings.auth};
-
+    admin_context{user::UserSettings.auth, user::auth::UserPasswordAuthentification::admin};
   msg::JsonLinesProtocol::get().process_serial_input(admin_context);
 
-  if (connection) {
-    LOG2("Client connected from ", connection.remoteIP());
 
-    user_context.set_remote_identifier( user::auth::RemoteIdentifier{ connection.remoteIP() } );
+  // Currently, the following prints to all connected clients.
+  static client::RunStateChangeNotificationHandler run_state_change_handler{
+    msg::JsonLinesProtocol::get().broadcast,
+    *msg::JsonLinesProtocol::get().envelope_out
+  };
+  static client::RunDataNotificationHandler run_data_handler{
+    carrier::Carrier::get(),
+    msg::JsonLinesProtocol::get().broadcast,
+    *msg::JsonLinesProtocol::get().envelope_out
+  };
 
-    // Bind things to this client specifically
-    /// @todo This should also report to the Serial console when no connection takes place
-    auto &envelope_out = *msg::JsonLinesProtocol::get().envelope_out;
-    client::RunStateChangeNotificationHandler run_state_change_handler{connection, envelope_out};
-    client::RunDataNotificationHandler run_data_handler{carrier::Carrier::get(), connection, envelope_out};
-
-    // Handle incoming messages
-    while (connection) {
-      if(msg::JsonLinesProtocol::get().process_tcp_input(connection, user_context))
-        break;
-
-      msg::JsonLinesProtocol::get().process_serial_input(admin_context);
-
-      // Fake run for now
-      if (!run::RunManager::get().queue.empty()) {
-        Serial.println("faking run");
-        run::RunManager::get().run_next(&run_state_change_handler, &run_data_handler);
-      }
-    }
-
-    // would be a good idea to move the fake run queue lines here.
-
-    Serial.println("# Client disconnected.");
+  if (!run::RunManager::get().queue.empty()) {
+    Serial.println("faking run");
+    run::RunManager::get().run_next(&run_state_change_handler, &run_data_handler);
   }
 }
