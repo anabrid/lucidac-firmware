@@ -43,7 +43,8 @@ bool user::ethernet::valid(const MacAddress& mac) { uint8_t sum=0; for(int i=0; 
 
 user::ethernet::UserDefinedEthernet::UserDefinedEthernet() {
   server_port = 5732;
-  connection_timeout_ms = 1000; // TODO Change, here only one second for testing.
+  connection_timeout_ms = 72*1000*1000; /// @TODO test timeout.
+  max_connections = 20;
 
   // This build flag basically solves a "deadlock" if a no DHCP server is
   // available but the teensy is configured for dhcp.

@@ -11,8 +11,9 @@
 #include "user/auth.h"
 #include "user/settings.h"
 #include "run/run_manager.h"
-
 #include "utils/hashflash.h"
+
+
 
 net::EthernetServer eth_server;
 msg::MulticlientServer multi_server;
@@ -91,27 +92,20 @@ void loop() {
     admin_context{user::UserSettings.auth, user::auth::UserPasswordAuthentification::admin};
   msg::JsonLinesProtocol::get().process_serial_input(admin_context);
 
-  /*
-    
-    // Bind things to this client specifically
-    /// @todo This should also report to the Serial console when no connection takes place
 
-    /// @todo This won't work any more with multiple connections. Runs need to remember the
-    ///       session where they were started. Or otherwise report to all sessions.
-    auto &envelope_out = *msg::JsonLinesProtocol::get().envelope_out;
-    client::RunStateChangeNotificationHandler run_state_change_handler{connection, envelope_out};
-    client::RunDataNotificationHandler run_data_handler{carrier::Carrier::get(), connection, envelope_out};
+  // Currently, the following prints to all connected clients.
+  static client::RunStateChangeNotificationHandler run_state_change_handler{
+    msg::JsonLinesProtocol::get().broadcast,
+    *msg::JsonLinesProtocol::get().envelope_out
+  };
+  static client::RunDataNotificationHandler run_data_handler{
+    carrier::Carrier::get(),
+    msg::JsonLinesProtocol::get().broadcast,
+    *msg::JsonLinesProtocol::get().envelope_out
+  };
 
-
-      msg::JsonLinesProtocol::get().process_serial_input(admin_context);
-
-      // Fake run for now
-      if (!run::RunManager::get().queue.empty()) {
-        Serial.println("faking run");
-        run::RunManager::get().run_next(&run_state_change_handler, &run_data_handler);
-      }
-    }
-
-    // would be a good idea to move the fake run queue lines here.
-  */
+  if (!run::RunManager::get().queue.empty()) {
+    Serial.println("faking run");
+    run::RunManager::get().run_next(&run_state_change_handler, &run_data_handler);
+  }
 }

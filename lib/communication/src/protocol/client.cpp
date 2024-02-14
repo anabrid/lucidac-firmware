@@ -18,16 +18,15 @@ void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange
   msg["t"] = change.t;
   msg["old"] = run::RunStateNames[static_cast<size_t>(change.old)];
   msg["new"] = run::RunStateNames[static_cast<size_t>(change.new_)];
-  serializeJson(envelope_out, Serial);
-  Serial.write("\n");
-  serializeJson(envelope_out, client);
-  client.writeFully("\n");
+  serializeJson(envelope_out, target);
+  target.write("\n"); // note EthernetClient::writeFully("\n") is probably 
+  target.flush();
 }
 
 client::RunDataNotificationHandler::RunDataNotificationHandler(carrier::Carrier &carrier,
-                                                               net::EthernetClient &client,
+                                                               Print &target,
                                                                DynamicJsonDocument &envelopeOut)
-    : carrier(carrier), client(client), envelope_out(envelopeOut) {}
+    : carrier(carrier), target(target), envelope_out(envelopeOut) {}
 
 void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t outer_count,
                                                 size_t inner_count, const run::Run &run) {
@@ -65,8 +64,8 @@ void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t 
   // digitalWriteFast(LED_BUILTIN, LOW);
 
   // digitalWriteFast(18, HIGH);
-  client.writeFully(str_buffer, actual_buffer_length);
-  client.flush();
+  target.write(str_buffer, actual_buffer_length);
+  target.flush();
   // digitalWriteFast(18, LOW);
 }
 

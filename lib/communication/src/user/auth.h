@@ -10,7 +10,6 @@
 #include <cstring>
 #include <map>
 
-
 namespace user {
 namespace auth {
 
@@ -100,6 +99,7 @@ class AuthentificationContext : public Printable {
 public:
   AuthentificationContext(UserPasswordAuthentification& auth, User user) : auth(auth), _user(user) {}
   AuthentificationContext(UserPasswordAuthentification& auth) : auth(auth) {}
+  AuthentificationContext();
 
   void set_remote_identifier(RemoteIdentifier r) { _remote = r; }
 

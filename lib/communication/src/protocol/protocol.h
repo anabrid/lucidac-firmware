@@ -6,12 +6,13 @@
 
 #include <ArduinoJson.h>
 #include <list>
+#include <Print.h>
 
 #include "protocol/handler.h"
 #include "user/auth.h"
 #include "user/ethernet.h"
 #include "utils/durations.h"
-
+#include "utils/print-multiplexer.h"
 
 namespace msg {
 /**
@@ -22,6 +23,9 @@ namespace msg {
 class JsonLinesProtocol {
 public:
     DynamicJsonDocument *envelope_in, *envelope_out;
+    utils::PrintMultiplexer broadcast;
+
+    JsonLinesProtocol() { broadcast.add(&Serial); }
 
     void init(size_t envelope_size); ///< Allocates storage
     static JsonLinesProtocol& get(); ///< Singleton
