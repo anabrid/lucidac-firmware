@@ -15,30 +15,11 @@ rm -fr public; unzip -q public.zip; cd public
 shopt -s globstar # bash
 
 assets="../assets.h"
+asset_structures=$(mktemp)
 asset_http_headers=$(mktemp)
+asset_extern_symbols=$(mktemp)
 
-cat << CPP_HEADER > $assets
-/*
- * This header file is auto-generated and allows for including static files
- * into the firmware, for serving them over the web.
- * It uses objcopy (GNU compiler specific) in order to speed up compilation,
- * skipping the C compiler phase.
- *
- * This file is supposed to be included exactly once where needed and thus
- * behaves as a CPP file.
- */
-
-struct static_file {
-  const char *filename;
-  struct linker_addresses { uint32_t *start, *end, *size } content;
-  uint32_t lastmod; // C Unix timestamp for cache control
-};
-
-
-static_file assets[] = {
-CPP_HEADER
-
-echo "const char pregenerated_http_headers[][] = {" > $asset_http_headers
+echo "static_file assets[] = {" > $asset_structures
 
 for fn in * */**; do
 [ -d "$fn" ] && continue
@@ -49,7 +30,7 @@ lastmod_unixtime=$(stat -c%Y "${fn}")
 # TODO probably caveat: Subdirectory will not be included into the linker symbol but is here.
 linkerfn=$(echo "${fn}" | sed 's#[/.-]#_#g')
 
-echo "{ \"${fn}\", { _binary_${linkerfn}_start, _binary_${linkerfn}_end, _binary_${linkerfn}_size }, $lastmod_unixtime }," >> $assets
+echo "extern uint32_t _binary_${linkerfn}_start[], _binary_${linkerfn}_end, _binary_${linkerfn}_size;"  >> $asset_extern_symbols
 
 cat << HTTP_HEADER > "${fn}.http"
 HTTP/1.1 200 OK
@@ -63,18 +44,42 @@ ETag: $(md5sum "${fn}.gz" | head -c8)
 X-Reply-Type: Pregenerated Headers at PIO compile time
 HTTP_HEADER
 
-echo "/* $fn */" >> $asset_http_headers
+prefab_http_header_name="prefab_http_headers_for_${linkerfn}";
+echo "const char ${prefab_http_header_name}[] = " >> $asset_http_headers
 cat "${fn}.http" | awk -v q='"' '{print q$0q}' >> $asset_http_headers
-echo "," >> $asset_http_headers
+echo "; /* end of ${fn} */" >> $asset_http_headers
 
-#echo -e "\n" >> "$prep_http" # empty line seperating header and content
-#cat "${fn}.gz" >> "$prep_http"
+echo "{ \"${fn}\", { _binary_${linkerfn}_start, _binary_${linkerfn}_end, _binary_${linkerfn}_size }, $lastmod_unixtime, $prefab_http_header_name }," >> $asset_structures
 
 done
 
-echo "};" >> $assets
-echo "};" >> $asset_http_headers
+echo "};" >> $asset_structures
 
-cat $asset_http_headers >> $assets
-rm  $asset_http_headers
+cat << CPP_HEADER > $assets
+/*
+ * This header file is auto-generated and allows for including static files
+ * into the firmware, for serving them over the web.
+ * It uses objcopy (GNU compiler specific) in order to speed up compilation,
+ * skipping the C compiler phase.
+ *
+ * This file is supposed to be included exactly once where needed and thus
+ * behaves as a CPP file.
+ */
+ 
+#include <cstdint> // uint32_t
 
+struct static_file {
+  const char *filename;
+  // TODO: reading out this linker address is always a bit ugly, should provide a method here instead
+  struct linker_addresses { uint32_t (&start)[], &end, &size; } content;
+  uint32_t lastmod; // C Unix timestamp for cache control
+  const char *prefab_http_headers;
+};
+CPP_HEADER
+
+cat $asset_extern_symbols $asset_http_headers $asset_structures >> $assets
+
+rm $asset_extern_symbols  $asset_http_headers $asset_structures
+
+# For testing, can do this, should run without error
+g++ $assets && rm $assets.gch
