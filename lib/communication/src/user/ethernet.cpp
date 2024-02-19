@@ -133,12 +133,12 @@ void user::ethernet::UserDefinedEthernet::begin(net::EthernetServer *server) {
         net::Ethernet.setHostname(hostname.c_str());
         if (!net::Ethernet.begin()) {
           LOG_ERROR("Error starting ethernet DHCP client.");
-          _ERROR_OUT_
+          //_ERROR_OUT_
         }
         LOG(ANABRID_DEBUG_INIT, "Waiting for IP address on ethernet...");
-        if (!net::Ethernet.waitForLocalIP(10000)) {
+        if (!net::Ethernet.waitForLocalIP(3 /* seconds*/)) {
           LOG_ERROR("Error getting IP address.");
-          _ERROR_OUT_
+          //_ERROR_OUT_
         }
     } else {
         if(!valid(static_ipaddr) || !valid(static_netmask) || !valid(static_gw)) {
@@ -150,7 +150,7 @@ void user::ethernet::UserDefinedEthernet::begin(net::EthernetServer *server) {
         }
         if (!net::Ethernet.begin(static_ipaddr, static_netmask, static_gw)) {
           LOG_ERROR("Error starting ethernet with static IP address.");
-          _ERROR_OUT_
+          //_ERROR_OUT_
         }
         if(!valid(static_dns)) {
           LOG_ERROR("Illegal dns server. Recovering with defaults.")
