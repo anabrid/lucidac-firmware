@@ -67,6 +67,16 @@ blocks::CBlock::CBlock(uint8_t clusterIdx)
 
 bus::addr_t blocks::CBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
 
+float blocks::CBlock::get_factor(uint8_t idx) {
+  if (idx >= NUM_COEFF)
+    return 0.0f;
+
+  auto factor = decltype(f_coeffs)::value_type::raw_to_float(factors_[idx]);
+  if (is_upscaled(idx))
+    factor = factor * UPSCALING;
+  return factor;
+}
+
 bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   if (idx >= NUM_COEFF)
     return false;
@@ -82,6 +92,12 @@ bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   }
   factors_[idx] = decltype(f_coeffs)::value_type::float_to_raw(factor);
   return true;
+}
+
+bool blocks::CBlock::is_upscaled(uint8_t idx) {
+  if (idx >= NUM_COEFF)
+    return false;
+  return upscaling_ & (1 << idx);
 }
 
 void blocks::CBlock::set_upscaling(uint8_t idx, bool enable = true) {
@@ -161,7 +177,7 @@ bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
 void blocks::CBlock::config_self_to_json(JsonObject &cfg) {
   Entity::config_self_to_json(cfg);
   auto factors_cfg = cfg.createNestedArray("elements");
-  for (auto factor : factors_) {
-    factors_cfg.add(decltype(f_coeffs)::value_type::raw_to_float(factor));
+  for (auto idx = 0; idx < factors_.size(); idx++) {
+    factors_cfg.add(get_factor(idx));
   }
 }
