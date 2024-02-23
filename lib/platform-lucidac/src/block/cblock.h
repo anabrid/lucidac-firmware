@@ -74,6 +74,7 @@ protected:
   uint32_t upscaling_{0};
 
   void set_upscaling(uint8_t idx, bool enable);
+  bool is_upscaled(uint8_t idx);
 
   void write_factors_to_hardware();
   void write_upscaling_to_hardware();
@@ -97,6 +98,7 @@ public:
    * @returns false in case of invalid input, true else.
    **/
   bool set_factor(uint8_t idx, float factor);
+  float get_factor(uint8_t idx);
 
   void write_to_hardware() override;
   void reset(bool keep_calibration) override;
