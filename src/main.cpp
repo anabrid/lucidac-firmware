@@ -12,8 +12,7 @@
 #include "user/settings.h"
 #include "run/run_manager.h"
 #include "utils/hashflash.h"
-
-
+#include "web/server.h"
 
 net::EthernetServer eth_server;
 msg::MulticlientServer multi_server;
@@ -59,6 +58,8 @@ void setup() {
   user::UserSettings.ethernet.begin(&eth_server);
   multi_server.server = &eth_server; // TODO: Make nicer
 
+  web::LucidacWebServer::get().begin();
+
   // Initialize carrier board
   LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
   if (!carrier::Carrier::get().init(user::UserSettings.ethernet.mac)) {
@@ -92,6 +93,7 @@ void loop() {
     admin_context{user::UserSettings.auth, user::auth::UserPasswordAuthentification::admin};
   msg::JsonLinesProtocol::get().process_serial_input(admin_context);
 
+  web::LucidacWebServer::get().loop();
 
   // Currently, the following prints to all connected clients.
   static client::RunStateChangeNotificationHandler run_state_change_handler{
