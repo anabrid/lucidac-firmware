@@ -1,5 +1,6 @@
 #include "user/settings.h"
 #include "web/server.h"
+#include "web/assets.h"
 #include "utils/logging.h"
 #include "protocol/protocol.h"
 #include "build/distributor.h"
@@ -9,6 +10,8 @@
 
 using namespace web;
 
+#define SERVER_VERSION  "LucidacWebServer/" FIRMWARE_VERSION
+
 awot::Application webapp;
 
 LucidacWebServer &web::LucidacWebServer::get() {
@@ -16,43 +19,121 @@ LucidacWebServer &web::LucidacWebServer::get() {
   return obj;
 }
 
-void index(awot::Request& req, awot::Response& res) {
-  res.status(200);
+void notfound(awot::Request& req, awot::Response& res) {
+  res.status(404);
+  res.set("Server", SERVER_VERSION);
   res.set("Content-Type", "text/html");
-  res.println("Hello World!");
+  res.println("<h1>Not found</h1><p>The ressource:<pre>");
+  res.println(req.path());
+  res.println("</pre><p>was not found on this server.");
+  res.println("<hr><p><i>" SERVER_VERSION "</i>");
 }
 
-// Test successful: File looks fine in browser.
-// TODO: Checkout caching https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching
-//
-// Note: Could make headers part of the files, including Last-Modified
-// and etag, something as in:
-/*
-Content-Type: application/javascript
-Content-Length: 1024
-Cache-Control: public, max-age=31536000
-Last-Modified: Tue, 22 Feb 2024 20:20:20 GMT
-ETag: YsAIAAAA-QG4G6kCMAMBAAAAAAAoK
-
-contents of file goes here...
-*/
-void testfile(awot::Request& req, awot::Response& res) {
-  #if 0
-  // vim test.txt; gzip test.txt; xxi -i test.txt.gz > test.h
-  #include "test.h"
-
-  res.set("Server", "LucidacWebServer/" FIRMWARE_VERSION);
-  res.set("Content-Encoding", "gzip");
-  res.set("Content-Length", String(test_txt_gz_len).c_str());
-  res.set("Content-Type", "text/plain");
-  res.write((char*)test_txt_gz, test_txt_gz_len);
-  #else
-  res.println("code disabled");
-  #endif
+void serve_static(const web::StaticFile& file, awot::Response& res) {
+  LOGMEV("Serving static file %s with %d bytes\n", file.filename, file.size);
+  res.status(200);
+  // copying the headers (dumb!)
+  for(int i=0; i < file.max_headers; i++) {
+    if(file.headers[i].name)
+      res.set(file.headers[i].name, file.headers[i].value);
+  }
+  // this would have been smarter but aWOT is not very smart
+  // res.print(file.prefab_http_headers);
+  // res.endHeaders();
+  for(
+    uint32_t written = 0;
+    written != file.size;
+  ) {
+    // Severe BUG in aWOT: v3.5.0 is lying about the result of write, it never passes the
+    //    real write result. Therefore, attemping to full write at this API level does not
+    //    work. An easy fix is sketched in
+    //    https://github.com/lasselukkari/aWOT/compare/master...lfarrand:aWOT:master
+    //    but using a Github fork is not easy as it has to be registered at PlatformIO.
+    //    Suggest instead hosting the aWOT locally here in the firmware.
+    //
+    // I repeat: This line does NOT work for files larger then ~ 5kB.
+    // Solution is obvious but has to be done at some point.
+    uint32_t singleshot = res.write((uint8_t*)file.start+written, file.size - written);
+    //LOGMEV("Written %d, plus %d", written, singleshot);
+    written += singleshot;
+  }
+  res.flush();
 }
 
-void api_preflight(awot::Request& req, awot::Response& res, bool set_status=true) {
-  res.set("Server", "LucidacWebServer/" FIRMWARE_VERSION);
+void serve_static(awot::Request& req, awot::Response& res) {
+  // as a little workaround for aWOT, determine whether this runs *after*
+  // some successful route by inspecting whether something has been sent out or not.
+  // Handle only if nothing has been sent so far, i.e. no previous middleware/endpoint
+  // replied to this http query.
+  if(res.bytesSent()) return;
+
+  LOGMEV("%s", req.path());
+  const char *path_without_leading_slash = req.path() + 1;
+  const StaticFile* file = StaticAttic().get_by_filename(path_without_leading_slash);
+  if(file) {
+    serve_static(*file, res);
+    res.end();
+  } else {
+    LOGMEV("No suitable static file found for path %s\n", req.path());
+    notfound(req, res);
+  }
+}
+
+void index(awot::Request& req, awot::Response& res) {
+  const StaticFile* file = StaticAttic().get_by_filename("index.html");
+  if(file) {
+    res.status(200);
+    serve_static(*file, res);
+  } else {
+    res.status(501);
+    res.set("Content-Type", "text/html");
+    res.println(
+      "<h1>LUCIDAC: Welcome</h1>"
+      "<p>Your LUCIDAC can reply to messages on the web via an elevated JSONL API endpoint. "
+      "However. the Single Page Application (SPA) static files have not been installed on the firmware. "
+      "This means you cannot use the beautiful and easy web interface straight out of the way. However, "
+      "you can still use it if you have sufficiently permissive CORS settings active and use a public "
+      "hosted version of the LUCIDAC GUI (SPA)."
+      "<hr><p><i>" SERVER_VERSION "</i>"
+    );
+  }
+}
+
+namespace web {
+void convertToJson(const StaticFile& file, JsonVariant serialized) {
+  auto j = serialized.to<JsonObject>();
+  j["filename"] = file.filename;
+  j["lastmod"] = file.lastmod;
+  j["size"] = (int)file.size;
+  j["start_in_memory"] = (int)file.start;
+}
+}
+
+// Provide some information about the built in assets
+// TODO: Should actually integrate information about webserver status
+// in the general {'type':'status'} query.
+void about_static(awot::Request& req, awot::Response& res) {
+  res.set("Server", SERVER_VERSION);
+  res.set("Content-Type", "application/json");
+
+  StaticAttic attic;
+
+  StaticJsonDocument<1024> j;
+  j["has_any_static_files"] = attic.number_of_files != 0;
+  for(size_t i=0; i<attic.number_of_files; i++) {
+    j["static_files"][i] = attic.files[i];
+  }
+
+  // Could also show other web server status/config options
+  // such as: CORS, all available routes, etc.
+
+  // or some build flags around the assets, such as an asset bundle version or so.
+
+  serializeJson(j, res);
+}
+
+void set_cors(awot::Request& req, awot::Response& res) {
+  res.set("Server", SERVER_VERSION);
   res.set("Content-Type", "application/json");
   // Disable CORS for the time being
   // Note the maximum number of headers of the lib (can be avoided by directly printing)
@@ -60,12 +141,16 @@ void api_preflight(awot::Request& req, awot::Response& res, bool set_status=true
   res.set("Access-Control-Allow-Credentials", "true");
   res.set("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.set("Access-Control-Allow-Headers", "Origin, Cookie, Set-Cookie, Content-Type, Server");  
-  if(set_status)
-    res.status(200);
 }
 
+void api_preflight(awot::Request& req, awot::Response& res) {
+  res.status(200);
+  set_cors(req, res);
+}
+
+
 void api(awot::Request& req, awot::Response& res) {
-  api_preflight(req, res, /* status*/ false);
+  set_cors(req, res);
 
   // the following mimics the function
   // msg::JsonLinesProtocol::get().process_tcp_input(req, user::auth::AuthentificationContext());
@@ -91,10 +176,16 @@ void api(awot::Request& req, awot::Response& res) {
 void web::LucidacWebServer::begin() {
   ethserver.begin(80);
   webapp.get("/", &index);
+
   webapp.get("/api", &api);
   webapp.post("/api", &api);
   webapp.options("/api", &api_preflight);
-  webapp.get("/test.txt", &testfile);
+  
+  // This is more for testing, not really a good endpoint.
+  webapp.get("/webserver-status", &about_static);
+
+  // register static file handler as last one, this will also fall back to 404.
+  webapp.get(serve_static);
 }
 
 void web::LucidacWebServer::loop() {

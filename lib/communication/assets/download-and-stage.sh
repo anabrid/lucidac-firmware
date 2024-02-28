@@ -1,26 +1,79 @@
 #!/bin/bash
-
-# Assets and subdirectories:
-#  Should make sure at vite build time that we don't use any subdirectories.
-#  This simplifies things.
+#
+# Downloading and Staging the static file assets for the LucidacWebServer
+# =======================================================================
+#
+# This bash script does the following:
+#
+# 1. Downloads the most recent Single Page Application Build from gitlab
+# 2. Unpacks it, loops over every file, collects file information
+# 3. Sets up the file /lib/communication/src/web/assets.cpp in a way that
+#    GCC can compile it within platformio without any further preperation.
+#    During compilation, it will efficiently embed the downloaded and unpacked
+#    straight into the firmware executable. However, this is already after
+#    the runtime/scope of this bash script.
+#
+# Why bash?
+#
+#    Was easy. Could also easily move to Python, which would increase the
+#    compatibility to Windows (bash runs fine on Linux, the CI, Mac OS X
+#    but not so fine on Windows).
+#
+# Is this part of the PlatformIO/Scons build process?
+#
+#    No. Integration could be possible but we certainly would not like to
+#    query a new SPA build every time the compilation starts, during
+#    development. Since the C++ code fails gracefully if no static files
+#    are included, it is on you to run this script BEFORE compiling the
+#    firmware in order to INCLUDE the javascript application within the
+#    firmware.
+#
+# Assumptions:
+#
+#    Gitlab CI builds a single ZIP file with static files from a primarily
+#    dynamic king kong of application (they call it svelte). The Firmware
+#    does not want to do anything with that. We are only interested in the
+#    outcome. Therefore one ZIP which contains files. Nothing more.
+#
+#    The ZIP can contain any subdirectory structure. It will be mapped on
+#    the static served path.
+#
+#    Static serving in the firmware is very basic (i.e. no directory listings)
+#
+#    This bash script can do gzipping at runtime (to reduce firmware pressure)
+#    but that's it. Nothing fancy.
+#
+#    Note to inter-Git-linkage: Since we are interested in build outputs, git
+#    submodules are not an option. Instead, we use a token which is directly
+#    stored here. No reason to avoid storing a secret in the repository, it can
+#    be reset any time.
+#
 
 set -e
 
-# Using the token `artifact-download` with value `glpat-n6Ys-Wr2pQn8Qo-_dU_V` (only read permission, nothing critical):
+cd "$(dirname "$0")" # go where the script is stored
 
-#curl -L --header "PRIVATE-TOKEN: glpat-n6Ys-Wr2pQn8Qo-_dU_V" "https://lab.analogparadigm.com/api/v4/projects/257/jobs/artifacts/main/download?job=build_static_assets"  > public.zip
+# Using the token `artifact-download` with value `glpat-n6Ys-Wr2pQn8Qo-_dU_V`
+# (only read permission, nothing critical):
 
-rm -fr public; unzip -q public.zip; cd public
+curl -L --header "PRIVATE-TOKEN: glpat-n6Ys-Wr2pQn8Qo-_dU_V" \
+    "https://lab.analogparadigm.com/api/v4/projects/257/jobs/artifacts/main/download?job=build_static_assets" \
+     > public.zip
 
-shopt -s globstar # bash
+rm -fr public
+unzip -q public.zip
+cd public
 
-assets="../assets.h"
+assets="../../src/web/assets.cpp"
+
 asset_structures=$(mktemp)
 asset_http_headers=$(mktemp)
 asset_extern_symbols=$(mktemp)
+asset_assembler_includes=$(mktemp)
 
-echo "static_file assets[] = {" > $asset_structures
+echo "const web::StaticFile assets[] = {" > $asset_structures
 
+shopt -s globstar # bash
 for fn in * */**; do
 [ -d "$fn" ] && continue
 gzip -9q22k "$fn"
@@ -30,26 +83,47 @@ lastmod_unixtime=$(stat -c%Y "${fn}")
 # TODO probably caveat: Subdirectory will not be included into the linker symbol but is here.
 linkerfn=$(echo "${fn}" | sed 's#[/.-]#_#g')
 
-echo "extern uint32_t _binary_${linkerfn}_start[], _binary_${linkerfn}_end, _binary_${linkerfn}_size;"  >> $asset_extern_symbols
+echo "extern uint8_t _binary_${linkerfn}_start[], _binary_${linkerfn}_end[];"  >> $asset_extern_symbols
+
+# File path relative to platformio project root.
+# or just use a full absolute path
+path_relative_to_project_root="$(realpath "$fn")"
+
+
+# Correct section is .progmem
+# cf. imxrt1062_t41.ld linker script
+# https://www.devever.net/~hl/incbin
+# https://dox.ipxe.org/embedded_8c_source.html
+cat << ASM >> $asset_assembler_includes
+__asm__(
+ ".section \".progmem\"\n" // , \"a\", @progbits\n"
+ "_binary_${linkerfn}_start:\n"
+ ".incbin \"${path_relative_to_project_root}\"\n"
+ "_binary_${linkerfn}_end:\n"
+ ".previous\n"
+);
+ASM
+
+
+# use this fields only in GZIP encoding.
+
+#{ "Content-Length", "$(stat -c%s "${fn}.gz")" },
+#{ "Content-Encoding", "gzip" },
 
 cat << HTTP_HEADER > "${fn}.http"
-HTTP/1.1 200 OK
-Content-Type: $(file --brief --mime-type "${fn}")
-Content-Length: $(stat -c%s "${fn}.gz")
-Content-Encoding: gzip
-Last-Modified: $(TZ=GMT date -R -d @$lastmod_unixtime | sed 's/+0000/GMT/')
-Date: $(TZ=GMT date -R -d @$lastmod_unixtime | sed 's/+0000/GMT/')
-Cache-Control: max-age=604800
-ETag: $(md5sum "${fn}.gz" | head -c8)
-X-Reply-Type: Pregenerated Headers at PIO compile time
+{ "Content-Type", "$(file --brief --mime-type "${fn}")" },
+{ "Last-Modified", "$(TZ=GMT date -R -d @$lastmod_unixtime | sed 's/+0000/GMT/')" },
+{ "Date", "$(TZ=GMT date -R -d @$lastmod_unixtime | sed 's/+0000/GMT/')" },
+{ "Cache-Control", "max-age=604800" },
+{ "ETag", "$(md5sum "${fn}.gz" | head -c8)" },
 HTTP_HEADER
 
-prefab_http_header_name="prefab_http_headers_for_${linkerfn}";
-echo "const char ${prefab_http_header_name}[] = " >> $asset_http_headers
-cat "${fn}.http" | awk -v q='"' '{print q$0q}' >> $asset_http_headers
-echo "; /* end of ${fn} */" >> $asset_http_headers
+#prefab_http_header_name="prefab_http_headers_for_${linkerfn}";
+#echo "const char ${prefab_http_header_name}[] = " >> $asset_http_headers
+#cat "${fn}.http" | awk -v q='"' '{print q$0"\\n"q}' >> $asset_http_headers
+#echo "; /* end of ${fn} */" >> $asset_http_headers
 
-echo "{ \"${fn}\", { _binary_${linkerfn}_start, _binary_${linkerfn}_end, _binary_${linkerfn}_size }, $lastmod_unixtime, $prefab_http_header_name }," >> $asset_structures
+echo "{ \"${fn}\", _binary_${linkerfn}_start, (uint32_t)(_binary_${linkerfn}_end - _binary_${linkerfn}_start), { $(cat "${fn}.http") }, $lastmod_unixtime }," >> $asset_structures
 
 done
 
@@ -66,20 +140,20 @@ cat << CPP_HEADER > $assets
  * behaves as a CPP file.
  */
  
-#include <cstdint> // uint32_t
+#include "web/assets.h"
 
-struct static_file {
-  const char *filename;
-  // TODO: reading out this linker address is always a bit ugly, should provide a method here instead
-  struct linker_addresses { uint32_t (&start)[], &end, &size; } content;
-  uint32_t lastmod; // C Unix timestamp for cache control
-  const char *prefab_http_headers;
-};
 CPP_HEADER
 
-cat $asset_extern_symbols $asset_http_headers $asset_structures >> $assets
+cat $asset_extern_symbols $asset_assembler_includes $asset_http_headers $asset_structures >> $assets
 
-rm $asset_extern_symbols  $asset_http_headers $asset_structures
+rm $asset_extern_symbols $asset_assembler_includes $asset_http_headers $asset_structures
+
+cat << CPP_FOOTER >> $assets
+
+web::StaticAttic::StaticAttic() : files(assets), number_of_files(sizeof(assets) / sizeof(assets[0])) {}
+
+CPP_FOOTER
+
 
 # For testing, can do this, should run without error
-g++ $assets && rm $assets.gch
+#g++ $assets && rm $assets.gch
