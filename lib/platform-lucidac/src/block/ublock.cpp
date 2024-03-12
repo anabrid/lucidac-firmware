@@ -38,12 +38,9 @@ void utils::shift_5_left(uint8_t *buffer, size_t size) {
   buffer[size - 1] <<= 5;
 }
 
-template <std::size_t num_of_outputs>
-const SPISettings functions::UMatrixFunction<num_of_outputs>::DEFAULT_SPI_SETTINGS{4'000'000, MSBFIRST,
-                                                                                   SPI_MODE2};
+const SPISettings functions::UMatrixFunction::DEFAULT_SPI_SETTINGS{4'000'000, MSBFIRST, SPI_MODE2};
 
-template <std::size_t num_of_outputs>
-functions::UMatrixFunction<num_of_outputs>::UMatrixFunction(bus::addr_t address)
+functions::UMatrixFunction::UMatrixFunction(bus::addr_t address)
     : functions::DataFunction(address, DEFAULT_SPI_SETTINGS) {}
 
 const SPISettings functions::UOffsetLoader::OFFSETS_FUNC_SPI_SETTINGS{8'000'000, MSBFIRST, SPI_MODE2};

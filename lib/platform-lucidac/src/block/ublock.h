@@ -41,7 +41,7 @@ void shift_5_left(uint8_t *buffer, size_t size);
 
 namespace functions {
 
-template <std::size_t num_of_outputs> class UMatrixFunction : public functions::DataFunction {
+class UMatrixFunction : public functions::DataFunction {
 public:
   static const SPISettings DEFAULT_SPI_SETTINGS;
 
@@ -50,7 +50,8 @@ public:
 
   //! Convert an output array to data packets and transfer to chip.
   //! Timing: ~5microseconds
-  void transfer(std::array<uint8_t, num_of_outputs> outputs) const;
+  template <size_t num_of_outputs>
+  void transfer(const std::array<uint8_t, num_of_outputs>& outputs) const;
 };
 
 class UOffsetLoader {
@@ -147,7 +148,7 @@ public:
   static const SPISettings ALT_SIGNAL_FUNC_SPI_SETTINGS;
 
 protected:
-  const functions::UMatrixFunction<NUM_OF_OUTPUTS> f_umatrix;
+  const functions::UMatrixFunction f_umatrix;
   const functions::TriggerFunction f_umatrix_sync;
   // Reset disables all output, but rest of logic is unchanged according to datasheet.
   // But I don't really know what that means. Data is still shifted out after a reset
