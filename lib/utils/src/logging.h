@@ -26,7 +26,13 @@
 #pragma once
 
 // The actual logging call
+#ifdef ARDUINO
+#include <Arduino.h>
 #define __LOG(message) Serial.println(message);
+#else
+#include <iostream>
+#define __LOG(message) std::cerr << message;
+#endif
 
 // A logging macro, which accepts an optional LOG_FLAG (e.g. ANABRID_DEBUG_INIT) and a message.
 #define LOG(LOG_FLAG, message) LOG_##LOG_FLAG(message)
