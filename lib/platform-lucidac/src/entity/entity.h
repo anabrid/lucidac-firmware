@@ -62,7 +62,8 @@ public:
   Entity *resolve_child_entity(JsonArrayConstIterator begin, JsonArrayConstIterator end) {
     auto resolved_entity = this;
     for (auto sub_path = begin; sub_path != end; ++sub_path) {
-      resolved_entity = resolved_entity->get_child_entity((*sub_path).as<std::string>());
+      std::string child_entity_id = (*sub_path).as<const char*>();
+      resolved_entity = resolved_entity->get_child_entity(child_entity_id);
       if (!resolved_entity) {
         return nullptr;
       }
