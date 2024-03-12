@@ -45,7 +45,7 @@ float functions::AD5452::raw_to_float(uint16_t raw) {
   return (static_cast<float>(raw) - static_cast<float>(RAW_ZERO << 2)) / 4095;
 }
 
-void functions::AD5452::set_scale(uint16_t scale_raw) {
+void functions::AD5452::set_scale(uint16_t scale_raw) const {
   begin_communication();
   // AD5452 expects at least 13ns delay between chip select and data
   delayNanoseconds(15);
@@ -53,7 +53,7 @@ void functions::AD5452::set_scale(uint16_t scale_raw) {
   end_communication();
 }
 
-void functions::AD5452::set_scale(float scale) {
+void functions::AD5452::set_scale(float scale) const {
   // Scaling between +-1 and +-10 coefficient happens outside!
   return set_scale(float_to_raw(scale));
 }

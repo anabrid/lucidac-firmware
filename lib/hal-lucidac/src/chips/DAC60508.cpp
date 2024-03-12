@@ -71,7 +71,7 @@ bool functions::DAC60508::set_channel(uint8_t idx, uint16_t value) const {
   return true;
 }
 
-void functions::DAC60508::init() {
+void functions::DAC60508::init() const {
   // TODO: Change back to external reference when working again
   write_register(functions::DAC60508::REG_CONFIG, 0b0000'0000'0000'0000);
   write_register(functions::DAC60508::REG_GAIN, 0b0000'0000'1111'1111);
