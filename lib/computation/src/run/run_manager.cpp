@@ -25,6 +25,7 @@
 
 #include "run_manager.h"
 
+#include <Arduino.h>
 #include "daq/daq.h"
 #include "logging.h"
 
@@ -48,7 +49,6 @@ void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunD
 
   run_data_handler->init();
   daq_.enable();
-  Serial.println("Run starts.");
   mode::FlexIOControl::force_start();
   delayMicroseconds(1);
 
