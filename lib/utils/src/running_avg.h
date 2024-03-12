@@ -38,20 +38,15 @@ private:
   std::array<float, N> average{{0}};
 
 public:
-  data_t add(data_t data);
-  const data_t &get_average() const;
+  data_t add(data_t data) {
+    n += 1;
+    for (size_t i = 0; i < N; i++) {
+      average[i] = (average[i] * static_cast<float>(n - 1) + data[i]) / static_cast<float>(n);
+    }
+    return average;
+  };
+
+  const data_t &get_average() const { return average; }
 };
-
-template <size_t N> typename RunningAverageVec<N>::data_t RunningAverageVec<N>::add(RunningAverageVec::data_t data) {
-  n += 1;
-  for (size_t i = 0; i < N; i++) {
-    average[i] = (average[i] * static_cast<float>(n - 1) + data[i]) / static_cast<float>(n);
-  }
-  return average;
-}
-
-template <unsigned int N> const typename RunningAverageVec<N>::data_t &RunningAverageVec<N>::get_average() const {
-  return average;
-}
 
 } // namespace utils
