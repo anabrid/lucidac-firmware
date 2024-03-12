@@ -65,7 +65,9 @@ void interrupt() {
   // Clear interrupt
   channel.clearInterrupt();
   // Memory barrier
+#ifdef ARDUINO
   asm("DSB");
+#endif
 }
 
 std::array<volatile uint32_t, BUFFER_SIZE> get_buffer() { return buffer; }
