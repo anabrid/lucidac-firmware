@@ -30,30 +30,6 @@
 
 SPIClass &bus::spi = SPI1;
 
-bus::addr_t bus::idx_to_addr(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_idx) {
-  // Address 0 is the carrier-board, blocks start at 1
-  // Address is [6bit FADDR][4bit BADDR]
-  return (static_cast<addr_t>(func_idx & 0x3F) << 4) + ((cluster_idx * 5 + block_idx + 1) & 0xF);
-}
-
-bus::addr_t bus::increase_function_idx(bus::addr_t address, uint8_t delta_idx) {
-  return address + (static_cast<addr_t>(delta_idx & 0x3F) << 4);
-}
-
-bus::addr_t bus::replace_function_idx(bus::addr_t address, uint8_t func_idx) {
-  return (address & ~0x3F0) | (static_cast<addr_t>(func_idx & 0x3F) << 4);
-}
-
-bus::addr_t bus::remove_addr_parts(bus::addr_t address, bool block, bool func) {
-  if (block)
-    address &= ~0xF;
-  if (func)
-    address &= ~0x3F0;
-  return address;
-}
-
-bus::addr_t bus::board_function_to_addr(uint8_t func_idx) { return func_idx << 4; }
-
 void bus::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   for (const auto pin : PINS_BADDR) {
@@ -87,14 +63,11 @@ void bus::address_function(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_
 }
 
 void bus::address_function(bus::addr_t address) {
-  uint32_t new_bits = address << PINS_ADDR_BIT_SHIFT;
-  _change_address_register(ADDR_BITS_MASK, new_bits);
+  _change_address_register(ADDR_BITS_MASK, bus::address_to_register(address));
 }
 
 void bus::release_address() {
-  // TODO: This is currently arbitrary, should be handled as described in
-  //       https://lab.analogparadigm.com/lucidac/hardware/module-holder/-/issues/6
-  address_function(0, 4, 63);
+  address_function(bus::NULL_ADDRESS);
 }
 
 void bus::address_board_function(uint8_t func_idx) { address_function(board_function_to_addr(func_idx)); }

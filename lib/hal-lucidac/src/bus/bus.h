@@ -58,14 +58,35 @@ constexpr uint8_t M2_BLOCK_IDX = 4;
 // Common function indexes
 constexpr uint8_t METADATA_FUNC_IDX = 0;
 
-addr_t idx_to_addr(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_idx);
-addr_t increase_function_idx(addr_t address, uint8_t delta_idx);
-addr_t replace_function_idx(addr_t address, uint8_t func_idx);
-addr_t board_function_to_addr(uint8_t func_idx);
+constexpr addr_t idx_to_addr(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_idx) {
+  return (static_cast<addr_t>(func_idx & 0x3F) << 4) + ((cluster_idx * 5 + block_idx + 1) & 0xF);
+}
 
-addr_t remove_addr_parts(addr_t address, bool block, bool func);
+constexpr addr_t increase_function_idx(addr_t address, uint8_t delta_idx) {
+  return address + (static_cast<addr_t>(delta_idx & 0x3F) << 4);
+}
+
+constexpr addr_t replace_function_idx(addr_t address, uint8_t func_idx) {
+  return (address & ~0x3F0) | (static_cast<addr_t>(func_idx & 0x3F) << 4);
+}
+
+constexpr addr_t remove_addr_parts(addr_t address, bool block, bool func) {
+  if (block)
+    address &= ~0xF;
+  if (func)
+    address &= ~0x3F0;
+  return address;
+}
+
+constexpr addr_t board_function_to_addr(uint8_t func_idx) { return func_idx << 4; }
+
+// TODO: This is currently arbitrary, should be handled as described in
+//       https://lab.analogparadigm.com/lucidac/hardware/module-holder/-/issues/6
+constexpr addr_t NULL_ADDRESS = idx_to_addr(0, 4, 63);
 
 void init();
+
+constexpr uint32_t address_to_register(addr_t address) { return address << PINS_ADDR_BIT_SHIFT; }
 
 void _change_address_register(uint32_t clear_mask, uint32_t set_mask);
 
