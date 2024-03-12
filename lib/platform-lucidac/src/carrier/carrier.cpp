@@ -25,16 +25,10 @@
 
 #include "carrier.h"
 #include "logging.h"
-
-#include <QNEthernet.h>
-#include <cstring>
+#include "mac_utils.h"
 
 std::string carrier::Carrier::get_system_mac() {
-  uint8_t mac[6];
-  qindesign::network::Ethernet.macAddress(mac);
-  char mac_str[20];
-  sprintf(mac_str, "%02X-%02X-%02X-%02X-%02X-%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-  return mac_str;
+  return ::get_system_mac();
 }
 
 carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}) {}
