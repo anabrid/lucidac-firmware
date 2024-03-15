@@ -37,6 +37,8 @@ void bus::init() {
   digitalWriteFast(PIN_ADDR_CS, HIGH);
   pinMode(PIN_ADDR_LATCH, OUTPUT);
   digitalWriteFast(PIN_ADDR_LATCH, LOW);
+  pinMode(PIN_ADDR_RESET, OUTPUT);
+  digitalWriteFast(PIN_ADDR_RESET, HIGH);
 
   for (const auto pin : PINS_BADDR) {
     pinMode(pin, OUTPUT);
@@ -46,9 +48,9 @@ void bus::init() {
     pinMode(pin, OUTPUT);
     digitalWriteFast(pin, LOW);
   }
-  bus::release_address();
   bus::spi.begin();
   bus::spi.setMISO(39);
+  bus::deactivate_address();
 }
 
 void bus::_change_address_register(uint32_t clear_mask, uint32_t set_mask) {
@@ -69,11 +71,28 @@ void bus::address_function(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_
 }
 
 void bus::address_function(bus::addr_t address) {
-  _change_address_register(ADDR_BITS_MASK, bus::address_to_register(address));
+  bus::spi.beginTransaction(SPISettings(10'000, MSBFIRST, SPI_MODE2));
+  digitalWriteFast(PIN_ADDR_CS, LOW);
+  delayNanoseconds(200);
+  // MSBFIRST [16bit] = ADDR_[xx543210] + MADDR_[xxx43210]
+  bus::spi.transfer16(address);
+  delayNanoseconds(200);
+  digitalWriteFast(PIN_ADDR_CS, HIGH);
+  bus::spi.endTransaction();
 }
 
-void bus::release_address() {
-  address_function(bus::NULL_ADDRESS);
+void bus::deactivate_address() {
+  digitalWriteFast(PIN_ADDR_RESET, LOW);
+  delayNanoseconds(200);
+  activate_address();
+  delayNanoseconds(200);
+  digitalWriteFast(PIN_ADDR_RESET, HIGH);
 }
 
 void bus::address_board_function(uint8_t func_idx) { address_function(board_function_to_addr(func_idx)); }
+
+void bus::activate_address() {
+  digitalToggleFast(PIN_ADDR_LATCH);
+  delayNanoseconds(200);
+  digitalToggleFast(PIN_ADDR_LATCH);
+}

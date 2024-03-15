@@ -28,7 +28,7 @@ void loop()
       bus::spi.transfer(B00000000);
     }
     // Unset CS
-    bus::release_address();
+    bus::deactivate_address();
 
     /*
      * Read out the 64bit unique ID memory at the end of the 256bit memory
@@ -44,7 +44,7 @@ void loop()
       bus::spi.transfer(B00000000);
     }
     // Unset CS
-    bus::release_address();
+    bus::deactivate_address();
 
     bus::spi.endTransaction();
     digitalWriteFast(LED_BUILTIN, LOW);

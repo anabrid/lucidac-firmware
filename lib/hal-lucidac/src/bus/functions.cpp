@@ -29,7 +29,7 @@ functions::Function::Function(const bus::addr_t address) : address(address) {}
 
 void functions::Function::set_address() const { bus::address_function(address); }
 
-void functions::Function::release_address() const { bus::release_address(); }
+void functions::Function::release_address() const { bus::deactivate_address(); }
 
 void functions::TriggerFunction::trigger() const {
   set_address();

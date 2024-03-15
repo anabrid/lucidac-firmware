@@ -40,32 +40,21 @@ void tearDown() {
 }
 
 void test_address_shiftregister() {
-  static uint8_t addr = 0;
-
-  bus::spi.beginTransaction(SPISettings(10'000, MSBFIRST, SPI_MODE2));
-  digitalWriteFast(PIN_ADDR_CS, LOW);
-  delayMicroseconds(2);
-  // MSBFIRST [8bit] = ADDR_[xx543210]
-  bus::spi.transfer(0b11001101);
-  // MSBFIRST [8bit] = MADDR_[xxx43210]
-  bus::spi.transfer(0b11111111);
-  delayMicroseconds(2);
-  digitalWriteFast(PIN_ADDR_CS, HIGH);
-  bus::spi.endTransaction();
+  address_function(0b00110011'00010111);
   delayMicroseconds(2);
 
   // function beginTransaction
-  digitalToggleFast(PIN_ADDR_LATCH);
-  delayNanoseconds(200);
-  digitalToggleFast(PIN_ADDR_LATCH);
+  bus::spi.beginTransaction(SPISettings(1'000'000, LSBFIRST, SPI_MODE0));
+  // activate address
+  activate_address();
   delayMicroseconds(2);
-
+  // data transfer
   bus::spi.transfer(0b10010011);
   delayMicroseconds(2);
-
   // release address
+  deactivate_address();
   // function endTransaction
-  addr += 1;
+  bus::spi.endTransaction();
 }
 
 void setup() {

@@ -39,6 +39,7 @@ using addr_t = uint16_t;
 
 constexpr uint8_t PIN_ADDR_CS = 25;
 constexpr uint8_t PIN_ADDR_LATCH = 24;
+constexpr uint8_t PIN_ADDR_RESET = 28;
 // Block address definitions and helpers
 constexpr std::array<uint8_t, 4> PINS_BADDR = {14, 15, 40, 41};
 constexpr uint8_t PINS_BADDR_BIT_SHIFT = CORE_PIN14_BIT;
@@ -82,9 +83,7 @@ constexpr addr_t remove_addr_parts(addr_t address, bool block, bool func) {
 
 constexpr addr_t board_function_to_addr(uint8_t func_idx) { return func_idx << 4; }
 
-// TODO: This is currently arbitrary, should be handled as described in
-//       https://lab.analogparadigm.com/lucidac/hardware/module-holder/-/issues/6
-constexpr addr_t NULL_ADDRESS = idx_to_addr(0, 4, 63);
+constexpr addr_t NULL_ADDRESS = 0;
 
 void init();
 
@@ -120,6 +119,8 @@ void address_function(addr_t address);
 
 void address_board_function(uint8_t func_idx);
 
-void release_address();
+void activate_address();
+
+void deactivate_address();
 
 } // namespace bus
