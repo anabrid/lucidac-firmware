@@ -32,6 +32,12 @@ SPIClass &bus::spi = SPI1;
 
 void bus::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
+
+  pinMode(PIN_ADDR_CS, OUTPUT);
+  digitalWriteFast(PIN_ADDR_CS, HIGH);
+  pinMode(PIN_ADDR_LATCH, OUTPUT);
+  digitalWriteFast(PIN_ADDR_LATCH, LOW);
+
   for (const auto pin : PINS_BADDR) {
     pinMode(pin, OUTPUT);
     digitalWriteFast(pin, LOW);

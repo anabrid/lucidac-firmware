@@ -37,6 +37,8 @@ extern SPIClass &spi;
 
 using addr_t = uint16_t;
 
+constexpr uint8_t PIN_ADDR_CS = 25;
+constexpr uint8_t PIN_ADDR_LATCH = 24;
 // Block address definitions and helpers
 constexpr std::array<uint8_t, 4> PINS_BADDR = {14, 15, 40, 41};
 constexpr uint8_t PINS_BADDR_BIT_SHIFT = CORE_PIN14_BIT;
