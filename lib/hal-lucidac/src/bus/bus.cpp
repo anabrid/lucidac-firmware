@@ -70,6 +70,10 @@ void bus::address_function(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_
   address_function(idx_to_addr(cluster_idx, block_idx, func_idx));
 }
 
+void bus::address_function(uint8_t maddr, uint8_t faddr) {
+  address_function((static_cast<uint16_t>(faddr) << 8) + maddr);
+}
+
 void bus::address_function(bus::addr_t address) {
   bus::spi.beginTransaction(SPISettings(10'000, MSBFIRST, SPI_MODE2));
   digitalWriteFast(PIN_ADDR_CS, LOW);

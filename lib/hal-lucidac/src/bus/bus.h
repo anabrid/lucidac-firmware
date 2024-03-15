@@ -115,6 +115,8 @@ void address_function_only(uint8_t func_idx);
  */
 void address_function(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_idx);
 
+void address_function(uint8_t maddr, uint8_t faddr);
+
 void address_function(addr_t address);
 
 void address_board_function(uint8_t func_idx);
