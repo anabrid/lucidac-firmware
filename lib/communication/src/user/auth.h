@@ -74,7 +74,8 @@ public:
 
 // some syntactic sugar
 inline void convertFromJson(JsonVariantConst serialized_conf, UserPasswordAuthentification& upa) { upa.read_from_json(serialized_conf); }
-inline void convertToJson(const UserPasswordAuthentification& upa, JsonVariant serialized) { upa.write_to_json(serialized); }
+inline void convertToJson(const UserPasswordAuthentification& upa, JsonVariant serialized) {
+  upa.write_to_json(serialized.to<JsonObject>()); }
 
 /// Some basic information about the remote station. We interpret 0.0.0.0 als a local terminal.
 class RemoteIdentifier { // : public Printable { // no inheritance for POD

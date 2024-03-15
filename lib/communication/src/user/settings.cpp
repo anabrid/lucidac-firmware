@@ -19,7 +19,7 @@ static constexpr int
 // does not store a number >= this constant, it is resetted.
 // Must not start from 0 in order to distinguish from "value not found" errors,
 // thus the arbitrary nonzero 0xAA prefix.
-static constexpr uint64_t required_magic = 0xAA00;
+static constexpr uint64_t required_magic = 0xAA01;
 
 void user::settings::JsonFlashUserSettings::reset_defaults() {
     LOGMEV("Resetting settings, EEPROM version was:  %X, Firmware version is %X.", version, HEX, required_magic, HEX);

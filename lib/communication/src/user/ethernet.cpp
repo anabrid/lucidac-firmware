@@ -94,7 +94,7 @@ void user::ethernet::convertFromJson(JsonVariantConst serialized_conf, user::eth
 }
 
 void user::ethernet::convertToJson(const user::ethernet::UserDefinedEthernet &ude, JsonVariant serialized) {
-  auto target = serialized.as<JsonObject>();
+  auto target = serialized.to<JsonObject>();
 
   target["server_port"] = ude.server_port;
   target["use_dhcp"] = ude.use_dhcp;
