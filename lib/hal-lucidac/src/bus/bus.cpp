@@ -71,7 +71,7 @@ void bus::address_function(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_
 }
 
 void bus::address_function(uint8_t maddr, uint8_t faddr) {
-  address_function((static_cast<uint16_t>(faddr) << 8) + maddr);
+  address_function(address_from_tuple(maddr, faddr));
 }
 
 void bus::address_function(bus::addr_t address) {

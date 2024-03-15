@@ -83,6 +83,10 @@ constexpr addr_t remove_addr_parts(addr_t address, bool block, bool func) {
 
 constexpr addr_t board_function_to_addr(uint8_t func_idx) { return func_idx << 4; }
 
+constexpr addr_t address_from_tuple(uint8_t maddr, uint8_t faddr) {
+  return (static_cast<uint16_t>(faddr) << 8) + maddr;
+}
+
 constexpr addr_t NULL_ADDRESS = 0;
 
 void init();
