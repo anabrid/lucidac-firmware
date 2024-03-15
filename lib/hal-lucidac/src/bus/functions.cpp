@@ -27,26 +27,24 @@
 
 functions::Function::Function(const bus::addr_t address) : address(address) {}
 
-void functions::Function::set_address() const { bus::address_function(address); }
-
-void functions::Function::release_address() const { bus::deactivate_address(); }
-
 void functions::TriggerFunction::trigger() const {
-  set_address();
+  bus::address_function(address);
+  bus::activate_address();
   delayNanoseconds(2 * 42);
-  release_address();
+  bus::deactivate_address();
 }
 
 functions::DataFunction::DataFunction(bus::addr_t address, const SPISettings &spiSettings)
     : Function(address), spi_settings(spiSettings) {}
 
 void functions::DataFunction::begin_communication() const {
+  bus::address_function(address);
   bus::spi.beginTransaction(spi_settings);
-  set_address();
+  bus::activate_address();
 }
 
 void functions::DataFunction::end_communication() const {
-  release_address();
+  bus::deactivate_address();
   bus::spi.endTransaction();
 }
 

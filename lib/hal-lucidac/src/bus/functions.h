@@ -44,8 +44,6 @@ namespace functions {
 class Function {
 public:
   const bus::addr_t address;
-  virtual void set_address() const;
-  virtual void release_address() const;
 
   // explicit keyword shall most certainly avoid accidental downcasting
   explicit Function(bus::addr_t address);
