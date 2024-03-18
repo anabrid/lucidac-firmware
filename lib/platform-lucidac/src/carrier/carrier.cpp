@@ -31,7 +31,7 @@ std::string carrier::Carrier::get_system_mac() {
   return ::get_system_mac();
 }
 
-carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}) {}
+carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}), f_acl_prg(bus::address_from_tuple(CARRIER_MADDR, ACL_PRG_FADDR)) {}
 
 bool carrier::Carrier::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);

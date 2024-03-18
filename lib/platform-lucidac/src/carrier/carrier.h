@@ -55,6 +55,27 @@ public:
   bool config_self_from_json(JsonObjectConst cfg) override;
 
   void write_to_hardware();
+
+  // REV1 specific things
+  // TODO: These are partly LUCIDAC specific things, which should be rebased on `56-refactor-...` branch.
+public:
+  // Module addresses
+  static constexpr uint8_t CARRIER_MADDR = 5;
+  static constexpr uint8_t CTRL_MADDR = 2;
+  static constexpr uint8_t BACKPLANE_MADDR = 2;
+  static constexpr uint8_t FRONTPLANE_MADDR = 2;
+  // Function addresses
+  static constexpr uint8_t METADATA_FADDR = bus::METADATA_FUNC_IDX;
+  static constexpr uint8_t TEMPERATURE_FADDR = 1;
+  static constexpr uint8_t ADC_PRG_FADDR = 2;
+  static constexpr uint8_t ADC_RESET_8816_FADDR = 3;
+  static constexpr uint8_t ADC_RESET_SR_FADDR = 4;
+  static constexpr uint8_t ADC_STROBE_FADDR = 5;
+  static constexpr uint8_t ACL_PRG_FADDR = 6;
+  static constexpr uint8_t ACL_UPD_FADDR = 7;
+  static constexpr uint8_t ACL_CRL_FADDR = 8;
+protected:
+  const functions::SR74HCT595 f_acl_prg;
 };
 
 } // namespace carrier
