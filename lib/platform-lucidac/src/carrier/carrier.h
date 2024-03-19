@@ -75,9 +75,18 @@ public:
   static constexpr uint8_t ACL_UPD_FADDR = 7;
   static constexpr uint8_t ACL_CRL_FADDR = 8;
 protected:
+  // Functions to configure ACL signal muxer
   const functions::SR74HCT595 f_acl_prg;
   const functions::TriggerFunction f_acl_upd;
   const functions::TriggerFunction f_acl_clr;
+  // Functions to configure ADC signal switching matrix
+  // TODO: Replace by separate function or abstraction that does not allow connecting two inputs to one output
+  // SPI settings are unfortunately different from IBlock
+  static const SPISettings F_ADC_SWITCHER_PRG_SPI_SETTINGS;
+  const functions::ICommandRegisterFunction f_adc_switcher_prg;
+  const functions::TriggerFunction f_adc_switcher_sync;
+  const functions::TriggerFunction f_adc_switcher_sr_reset;
+  const functions::TriggerFunction f_adc_switcher_matrix_reset;
 };
 
 } // namespace carrier
