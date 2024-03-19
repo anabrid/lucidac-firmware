@@ -41,7 +41,7 @@ public:
   static int16_t raw_to_signed_raw(uint16_t raw);
   static float raw_to_float(uint16_t raw);
 
-  float read_temperature();
+  float read_temperature() const;
 };
 
 }
