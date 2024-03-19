@@ -41,7 +41,8 @@ carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}),
                               f_adc_switcher_prg(bus::address_from_tuple(CARRIER_MADDR, ADC_PRG_FADDR), F_ADC_SWITCHER_PRG_SPI_SETTINGS),
                               f_adc_switcher_sync(bus::address_from_tuple(CARRIER_MADDR, ADC_STROBE_FADDR)),
                               f_adc_switcher_sr_reset(bus::address_from_tuple(CARRIER_MADDR, ADC_RESET_SR_FADDR)),
-                              f_adc_switcher_matrix_reset(bus::address_from_tuple(CARRIER_MADDR, ADC_RESET_8816_FADDR))
+                              f_adc_switcher_matrix_reset(bus::address_from_tuple(CARRIER_MADDR, ADC_RESET_8816_FADDR)),
+                              f_temperature(bus::address_from_tuple(CARRIER_MADDR, TEMPERATURE_FADDR))
 {}
 
 bool carrier::Carrier::init() {

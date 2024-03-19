@@ -30,6 +30,7 @@
 #include <array>
 
 #include "cluster.h"
+#include "chips/TMP127Q1.h"
 #include "entity/entity.h"
 #include "protocol/handler.h"
 
@@ -87,6 +88,8 @@ protected:
   const functions::TriggerFunction f_adc_switcher_sync;
   const functions::TriggerFunction f_adc_switcher_sr_reset;
   const functions::TriggerFunction f_adc_switcher_matrix_reset;
+  // Temperature function
+  const functions::TMP127Q1 f_temperature;
 };
 
 } // namespace carrier
