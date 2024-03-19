@@ -75,7 +75,7 @@ void bus::address_function(uint8_t maddr, uint8_t faddr) {
 }
 
 void bus::address_function(bus::addr_t address) {
-  bus::spi.beginTransaction(SPISettings(10'000, MSBFIRST, SPI_MODE2));
+  bus::spi.beginTransaction(SPISettings(4'000'000, MSBFIRST, SPI_MODE2));
   digitalWriteFast(PIN_ADDR_CS, LOW);
   delayNanoseconds(200);
   // MSBFIRST [16bit] = ADDR_[xx543210] + MADDR_[xxx43210]
