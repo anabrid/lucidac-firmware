@@ -27,7 +27,7 @@
 
 const SPISettings functions::TMP127Q1::DEFAULT_SPI_SETTINGS{4'000'000, MSBFIRST, SPI_MODE0};
 
-float functions::TMP127Q1::read_temperature() {
+float functions::TMP127Q1::read_temperature() const {
   auto raw = transfer16(0);
   return raw_to_float(raw);
 }
