@@ -76,6 +76,8 @@ public:
   static constexpr uint8_t ACL_CRL_FADDR = 8;
 protected:
   const functions::SR74HCT595 f_acl_prg;
+  const functions::TriggerFunction f_acl_upd;
+  const functions::TriggerFunction f_acl_clr;
 };
 
 } // namespace carrier
