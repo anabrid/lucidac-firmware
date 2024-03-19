@@ -47,10 +47,13 @@ void test_init() {
 }
 
 void test_acl_prg() {
-  //bus::address_function(bus::address_from_tuple(Carrier::CARRIER_MADDR, Carrier::METADATA_FADDR));
-  //bus::activate_address();
-  carrier_board.f_acl_prg.transfer(0b11111111);
+  carrier_board.f_acl_prg.transfer(0b11100110);
   carrier_board.f_acl_upd.trigger();
+  TEST_ASSERT(true);
+}
+
+void test_acl_clear() {
+  carrier_board.f_acl_clr.trigger();
   carrier_board.f_acl_upd.trigger();
   TEST_ASSERT(true);
 }
@@ -61,7 +64,8 @@ void setup() {
   UNITY_BEGIN();
   //RUN_TEST(test_init);
   RUN_TEST(test_acl_prg);
+  //RUN_TEST(test_acl_clear);
   UNITY_END();
 }
 
-void loop() { delay(100); test_acl_prg();}
+void loop() { delay(100);}
