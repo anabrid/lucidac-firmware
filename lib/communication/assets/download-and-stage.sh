@@ -103,25 +103,35 @@ __asm__(
  ".global _binary_${linkerfn}_start\n"
  ".type   _binary_${linkerfn}_start,%object\n"
  "_binary_${linkerfn}_start:\n"
- ".incbin \"${path_relative_to_project_root}\"\n"
+ ".incbin \"${path_relative_to_project_root}.gz\"\n"
  "_binary_${linkerfn}_end:\n"
  ".previous\n"
 );
 ASM
 
 
-# use this fields only in GZIP encoding.
+mime_type="$(file --brief --mime-type "${fn}")"
 
-#{ "Content-Length", "$(stat -c%s "${fn}.gz")" },
-#{ "Content-Encoding", "gzip" },
+# For CSS and JS files, the correct mime type is important.
+if   [[ "$fn" == *.js  ]]; then mime_type="application/javascript"; # is correctly detected anyway
+elif [[ "$fn" == *.css ]]; then mime_type="text/css";               # this fix is important
+fi
 
 cat << HTTP_HEADER > "${fn}.http"
-{ "Content-Type", "$(file --brief --mime-type "${fn}")" },
+{ "Content-Type", "$mime_type" },
 { "Last-Modified", "$(TZ=GMT date -R -d @$lastmod_unixtime | sed 's/+0000/GMT/')" },
 { "Date", "$(TZ=GMT date -R -d @$lastmod_unixtime | sed 's/+0000/GMT/')" },
 { "Cache-Control", "max-age=604800" },
 { "ETag", "$(md5sum "${fn}.gz" | head -c8)" },
 HTTP_HEADER
+
+# use this fields only when having GZIP encoding turned on:
+
+cat << HTTP_HEADER >> "${fn}.http"
+{ "Content-Length", "$(stat -c%s "${fn}.gz")" },
+{ "Content-Encoding", "gzip" },
+HTTP_HEADER
+
 
 #prefab_http_header_name="prefab_http_headers_for_${linkerfn}";
 #echo "const char ${prefab_http_header_name}[] = " >> $asset_http_headers
