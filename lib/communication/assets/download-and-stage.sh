@@ -50,6 +50,7 @@
 #
 
 set -e
+shopt -s globstar # bash
 
 cd "$(dirname "$0")" # go where the script is stored
 
@@ -57,12 +58,15 @@ cd "$(dirname "$0")" # go where the script is stored
 # (only read permission, nothing critical):
 
 curl -L --header "PRIVATE-TOKEN: glpat-n6Ys-Wr2pQn8Qo-_dU_V" \
-    "https://lab.analogparadigm.com/api/v4/projects/257/jobs/artifacts/main/download?job=build_static_assets" \
-     > public.zip
+    "https://lab.analogparadigm.com/api/v4/projects/257/jobs/artifacts/main/download?job=build_for_teensy" \
+     > dist.zip
 
-rm -fr public
-unzip -q public.zip
-cd public
+rm -fr dist
+unzip -q dist.zip
+cd dist
+
+# get rid of any sourcemaps, if present.
+rm -f **/*map*
 
 assets="../../src/web/assets.cpp"
 
@@ -73,7 +77,6 @@ asset_assembler_includes=$(mktemp)
 
 echo "const web::StaticFile assets[] = {" > $asset_structures
 
-shopt -s globstar # bash
 for fn in * */**; do
 [ -d "$fn" ] && continue
 gzip -9q22k "$fn"
@@ -96,7 +99,9 @@ path_relative_to_project_root="$(realpath "$fn")"
 # https://dox.ipxe.org/embedded_8c_source.html
 cat << ASM >> $asset_assembler_includes
 __asm__(
- ".section \".progmem\"\n" // , \"a\", @progbits\n"
+ ".section \".progmem.webfiles\", \"a\", %progbits\n"
+ ".global _binary_${linkerfn}_start\n"
+ ".type   _binary_${linkerfn}_start,%object\n"
  "_binary_${linkerfn}_start:\n"
  ".incbin \"${path_relative_to_project_root}\"\n"
  "_binary_${linkerfn}_end:\n"
@@ -157,3 +162,6 @@ CPP_FOOTER
 
 # For testing, can do this, should run without error
 #g++ $assets && rm $assets.gch
+
+echo "Number of asset files:  $(find | grep gz | wc -l)"
+echo "Total asset size:       $(find | grep gz | xargs du -hcs | awk '{print $1}' | tail -n1)"
