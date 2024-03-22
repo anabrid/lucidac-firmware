@@ -44,15 +44,10 @@ void serve_static(const web::StaticFile& file, awot::Response& res) {
     uint32_t written = 0;
     written != file.size;
   ) {
-    // Severe BUG in aWOT: v3.5.0 is lying about the result of write, it never passes the
-    //    real write result. Therefore, attemping to full write at this API level does not
-    //    work. An easy fix is sketched in
-    //    https://github.com/lasselukkari/aWOT/compare/master...lfarrand:aWOT:master
-    //    but using a Github fork is not easy as it has to be registered at PlatformIO.
-    //    Suggest instead hosting the aWOT locally here in the firmware.
-    //
-    // I repeat: This line does NOT work for files larger then ~ 5kB.
-    // Solution is obvious but has to be done at some point.
+    // The folling line requires anabrid/aWOT@3.5.1 as upstream aWOT 3.5.0
+    // has a severe bug. Fix is sketched in 
+    // https://github.com/lasselukkari/aWOT/compare/master...lfarrand:aWOT:master
+    // and adopted by us.
     uint32_t singleshot = res.write((uint8_t*)file.start+written, file.size - written);
     //LOGMEV("Written %d, plus %d", written, singleshot);
     written += singleshot;
