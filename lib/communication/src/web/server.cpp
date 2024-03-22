@@ -1,6 +1,7 @@
 #include "user/settings.h"
 #include "web/server.h"
 #include "web/assets.h"
+#include "web/websockets.h"
 #include "utils/logging.h"
 #include "protocol/protocol.h"
 #include "build/distributor.h"
@@ -8,11 +9,35 @@
 #define ENABLE_AWOT_NAMESPACE
 #include <aWOT.h>
 
+// more readable c string algebra
+bool contains(const char* haystack, const char* needle) { return strstr(haystack, needle) != NULL; }
+bool equals(const char* a, const char* b) { return strcmp(a, b) == 0; }
+
 using namespace web;
 
 #define SERVER_VERSION  "LucidacWebServer/" FIRMWARE_VERSION
 
 awot::Application webapp;
+
+/**
+ * aWOT preallocates everything, therefore request headers are not dynamically parsed
+ * but instead only seved when previously storage was allocated. Therefore this function
+ * serves as a global registry for interesting client-side headers.
+ **/
+void allocate_interesting_headers(awot::Application& app) {
+  constexpr int max_allocated_headers = 10;
+  constexpr int maxval = 80; // maximum string length
+
+  int i=0;
+  static char header[max_allocated_headers][maxval];
+  app.header("Host", header[i++], maxval);
+  app.header("Origin", header[i++], maxval);
+  app.header("Connection", header[i++], maxval);
+  app.header("Upgrade", header[i++], maxval);
+  app.header("Sec-WebSocket-Version", header[i++], maxval);
+  app.header("Sec-Websocket-Key", header[i++], maxval);
+  // programmer, please ensure at this line i < max_allocated_headers.
+}
 
 LucidacWebServer &web::LucidacWebServer::get() {
   static LucidacWebServer obj;
@@ -29,6 +54,7 @@ void notfound(awot::Request& req, awot::Response& res) {
   res.println("<hr><p><i>" SERVER_VERSION "</i>");
 }
 
+
 void serve_static(const web::StaticFile& file, awot::Response& res) {
   LOGMEV("Serving static file %s with %d bytes\n", file.filename, file.size);
   res.status(200);
@@ -40,6 +66,8 @@ void serve_static(const web::StaticFile& file, awot::Response& res) {
   // this would have been smarter but aWOT is not very smart
   // res.print(file.prefab_http_headers);
   // res.endHeaders();
+  // // Note on the note: This use case is possible with the aWOT API, cf.
+  // // https://awot.net/en/3x/api.html#res-beginHeaders
   for(
     uint32_t written = 0;
     written != file.size;
@@ -116,8 +144,11 @@ void about_static(awot::Request& req, awot::Response& res) {
   StaticJsonDocument<1024> j;
   j["has_any_static_files"] = attic.number_of_files != 0;
   for(size_t i=0; i<attic.number_of_files; i++) {
-    j["static_files"][i] = attic.files[i];
+    j["static_files"][i] = attic.files[i].filename;
   }
+
+  // Note that this dump is already truncated by JSON Document size.
+  // Question: Do we even need this functionality?
 
   // Could also show other web server status/config options
   // such as: CORS, all available routes, etc.
@@ -143,7 +174,6 @@ void api_preflight(awot::Request& req, awot::Response& res) {
   set_cors(req, res);
 }
 
-
 void api(awot::Request& req, awot::Response& res) {
   set_cors(req, res);
 
@@ -168,13 +198,55 @@ void api(awot::Request& req, awot::Response& res) {
   }
 }
 
+bool is_websocket = false; // temporary hack to test infrastructure
+
+#define ERR(msg) { \
+  if(!has_errors){has_errors=true; res.status(400); res.set("Content-Type", "text/plain"); \
+    res.println("This URL is only for Websocket Upgrade."); }  \
+  res.println("Error: " msg); }
+
+void websocket_upgrade(awot::Request& req, awot::Response& res) {
+  res.set("Server", SERVER_VERSION);
+
+  bool has_errors = false;
+  if(!req.get("Connection")) ERR("Missing 'Connection' header");
+  if(!contains(req.get("Connection"), "Upgrade")) ERR("Connection header contains not 'Upgrade'");
+  if(!req.get("Upgrade")) ERR("Missing 'Upgrade' header");
+  if(!equals(req.get("Upgrade"), "websocket")) ERR("Upgrade header is not 'websocket'");
+  if(!req.get("Sec-WebSocket-Version")) ERR("Missing Sec-Websocket-Version");
+  if(!equals(req.get("Sec-WebSocket-Version"), "13")) ERR("Only Sec-Websocket-Version=13 supported");
+  if(!req.get("Sec-WebSocket-Key")) ERR("Missing Sec-Websocket-Key");
+  if(has_errors) return;
+
+  auto serverAccept = websocketsHandshakeEncodeKey(req.get("Sec-WebSocket-Key"));
+
+  res.set("Connection", "Upgrade");
+  res.set("Upgrade", "websocket");
+  res.set("Sec-WebSocket-Version", "13");
+  res.set("Sec-Websocket-Accept", serverAccept.c_str());
+  res.sendStatus(101); // Switching Protocols
+  res.flush();
+
+  // now we are ready to abuse the socket for our purpose!
+
+  res.print("This should go out as raw to the websocket!");
+
+  is_websocket = true; 
+}
+
 void web::LucidacWebServer::begin() {
   ethserver.begin(80);
+
+  allocate_interesting_headers(webapp);
+
   webapp.get("/", &index);
 
   webapp.get("/api", &api);
   webapp.post("/api", &api);
   webapp.options("/api", &api_preflight);
+
+  webapp.get("/websocket", &websocket_upgrade);
+  webapp.options("/websocket", &api_preflight);
   
   // This is more for testing, not really a good endpoint.
   webapp.get("/webserver-status", &about_static);
@@ -189,12 +261,26 @@ void web::LucidacWebServer::loop() {
   // Warning: This probably allows also to deadlock the device by opening a connection
   //          but not sending anything.
 
-  if(client_socket.connected()) {
+  if(!client_socket) {
+    is_websocket = false;
+    return;
+  }
+
+  if(!is_websocket && client_socket.connected()) {
+    is_websocket = false;
+  
     LOG4("Web Client request from ", client_socket.remoteIP(), ":", client_socket.remotePort());
     webapp.process(&client_socket);
   }
 
-  client_socket.close(); // neccessary, otherwise browser wait for more data
+  if(is_websocket) {
+    // Handle websocket data
+    client_socket.println("Hallo Welt");
+    client_socket.flush();
+    delay(300);
+  } else {
+    client_socket.close(); // neccessary, otherwise browser wait for more data
+  }
 
   // the following "keep alive" code does not properly work
   /*
@@ -246,3 +332,4 @@ void web::LucidacWebServer::loop() {
   }
   */
 }
+

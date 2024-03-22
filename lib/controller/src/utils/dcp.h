@@ -9,6 +9,7 @@
 
 namespace utils {
     using sha256_t = std::array<uint8_t, 32>;
+    using sha1_t = std::array<uint8_t, 20>;
 
     /**
      * Computes the SHA256 sum of an arbitrary message (large memory segment),
@@ -17,13 +18,33 @@ namespace utils {
      **/
     void hash_sha256(const uint8_t* msg, size_t msg_len, uint8_t* out_hash);
 
+    /**
+     * Computes the SHA1 sum of an arbitrary message (large memory segment),
+     * hardware-accelerated on the Teensy 4.
+     * Outputs an uint8_t[20].
+     **/
+    void hash_sha1(const uint8_t* msg, size_t msg_len, uint8_t* out_hash);
+
+
     inline sha256_t hash_sha256(const uint8_t* msg, size_t msg_len) {
         sha256_t ret; hash_sha256(msg, msg_len, ret.data()); return ret;
     }
 
     inline std::string sha256_to_string(const utils::sha256_t& hash) {
-        char out64[64+1]; // 0-terminated
+        char out64[64+1] = {0}; // 0-terminated
         for(int pin=0; pin<32; pin++) {
+            int pout = 2*pin;
+            std::sprintf(out64+pout, "%02x", hash[pin]);
+        }
+        return std::string(out64);
+    }
+
+    // TODO: Remove redundancy in all over this file. Maybe optin all for the
+    //       classes below.
+
+    inline std::string sha1_to_string(const utils::sha1_t& hash) {
+        char out64[40+1] = {0}; // 0-terminated
+        for(int pin=0; pin<20; pin++) {
             int pout = 2*pin;
             std::sprintf(out64+pout, "%02x", hash[pin]);
         }
@@ -44,6 +65,13 @@ namespace utils {
         utils::sha256_t checksum;
         sha256(const uint8_t* msg, size_t msg_len) { hash_sha256(msg, msg_len, checksum.data()); }
         std::string to_string() const { return sha256_to_string(checksum); }
+        std::string short_string() const { return to_string().substr(0,7); }
+    };
+
+    struct sha1 {
+        utils::sha1_t checksum;
+        sha1(const uint8_t* msg, size_t msg_len) { hash_sha1(msg, msg_len, checksum.data()); }
+        std::string to_string() const { return sha1_to_string(checksum); }
         std::string short_string() const { return to_string().substr(0,7); }
     };
 

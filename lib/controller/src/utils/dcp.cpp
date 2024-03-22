@@ -678,12 +678,8 @@ void demo_crc32() {
   prhash(hash, 4);
 }
 
-/**
- * Computes the SHA256 sum of an arbitrary message (large memory segment).
- * Outputs an uint8_t[32]. Use for instance prhash(out_hash, 32) for a string
- * representation.
- **/
-void hash_sha256(const uint8_t* msg, size_t msg_len, uint8_t* out_hash) {
+
+void hash(const uint8_t* msg, size_t msg_len, uint8_t* out_hash, dcp_hash_algo_t algo) {
   dcp_init();
 
   dcp_handle_t m_handle;
@@ -693,9 +689,21 @@ void hash_sha256(const uint8_t* msg, size_t msg_len, uint8_t* out_hash) {
   m_handle.keySlot = kDCP_KeySlot0;
   m_handle.swapConfig = kDCP_NoSwap;
 
-  DCP_HASH_Init( &m_handle, &hashCtx, kDCP_Sha256);
+  DCP_HASH_Init( &m_handle, &hashCtx, algo);
   DCP_HASH_Update( &hashCtx, msg, msg_len);
   DCP_HASH_Finish( &hashCtx, out_hash);
+}
+/**
+ * Computes the SHA256 sum of an arbitrary message (large memory segment).
+ * Outputs an uint8_t[32]. Use for instance prhash(out_hash, 32) for a string
+ * representation.
+ **/
+void hash_sha256(const uint8_t* msg, size_t msg_len, uint8_t* out_hash) {
+  hash(msg, msg_len, out_hash, kDCP_Sha256);
+}
+
+void hash_sha1(const uint8_t* msg, size_t msg_len, uint8_t* out_hash) {
+  hash(msg, msg_len, out_hash, kDCP_Sha1);
 }
 
 } // end of namespace
