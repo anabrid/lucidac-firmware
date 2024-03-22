@@ -2,6 +2,7 @@
 *.gz
 *.http
 public
+dist
 assets
 *.svg
 *.png
