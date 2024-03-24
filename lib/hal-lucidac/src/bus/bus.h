@@ -34,6 +34,7 @@
 // TODO: Instead add SPI1 to ArduinoTeensyFake
 #if defined(ARDUINO)
 #define BUS_SPI_INTERFACE SPI1;
+#include <SPI.h>
 #else
 #define BUS_SPI_INTERFACE SPI;
 #endif
