@@ -33,6 +33,7 @@
 using namespace blocks;
 using namespace bus;
 using namespace functions;
+using namespace fakeit;
 
 ::functions::TriggerFunction imatrix_reset{idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_RESET_FUNC_IDX)};
 ::functions::TriggerFunction imatrix_cmd_sr_rest{
@@ -44,7 +45,18 @@ functions::ICommandRegisterFunction imatrix_cmd_sr{
 
 void setUp() {
   // set stuff up here
+  ArduinoFakeReset();
+
+  // mock bus::init calls
+  When(Method(ArduinoFake(SPI), begin)).AlwaysReturn();
+  When(Method(ArduinoFake(Function), pinMode)).AlwaysReturn();
+  When(Method(ArduinoFake(Function), digitalWrite)).AlwaysReturn();
   bus::init();
+
+  // mock all delay* calls
+  When(Method(ArduinoFake(Function), delay)).AlwaysReturn();
+  When(Method(ArduinoFake(Function), delayMicroseconds)).AlwaysReturn();
+  When(Method(ArduinoFake(Function), delayNanoseconds)).AlwaysReturn();
 }
 
 void tearDown() {
@@ -103,21 +115,34 @@ void test_block() {
   iblock.outputs[3] = IBlock::INPUT_BITMASK(1);
   TEST_ASSERT_EQUAL(0b00000000'00000000'00000000'00000010, iblock.outputs[3]);
 
-  //iblock.outputs[3] = IBlock::INPUT_BITMASK(1) | IBlock::INPUT_BITMASK(7) | IBlock::INPUT_BITMASK(17) |
-  //                    IBlock::INPUT_BITMASK(31);
-  //TEST_ASSERT_EQUAL(0b10000000'00000010'00000000'10000010, iblock.outputs[3]);
+  // iblock.outputs[3] = IBlock::INPUT_BITMASK(1) | IBlock::INPUT_BITMASK(7) | IBlock::INPUT_BITMASK(17) |
+  //                     IBlock::INPUT_BITMASK(31);
+  // TEST_ASSERT_EQUAL(0b10000000'00000010'00000000'10000010, iblock.outputs[3]);
 
-  //iblock.outputs[15] = IBlock::INPUT_BITMASK(3) | IBlock::INPUT_BITMASK(20) | IBlock::INPUT_BITMASK(31);
-  //TEST_ASSERT_EQUAL(0b10000000'00010000'00000000'00001000, iblock.outputs[15]);
+  // iblock.outputs[15] = IBlock::INPUT_BITMASK(3) | IBlock::INPUT_BITMASK(20) | IBlock::INPUT_BITMASK(31);
+  // TEST_ASSERT_EQUAL(0b10000000'00010000'00000000'00001000, iblock.outputs[15]);
 
   // This changes the SPI speed? lol
-  //iblock.outputs[18] = IBlock::INPUT_BITMASK(3) | IBlock::INPUT_BITMASK(17);
-  //TEST_ASSERT_EQUAL(0b00000000'00000010'00000000'00000010, iblock.outputs[18]);
+  // iblock.outputs[18] = IBlock::INPUT_BITMASK(3) | IBlock::INPUT_BITMASK(17);
+  // TEST_ASSERT_EQUAL(0b00000000'00000010'00000000'00000010, iblock.outputs[18]);
 
+  // mock SPI calls
+  When(Method(ArduinoFake(SPI), beginTransaction)).AlwaysReturn();
+  When(Method(ArduinoFake(SPI), transfer32)).AlwaysReturn(0);
+  When(Method(ArduinoFake(SPI), endTransaction)).AlwaysReturn();
   iblock.write_to_hardware();
+
+  // verify SPI call arguments
+  Verify(Method(ArduinoFake(SPI), transfer32).Using(ICommandRegisterFunction::chip_cmd_word(0, 0)) +
+         Method(ArduinoFake(SPI), endTransaction) + Method(ArduinoFake(SPI), beginTransaction) +
+         Method(ArduinoFake(SPI), transfer32).Using(ICommandRegisterFunction::chip_cmd_word(1, 3)));
 }
 
+#ifdef ARDUINO
 void setup() {
+#else
+int main() {
+#endif
   UNITY_BEGIN();
   RUN_TEST(test_function_helpers);
   // RUN_TEST(test_function);

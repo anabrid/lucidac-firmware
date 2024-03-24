@@ -25,9 +25,7 @@
 
 #pragma once
 
-#include <SPI.h>
 #include <array>
-#include <core_pins.h>
 #include <cstdint>
 
 #include "bus.h"
