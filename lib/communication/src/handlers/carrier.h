@@ -1,4 +1,4 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 //
 // This file is part of the model-1 hybrid-controller firmware.
@@ -25,26 +25,51 @@
 
 #pragma once
 
-#include "run.h"
+#include <ArduinoJson.h>
 
-namespace run {
+#include "carrier/carrier.h"
+#include "protocol/handler.h"
 
-class RunManager {
-private:
-  static RunManager _instance;
+namespace msg {
+namespace handlers {
 
+using namespace carrier;
+
+class CarrierMessageHandlerBase : public MessageHandler {
 protected:
-  RunManager() = default;
+  Carrier &carrier;
 
 public:
-  std::queue<run::Run> queue;
-
-  RunManager(RunManager &other) = delete;
-  void operator=(const RunManager &other) = delete;
-
-  static RunManager &get() { return _instance; }
-
-  void run_next(run::RunStateChangeHandler *state_change_handler, run::RunDataHandler *run_data_handler);
+  explicit CarrierMessageHandlerBase(Carrier &carrier);
 };
 
-} // namespace run
+class SetConfigMessageHandler : public CarrierMessageHandlerBase {
+public:
+  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
+
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+};
+
+class GetConfigMessageHandler : public CarrierMessageHandlerBase {
+public:
+  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
+
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+};
+
+class GetEntitiesRequestHandler : public CarrierMessageHandlerBase {
+public:
+  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
+
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+};
+
+class ResetRequestHandler : public CarrierMessageHandlerBase {
+public:
+  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
+
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
+};
+
+} // namespace handlers
+} // namespace msg

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 //
 // This file is part of the model-1 hybrid-controller firmware.
@@ -25,26 +25,30 @@
 
 #pragma once
 
-#include "run.h"
+#include "protocol/handler.h"
+#include "run/run_manager.h"
 
-namespace run {
+namespace msg {
 
-class RunManager {
-private:
-  static RunManager _instance;
+namespace handlers {
 
+class StartRunRequestHandler : public MessageHandler {
 protected:
-  RunManager() = default;
+  run::RunManager &manager;
 
 public:
-  std::queue<run::Run> queue;
+  explicit StartRunRequestHandler(run::RunManager &run_manager) : manager(run_manager) {}
 
-  RunManager(RunManager &other) = delete;
-  void operator=(const RunManager &other) = delete;
-
-  static RunManager &get() { return _instance; }
-
-  void run_next(run::RunStateChangeHandler *state_change_handler, run::RunDataHandler *run_data_handler);
+  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
+    if (!msg_in.containsKey("id") or !msg_in["id"].is<std::string>())
+      return false;
+    // Create run and put it into queue
+    auto run = run::Run::from_json(msg_in);
+    manager.queue.push(std::move(run));
+    return true;
+  };
 };
 
-} // namespace run
+} // namespace handlers
+
+} // namespace msg
