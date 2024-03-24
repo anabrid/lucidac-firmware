@@ -411,7 +411,15 @@ std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, un
   return avg.get_average();
 }
 
-size_t daq::BaseDAQ::raw_to_normalized(uint16_t raw) { return max((raw * 611) / 1000, 1303) - 1303; }
+size_t daq::BaseDAQ::raw_to_normalized(uint16_t raw) {
+  // lower limit that returns meaningful index
+  if (raw < 2133)
+    return 0;
+  // TODO: upper limit that returns meaningful index
+  // if (raw > ...)
+  //   return ...;
+  return (raw * 611) / 1000 - 1303;
+}
 
 std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {
   // Trigger CNVST

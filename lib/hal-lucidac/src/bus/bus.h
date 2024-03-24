@@ -28,8 +28,15 @@
 #include <array>
 #include <cstdint>
 
-#include <SPI.h>
-#include <core_pins.h>
+#include <Arduino.h>
+
+// Allow mocking the hardware in native unit tests
+// TODO: Instead add SPI1 to ArduinoTeensyFake
+#if defined(ARDUINO)
+#define BUS_SPI_INTERFACE SPI1;
+#else
+#define BUS_SPI_INTERFACE SPI;
+#endif
 
 namespace bus {
 

@@ -28,7 +28,7 @@
 #include "io/ioregister.h"
 #include "logging.h"
 
-SPIClass &bus::spi = SPI1;
+SPIClass &bus::spi = BUS_SPI_INTERFACE;
 
 void bus::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
