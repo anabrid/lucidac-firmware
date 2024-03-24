@@ -31,7 +31,6 @@
 
 #include "cluster.h"
 #include "entity/entity.h"
-#include "protocol/handler.h"
 
 using namespace lucidac;
 
@@ -58,47 +57,3 @@ public:
 };
 
 } // namespace carrier
-
-namespace msg {
-namespace handlers {
-
-using namespace carrier;
-
-class CarrierMessageHandlerBase : public msg::handlers::MessageHandler {
-protected:
-  Carrier &carrier;
-
-public:
-  explicit CarrierMessageHandlerBase(Carrier &carrier);
-};
-
-class SetConfigMessageHandler : public CarrierMessageHandlerBase {
-public:
-  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
-
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-class GetConfigMessageHandler : public CarrierMessageHandlerBase {
-public:
-  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
-
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-class GetEntitiesRequestHandler : public CarrierMessageHandlerBase {
-public:
-  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
-
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-class ResetRequestHandler : public CarrierMessageHandlerBase {
-public:
-  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
-
-  bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override;
-};
-
-} // namespace handlers
-} // namespace msg

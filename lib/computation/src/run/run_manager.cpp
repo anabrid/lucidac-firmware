@@ -93,12 +93,3 @@ void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunD
   state_change_handler->handle(change, run);
   queue.pop();
 }
-
-bool msg::handlers::StartRunRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  if (!msg_in.containsKey("id") or !msg_in["id"].is<std::string>())
-    return false;
-  // Create run and put it into queue
-  auto run = run::Run::from_json(msg_in);
-  manager.queue.push(std::move(run));
-  return true;
-}
