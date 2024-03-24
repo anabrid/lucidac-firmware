@@ -8,7 +8,7 @@ build_job:
   image:
     name: $CI_REGISTRY/lucidac/firmware/hybrid-controller/platformio-build
   script:
-    - platformio run
+    - platformio run -e teensy41
     - echo ANABRID_BUILD_JOB_ID=$CI_JOB_ID > .anabrid_build_result.env
   artifacts:
     paths:
