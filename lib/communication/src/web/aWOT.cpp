@@ -196,8 +196,8 @@ size_t Response::write(uint8_t data) {
 
   if (m_bufFill == SERVER_OUTPUT_BUFFER_SIZE) {
     if (m_headersSent && !m_contentLenghtSet) {
-      m_stream->print(m_bufFill, HEX);
-      m_stream->print(CRLF);
+      //m_stream->print(m_bufFill, HEX); // never mess in output around like that.
+      //m_stream->print(CRLF);
     }
 
     m_stream->writeFully(m_buffer, SERVER_OUTPUT_BUFFER_SIZE);
@@ -222,8 +222,8 @@ size_t Response::write(uint8_t *buffer, size_t bufferLength) {
   m_flushBuf();
 
   if (m_headersSent && !m_contentLenghtSet) {
-    m_stream->print(bufferLength, HEX);
-    m_stream->print(CRLF);
+    //m_stream->print(bufferLength, HEX); // don't mess in output like that
+    //m_stream->print(CRLF);
   }
 
   m_stream->writeFully(buffer, bufferLength);
@@ -674,8 +674,8 @@ void Response::m_printCRLF() { print(CRLF); }
 void Response::m_flushBuf() {
   if (m_bufFill > 0) {
     if (m_headersSent && !m_contentLenghtSet) {
-      m_stream->print(m_bufFill, HEX);
-      m_stream->print(CRLF);
+      //m_stream->print(m_bufFill, HEX); // do the fucking not mess in my lovely output, aWOT.
+      //m_stream->print(CRLF);
     }
 
     m_stream->writeFully(m_buffer, m_bufFill);
@@ -692,9 +692,9 @@ void Response::m_finalize() {
   m_flushBuf();
 
   if (m_headersSent && !m_contentLenghtSet) {
-    m_stream->print(0, HEX);
-    m_stream->print(CRLF);
-    m_stream->print(CRLF);
+    //m_stream->print(0, HEX); // leave me alone! please!
+    //m_stream->print(CRLF);
+    //m_stream->print(CRLF);
   }
 }
 
