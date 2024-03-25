@@ -16,9 +16,9 @@
 
 namespace websockets {
     namespace internals {
-        std::string fromInterfaceString(const std::string& str) { return str; }
-        std::string fromInterfaceString(const std::string&& str) { return str; }
-        std::string fromInternalString(const std::string& str) { return str; }
-        std::string fromInternalString(const std::string&& str) { return str; }
+        inline std::string fromInterfaceString(const std::string& str) { return str; }
+        inline std::string fromInterfaceString(const std::string&& str) { return str; }
+        inline std::string fromInternalString(const std::string& str) { return str; }
+        inline std::string fromInternalString(const std::string&& str) { return str; }
     }
 }

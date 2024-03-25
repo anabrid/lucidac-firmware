@@ -7,7 +7,7 @@
 #include "build/distributor.h"
 
 #define ENABLE_AWOT_NAMESPACE
-#include <aWOT.h>
+#include "web/aWOT.h"
 
 // more readable c string algebra
 bool contains(const char* haystack, const char* needle) { return strstr(haystack, needle) != NULL; }
@@ -16,6 +16,14 @@ bool equals(const char* a, const char* b) { return strcmp(a, b) == 0; }
 using namespace web;
 
 #define SERVER_VERSION  "LucidacWebServer/" FIRMWARE_VERSION
+
+// TODO: Redeem this pseudo singleton architecture
+
+struct HTTPContext {
+  net::EthernetClient* client;
+  LucidacWebServer* server;
+  bool convert_to_websocket;
+};
 
 awot::Application webapp;
 
@@ -29,13 +37,19 @@ void allocate_interesting_headers(awot::Application& app) {
   constexpr int maxval = 80; // maximum string length
 
   int i=0;
+
+  // This is the storage for the headers. Don't confuse it with the linked
+  // list managed internally by awot::Appplication which only stores string
+  // pointers back to this storage.
   static char header[max_allocated_headers][maxval];
+
   app.header("Host", header[i++], maxval);
   app.header("Origin", header[i++], maxval);
   app.header("Connection", header[i++], maxval);
   app.header("Upgrade", header[i++], maxval);
   app.header("Sec-WebSocket-Version", header[i++], maxval);
   app.header("Sec-Websocket-Key", header[i++], maxval);
+
   // programmer, please ensure at this line i < max_allocated_headers.
 }
 
@@ -88,7 +102,7 @@ void serve_static(awot::Request& req, awot::Response& res) {
   // some successful route by inspecting whether something has been sent out or not.
   // Handle only if nothing has been sent so far, i.e. no previous middleware/endpoint
   // replied to this http query.
-  if(res.bytesSent()) return;
+  if(res.bytesSent() || res.ended()) return;
 
   LOGMEV("%s", req.path());
   const char *path_without_leading_slash = req.path() + 1;
@@ -198,7 +212,6 @@ void api(awot::Request& req, awot::Response& res) {
   }
 }
 
-bool is_websocket = false; // temporary hack to test infrastructure
 
 #define ERR(msg) { \
   if(!has_errors){has_errors=true; res.status(400); res.set("Content-Type", "text/plain"); \
@@ -207,6 +220,10 @@ bool is_websocket = false; // temporary hack to test infrastructure
 
 void websocket_upgrade(awot::Request& req, awot::Response& res) {
   res.set("Server", SERVER_VERSION);
+  auto ctx = (HTTPContext*) req.context;
+
+  // TODO: Check req.get("Origin") if it is allowed to connect.
+  // Similar as in the CORS, have to keep a user setting of allowed origins.
 
   bool has_errors = false;
   if(!req.get("Connection")) ERR("Missing 'Connection' header");
@@ -218,20 +235,27 @@ void websocket_upgrade(awot::Request& req, awot::Response& res) {
   if(!req.get("Sec-WebSocket-Key")) ERR("Missing Sec-Websocket-Key");
   if(has_errors) return;
 
+  if(ctx->server->clients.size() == user::UserSettings.ethernet.max_connections) {
+      LOG3("Cannot accept new websocket connection because maximum number of connections (",
+        user::UserSettings.ethernet.max_connections, ") already reached.");
+      res.status(500);
+      res.set("Content-Type", "text/plain");
+      res.println("Maximum number of concurrent websocket connections reached");
+      return;
+  }
+
   auto serverAccept = websocketsHandshakeEncodeKey(req.get("Sec-WebSocket-Key"));
 
   res.set("Connection", "Upgrade");
   res.set("Upgrade", "websocket");
   res.set("Sec-WebSocket-Version", "13");
   res.set("Sec-Websocket-Accept", serverAccept.c_str());
-  res.sendStatus(101); // Switching Protocols
+  res.status(101); // Switching Protocols
   res.flush();
+  res.end(); // avoid the catchall handler to get active
 
-  // now we are ready to abuse the socket for our purpose!
-
-  res.print("This should go out as raw to the websocket!");
-
-  is_websocket = true; 
+  ctx->convert_to_websocket = true;
+  // Control to WebsocketsClient is passed at further LucidacWebServer::loop iterations.
 }
 
 void web::LucidacWebServer::begin() {
@@ -255,55 +279,80 @@ void web::LucidacWebServer::begin() {
   webapp.get(serve_static);
 }
 
+// ws initialization looks a bit bonkers, so let me explain it:
+// The communciation/src/websockets package is alien and not integrated into the codebase.
+// It comes with its own Socket-handling logic. There, there is a TcpClient which holds a pointer
+// to our QNEthernet client. However, the TcpClient itself is a shared pointer for whatever reason.
+// So for letting websocket clients lookup client context informations, we have this link-loop
+web::LucidacWebsocketsClient::LucidacWebsocketsClient(const net::EthernetClient &other) :
+  socket(other),
+  ws(std::shared_ptr<websockets::network::TcpClient>(new websockets::network::TcpClient(this))) {
+  user_context.set_remote_identifier( user::auth::RemoteIdentifier{ socket.remoteIP() } );
+}
+
+/*
+  Note that this data handling is *REALLY* not performant, as it requires a websocket message to be completely
+  read into a string, then passed over to the JSON parser which again parses it into its buffer (note that
+  ArduinoJSON is *actually* streamlined for reading things from/to buffers) and then all the way back.
+  However: It works, at least.
+
+  Potential caveat: Users sending really large messages. Check if there is some safety net for that in
+      our websockets library.
+*/
+void onWebsocketMessageCallback(websockets::WebsocketsClient& wsclient, websockets::WebsocketsMessage msg) {
+  LOGMEV("ws Role=%d, data=%s", msg.role(), msg.data().c_str());
+  if(!msg.isComplete()) { LOG_ALWAYS("webSockets: Ignoring incomplete message"); return; }
+  if(!msg.isText()) { LOG_ALWAYS("webSockets: Ignoring non-text message"); return; }
+ 
+  std::string envelope_out_str;
+  msg::JsonLinesProtocol::get().process_string_input(msg.data(), envelope_out_str, wsclient.client()->context->user_context);
+  wsclient.send(envelope_out_str);
+}
+
 void web::LucidacWebServer::loop() {
   net::EthernetClient client_socket = ethserver.accept();
 
   // Warning: This probably allows also to deadlock the device by opening a connection
   //          but not sending anything.
 
-  if(!client_socket) {
-    is_websocket = false;
-    return;
-  }
-
-  if(!is_websocket && client_socket.connected()) {
-    is_websocket = false;
-  
-    LOG4("Web Client request from ", client_socket.remoteIP(), ":", client_socket.remotePort());
-    webapp.process(&client_socket);
-  }
-
-  if(is_websocket) {
-    // Handle websocket data
-    client_socket.println("Hallo Welt");
-    client_socket.flush();
-    delay(300);
-  } else {
-    client_socket.close(); // neccessary, otherwise browser wait for more data
-  }
-
-  // the following "keep alive" code does not properly work
-  /*
   if(client_socket) {
-    // This code is as ugly as the original in protocol/protocol.h
-    Client client;
-    client.socket = client_socket;
+    // incoming new HTTP client.
+    LOG4("Web Client request from ", client_socket.remoteIP(), ":", client_socket.remotePort());
 
-    // note there is also net::EthernetClient::maxSockets(), which is dominated by basic system constraints.
-    // This limit here is rather dominated by application level constraints and can probably be a counter
-    // measure against ddos attacks.
-    if(clients.size() == user::UserSettings.ethernet.max_connections) {
-      LOG5("Cannot accept web client from ", client_socket.remoteIP(), " because maximum number of connections (",
-        user::UserSettings.ethernet.max_connections, ") already reached.");
-      client_socket.stop();
+    HTTPContext ctx;
+    ctx.server = this;
+    ctx.client = &client_socket;
+    ctx.convert_to_websocket = false;
+    
+    webapp.process(&client_socket, &ctx);
+
+    if(ctx.convert_to_websocket) {
+      LOG_ALWAYS("Accepting Websocket connection.");
+
+      // we use emplace + a constructor because we have to be super careful about having pointers
+      // referencing to the correct socket.
+      LucidacWebsocketsClient& client = clients.emplace_back(client_socket);
+
+      LOG_ALWAYS("Pushed to clients list.");
+
+      // Don't use masking from server to client (according to RFC)
+      client.ws.setUseMasking(false);
+
+      // register callback for receiving messages.
+      client.ws.onMessage(onWebsocketMessageCallback);
+
+      // Send a hello world or so
+      client.ws.send("{'hello':'client'}\n");
+
+      // TODO: Consider adding to JsonLinesProtocol::get().broadcast,
+      //       however would require some callback because message needs to be wrapped
+      //       into websocket protocol.
+
+      LOG_ALWAYS("Done accepting Websocket connection.");
     } else {
-      clients.push_back(client);
-
-      // HTTP/1 has no push. Can only do that on websockets.
-      // Or need a query'able buffer instead for basic state changes, for instance.
-      // JsonLinesProtocol::get().broadcast.add(&(std::prev(clients.end())->socket));
-
-      LOG4("Web Client ", clients.size()-1, " connected from ", client_socket.remoteIP());
+      // As we currently do not support keep-alive, we need to close the 
+      // connection, otherwise browser wait for more data.
+      client_socket.close();
     }
   }
 
@@ -312,24 +361,27 @@ void web::LucidacWebServer::loop() {
   for(auto client = clients.begin(); client != clients.end(); client++) {
     const auto client_idx = std::distance(clients.begin(), client);
     if(client->socket.connected()) {
-      if(client->socket.available() > 0) {
+      if(client->ws.available()) {
         //msg::JsonLinesProtocol::get().process_tcp_input(client->socket, client->user_context);
-        webapp.process(&client->socket);
+        //webapp.process(&client->socket);
+        client->ws.poll();
+        // note that actual message handling is done via the onWebsocketMessageCallback.
         client->last_contact.reset();
       } else if(!client->socket.connected()) {
         client->socket.stop();
       } else if(client->last_contact.expired(user::UserSettings.ethernet.connection_timeout_ms)) {
         LOG5("Web client ", client_idx, ", timed out after ", user::UserSettings.ethernet.connection_timeout_ms, " ms of idling");
-        client->socket.stop();
+        client->ws.close(websockets::CloseReason_GoingAway);
+        // consider...
+        // client->socket.stop();
       }
     } else {
-      LOG5("Web Client ", client_idx, ", was ", client->socket.remoteIP(), ", disconnected");
+      LOG5("Websocket Client ", client_idx, ", was ", client->socket.remoteIP(), ", disconnected");
       client->socket.close();
       //JsonLinesProtocol::get().broadcast.remove(&client->socket);
       clients.erase(client);
       return; // iterator invalidated, better start loop() freshly.
     }
   }
-  */
 }
 

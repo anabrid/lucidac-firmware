@@ -16,6 +16,9 @@ namespace utils {
    * as it would require buffering. This code naively keeps "fingers crossed",
    * at least does some basic error reporting.
    * 
+   * TODO: Could be improved with accepting EthernetClients which have a writeFully
+   *       method.
+   * 
    * See also https://github.com/bblanchon/ArduinoStreamUtils for something
    * more sane.
    */

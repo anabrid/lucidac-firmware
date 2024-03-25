@@ -128,6 +128,21 @@ bool msg::JsonLinesProtocol::process_tcp_input(net::EthernetClient& connection, 
   return false;
 }
 
+void msg::JsonLinesProtocol::process_string_input(const std::string &envelope_in_str, std::string& envelope_out_str, user::auth::AuthentificationContext &user_context) {
+  auto error = deserializeJson(*envelope_in, envelope_in_str);
+  if (error == DeserializationError::Code::EmptyInput) {
+    Serial.print(".");
+  } else if (error) {
+    envelope_out_str = "{'error':'Error while parsing JSON, error message: ";
+    envelope_out_str += error.c_str();
+    envelope_out_str += "'}\n";
+  } else {
+    handleMessage(user_context);
+    serializeJson(envelope_out->as<JsonObject>(), Serial);
+    serializeJson(envelope_out->as<JsonObject>(), envelope_out_str);
+  }
+}
+
 void msg::MulticlientServer::loop() {
   net::EthernetClient client_socket = server->accept();
 

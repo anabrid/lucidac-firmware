@@ -33,6 +33,7 @@ public:
     void handleMessage(user::auth::AuthentificationContext &user_context);
     void process_serial_input(user::auth::AuthentificationContext &user_context);
     bool process_tcp_input(net::EthernetClient& stream, user::auth::AuthentificationContext &user_context);
+    void process_string_input(const std::string& envelope_in, std::string& envelope_out, user::auth::AuthentificationContext &user_context);
 };
 
 struct MulticlientServer {

@@ -7,10 +7,25 @@
 #include <ArduinoJson.h>
 #include <list>
 
+#include "websockets/client.h"
+#include "user/auth.h"
 #include "user/ethernet.h"
 #include "utils/durations.h"
+#include "QNEthernet.h"
+
 
 namespace web {
+  /**
+   * This structure collects all relevant context about a running Websocket
+   * connection.
+   **/
+  struct LucidacWebsocketsClient {
+      utils::duration last_contact; ///< Tracking lifetime with millis() to time-out a connection.
+      user::auth::AuthentificationContext user_context;
+      net::EthernetClient socket;
+      websockets::WebsocketsClient ws;
+      LucidacWebsocketsClient(const net::EthernetClient& other);
+  };
 
   /**
    * This class implements a simple webserver for the LUCIDAC.
@@ -28,12 +43,7 @@ namespace web {
    * 
    **/
   struct LucidacWebServer {
-    struct Client {
-        utils::duration last_contact; ///< Tracking lifetime with millis() to time-out a connection.
-        net::EthernetClient socket;
-        //user::auth::AuthentificationContext user_context;
-    };
-    std::list<Client> clients;
+    std::list<LucidacWebsocketsClient> clients;
     net::EthernetServer ethserver;
 
     static LucidacWebServer& get();

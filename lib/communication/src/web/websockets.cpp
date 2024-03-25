@@ -27,12 +27,12 @@ std::string web::websocketsHandshakeEncodeKey(const char* key) {
     input += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
     utils::sha1 sha1((const uint8_t*) input.c_str(), input.size());
-    LOGMEV("sha1('%s') = '%s'\n", key, sha1.to_string());
+//    LOGMEV("sha1('%s') = '%s'\n", key, sha1.to_string());
 
     char retkey[30+1] = { 0 };
     etl::base64::encode(sha1.checksum.data(), 20, retkey, 30);
 
-    LOGMEV("base64encode('%s') = '%s'\n", sha1.to_string(), retkey);
+    //LOGMEV("base64encode('%s') = '%s'\n", sha1.to_string(), retkey);
 
     return retkey;
 }

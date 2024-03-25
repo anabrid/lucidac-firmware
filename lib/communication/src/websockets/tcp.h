@@ -1,45 +1,51 @@
 #pragma once
 
 #include "websockets/common.h"
-
 #include "QNEthernet.h"
+
+// Forward declaration to avoid circular reference
+namespace web { class LucidacWebsocketsClient; }
 
 namespace websockets { namespace network {
   using qindesign::network::EthernetServer;
   using qindesign::network::EthernetClient;
+  using web::LucidacWebsocketsClient;
 
-  class TcpClient {
-    EthernetClient client;
+  struct TcpClient {
+    EthernetClient* client;
+    LucidacWebsocketsClient* context;
 
-  public:
-    TcpClient(EthernetClient client) : client(client) {}
+    // Formerly, this was a kind-of-socket
+    // TcpClient(EthernetClient* client) : client(client) {}
+    // But now we have the full client context
+    TcpClient(LucidacWebsocketsClient* context);
     TcpClient() {}
 
     bool connect(std::string host, int port) {
-      return client.connect(host.c_str(), port);
+      return client->connect(host.c_str(), port);
     }
 
     bool poll() {
-      return client.available();
+      return client->available() > 0; // Returns the amount of data available, whether the connection is closed or not.
     }
 
     bool available()  {
-      return client.connected();
+      return (bool)client; // Returns whether connected (at least in QNEthernet).
     }
 
     void send(std::string data)  {
-      client.writeFully(reinterpret_cast<uint8_t*>(const_cast<char*>(data.c_str())), data.size());
+      client->writeFully(reinterpret_cast<uint8_t*>(const_cast<char*>(data.c_str())), data.size());
     }
 
     void send(uint8_t* data, uint32_t len)  {
-      client.writeFully(data, len);
+      client->writeFully(data, len);
     }
     
     std::string readLine()  {
       int val;
       std::string line;
       do {
-        val = client.read();
+        val = client->read();
         if(val < 0) continue;
         line += (char)val;
       } while(val != '\n');
@@ -48,15 +54,15 @@ namespace websockets { namespace network {
     }
 
     int read(uint8_t* buffer, uint32_t len)  {
-      return client.read(buffer, len);
+      return client->read(buffer, len);
     }
 
     void close()  {
-      client.stop();
+      client->stop();
     }
 
     ~TcpClient() {
-      client.stop();
+      client->stop();
     }
   };
 

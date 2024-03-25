@@ -35,6 +35,7 @@ namespace websockets {
     WebsocketsClient& operator=(const WebsocketsClient& other);
     WebsocketsClient& operator=(const WebsocketsClient&& other);
 
+    /// @deprecated comment out, only for connecting.
     void addHeader(const std::string key, const std::string value);
 
     //bool connect(const std::string url);
@@ -78,6 +79,8 @@ namespace websockets {
     }
 
     virtual ~WebsocketsClient();
+
+    std::shared_ptr<network::TcpClient> client() { return _client; }
 
   private:
     std::shared_ptr<network::TcpClient> _client;
