@@ -1,6 +1,7 @@
 .idea/
 cmake-build-*
 CMakeListsPrivate.txt
+*_disabled
 
 ### Created by https://www.gitignore.io
 ### PlatformIO ###
@@ -30,3 +31,9 @@ _deps
 
 # Doxygen output
 docs/html
+
+# Any kind of local patches
+*.elf
+*.hex
+teensy_loader_cli*
+
