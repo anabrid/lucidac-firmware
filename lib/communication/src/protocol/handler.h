@@ -26,7 +26,7 @@ public:
    * It should always be addded to the return value of handle().
    * You can use the helper routine error(...) to simplify this.
    **/
-  int result_prefix;
+  int result_prefix = 0;
   constexpr int error(int internal_code) { return internal_code == success ? success : result_prefix + internal_code; }
 
 

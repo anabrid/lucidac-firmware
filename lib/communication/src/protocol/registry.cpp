@@ -90,8 +90,8 @@ bool msg::handlers::DynamicRegistry::set(const std::string &msg_type, int result
   if (found != entries.end()) {
     return false;
   } else {
-    entries[msg_type] = msg::handlers::DynamicRegistry::RegistryEntry{
-      handler, minimumClearance, result_code_prefix };
+    entries[msg_type] = msg::handlers::DynamicRegistry::RegistryEntry{ handler, minimumClearance };
+    handler->result_prefix = result_code_prefix;
     result_code_counter = result_code_prefix + result_code_increment;
     return true;
   }

@@ -28,7 +28,6 @@ class DynamicRegistry {
   struct RegistryEntry { // "named tuple"
     MessageHandler* handler;
     user::auth::SecurityLevel clearance;
-    int result_code_prefix; // Some decimal error code prefix, inspired by errno, HRESULT, etc.
   };
 
   std::map<std::string, RegistryEntry> entries;
