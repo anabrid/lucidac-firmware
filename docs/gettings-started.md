@@ -52,3 +52,24 @@ Connect your hybrid controller via the USB port to your computer
 and press the small flash button on the teensy board.
 
 Execute `teensy_loader_cli --mcu=TEENSY41 firmware.hex` to flash your hybrid controller.
+
+## Developing with platformio
+
+In order to develop on the firmware, you have to install *platformio*. We recommend not to install
+the version from your package repository (such as `apt install platformio`) but instead install the
+most recent version with `pip install platformio`. This also solves errors such as
+"error detected unknown package".
+
+Furthermore, the `teensy_loader_cli` bundled with the platformio teensy package is known to be
+broken, cf. https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/issues/76.
+The workaround is to build and use your own uploader:
+
+```
+% wget https://github.com/PaulStoffregen/teensy_loader_cli/raw/master/teensy_loader_cli.c
+% apt install gcc libusb-dev  # probably have to install some dependencies
+% gcc -DUSE_LIBUSB teensy_loader_cli.c -oteensy_loader_cli-v2.3 -lusb
+% grep upload platformio.ini  # change accordingly or add lines:
+upload_protocol = custom
+upload_command = ./teensy_loader_cli-v2.3 -mmcu=teensy41 -w -s -v .pio/build/teensy41/firmware.hex
+% pio run -t upload # then this works again
+```
