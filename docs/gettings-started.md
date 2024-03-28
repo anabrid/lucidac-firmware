@@ -66,6 +66,7 @@ The workaround is to build and use your own uploader:
 
 ```
 % wget https://github.com/PaulStoffregen/teensy_loader_cli/raw/master/teensy_loader_cli.c
+% apt install gcc libusb-dev  # probably have to install some dependencies
 % gcc -DUSE_LIBUSB teensy_loader_cli.c -oteensy_loader_cli-v2.3 -lusb
 % grep upload platformio.ini  # change accordingly or add lines:
 upload_protocol = custom
