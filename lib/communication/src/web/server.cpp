@@ -271,6 +271,11 @@ void web::LucidacWebServer::begin() {
 
   webapp.get("/websocket", &websocket_upgrade);
   webapp.options("/websocket", &api_preflight);
+
+  /// TODO: Expose REST-like frontend for a few simple requests such as
+  ///          GET       /rest/status
+  ///          GET+PUT   /rest/config
+  ///          GET+PUT   /rest/settings
   
   // This is more for testing, not really a good endpoint.
   webapp.get("/webserver-status", &about_static);
@@ -331,7 +336,8 @@ void web::LucidacWebServer::loop() {
 
       // we use emplace + a constructor because we have to be super careful about having pointers
       // referencing to the correct socket.
-      LucidacWebsocketsClient& client = clients.emplace_back(client_socket);
+      clients.emplace_back(client_socket);
+      auto& client = clients.back();
 
       LOG_ALWAYS("Pushed to clients list.");
 
