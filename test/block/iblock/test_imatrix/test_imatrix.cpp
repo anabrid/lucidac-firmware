@@ -34,17 +34,13 @@ using namespace blocks;
 using namespace bus;
 using namespace functions;
 
-::functions::TriggerFunction imatrix_reset{idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_RESET_FUNC_IDX)};
-::functions::TriggerFunction imatrix_cmd_sr_rest{
-    idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_COMMAND_SR_RESET_FUNC_IDX)};
-::functions::TriggerFunction imatrix_sync{idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_SYNC_FUNC_IDX)};
+TriggerFunction imatrix_reset{bus::address_from_tuple(10, 4)};
+TriggerFunction imatrix_sync{bus::address_from_tuple(10, 3)};
 
-functions::ICommandRegisterFunction imatrix_cmd_sr{
-    idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_COMMAND_SR_FUNC_IDX)};
+ICommandRegisterFunction imatrix_cmd_sr{bus::address_from_tuple(10, 2)};
 
 void setUp() {
   // set stuff up here
-  bus::init();
 }
 
 void tearDown() {
@@ -117,11 +113,36 @@ void test_block() {
   iblock.write_to_hardware();
 }
 
+
+void test_block_connect() {
+  IBlock iblock{0};
+  TEST_ASSERT(iblock.connect(0,0));
+  TEST_ASSERT(iblock.connect(1,1));
+  TEST_ASSERT(iblock.connect(2,2));
+  TEST_ASSERT(iblock.connect(3,3));
+  TEST_ASSERT(iblock.connect(4,4));
+  TEST_ASSERT(iblock.connect(5,5));
+  TEST_ASSERT(iblock.connect(6,6));
+  TEST_ASSERT(iblock.connect(7,7));
+  TEST_ASSERT(iblock.connect(8,8));
+  TEST_ASSERT(iblock.connect(9,9));
+  TEST_ASSERT(iblock.connect(10,10));
+  TEST_ASSERT(iblock.connect(11,11));
+  TEST_ASSERT(iblock.connect(12,12));
+  TEST_ASSERT(iblock.connect(13,13));
+  TEST_ASSERT(iblock.connect(14,14));
+  TEST_ASSERT(iblock.connect(15,15));
+  iblock.write_to_hardware();
+}
+
 void setup() {
+  bus::init();
+
   UNITY_BEGIN();
-  RUN_TEST(test_function_helpers);
-  // RUN_TEST(test_function);
-  RUN_TEST(test_block);
+  //RUN_TEST(test_function_helpers);
+  //RUN_TEST(test_function);
+  //RUN_TEST(test_block);
+  RUN_TEST(test_block_connect);
   UNITY_END();
 }
 

@@ -131,14 +131,6 @@ bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool
   if (output >= NUM_OUTPUTS or input >= NUM_INPUTS)
     return false;
 
-  // Manually fix pin-numbering, see https://lab.analogparadigm.com/lucidac/hardware/i-block/-/issues/2
-  // TODO: Remove once hardware is fixed.
-  if ((input >= 6 && input <= 11) || (input >= 22 && input <= 27)) {
-    input += 2;
-  } else if ((input >= 12 && input <= 13) || (input >= 28 && input <= 29)) {
-    input -= 6;
-  }
-
   // Usually, we don't want to connect one input to multiple outputs, so check for other connections
   if (!allow_input_splitting) {
     for (size_t other_output_idx = 0; other_output_idx < outputs.size(); other_output_idx++) {

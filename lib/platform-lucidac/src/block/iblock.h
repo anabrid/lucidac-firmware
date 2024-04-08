@@ -82,11 +82,8 @@ protected:
   bool _is_connected(uint8_t input, uint8_t output);
 
 public:
-  static constexpr uint8_t BLOCK_IDX = bus::I_BLOCK_IDX;
-  static constexpr uint8_t IMATRIX_COMMAND_SR_FUNC_IDX = 1;
-  static constexpr uint8_t IMATRIX_RESET_FUNC_IDX = 2;
-  static constexpr uint8_t IMATRIX_COMMAND_SR_RESET_FUNC_IDX = 3;
-  static constexpr uint8_t IMATRIX_SYNC_FUNC_IDX = 4;
+  // TODO: This is temporary until all block addressing is changed in the underlying bus functions.
+  static constexpr uint8_t BLOCK_IDX = 10;
 
   static constexpr uint32_t INPUT_BITMASK(uint8_t input_idx) { return static_cast<uint32_t>(1) << input_idx; }
 
@@ -98,10 +95,9 @@ public:
   const functions::TriggerFunction f_imatrix_sync;
 
   explicit IBlock(const uint8_t clusterIdx)
-      : FunctionBlock("I", clusterIdx), outputs{0}, f_cmd{bus::idx_to_addr(clusterIdx, BLOCK_IDX,
-                                                                           IMATRIX_COMMAND_SR_FUNC_IDX)},
-        f_imatrix_reset{bus::idx_to_addr(clusterIdx, BLOCK_IDX, IMATRIX_RESET_FUNC_IDX)},
-        f_imatrix_sync{bus::idx_to_addr(clusterIdx, BLOCK_IDX, IMATRIX_SYNC_FUNC_IDX)} {}
+      : FunctionBlock("I", clusterIdx), outputs{0}, f_cmd{bus::address_from_tuple(BLOCK_IDX, 2)},
+        f_imatrix_reset{bus::address_from_tuple(BLOCK_IDX, 4)},
+        f_imatrix_sync{bus::address_from_tuple(BLOCK_IDX, 3)} {}
 
   bus::addr_t get_block_address() override;
 
