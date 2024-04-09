@@ -1,6 +1,17 @@
 stages:
+  - test
   - build
   - release
+
+
+test_job:
+  stage: test
+  image:
+    name: $CI_REGISTRY/lucidac/firmware/hybrid-controller/platformio-build
+  script:
+    - apt update
+    - apt install git build-essential -y
+    - pio test -e native --filter native/* --filter emulated/*  
 
 
 build_job:
