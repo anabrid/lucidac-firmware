@@ -28,19 +28,18 @@
 
 #include "metadata/74LVC138AD.tpl.hpp"
 
-MetadataMemory74LVC138AD chip{bus::address_from_tuple(5, 0)};
+MetadataMemory74LVC138AD chip{bus::address_from_tuple(10, 0)};
 
 void setUp() {
-  // set stuff up here
-  bus::init();
+  // This is called before *each* test.
 }
 
 void tearDown() {
-  // clean stuff up here
+  // This is called after *each* test.
 }
 
 void test_read_uuid() {
-  std::array<uint8_t, 8> uuid_is{1,1,1,1,1,1,1,1};
+  std::array<uint8_t, 8> uuid_is{1, 1, 1, 1, 1, 1, 1, 1};
   // For development carrier board I use
   std::array<uint8_t, 8> uuid_should{0x00, 0x04, 0xA3, 0x0B, 0x00, 0x14, 0x90, 0x89};
 
@@ -53,10 +52,18 @@ void test_read_uuid() {
 }
 
 void setup() {
+  bus::init();
+  pinMode(29, INPUT_PULLUP);
+
   UNITY_BEGIN();
   RUN_TEST(test_read_uuid);
   UNITY_END();
 }
 
 void loop() {
+  // Do an action once the button is pressed
+  while (digitalReadFast(29)) {
+  }
+  test_read_uuid();
+  delay(500);
 }
