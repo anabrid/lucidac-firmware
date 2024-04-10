@@ -75,6 +75,6 @@ void functions::UMatrixFunction::transfer(const std::array<uint8_t, num_of_outpu
       utils::shift_5_left(buffer, sizeof(buffer));
   }
 
-  transfer(buffer, nullptr, sizeof(buffer));
+  DataFunction::transfer(buffer, nullptr, sizeof(buffer));
   // You must trigger the SYNC of the chip with the sync trigger function.
 }
