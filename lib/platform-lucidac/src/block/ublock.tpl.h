@@ -75,12 +75,6 @@ void functions::UMatrixFunction::transfer(const std::array<uint8_t, num_of_outpu
       utils::shift_5_left(buffer, sizeof(buffer));
   }
 
-  begin_communication();
-  // Unfortunately, the chip responsible for output 0-7 is the second chip in the SPI-chain.
-  // That means that we need to swap the first 10 bytes with the second 10 bytes.
-  // TODO: Instead, rewrite this function to already consider this.
-  bus::spi.transfer(buffer + sizeof(buffer)/2, nullptr, sizeof(buffer)/2);
-  bus::spi.transfer(buffer, nullptr, sizeof(buffer)/2);
-  end_communication();
+  transfer(buffer, nullptr, sizeof(buffer));
   // You must trigger the SYNC of the chip with the sync trigger function.
 }
