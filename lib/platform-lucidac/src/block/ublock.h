@@ -50,8 +50,7 @@ public:
 
   //! Convert an output array to data packets and transfer to chip.
   //! Timing: ~5microseconds
-  template <size_t num_of_outputs>
-  void transfer(const std::array<uint8_t, num_of_outputs>& outputs) const;
+  template <size_t num_of_outputs> void transfer(const std::array<int8_t, num_of_outputs> &outputs) const;
 };
 
 } // namespace functions
@@ -83,9 +82,9 @@ public:
             16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
   };
 
-  static constexpr uint8_t UMATRIX_FUNC_IDX = 1;
-  static constexpr uint8_t UMATRIX_SYNC_FUNC_IDX = 2;
-  static constexpr uint8_t UMATRIX_RESET_FUNC_IDX = 3;
+  static constexpr uint8_t UMATRIX_FUNC_IDX = 5;
+  static constexpr uint8_t UMATRIX_SYNC_FUNC_IDX = 6;
+  static constexpr uint8_t UMATRIX_RESET_FUNC_IDX = 7;
 
 protected:
   const functions::UMatrixFunction f_umatrix;
@@ -97,32 +96,49 @@ protected:
   // Meaning it is completely useless.
   const functions::TriggerFunction f_umatrix_reset;
 
-  std::array<uint8_t, NUM_OF_OUTPUTS> output_input_map;
+  std::array<int8_t, NUM_OF_OUTPUTS> output_input_map;
+
+  // Default sanity checks for input and output indizes
+  static bool _i_sanity_check(const uint8_t input);
+  static bool _o_sanity_check(const uint8_t output);
+  static bool _io_sanity_check(const uint8_t input, const uint8_t output);
 
 private:
   //! Check whether an input is connected to an output, without sanity checks.
-  bool _is_connected(uint8_t input, uint8_t output);
+  bool _is_connected(const uint8_t input, const uint8_t output) const;
+
+   //! Connects output with given input, without sanity checks or disconnection prevention.
+  void _connect(const uint8_t input, const uint8_t output);
+
+  //! Disconnects output, without sanity checks.
+  void _disconnect(const uint8_t output);
+
+  //! Check whether an output is connected to any input, without sanity checks.
+  bool _is_output_connected(const uint8_t output) const;
 
 public:
-  explicit UBlock(uint8_t clusterIdx);
+  explicit UBlock(const uint8_t clusterIdx);
 
   bus::addr_t get_block_address() override;
 
-  void reset(bool keep_offsets) override;
+  void reset(const bool keep_offsets) override;
 
   void reset_connections();
 
   //! Connect an input to an output, if output is unused. Both input and output are zero-based indizes.
-  bool connect(uint8_t input, uint8_t output, bool allow_disconnections = false);
+  bool connect(const uint8_t input, const uint8_t output, const bool allow_disconnections = false);
 
   //! Disconnect an input from an output, if they are connected. Both input and output are zero-based indizes.
-  bool disconnect(uint8_t input, uint8_t output);
+  bool disconnect(const uint8_t input, const uint8_t output);
 
   //! Disconnect all inputs from an output. Fails for invalid arguments.
-  bool disconnect(uint8_t output);
+  bool disconnect(const uint8_t output);
 
   //! Check whether an input is connected to an output.
-  bool is_connected(uint8_t input, uint8_t output);
+  bool is_connected(const uint8_t input, const uint8_t output);
+
+  //! Check whether an output is connected to any input.
+  bool is_output_connected(const uint8_t output);
 
   void write_matrix_to_hardware() const;
   void write_to_hardware() override;

@@ -33,7 +33,7 @@
 //       The template provides little advantage here.
 
 template <size_t num_of_outputs>
-void functions::UMatrixFunction::transfer(const std::array<uint8_t, num_of_outputs>& outputs) const {
+void functions::UMatrixFunction::transfer(const std::array<int8_t, num_of_outputs>& outputs) const {
   constexpr uint8_t NUM_BYTES = num_of_outputs*5/8;
   uint8_t buffer[NUM_BYTES] = {}; // initialized with zeros
 
@@ -44,7 +44,7 @@ void functions::UMatrixFunction::transfer(const std::array<uint8_t, num_of_outpu
    *  The two XBar chips accept a 80bit binary stream each, resulting in 160bit = 20byte
    * total. Each output on a chip uses 5bit: [1bit enable][4bit input select]. The
    * 20byte stream has the last output in front. To set e.g. the last output to input
-   * number 6 (5 because 0-based: 5=B0101), use in binary buffer =
+   * number 5 (5 because 0-based: 5=B0101), use in binary buffer =
    * 10101'00000'00000'.....'...
    *             |-8bit--||-8bit---||---
    *
@@ -63,11 +63,11 @@ void functions::UMatrixFunction::transfer(const std::array<uint8_t, num_of_outpu
     auto selected_input = outputs[idx - 1];
 
     // If an output is enabled, write correct 5bit sequence to _end_ of buffer
-    if (selected_input > 0) {
+    if (selected_input >= 0) {
       // Enable at bit 5
       buffer[sizeof(buffer) - 1] |= B00010000;
       // Input number, max 4bits (thus & 0x0F)
-      buffer[sizeof(buffer) - 1] |= ((selected_input - 1) & 0x0F);
+      buffer[sizeof(buffer) - 1] |= (selected_input & 0x0F);
     }
 
     // 5-bit shift the whole buffer, but not in last loop

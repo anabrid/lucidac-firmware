@@ -46,56 +46,69 @@ functions::UMatrixFunction::UMatrixFunction(bus::addr_t address)
 blocks::UBlock::UBlock(const uint8_t clusterIdx)
     : FunctionBlock("U", clusterIdx), f_umatrix(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_FUNC_IDX)),
       f_umatrix_sync(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_SYNC_FUNC_IDX)),
-      f_umatrix_reset(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_RESET_FUNC_IDX)),
-      
-      output_input_map{0} {
-
+      f_umatrix_reset(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_RESET_FUNC_IDX)), output_input_map{ } {
+  reset_connections();
 }
 
-bool blocks::UBlock::connect(uint8_t input, uint8_t output, bool allow_disconnections) {
-  // Sanity check
-  if (input >= NUM_OF_INPUTS or output >= NUM_OF_OUTPUTS)
+bool blocks::UBlock::_i_sanity_check(const uint8_t input) { return input < NUM_OF_INPUTS; }
+
+bool blocks::UBlock::_o_sanity_check(const uint8_t output) { return output < NUM_OF_OUTPUTS; }
+
+bool blocks::UBlock::_io_sanity_check(const uint8_t input, const uint8_t output) {
+  return _i_sanity_check(input) && _o_sanity_check(output);
+}
+
+void blocks::UBlock::_connect(const uint8_t input, const uint8_t output) { output_input_map[output] = input; }
+
+bool blocks::UBlock::connect(const uint8_t input, const uint8_t output, bool allow_disconnections) {
+  if (!_io_sanity_check(input, output))
     return false;
 
   // Check for other connections on the same output, unless we don't care if we overwrite them
-  if (!allow_disconnections and output_input_map[output]) {
+  if (!allow_disconnections and _is_output_connected(output))
     return false;
-  }
 
-  output_input_map[output] = input + 1;
+  _connect(input, output);
   return true;
 }
 
-bool blocks::UBlock::disconnect(uint8_t input, uint8_t output) {
-  // Sanity check
-  if (input >= NUM_OF_INPUTS or output >= NUM_OF_OUTPUTS)
+void blocks::UBlock::_disconnect(const uint8_t output) { output_input_map[output] = -1; }
+
+bool blocks::UBlock::disconnect(const uint8_t input, const uint8_t output) {
+  if (!_io_sanity_check(input, output))
     return false;
 
   if (_is_connected(input, output)) {
-    output_input_map[output] = 0;
+    _disconnect(output);
     return true;
   } else {
     return false;
   }
 }
 
-bool blocks::UBlock::disconnect(uint8_t output) {
-  if (output >= NUM_OF_OUTPUTS)
+bool blocks::UBlock::disconnect(const uint8_t output) {
+  if (!_o_sanity_check(output))
     return false;
-  output_input_map[output] = 0;
+  _disconnect(output);
   return true;
 }
 
-bool blocks::UBlock::_is_connected(uint8_t input, uint8_t output) {
-  return output_input_map[output] == input + 1;
-}
+bool blocks::UBlock::_is_connected(const uint8_t input, const uint8_t output) const { return output_input_map[output] == input; }
 
-bool blocks::UBlock::is_connected(uint8_t input, uint8_t output) {
-  // Sanity check
-  if (input >= NUM_OF_INPUTS or output >= NUM_OF_OUTPUTS)
+bool blocks::UBlock::is_connected(const uint8_t input, const uint8_t output) {
+  if (!_io_sanity_check(input, output))
     return false;
 
   return _is_connected(input, output);
+}
+
+bool blocks::UBlock::_is_output_connected(const uint8_t output) const { return output_input_map[output] >= 0; }
+
+bool blocks::UBlock::is_output_connected(const uint8_t output) {
+  if (!_o_sanity_check(output))
+    return false;
+
+  return _is_output_connected(output);
 }
 
 void blocks::UBlock::write_matrix_to_hardware() const {
@@ -107,9 +120,9 @@ void blocks::UBlock::write_to_hardware() { write_matrix_to_hardware(); }
 
 bus::addr_t blocks::UBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
 
-void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), end(output_input_map), 0); }
+void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), end(output_input_map), -1); }
 
-void blocks::UBlock::reset(bool keep_offsets) {
+void blocks::UBlock::reset(const bool keep_offsets) {
   FunctionBlock::reset(keep_offsets);
   reset_connections();
 }
