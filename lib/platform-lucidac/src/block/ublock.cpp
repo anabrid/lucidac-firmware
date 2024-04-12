@@ -103,10 +103,7 @@ void blocks::UBlock::write_matrix_to_hardware() const {
   f_umatrix_sync.trigger();
 }
 
-void blocks::UBlock::write_to_hardware() {
-  write_matrix_to_hardware();
-}
-
+void blocks::UBlock::write_to_hardware() { write_matrix_to_hardware(); }
 
 bus::addr_t blocks::UBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
 
