@@ -45,6 +45,7 @@ constexpr uint8_t PIN_ADDR_RESET = 28;
 constexpr uint8_t BADDR_MASK = 0x0F;
 constexpr uint8_t FADDR_MASK = 0xF0;
 constexpr uint8_t FADDR_SHIFT = 8;
+constexpr uint8_t FADDR_MASK_UNSHIFTED = 0x0F;
 
 // Some BADDRs
 constexpr uint8_t CTRL_BLOCK_BADDR = 1;
@@ -80,15 +81,15 @@ constexpr uint8_t U_BLOCK_BADDR(uint8_t cluster_idx) { return BLOCK_BADDR(cluste
 constexpr uint8_t METADATA_FUNC_IDX = 0;
 
 constexpr addr_t idx_to_addr(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_idx) {
-  return (static_cast<addr_t>(func_idx & FADDR_MASK) << FADDR_SHIFT) + (BLOCK_BADDR(cluster_idx, block_idx) & BADDR_MASK);
+  return (static_cast<addr_t>(func_idx & FADDR_MASK_UNSHIFTED) << FADDR_SHIFT) + (BLOCK_BADDR(cluster_idx, block_idx) & BADDR_MASK);
 }
 
 constexpr addr_t increase_function_idx(addr_t address, uint8_t delta_idx) {
-  return address + (static_cast<addr_t>(delta_idx & FADDR_MASK) << FADDR_SHIFT);
+  return address + (static_cast<addr_t>(delta_idx & FADDR_MASK_UNSHIFTED) << FADDR_SHIFT);
 }
 
 constexpr addr_t replace_function_idx(addr_t address, uint8_t func_idx) {
-  return (address & ~FADDR_MASK) | (static_cast<addr_t>(func_idx & FADDR_MASK) << FADDR_SHIFT);
+  return (address & ~FADDR_MASK) | (static_cast<addr_t>(func_idx & FADDR_MASK_UNSHIFTED) << FADDR_SHIFT);
 }
 
 constexpr addr_t remove_addr_parts(addr_t address, bool block, bool func) {
@@ -100,7 +101,7 @@ constexpr addr_t remove_addr_parts(addr_t address, bool block, bool func) {
 }
 
 constexpr addr_t address_from_tuple(uint8_t maddr, uint8_t faddr) {
-  return (static_cast<uint16_t>(faddr) << FADDR_SHIFT) + maddr;
+  return (static_cast<uint16_t>(faddr & FADDR_MASK_UNSHIFTED) << FADDR_SHIFT) + maddr;
 }
 
 constexpr addr_t NULL_ADDRESS = 0;
