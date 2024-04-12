@@ -58,34 +58,10 @@ lucidac::LUCIDAC::LUCIDAC(uint8_t cluster_idx)
 }
 
 bool lucidac::LUCIDAC::calibrate(daq::BaseDAQ *daq) {
-  RETURN_FALSE_IF_FAILED(calibrate_offsets_ublock_initial(daq));
   // Return to a non-connected state, but keep calibrated offsets
   reset(true);
   write_to_hardware();
   return true;
-}
-
-bool lucidac::LUCIDAC::calibrate_offsets_ublock_initial(daq::BaseDAQ *daq) {
-  // Reset
-  ublock->reset(false);
-  // Connect REF signal from UBlock to ADC outputs
-  ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF);
-  for (auto out_to_adc : std::array<uint8_t, 8>{0, 1, 2, 3, 4, 5, 6, 7}) {
-    ublock->connect(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, out_to_adc);
-  }
-  ublock->write_to_hardware();
-  // Let the signal settle
-  delayMicroseconds(250);
-
-  auto data_avg = daq->sample_avg(10, 10000);
-  for (size_t i = 0; i < data_avg.size(); i++) {
-    RETURN_FALSE_IF_FAILED(ublock->change_offset(i, data_avg[i] + 1.0f));
-  }
-  ublock->write_to_hardware();
-  delayMicroseconds(100);
-
-  return true;
-  // TODO: Finish calibration sequence
 }
 
 void lucidac::LUCIDAC::write_to_hardware() {
@@ -97,16 +73,6 @@ void lucidac::LUCIDAC::write_to_hardware() {
 
 bool lucidac::LUCIDAC::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out) {
   if (!ublock->connect(u_in, u_out))
-    return false;
-  if (!cblock->set_factor(u_out, c_factor))
-    return false;
-  if (!iblock->connect(u_out, i_out))
-    return false;
-  return true;
-}
-
-bool lucidac::LUCIDAC::route_alt_signal(uint16_t alt_signal, uint8_t u_out, float c_factor, uint8_t i_out) {
-  if (!ublock->connect_alt_signal(alt_signal, u_out))
     return false;
   if (!cblock->set_factor(u_out, c_factor))
     return false;

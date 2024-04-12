@@ -41,8 +41,6 @@ void tearDown() {
 
 void test_block() {
   UBlock ublock{0};
-  // So we have at least one concrete input signal
-  ublock.use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF);
 
   TEST_ASSERT(ublock.connect(7,0));
   TEST_ASSERT(ublock.connect(7,5));
