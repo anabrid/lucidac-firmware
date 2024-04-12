@@ -32,6 +32,7 @@
 #include "bus/bus.h"
 #include "bus/functions.h"
 #include "carrier/analog.h"
+#include "chips/SR74HCT595.h"
 
 namespace utils {
 
@@ -70,6 +71,14 @@ namespace blocks {
  *        cf. https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/issues/8
  *
  **/
+
+enum UBlock_Transmission_Mode : uint8_t {
+  ANALOG_INPUT = 0b00,
+  BIG_REF = 0b01,
+  SMALL_REF = 0b10,
+  GROUND = 0b11
+};
+
 class UBlock : public FunctionBlock {
 public:
   static constexpr uint8_t BLOCK_IDX = bus::U_BLOCK_IDX;
@@ -81,6 +90,9 @@ public:
     return {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
             16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
   };
+
+  static constexpr uint8_t TRANSMISSION_MODE_FUNC_IDX = 2;
+  static constexpr uint8_t TRANSMISSION_MODE_SYNC_FUNC_IDX = 4;
 
   static constexpr uint8_t UMATRIX_FUNC_IDX = 5;
   static constexpr uint8_t UMATRIX_SYNC_FUNC_IDX = 6;
@@ -98,6 +110,11 @@ protected:
 
   std::array<int8_t, NUM_OF_OUTPUTS> output_input_map;
 
+  const functions::SR74HCT595 transmission_mode_register;
+  const functions::TriggerFunction transmission_mode_sync;
+
+  uint8_t transmission_mode_byte;
+
   // Default sanity checks for input and output indizes
   static bool _i_sanity_check(const uint8_t input);
   static bool _o_sanity_check(const uint8_t output);
@@ -107,7 +124,7 @@ private:
   //! Check whether an input is connected to an output, without sanity checks.
   bool _is_connected(const uint8_t input, const uint8_t output) const;
 
-   //! Connects output with given input, without sanity checks or disconnection prevention.
+  //! Connects output with given input, without sanity checks or disconnection prevention.
   void _connect(const uint8_t input, const uint8_t output);
 
   //! Disconnects output, without sanity checks.
@@ -140,7 +157,12 @@ public:
   //! Check whether an output is connected to any input.
   bool is_output_connected(const uint8_t output);
 
+  //! Changes the transmission mode of the ublock for the calibration processes.
+  void changeTransmissionMode(const UBlock_Transmission_Mode mode, const bool sign,
+                              const bool use_alt = false);
+
   void write_matrix_to_hardware() const;
+  void write_transmission_mode_to_hardware() const;
   void write_to_hardware() override;
 
   bool config_self_from_json(JsonObjectConst cfg) override;

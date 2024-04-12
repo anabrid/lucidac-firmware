@@ -46,7 +46,10 @@ functions::UMatrixFunction::UMatrixFunction(bus::addr_t address)
 blocks::UBlock::UBlock(const uint8_t clusterIdx)
     : FunctionBlock("U", clusterIdx), f_umatrix(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_FUNC_IDX)),
       f_umatrix_sync(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_SYNC_FUNC_IDX)),
-      f_umatrix_reset(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_RESET_FUNC_IDX)), output_input_map{ } {
+      f_umatrix_reset(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_RESET_FUNC_IDX)), output_input_map{},
+      transmission_mode_register(bus::idx_to_addr(cluster_idx, BLOCK_IDX, TRANSMISSION_MODE_FUNC_IDX), true),
+      transmission_mode_sync(bus::idx_to_addr(cluster_idx, BLOCK_IDX, TRANSMISSION_MODE_SYNC_FUNC_IDX)),
+      transmission_mode_byte(0) {
   reset_connections();
 }
 
@@ -93,7 +96,9 @@ bool blocks::UBlock::disconnect(const uint8_t output) {
   return true;
 }
 
-bool blocks::UBlock::_is_connected(const uint8_t input, const uint8_t output) const { return output_input_map[output] == input; }
+bool blocks::UBlock::_is_connected(const uint8_t input, const uint8_t output) const {
+  return output_input_map[output] == input;
+}
 
 bool blocks::UBlock::is_connected(const uint8_t input, const uint8_t output) {
   if (!_io_sanity_check(input, output))
@@ -111,12 +116,34 @@ bool blocks::UBlock::is_output_connected(const uint8_t output) {
   return _is_output_connected(output);
 }
 
+constexpr uint8_t UBLOCK_TRANSISSION_REGULAR_MASK = 0b0000'0111;
+constexpr uint8_t UBLOCK_TRANSISSION_ALTERNATIVE_MASK = 0b0001'1001;
+
+void blocks::UBlock::changeTransmissionMode(const UBlock_Transmission_Mode mode, const bool sign,
+                                            const bool use_alt) {
+  uint8_t rest = transmission_mode_byte;
+  if (!use_alt)
+    rest &= ~UBLOCK_TRANSISSION_REGULAR_MASK;
+  else
+    rest &= ~UBLOCK_TRANSISSION_ALTERNATIVE_MASK;
+
+  transmission_mode_byte = rest | (mode << (1 + 2 * use_alt)) | sign;
+}
+
 void blocks::UBlock::write_matrix_to_hardware() const {
   f_umatrix.transfer(output_input_map);
   f_umatrix_sync.trigger();
 }
 
-void blocks::UBlock::write_to_hardware() { write_matrix_to_hardware(); }
+void blocks::UBlock::write_transmission_mode_to_hardware() const {
+  transmission_mode_register.transfer(transmission_mode_byte);
+  transmission_mode_sync.trigger();
+}
+
+void blocks::UBlock::write_to_hardware() {
+  write_matrix_to_hardware();
+  write_transmission_mode_to_hardware();
+}
 
 bus::addr_t blocks::UBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
 
