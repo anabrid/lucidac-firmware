@@ -1,3 +1,10 @@
+// Copyright (c) 2024 anabrid GmbH
+// Contact: https://www.anabrid.com/licensing/
+// 
+// ANABRID_BEGIN_LICENSE
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
+// ANABRID_END_LICENSE
+
 /*
  * Blink
  * Turns on an LED on for one second,

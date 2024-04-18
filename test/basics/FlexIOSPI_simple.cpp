@@ -1,4 +1,6 @@
-// From https://github.com/KurtE/FlexIO_t4/blob/master/examples/FlexIOSPI_simple/FlexIOSPI_simple.ino
+// Based on https://github.com/KurtE/FlexIO_t4/blob/33d60d4751e83e9ee2055726c40f0b4e35f4fa20/examples/SPI/Simple/Simple.ino
+// Copyright (c) 2021 Kurt E
+// SPDX-License-Identifier: MIT 
 
 #include <FlexIO_t4.h>
 #include <FlexIOSPI.h>

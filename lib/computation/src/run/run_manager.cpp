@@ -1,27 +1,7 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 //
-// This file is part of the model-1 hybrid-controller firmware.
-//
-// ANABRID_BEGIN_LICENSE:GPL
-// Commercial License Usage
-// Licensees holding valid commercial anabrid licenses may use this file in
-// accordance with the commercial license agreement provided with the
-// Software or, alternatively, in accordance with the terms contained in
-// a written agreement between you and Anabrid GmbH. For licensing terms
-// and conditions see https://www.anabrid.com/licensing. For further
-// information use the contact form at https://www.anabrid.com/contact.
-//
-// GNU General Public License Usage
-// Alternatively, this file may be used under the terms of the GNU
-// General Public License version 3 as published by the Free Software
-// Foundation and appearing in the file LICENSE.GPL3 included in the
-// packaging of this file. Please review the following information to
-// ensure the GNU General Public License version 3 requirements
-// will be met: https://www.gnu.org/licenses/gpl-3.0.html.
-// For Germany, additional rules exist. Please consult /LICENSE.DE
-// for further agreements.
-// ANABRID_END_LICENSE
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include "run_manager.h"
 
@@ -92,13 +72,4 @@ void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunD
   auto change = run.to(RunState::DONE, actual_op_time);
   state_change_handler->handle(change, run);
   queue.pop();
-}
-
-bool msg::handlers::StartRunRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  if (!msg_in.containsKey("id") or !msg_in["id"].is<std::string>())
-    return false;
-  // Create run and put it into queue
-  auto run = run::Run::from_json(msg_in);
-  manager.queue.push(std::move(run));
-  return true;
 }

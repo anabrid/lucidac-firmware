@@ -1,27 +1,7 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 //
-// This file is part of the model-1 hybrid-controller firmware.
-//
-// ANABRID_BEGIN_LICENSE:GPL
-// Commercial License Usage
-// Licensees holding valid commercial anabrid licenses may use this file in
-// accordance with the commercial license agreement provided with the
-// Software or, alternatively, in accordance with the terms contained in
-// a written agreement between you and Anabrid GmbH. For licensing terms
-// and conditions see https://www.anabrid.com/licensing. For further
-// information use the contact form at https://www.anabrid.com/contact.
-//
-// GNU General Public License Usage
-// Alternatively, this file may be used under the terms of the GNU
-// General Public License version 3 as published by the Free Software
-// Foundation and appearing in the file LICENSE.GPL3 included in the
-// packaging of this file. Please review the following information to
-// ensure the GNU General Public License version 3 requirements
-// will be met: https://www.gnu.org/licenses/gpl-3.0.html.
-// For Germany, additional rules exist. Please consult /LICENSE.DE
-// for further agreements.
-// ANABRID_END_LICENSE
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include <Arduino.h>
 #include <algorithm>
@@ -411,7 +391,15 @@ std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, un
   return avg.get_average();
 }
 
-size_t daq::BaseDAQ::raw_to_normalized(uint16_t raw) { return max((raw * 611) / 1000, 1303) - 1303; }
+size_t daq::BaseDAQ::raw_to_normalized(uint16_t raw) {
+  // lower limit that returns meaningful index
+  if (raw < 2133)
+    return 0;
+  // TODO: upper limit that returns meaningful index
+  // if (raw > ...)
+  //   return ...;
+  return (raw * 611) / 1000 - 1303;
+}
 
 std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {
   // Trigger CNVST
