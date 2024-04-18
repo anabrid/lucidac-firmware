@@ -1,4 +1,4 @@
-// From https://github.com/manitou48/teensy4/blob/master/flexiopwm.ino
+// Based on https://github.com/manitou48/teensy4/blob/master/flexiopwm.ino
 
 // flexio pwm  from SDK
 // flexio2 clock 480 mhz.  pin 12 2:1   TIMER 0   no shifter

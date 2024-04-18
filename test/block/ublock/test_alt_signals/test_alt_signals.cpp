@@ -1,7 +1,5 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
-// This file is part of the model-1 hybrid-controller firmware.
 //
 // ANABRID_BEGIN_LICENSE:GPL
 // Commercial License Usage

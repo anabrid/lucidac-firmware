@@ -1,5 +1,4 @@
-// Primarily see
-// https://forum.pjrc.com/threads/63353-Teensy-4-1-How-to-start-using-DMA?p=266991&viewfull=1#post266991
+// Based on https://forum.pjrc.com/threads/63353-Teensy-4-1-How-to-start-using-DMA?p=266991&viewfull=1#post266991
 
 // This example is slightly adapted to do DMA input of pins 14, 15, 40, 41, 17, 16, 22, 23.
 // All are configured with INPUT_PULLDOWN, giving you a buffer filled with zeros at those pin positions (bit 19-26).

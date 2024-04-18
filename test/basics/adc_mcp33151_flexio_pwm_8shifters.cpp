@@ -1,7 +1,4 @@
-// From https://github.com/manitou48/teensy4/blob/master/flexiopwm.ino
-
-// flexio pwm  from SDK
-// flexio2 clock 480 mhz.  pin 12 2:1   TIMER 0   no shifter
+// Based on https://www.pjrc.com/teensy/IMXRT1060RM_rev3.pdf
 
 #include <Arduino.h>
 #include <DMAChannel.h>
