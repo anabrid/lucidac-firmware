@@ -9,3 +9,4 @@
 #include "ublock.h"
 #include "cblock.h"
 #include "iblock.h"
+#include "shblock.h"
