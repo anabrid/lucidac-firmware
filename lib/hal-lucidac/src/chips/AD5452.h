@@ -12,7 +12,14 @@ namespace functions {
 class AD5452 : public DataFunction {
 public:
   static const SPISettings DEFAULT_SPI_SETTINGS;
-  static constexpr uint16_t RAW_ZERO = 2047;
+
+  static constexpr uint16_t RAW_MIN = 0;
+  static constexpr uint16_t RAW_ZERO = 2047 << 2;
+  static constexpr uint16_t RAW_MAX = 4095 << 2;
+  static constexpr uint16_t RAW_DELTA_ONE = 2047 << 2;
+
+  static constexpr float MIN_FACTOR = -1.0f;
+  static constexpr float MAX_FACTOR = +1.0f;
 
   using DataFunction::DataFunction;
   explicit AD5452(bus::addr_t address);

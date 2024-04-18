@@ -34,12 +34,6 @@ public:
   static constexpr uint8_t COEFF_BASE_FUNC_IDX = 1;
 
   static constexpr uint8_t NUM_COEFF = 32;
-  static constexpr float MAX_LOCAL_FACTOR = 1.0f;
-  static constexpr float MIN_LOCAL_FACTOR = -1.0f;
-  // TODO: Upscaling is not *exactly* 10
-  static constexpr float UPSCALING = 10.055f;
-  static constexpr float MAX_FACTOR = MAX_LOCAL_FACTOR *UPSCALING;
-  static constexpr float MIN_FACTOR = MIN_LOCAL_FACTOR *UPSCALING;
 
 protected:
   std::array<const functions::AD5452, NUM_COEFF> f_coeffs;

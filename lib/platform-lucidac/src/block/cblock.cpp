@@ -55,7 +55,7 @@ float blocks::CBlock::get_factor(uint8_t idx) {
 bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   if (idx >= NUM_COEFF)
     return false;
-  if (factor > MAX_LOCAL_FACTOR or factor < MIN_LOCAL_FACTOR)
+  if (factor > decltype(f_coeffs)::value_type::MAX_FACTOR or factor < decltype(f_coeffs)::value_type::MIN_FACTOR)
     return false;
 
   factors_[idx] = decltype(f_coeffs)::value_type::float_to_raw(factor);
