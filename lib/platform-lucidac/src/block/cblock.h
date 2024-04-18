@@ -32,32 +32,21 @@ public:
   static constexpr uint8_t BLOCK_IDX = bus::C_BLOCK_IDX;
 
   static constexpr uint8_t COEFF_BASE_FUNC_IDX = 1;
-  static constexpr uint8_t SCALE_SWITCHER = 33;
-  static constexpr uint8_t SCALE_SWITCHER_SYNC = 34;
-  static constexpr uint8_t SCALE_SWITCHER_CLEAR = 35;
 
   static constexpr uint8_t NUM_COEFF = 32;
-  static constexpr float MAX_REAL_FACTOR = 2.0f;
-  static constexpr float MIN_REAL_FACTOR = -2.0f;
+  static constexpr float MAX_LOCAL_FACTOR = 1.0f;
+  static constexpr float MIN_LOCAL_FACTOR = -1.0f;
   // TODO: Upscaling is not *exactly* 10
   static constexpr float UPSCALING = 10.055f;
-  static constexpr float MAX_FACTOR = MAX_REAL_FACTOR*UPSCALING;
-  static constexpr float MIN_FACTOR = MIN_REAL_FACTOR*UPSCALING;
+  static constexpr float MAX_FACTOR = MAX_LOCAL_FACTOR *UPSCALING;
+  static constexpr float MIN_FACTOR = MIN_LOCAL_FACTOR *UPSCALING;
 
 protected:
   std::array<const functions::AD5452, NUM_COEFF> f_coeffs;
-  const functions::SR74HCT595 f_upscaling;
-  const functions::TriggerFunction f_upscaling_sync;
-  const functions::TriggerFunction f_upscaling_clear;
 
   std::array<uint16_t, NUM_COEFF> factors_{{0}};
-  uint32_t upscaling_{0};
-
-  void set_upscaling(uint8_t idx, bool enable);
-  bool is_upscaled(uint8_t idx);
 
   void write_factors_to_hardware();
-  void write_upscaling_to_hardware();
 
 public:
   explicit CBlock(uint8_t clusterIdx);

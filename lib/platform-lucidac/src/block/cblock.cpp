@@ -40,10 +40,7 @@ blocks::CBlock::CBlock(uint8_t clusterIdx)
           functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 29),
           functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 30),
           functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 31),
-      },
-      f_upscaling(bus::idx_to_addr(clusterIdx, BLOCK_IDX, SCALE_SWITCHER)),
-      f_upscaling_sync(bus::idx_to_addr(clusterIdx, BLOCK_IDX, SCALE_SWITCHER_SYNC)),
-      f_upscaling_clear(bus::idx_to_addr(clusterIdx, BLOCK_IDX, SCALE_SWITCHER_CLEAR)) {}
+      } {}
 
 bus::addr_t blocks::CBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
 
@@ -52,55 +49,25 @@ float blocks::CBlock::get_factor(uint8_t idx) {
     return 0.0f;
 
   auto factor = decltype(f_coeffs)::value_type::raw_to_float(factors_[idx]);
-  if (is_upscaled(idx))
-    factor = factor * UPSCALING;
   return factor;
 }
 
 bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   if (idx >= NUM_COEFF)
     return false;
-  if (factor > MAX_FACTOR)
+  if (factor > MAX_LOCAL_FACTOR or factor < MIN_LOCAL_FACTOR)
     return false;
-  if (factor < MIN_FACTOR)
-    return false;
-  if (factor > MAX_REAL_FACTOR or factor < MIN_REAL_FACTOR) {
-    set_upscaling(idx, true);
-    factor = factor / UPSCALING;
-  } else {
-    set_upscaling(idx, false);
-  }
+
   factors_[idx] = decltype(f_coeffs)::value_type::float_to_raw(factor);
   return true;
 }
 
-bool blocks::CBlock::is_upscaled(uint8_t idx) {
-  if (idx >= NUM_COEFF)
-    return false;
-  return upscaling_ & (1 << idx);
-}
-
-void blocks::CBlock::set_upscaling(uint8_t idx, bool enable = true) {
-  if (enable)
-    upscaling_ |= 1 << idx;
-  else
-    upscaling_ &= ~(1 << idx);
-}
-
-void blocks::CBlock::write_to_hardware() {
-  write_factors_to_hardware();
-  write_upscaling_to_hardware();
-}
+void blocks::CBlock::write_to_hardware() { write_factors_to_hardware(); }
 
 void blocks::CBlock::write_factors_to_hardware() {
   for (size_t i = 0; i < f_coeffs.size(); i++) {
     f_coeffs[i].set_scale(factors_[i]);
   }
-}
-
-void blocks::CBlock::write_upscaling_to_hardware() {
-  f_upscaling.transfer32(upscaling_);
-  f_upscaling_sync.trigger();
 }
 
 void blocks::CBlock::reset(bool keep_calibration) {

@@ -11,10 +11,6 @@
 #include "block/cblock.h"
 #include "bus/functions.h"
 
-functions::TriggerFunction switcher_sync{bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_SYNC)};
-functions::TriggerFunction switcher_clear{
-    bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_CLEAR)};
-
 auto base_addr = bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::COEFF_BASE_FUNC_IDX);
 
 blocks::CBlock cblock{0};
@@ -58,10 +54,6 @@ void test_address() {
 }
 
 void test_function() {
-  switcher_clear.trigger();
-  switcher_sync.trigger();
-  delayMicroseconds(1);
-
   // coeff.data = 0 should give Vout = -Vin
   // coeff.data = 4095 << 2 should give Vout = Vin
   // coeff.data = 2047 << 2 should give Vout = 0
@@ -81,9 +73,6 @@ void test_via_chip_function() {
   cblock.f_coeffs[0].set_scale(static_cast<uint16_t>(0));
   cblock.f_coeffs[1].set_scale(static_cast<uint16_t>(2047 << 2));
   cblock.f_coeffs[2].set_scale(static_cast<uint16_t>(4095 << 2));
-  // Upscaling can also be handled manually
-  cblock.f_upscaling.transfer32(0b00000000'00000000'00000000'00000000);
-  cblock.f_upscaling_sync.trigger();
 }
 
 void test_via_block() {
