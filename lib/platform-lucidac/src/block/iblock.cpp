@@ -95,7 +95,7 @@ bool blocks::IBlock::init() {
   return true;
 }
 
-bus::addr_t blocks::IBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
+bus::addr_t blocks::IBlock::get_block_address() { return bus::I_BLOCK_BADDR(cluster_idx); }
 
 bool blocks::IBlock::_is_connected(uint8_t input, uint8_t output) {
   return outputs[output] & INPUT_BITMASK(input);

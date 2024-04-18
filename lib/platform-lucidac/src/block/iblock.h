@@ -53,9 +53,6 @@ namespace blocks {
  **/
 class IBlock : public FunctionBlock {
 public:
-  // TODO: This is temporary until all block addressing is changed in the underlying bus functions.
-  static constexpr uint8_t BLOCK_IDX = 10;
-
   static constexpr uint32_t INPUT_BITMASK(uint8_t input_idx) { return static_cast<uint32_t>(1) << input_idx; }
 
   static constexpr uint8_t NUM_INPUTS = 32;
@@ -86,9 +83,9 @@ public:
   const functions::TriggerFunction f_imatrix_sync;
 
   explicit IBlock(const uint8_t clusterIdx)
-      : FunctionBlock("I", clusterIdx), outputs{0}, f_cmd{bus::address_from_tuple(BLOCK_IDX, 2)},
-        f_imatrix_reset{bus::address_from_tuple(BLOCK_IDX, 4)},
-        f_imatrix_sync{bus::address_from_tuple(BLOCK_IDX, 3)} {}
+      : FunctionBlock("I", clusterIdx), outputs{0}, f_cmd{bus::address_from_tuple(bus::I_BLOCK_BADDR(clusterIdx), 2)},
+        f_imatrix_reset{bus::address_from_tuple(bus::I_BLOCK_BADDR(clusterIdx), 4)},
+        f_imatrix_sync{bus::address_from_tuple(bus::I_BLOCK_BADDR(clusterIdx), 3)} {}
 
   bus::addr_t get_block_address() override;
 
