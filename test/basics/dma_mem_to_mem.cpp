@@ -1,4 +1,4 @@
-// From https://forum.pjrc.com/threads/69845-T4-memory-to-memory-using-dma
+// Based on https://forum.pjrc.com/threads/69845-T4-memory-to-memory-using-dma
 
 #include <Arduino.h>
 #include <DMAChannel.h>

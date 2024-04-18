@@ -1,3 +1,5 @@
+// Based on https://github.com/manitou48/teensy4/blob/master/qtmr_capture.ino
+
 #include <Arduino.h>
 
 // QTIMER1   pin capture test  qtmr 1 ch 2  pin 11 B0_02,  ch 52

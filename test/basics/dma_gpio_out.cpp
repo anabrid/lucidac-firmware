@@ -1,5 +1,4 @@
-// Primarily see
-// https://forum.pjrc.com/threads/63353-Teensy-4-1-How-to-start-using-DMA?p=267122&viewfull=1#post267122
+// Based on https://forum.pjrc.com/threads/63353-Teensy-4-1-How-to-start-using-DMA?p=267122&viewfull=1#post267122
 
 #include <Arduino.h>
 #include <DMAChannel.h>
