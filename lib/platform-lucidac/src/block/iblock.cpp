@@ -32,10 +32,6 @@ void blocks::IBlock::write_to_hardware() {
   uint32_t remembered_command = 0;
   for (decltype(outputs.size()) output_idx = 0; output_idx < outputs.size() / 2; output_idx++) {
     uint32_t command = 0;
-
-
-    //  We are iterating over hardware indexes and look up the appropriate place in logically
-    //  sequentially indexed table.
     const auto oidx_one_two = output_idx;
     const auto oidx_three_four = output_idx + outputs.size() / 2;
     if (!outputs[oidx_one_two] && !outputs[oidx_three_four])
@@ -46,15 +42,8 @@ void blocks::IBlock::write_to_hardware() {
 
       command = 0;
 
-      // On REV0 hardware, some inputs are wrongly connected/labeled
-      // (see https://lab.analogparadigm.com/lucidac/hardware/i-block/-/issues/2)
-      // and need to be fixed according to _logical_to_hardware_input.
-      // We can do so in the inner loop, because the correction is only ever switching inputs on the same chip.
-      // _logical_to_hardware_input is written to handle inputs from 0...NUM_INPUTS,
-      // but in fact we only need to correct 0...NUM_INPUTS/2.
-      // TODO: Remove once hardware is fixed.
-      const auto iidx_one_three = _logical_to_hardware_input(input_idx);
-      const auto iidx_two_four = _logical_to_hardware_input(input_idx + NUM_INPUTS / 2);
+      const auto iidx_one_three = input_idx;
+      const auto iidx_two_four = input_idx + NUM_INPUTS / 2;
       bool actual_data = false;
       // First chip combines oidx_one_two and iidx_one_three
       if (outputs[oidx_one_two] & INPUT_BITMASK(iidx_one_three)) {
@@ -118,28 +107,6 @@ bool blocks::IBlock::is_connected(uint8_t input, uint8_t output) {
   return _is_connected(input, output);
 }
 
-uint8_t blocks::IBlock::_hardware_to_logical_input(uint8_t hardware_input) {
-  // Manually fix pin-numbering, see https://lab.analogparadigm.com/lucidac/hardware/i-block/-/issues/2
-  // TODO: Remove once hardware is fixed.
-  if ((hardware_input >= 8 && hardware_input <= 13) || (hardware_input >= 24 && hardware_input <= 29)) {
-    return hardware_input - 2;
-  } else if ((hardware_input >= 6 && hardware_input <= 7) || (hardware_input >= 22 && hardware_input <= 23)) {
-    return hardware_input + 6;
-  }
-  return hardware_input;
-}
-
-uint8_t blocks::IBlock::_logical_to_hardware_input(uint8_t logical_input) {
-  // Manually fix pin-numbering, see https://lab.analogparadigm.com/lucidac/hardware/i-block/-/issues/2
-  // TODO: Remove once hardware is fixed.
-  if ((logical_input >= 6 && logical_input <= 11) || (logical_input >= 22 && logical_input <= 27)) {
-    return logical_input + 2;
-  } else if ((logical_input >= 12 && logical_input <= 13) || (logical_input >= 28 && logical_input <= 29)) {
-    return logical_input - 6;
-  }
-  return logical_input;
-}
-
 bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool allow_input_splitting) {
   if (output >= NUM_OUTPUTS or input >= NUM_INPUTS)
     return false;
@@ -149,7 +116,7 @@ bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool
     for (size_t other_output_idx = 0; other_output_idx < outputs.size(); other_output_idx++) {
       if (output == other_output_idx)
         continue;
-      if (is_connected(input, other_output_idx)) { // operates on logical indexes
+      if (is_connected(input, other_output_idx)) {
         return false;
       }
     }

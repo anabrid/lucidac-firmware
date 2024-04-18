@@ -115,10 +115,6 @@ public:
   bool disconnect(uint8_t output);
 
   bool config_self_from_json(JsonObjectConst cfg) override;
-
-  uint8_t _hardware_to_logical_input(uint8_t hardware_input);
-  uint8_t _logical_to_hardware_input(uint8_t logical_input);
-  
 };
 
 } // namespace blocks
