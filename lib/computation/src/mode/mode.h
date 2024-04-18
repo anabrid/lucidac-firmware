@@ -11,7 +11,7 @@
 
 namespace mode {
 
-constexpr uint8_t PIN_MODE_IC = 4;
+constexpr uint8_t PIN_MODE_IC = 2;
 constexpr uint8_t PIN_MODE_OP = 3;
 constexpr uint8_t PIN_QTMR_OP_GATE = 12;
 
