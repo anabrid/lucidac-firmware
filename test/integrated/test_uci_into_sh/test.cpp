@@ -74,6 +74,14 @@ void setup() {
 }
 
 void loop() {
-  test_shblock();
-  delay(40'000);
+  // Do an action once the button is pressed
+  while (digitalReadFast(29)) {
+  }
+  shblock.set_track.trigger();
+  delay(500);
+  // Do an action once the button is pressed
+  while (digitalReadFast(29)) {
+  }
+  shblock.set_inject.trigger();
+  delay(500);
 }
