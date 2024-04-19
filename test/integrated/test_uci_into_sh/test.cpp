@@ -36,7 +36,7 @@ void configure_ublock() {
 }
 
 void configure_cblock() {
-  for (auto output: UBlock::OUTPUT_IDX_RANGE()) {
+  for (auto output: CBlock::OUTPUT_IDX_RANGE()) {
     TEST_ASSERT(cblock.set_factor(output, 0.5f));
   }
   cblock.write_to_hardware();
