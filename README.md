@@ -76,6 +76,35 @@ pio test -v --filter integrated/test_sinusoidal
 
 For other tests, try `pio test --list-tests`.
 
+### Debugging with PlatformIO 
+Because of the ArduinoFake implementation it is possible to use the full PlatformIO debugging capabilities. 
+
+### Debugging on MacOS with VSCode (using lldb)
+To properly use the debug mode provided by VSCode, you need to modify the `launch.json` file, that configures the debug process. 
+To access the file, first open the `Run and Debug` menu in VSCode. Then click on the small gear labeled `Open 'launch.json'` (probably on the top of the window).
+Then amend the `configurations` tag by this code: 
+```
+{
+    "name": "LUCIDAC Debug",
+    "type": "cppdbg",
+    "request": "launch",
+    "program": "${workspaceFolder}/.pio/build/native/program",
+    "args": [],
+    "stopAtEntry": false,
+    "cwd": "${fileDirname}",
+    "environment": [],
+    "externalConsole": false,
+    "MIMode": "lldb",
+    "preLaunchTask": {
+        "type": "PlatformIO",
+        "task": "Pre-Debug"
+    }
+}
+```
+
+Now you should see a new debugging target called `LUCIDAC Debug` in the respective dropdown menu (probably next to the small gear icon). After selecting this target, you can start the debugging process.
+
+
 ## Using the actual TCP/IP main code
 Make sure the IP adress written in `src/main.cpp` is connectable for you (i.e. you are in
 the same network).
