@@ -33,7 +33,6 @@ void blocks::IBlock::write_to_hardware() {
   for (decltype(outputs.size()) output_idx = 0; output_idx < outputs.size() / 2; output_idx++) {
     uint32_t command = 0;
 
-
     //  We are iterating over hardware indexes and look up the appropriate place in logically
     //  sequentially indexed table.
     const auto oidx_one_two = output_idx;

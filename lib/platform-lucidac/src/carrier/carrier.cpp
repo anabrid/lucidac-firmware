@@ -7,9 +7,7 @@
 #include "logging.h"
 #include "mac_utils.h"
 
-std::string carrier::Carrier::get_system_mac() {
-  return ::get_system_mac();
-}
+std::string carrier::Carrier::get_system_mac() { return ::get_system_mac(); }
 
 carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}) {}
 

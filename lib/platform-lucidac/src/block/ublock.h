@@ -30,8 +30,7 @@ public:
 
   //! Convert an output array to data packets and transfer to chip.
   //! Timing: ~5microseconds
-  template <size_t num_of_outputs>
-  void transfer(const std::array<uint8_t, num_of_outputs>& outputs) const;
+  template <size_t num_of_outputs> void transfer(const std::array<uint8_t, num_of_outputs> &outputs) const;
 };
 
 class UOffsetLoader {
@@ -51,8 +50,7 @@ protected:
   std::array<TriggerFunction, 4> f_triggers;
 
 public:
-  UOffsetLoader(bus::addr_t ublock_address, uint8_t offsets_data_func_idx,
-                         uint8_t offsets_load_base_func_idx);
+  UOffsetLoader(bus::addr_t ublock_address, uint8_t offsets_data_func_idx, uint8_t offsets_load_base_func_idx);
 
   static uint16_t build_cmd_word(uint8_t chip_output_idx, uint16_t offset_raw);
   static uint16_t offset_to_raw(float offset);
@@ -95,7 +93,7 @@ public:
 
   static constexpr std::array<uint8_t, 8> IDX_RANGE_TO_ACL_OUT() {
     // return {15, 14, 13, 12, 11, 10, 9, 8};
-    return { 8,  9, 10, 11, 12, 13, 14, 15};
+    return {8, 9, 10, 11, 12, 13, 14, 15};
   };
 
   // TODO: Make this constexpr

@@ -25,8 +25,8 @@ public:
 
   explicit LUCIDAC(uint8_t cluster_idx = 0);
   // TODO: Delete copy and assignment operators
-  //LUCIDAC(LUCIDAC const &) = delete;
-  //LUCIDAC &operator=(LUCIDAC const &) = delete;
+  // LUCIDAC(LUCIDAC const &) = delete;
+  // LUCIDAC &operator=(LUCIDAC const &) = delete;
 
   bool init();
   auto get_blocks();

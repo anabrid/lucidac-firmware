@@ -5,16 +5,16 @@
 
 #pragma once
 
-#include <cstdint>
 #include <array>
+#include <cstdint>
 
 // hint: This function could be avoided to be a template if the signature
 //       was just transfer(const uint8_t* const outputs, uint8_t num_of_outputs).
 //       The template provides little advantage here.
 
 template <size_t num_of_outputs>
-void functions::UMatrixFunction::transfer(const std::array<uint8_t, num_of_outputs>& outputs) const {
-  constexpr uint8_t NUM_BYTES = num_of_outputs*5/8;
+void functions::UMatrixFunction::transfer(const std::array<uint8_t, num_of_outputs> &outputs) const {
+  constexpr uint8_t NUM_BYTES = num_of_outputs * 5 / 8;
   uint8_t buffer[NUM_BYTES] = {}; // initialized with zeros
 
   /*
@@ -59,8 +59,8 @@ void functions::UMatrixFunction::transfer(const std::array<uint8_t, num_of_outpu
   // Unfortunately, the chip responsible for output 0-7 is the second chip in the SPI-chain.
   // That means that we need to swap the first 10 bytes with the second 10 bytes.
   // TODO: Instead, rewrite this function to already consider this.
-  bus::spi.transfer(buffer + sizeof(buffer)/2, nullptr, sizeof(buffer)/2);
-  bus::spi.transfer(buffer, nullptr, sizeof(buffer)/2);
+  bus::spi.transfer(buffer + sizeof(buffer) / 2, nullptr, sizeof(buffer) / 2);
+  bus::spi.transfer(buffer, nullptr, sizeof(buffer) / 2);
   end_communication();
   // You must trigger the SYNC of the chip with the sync trigger function.
 }

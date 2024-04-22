@@ -42,7 +42,7 @@ public:
   Entity *resolve_child_entity(JsonArrayConstIterator begin, JsonArrayConstIterator end) {
     auto resolved_entity = this;
     for (auto sub_path = begin; sub_path != end; ++sub_path) {
-      std::string child_entity_id = (*sub_path).as<const char*>();
+      std::string child_entity_id = (*sub_path).as<const char *>();
       resolved_entity = resolved_entity->get_child_entity(child_entity_id);
       if (!resolved_entity) {
         return nullptr;
@@ -51,9 +51,7 @@ public:
     return resolved_entity;
   }
 
-  Entity *resolve_child_entity(JsonArrayConst path) {
-    return resolve_child_entity(path.begin(), path.end());
-  }
+  Entity *resolve_child_entity(JsonArrayConst path) { return resolve_child_entity(path.begin(), path.end()); }
 
   bool config_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG

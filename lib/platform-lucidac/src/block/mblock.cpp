@@ -142,7 +142,7 @@ bool blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
         return false;
       }
       // TODO: Check each element. But currently makes no sense
-      //for (const auto& element_cfg : elements_cfg) {
+      // for (const auto& element_cfg : elements_cfg) {
       //}
     } else {
       return false;

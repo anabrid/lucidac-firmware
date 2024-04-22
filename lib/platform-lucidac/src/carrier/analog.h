@@ -8,6 +8,6 @@
 namespace analog {
 
 /// Lucidac Reference voltage (Analog Unit)
-constexpr float REF_VOLTAGE = 2.048; 
+constexpr float REF_VOLTAGE = 2.048;
 
-}
+} // namespace analog

@@ -12,7 +12,6 @@
 #include "bus/bus.h"
 #include "bus/functions.h"
 
-
 namespace functions {
 
 /**
@@ -23,7 +22,8 @@ namespace functions {
  * Each is [DATA Y2 Y1 Y0 X3 X2 X1 X0]
  * Data bit comes first, most significant bit comes first (in SPI)
  *
- * See chip_cmd_word and IBlock::write_to_hardware for more information and the actual calculation of the bitstream.
+ * See chip_cmd_word and IBlock::write_to_hardware for more information and the actual calculation of the
+ * bitstream.
  */
 class ICommandRegisterFunction : public DataFunction {
 public:
@@ -36,7 +36,6 @@ public:
 };
 
 } // namespace functions
-
 
 namespace blocks {
 
@@ -122,7 +121,6 @@ public:
 
   uint8_t _hardware_to_logical_input(uint8_t hardware_input);
   uint8_t _logical_to_hardware_input(uint8_t logical_input);
-  
 };
 
 } // namespace blocks
