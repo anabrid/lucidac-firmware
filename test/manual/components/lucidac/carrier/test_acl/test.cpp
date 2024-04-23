@@ -24,24 +24,26 @@ void tearDown() {
 
 void test_init() { TEST_ASSERT(carrier_board.init()); }
 
-void test_temperature() {
-  TEST_ASSERT_FLOAT_WITHIN(2, 25.0f, carrier_board.f_temperature.read_temperature());
+void test_acl_prg() {
+  carrier_board.f_acl_prg.transfer(0b11100110);
+  carrier_board.f_acl_upd.trigger();
+  TEST_ASSERT(true);
+}
+
+void test_acl_clear() {
+  carrier_board.f_acl_clr.trigger();
+  carrier_board.f_acl_upd.trigger();
+  TEST_ASSERT(true);
 }
 
 void setup() {
   bus::init();
-  pinMode(29, INPUT_PULLUP);
 
   UNITY_BEGIN();
   // RUN_TEST(test_init);
-  RUN_TEST(test_temperature);
+  RUN_TEST(test_acl_prg);
+  // RUN_TEST(test_acl_clear);
   UNITY_END();
 }
 
-void loop() {
-  // Do an action once the button is pressed
-  while (digitalReadFast(29)) {
-  }
-  test_temperature();
-  delay(500);
-}
+void loop() { delay(100); }

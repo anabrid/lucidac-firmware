@@ -22,14 +22,12 @@ void tearDown() {
   // This is called after *each* test.
 }
 
-void test_init() {
-  TEST_ASSERT(carrier_board.init());
-}
+void test_init() { TEST_ASSERT(carrier_board.init()); }
 
 void test_acl_prg() {
-  bus::address_function(bus::address_from_tuple(Carrier::CARRIER_MADDR, Carrier::ACL_PRG_FADDR));
+  bus::address_function(bus::address_from_tuple(Carrier::CARRIER_MADDR, Carrier::METADATA_FADDR));
   bus::activate_address();
-  //carrier_board.f_acl_prg.transfer(0b11001111);
+  // carrier_board.f_acl_prg.transfer(0b11001111);
   TEST_ASSERT(true);
 }
 
@@ -37,7 +35,7 @@ void setup() {
   bus::init();
 
   UNITY_BEGIN();
-  //RUN_TEST(test_init);
+  // RUN_TEST(test_init);
   RUN_TEST(test_acl_prg);
   UNITY_END();
 }

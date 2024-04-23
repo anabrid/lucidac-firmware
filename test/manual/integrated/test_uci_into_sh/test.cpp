@@ -29,30 +29,27 @@ void configure_ublock() {
   ublock.changeTransmissionMode(UBlock_Transmission_Mode::SMALL_REF, false);
   ublock.changeTransmissionMode(UBlock_Transmission_Mode::SMALL_REF, false, true);
 
-  for (auto output: UBlock::OUTPUT_IDX_RANGE()) {
-    TEST_ASSERT(ublock.connect(output/2, output));
+  for (auto output : UBlock::OUTPUT_IDX_RANGE()) {
+    TEST_ASSERT(ublock.connect(output / 2, output));
   }
   ublock.write_to_hardware();
 }
 
 void configure_cblock() {
-  for (auto output: CBlock::OUTPUT_IDX_RANGE()) {
+  for (auto output : CBlock::OUTPUT_IDX_RANGE()) {
     TEST_ASSERT(cblock.set_factor(output, 0.5f));
   }
   cblock.write_to_hardware();
 }
 
 void configure_iblock() {
-  for (auto output: IBlock::OUTPUT_IDX_RANGE()) {
+  for (auto output : IBlock::OUTPUT_IDX_RANGE()) {
     TEST_ASSERT(iblock.connect(output, output));
   }
   iblock.write_to_hardware();
 }
 
-void configure_shblock() {
-  shblock.set_inject.trigger();
-}
-
+void configure_shblock() { shblock.set_inject.trigger(); }
 
 void test_shblock() {
   shblock.set_track.trigger();
