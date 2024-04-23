@@ -52,7 +52,7 @@ void bus::deactivate_address() {
 }
 
 void bus::activate_address() {
-  digitalToggleFast(PIN_ADDR_LATCH);
+  digitalWriteFast(PIN_ADDR_LATCH, HIGH);
   delayNanoseconds(200);
-  digitalToggleFast(PIN_ADDR_LATCH);
+  digitalWriteFast(PIN_ADDR_LATCH, LOW);
 }
