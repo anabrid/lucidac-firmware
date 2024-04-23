@@ -7,9 +7,7 @@
 #include "logging.h"
 #include "mac_utils.h"
 
-std::string carrier::Carrier::get_system_mac() {
-  return ::get_system_mac();
-}
+std::string carrier::Carrier::get_system_mac() { return ::get_system_mac(); }
 
 const SPISettings carrier::Carrier::F_ADC_SWITCHER_PRG_SPI_SETTINGS{
     4'000'000, MSBFIRST, SPI_MODE2 /* chip expects SPI MODE0, but CLK is inverted on the way */};

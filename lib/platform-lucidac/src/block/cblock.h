@@ -17,15 +17,15 @@ namespace blocks {
 
 /**
  * The Lucidac Coefficient Block (C-Block) is represented by this class.
- * 
+ *
  * This class provides a neat interface for setting digital potentiometers
  * without having to worry for "raw" DPT values or upscaling factors
  * (allowing the DPTs to take values between [-20,+20] instead of only
  * [-1,+1]).
- * 
+ *
  * As a Lucidac can only have a single C-Block, this is kind of a singleton.
  * Typical usage happens via the Lucidac class.
- * 
+ *
  **/
 class CBlock : public FunctionBlock {
 public:
@@ -59,15 +59,15 @@ public:
 
   /**
    * Set a particular digital potentiometer.
-   * 
+   *
    * idx means the coefficient ID and is between [0,31].
    * factor is the actual analog value between [-20,20].
-   * 
+   *
    * Note that calling this function only stores the value
    * in the in-memory representation of the hybrid controller.
    * The in-memory representation is flushed to hardware by
    * calling write_to_hardware().
-   * 
+   *
    * @returns false in case of invalid input, true else.
    **/
   bool set_factor(uint8_t idx, float factor);
