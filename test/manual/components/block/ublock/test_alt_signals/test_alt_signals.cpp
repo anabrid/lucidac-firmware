@@ -1,25 +1,7 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 //
-// ANABRID_BEGIN_LICENSE:GPL
-// Commercial License Usage
-// Licensees holding valid commercial anabrid licenses may use this file in
-// accordance with the commercial license agreement provided with the
-// Software or, alternatively, in accordance with the terms contained in
-// a written agreement between you and Anabrid GmbH. For licensing terms
-// and conditions see https://www.anabrid.com/licensing. For further
-// information use the contact form at https://www.anabrid.com/contact.
-//
-// GNU General Public License Usage
-// Alternatively, this file may be used under the terms of the GNU
-// General Public License version 3 as published by the Free Software
-// Foundation and appearing in the file LICENSE.GPL3 included in the
-// packaging of this file. Please review the following information to
-// ensure the GNU General Public License version 3 requirements
-// will be met: https://www.gnu.org/licenses/gpl-3.0.html.
-// For Germany, additional rules exist. Please consult /LICENSE.DE
-// for further ublock_signal_switcher.cppagreements.
-// ANABRID_END_LICENSE
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include <Arduino.h>
 #include <unity.h>
