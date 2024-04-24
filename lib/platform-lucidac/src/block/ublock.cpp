@@ -98,16 +98,27 @@ bool blocks::UBlock::is_output_connected(const uint8_t output) {
 
 constexpr uint8_t UBLOCK_TRANSISSION_REGULAR_MASK = 0b0000'0111;
 constexpr uint8_t UBLOCK_TRANSISSION_ALTERNATIVE_MASK = 0b0001'1001;
+constexpr uint8_t UBLOCK_TRANSISSION_REGULAR_SIGNLESS_MASK = 0b0000'0110;
+constexpr uint8_t UBLOCK_TRANSISSION_ALTERNATIVE_SIGNLESS_MASK = 0b0001'1000;
 
-void blocks::UBlock::changeTransmissionMode(const UBlock_Transmission_Mode mode, const bool sign,
-                                            const bool use_alt) {
+uint8_t blocks::UBlock::change_transmission_mode(const Transmission_Mode mode, const Transmission_Target target) {
+  bool sign = mode & 1;
   uint8_t rest = transmission_mode_byte;
-  if (!use_alt)
-    rest &= ~UBLOCK_TRANSISSION_REGULAR_MASK;
-  else
-    rest &= ~UBLOCK_TRANSISSION_ALTERNATIVE_MASK;
 
-  transmission_mode_byte = rest | (mode << (1 + 2 * use_alt)) | sign;
+  if(target == Transmission_Target::REGULAR) {
+    rest &= ~UBLOCK_TRANSISSION_REGULAR_MASK;
+    transmission_mode_byte = rest | mode;
+  }
+  else if(target == Transmission_Target::ALTERNATIVE) {
+    rest &= ~UBLOCK_TRANSISSION_ALTERNATIVE_MASK;
+    transmission_mode_byte = rest | (mode & UBLOCK_TRANSISSION_ALTERNATIVE_SIGNLESS_MASK) << 2 | sign;
+  }
+  else if(target == Transmission_Target::REGULAR_AND_ALTERNATIVE) {
+    rest &= ~(UBLOCK_TRANSISSION_REGULAR_MASK | UBLOCK_TRANSISSION_ALTERNATIVE_MASK);
+    transmission_mode_byte = rest | mode | (mode & UBLOCK_TRANSISSION_ALTERNATIVE_SIGNLESS_MASK) << 2 | sign;
+  }
+
+  return transmission_mode_byte;
 }
 
 void blocks::UBlock::write_matrix_to_hardware() const {

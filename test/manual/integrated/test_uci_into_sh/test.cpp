@@ -26,8 +26,8 @@ void tearDown() {
 }
 
 void configure_ublock() {
-  ublock.changeTransmissionMode(UBlock_Transmission_Mode::SMALL_REF, false);
-  ublock.changeTransmissionMode(UBlock_Transmission_Mode::SMALL_REF, false, true);
+  ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_SMALL_REF);
+  ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_SMALL_REF);
 
   for (auto output : UBlock::OUTPUT_IDX_RANGE()) {
     TEST_ASSERT(ublock.connect(output / 2, output));
@@ -75,10 +75,9 @@ void loop() {
   while (digitalReadFast(29)) {
   }
   shblock.set_track.trigger();
-  delay(500);
+  delay(1000);
   // Do an action once the button is pressed
-  while (digitalReadFast(29)) {
-  }
+
   shblock.set_inject.trigger();
   delay(500);
 }

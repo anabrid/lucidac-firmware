@@ -52,13 +52,6 @@ namespace blocks {
  *
  **/
 
-enum UBlock_Transmission_Mode : uint8_t {
-  ANALOG_INPUT = 0b00,
-  BIG_REF = 0b01,
-  SMALL_REF = 0b10,
-  GROUND = 0b11
-};
-
 class UBlock : public FunctionBlock {
 public:
   static constexpr uint8_t BLOCK_IDX = bus::U_BLOCK_IDX;
@@ -67,7 +60,7 @@ public:
   static constexpr uint8_t NUM_OF_OUTPUTS = 32;
 
   static constexpr std::array<uint8_t, NUM_OF_INPUTS> INPUT_IDX_RANGE() {
-    return {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15};
+    return {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
   };
 
   static constexpr std::array<uint8_t, NUM_OF_OUTPUTS> OUTPUT_IDX_RANGE() {
@@ -81,6 +74,17 @@ public:
   static constexpr uint8_t UMATRIX_FUNC_IDX = 5;
   static constexpr uint8_t UMATRIX_SYNC_FUNC_IDX = 6;
   static constexpr uint8_t UMATRIX_RESET_FUNC_IDX = 7;
+
+  enum Transmission_Mode : uint8_t {
+    ANALOG_INPUT = 0b000,
+    POS_BIG_REF = 0b010,
+    POS_SMALL_REF = 0b100,
+    NEG_BIG_REF = 0b011,
+    NEG_SMALL_REF = 0b101,
+    GROUND = 0b110
+  };
+
+  enum class Transmission_Target { REGULAR_AND_ALTERNATIVE, REGULAR, ALTERNATIVE };
 
 protected:
   const functions::UMatrixFunction f_umatrix;
@@ -141,9 +145,11 @@ public:
   //! Check whether an output is connected to any input.
   bool is_output_connected(const uint8_t output);
 
-  //! Changes the transmission mode of the ublock for the calibration processes.
-  void changeTransmissionMode(const UBlock_Transmission_Mode mode, const bool negative,
-                              const bool use_alt = false);
+  //! Changes the transmission mode of the ublock for the calibration processes. Target specifies which of the
+  //! two paths are affected. Returns the altered byte for debugging purposes
+  uint8_t
+  change_transmission_mode(const Transmission_Mode mode,
+                           const Transmission_Target target = Transmission_Target::REGULAR_AND_ALTERNATIVE);
 
   void write_matrix_to_hardware() const;
   void write_transmission_mode_to_hardware() const;
