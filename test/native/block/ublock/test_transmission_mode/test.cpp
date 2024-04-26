@@ -22,63 +22,54 @@ void tearDown() {
 }
 
 void test_a_test() {
-  // Yes this code is formated
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::ANALOG_INPUT,
-                                                    UBlock::Transmission_Target::REGULAR),
-                    0b0000'0000);
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_BIG_REF,
-                                                    UBlock::Transmission_Target::REGULAR),
-                    0b0000'0010);
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_SMALL_REF,
-                                                    UBlock::Transmission_Target::REGULAR),
-                    0b0000'0100);
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::NEG_BIG_REF,
-                                                    UBlock::Transmission_Target::REGULAR),
-                    0b0000'0011);
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::NEG_SMALL_REF,
-                                                    UBlock::Transmission_Target::REGULAR),
-                    0b0000'0101);
-  TEST_ASSERT_EQUAL(
-      ublock.change_transmission_mode(UBlock::Transmission_Mode::GROUND, UBlock::Transmission_Target::REGULAR),
-      0b0000'0110);
+  TEST_ASSERT_EQUAL(0b0000'0000, ublock.change_transmission_mode(UBlock::Transmission_Mode::ANALOG_INPUT,
+                                                                 UBlock::Transmission_Target::REGULAR));
+  TEST_ASSERT_EQUAL(0b0000'0010, ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_BIG_REF,
+                                                                 UBlock::Transmission_Target::REGULAR));
+  TEST_ASSERT_EQUAL(0b0000'0100, ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_SMALL_REF,
+                                                                 UBlock::Transmission_Target::REGULAR));
+  TEST_ASSERT_EQUAL(0b0000'0011, ublock.change_transmission_mode(UBlock::Transmission_Mode::NEG_BIG_REF,
+                                                                 UBlock::Transmission_Target::REGULAR));
+  TEST_ASSERT_EQUAL(0b0000'0101, ublock.change_transmission_mode(UBlock::Transmission_Mode::NEG_SMALL_REF,
+                                                                 UBlock::Transmission_Target::REGULAR));
+  TEST_ASSERT_EQUAL(0b0000'0110, ublock.change_transmission_mode(UBlock::Transmission_Mode::GROUND,
+                                                                 UBlock::Transmission_Target::REGULAR));
 
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::ANALOG_INPUT,
-                                                    UBlock::Transmission_Target::ALTERNATIVE),
-                    0b0000'0000);
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_BIG_REF,
-                                                    UBlock::Transmission_Target::ALTERNATIVE),
-                    0b0000'1000);
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_SMALL_REF,
-                                                    UBlock::Transmission_Target::ALTERNATIVE),
-                    0b0001'0000);
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::NEG_BIG_REF,
-                                                    UBlock::Transmission_Target::ALTERNATIVE),
-                    0b0000'1001);
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::NEG_SMALL_REF,
-                                                    UBlock::Transmission_Target::ALTERNATIVE),
-                    0b0001'0001);
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::GROUND,
-                                                    UBlock::Transmission_Target::ALTERNATIVE),
-                    0b0001'1000);
+  // reset transmission mode to 0, to simplify testing the alternative output
+  TEST_ASSERT_EQUAL(0b0000'0000, ublock.change_transmission_mode(UBlock::Transmission_Mode::ANALOG_INPUT,
+                                                                 UBlock::Transmission_Target::REGULAR));
 
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::ANALOG_INPUT,
-                                                    UBlock::Transmission_Target::REGULAR_AND_ALTERNATIVE),
-                    0b0000'0000);
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_BIG_REF,
-                                                    UBlock::Transmission_Target::REGULAR_AND_ALTERNATIVE),
-                    0b0000'1010);
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_SMALL_REF,
-                                                    UBlock::Transmission_Target::REGULAR_AND_ALTERNATIVE),
-                    0b0001'0100);
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::NEG_BIG_REF,
-                                                    UBlock::Transmission_Target::REGULAR_AND_ALTERNATIVE),
-                    0b0000'1011);
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::NEG_SMALL_REF,
-                                                    UBlock::Transmission_Target::REGULAR_AND_ALTERNATIVE),
-                    0b0001'0101);
-  TEST_ASSERT_EQUAL(ublock.change_transmission_mode(UBlock::Transmission_Mode::GROUND,
-                                                    UBlock::Transmission_Target::REGULAR_AND_ALTERNATIVE),
-                    0b0001'1110);
+  TEST_ASSERT_EQUAL(0b0000'0000, ublock.change_transmission_mode(UBlock::Transmission_Mode::ANALOG_INPUT,
+                                                                 UBlock::Transmission_Target::ALTERNATIVE));
+  TEST_ASSERT_EQUAL(0b0000'1000, ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_BIG_REF,
+                                                                 UBlock::Transmission_Target::ALTERNATIVE));
+  TEST_ASSERT_EQUAL(0b0001'0000, ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_SMALL_REF,
+                                                                 UBlock::Transmission_Target::ALTERNATIVE));
+  TEST_ASSERT_EQUAL(0b0000'1001, ublock.change_transmission_mode(UBlock::Transmission_Mode::NEG_BIG_REF,
+                                                                 UBlock::Transmission_Target::ALTERNATIVE));
+  TEST_ASSERT_EQUAL(0b0001'0001, ublock.change_transmission_mode(UBlock::Transmission_Mode::NEG_SMALL_REF,
+                                                                 UBlock::Transmission_Target::ALTERNATIVE));
+  TEST_ASSERT_EQUAL(0b0001'1000, ublock.change_transmission_mode(UBlock::Transmission_Mode::GROUND,
+                                                                 UBlock::Transmission_Target::ALTERNATIVE));
+
+  TEST_ASSERT_EQUAL(0b0000'0000,
+                    ublock.change_transmission_mode(UBlock::Transmission_Mode::ANALOG_INPUT,
+                                                    UBlock::Transmission_Target::REGULAR_AND_ALTERNATIVE));
+  TEST_ASSERT_EQUAL(0b0000'1010,
+                    ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_BIG_REF,
+                                                    UBlock::Transmission_Target::REGULAR_AND_ALTERNATIVE));
+  TEST_ASSERT_EQUAL(0b0001'0100,
+                    ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_SMALL_REF,
+                                                    UBlock::Transmission_Target::REGULAR_AND_ALTERNATIVE));
+  TEST_ASSERT_EQUAL(0b0000'1011,
+                    ublock.change_transmission_mode(UBlock::Transmission_Mode::NEG_BIG_REF,
+                                                    UBlock::Transmission_Target::REGULAR_AND_ALTERNATIVE));
+  TEST_ASSERT_EQUAL(0b0001'0101,
+                    ublock.change_transmission_mode(UBlock::Transmission_Mode::NEG_SMALL_REF,
+                                                    UBlock::Transmission_Target::REGULAR_AND_ALTERNATIVE));
+  TEST_ASSERT_EQUAL(0b0001'1110,
+                    ublock.change_transmission_mode(UBlock::Transmission_Mode::GROUND,
+                                                    UBlock::Transmission_Target::REGULAR_AND_ALTERNATIVE));
 }
 
 int main(int argc, char **argv) {
