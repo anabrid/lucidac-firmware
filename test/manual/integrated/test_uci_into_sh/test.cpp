@@ -26,7 +26,7 @@ void tearDown() {
 }
 
 void configure_ublock() {
-  //SET UBLOCK OUTPUT TO +2V
+  // SET UBLOCK OUTPUT TO +2V
   ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_BIG_REF);
 
   for (auto output : UBlock::OUTPUT_IDX_RANGE()) {
@@ -36,7 +36,7 @@ void configure_ublock() {
 }
 
 void configure_iblock() {
-  //Set I Block to n to n connection
+  // Set I Block to n to n connection
   for (auto output : IBlock::OUTPUT_IDX_RANGE()) {
     TEST_ASSERT(iblock.connect(output, output));
   }
@@ -57,56 +57,48 @@ void setup() {
   UNITY_END();
 }
 
-void loop() {
+auto start = millis();
+
+void test(float coeff) {
+  // output 100mV
+  for (auto output : CBlock::OUTPUT_IDX_RANGE()) {
+    TEST_ASSERT(cblock.set_factor(output, 0.5f * 0.1f));
+  }
+  cblock.write_to_hardware();
+
+  delay(10);
+  shblock.set_track.trigger();
+  delay(1000);
   // wait till button is pressed
   while (digitalReadFast(29)) {
   }
-
-  //output 100mV
-  for (auto output : CBlock::OUTPUT_IDX_RANGE()) {
-    TEST_ASSERT(cblock.set_factor(output, 0.5f * 0.1f));
-  }
-  cblock.write_to_hardware();
-
-  delay(10); 
-  shblock.set_track.trigger();
-  delay(1000);
-  shblock.set_inject.trigger();
-  delay(10);
-
-
-  for (auto output : CBlock::OUTPUT_IDX_RANGE()) {
-    TEST_ASSERT(cblock.set_factor(output, 0.5f * 1.1f));
-  }
-  cblock.write_to_hardware();
-
-  delay(60000);
-
-
-  for (auto output : CBlock::OUTPUT_IDX_RANGE()) {
-    TEST_ASSERT(cblock.set_factor(output, 0.5f * 0.1f));
-  }
-  cblock.write_to_hardware();
-
-
-  while (digitalReadFast(29)) {
-  }
-
-  delay(10);
-  shblock.set_track.trigger();
-  delay(1000);
   shblock.set_inject.trigger();
   delay(10);
 
   for (auto output : CBlock::OUTPUT_IDX_RANGE()) {
-    TEST_ASSERT(cblock.set_factor(output, 0.5f * -0.9f));
+    TEST_ASSERT(cblock.set_factor(output, 0.5f * coeff));
   }
   cblock.write_to_hardware();
 
-  delay(60000);
+  // wait 60 seconds or exit if button is pressed
+  // 2 second safety
+  delay(2000);
+  start = millis();
+  while (millis() - start < 60000 - 2000 && digitalReadFast(29)) {
+  }
 
   for (auto output : CBlock::OUTPUT_IDX_RANGE()) {
     TEST_ASSERT(cblock.set_factor(output, 0.5f * 0.1f));
   }
   cblock.write_to_hardware();
+
+  delay(10);
+  shblock.set_track.trigger();
+  delay(1000);
+}
+
+void loop() {
+  test(1.1f);
+  delay(1000);
+  test(-0.9f);
 }
