@@ -29,11 +29,12 @@ bool lucidac::LUCIDAC::init() {
 }
 
 lucidac::LUCIDAC::LUCIDAC(uint8_t cluster_idx)
-    : entities::Entity(std::to_string(cluster_idx)), m1block{new blocks::MIntBlock{cluster_idx,
-                                                                                   blocks::MBlock::M1_IDX}},
-      m2block{new blocks::MMulBlock{cluster_idx, blocks::MBlock::M2_IDX}}, ublock{new blocks::UBlock{
-                                                                               cluster_idx}},
-      cblock{new blocks::CBlock{cluster_idx}}, iblock{new blocks::IBlock{cluster_idx}} {
+    : entities::Entity(std::to_string(cluster_idx)), //
+      m1block{new blocks::MIntBlock{bus::idx_to_addr(cluster_idx, bus::M1_BLOCK_IDX, 0)}},
+      m2block{new blocks::MMulBlock{bus::idx_to_addr(cluster_idx, bus::M2_BLOCK_IDX, 0)}},
+      ublock{new blocks::UBlock{bus::idx_to_addr(cluster_idx, bus::U_BLOCK_IDX, 0)}},
+      cblock{new blocks::CBlock{bus::idx_to_addr(cluster_idx, bus::C_BLOCK_IDX, 0)}},
+      iblock{new blocks::IBlock{bus::idx_to_addr(cluster_idx, bus::I_BLOCK_IDX, 0)}} {
   // TODO: Check for existence of blocks here instead of initializing them without checking
 }
 

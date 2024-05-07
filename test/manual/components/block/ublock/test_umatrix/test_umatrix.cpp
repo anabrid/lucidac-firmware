@@ -20,7 +20,7 @@ void tearDown() {
 }
 
 void test_block() {
-  UBlock ublock{0};
+  UBlock ublock;
   // So we have at least one concrete input signal
   ublock.use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF);
 

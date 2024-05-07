@@ -98,15 +98,15 @@ uint16_t functions::UOffsetLoader::offset_to_raw(float offset) {
 
 const SPISettings blocks::UBlock::ALT_SIGNAL_FUNC_SPI_SETTINGS{4'000'000, MSBFIRST, SPI_MODE1};
 
-blocks::UBlock::UBlock(const uint8_t clusterIdx)
-    : FunctionBlock("U", clusterIdx), f_umatrix(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_FUNC_IDX)),
-      f_umatrix_sync(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_SYNC_FUNC_IDX)),
-      f_umatrix_reset(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_RESET_FUNC_IDX)),
-      f_alt_signal(bus::idx_to_addr(clusterIdx, BLOCK_IDX, ALT_SIGNAL_SWITCHER_FUNC_IDX),
+blocks::UBlock::UBlock(bus::addr_t block_address)
+    : FunctionBlock("U", block_address), f_umatrix(bus::replace_function_idx(block_address, UMATRIX_FUNC_IDX)),
+      f_umatrix_sync(bus::replace_function_idx(block_address, UMATRIX_SYNC_FUNC_IDX)),
+      f_umatrix_reset(bus::replace_function_idx(block_address, UMATRIX_RESET_FUNC_IDX)),
+      f_alt_signal(bus::replace_function_idx(block_address, ALT_SIGNAL_SWITCHER_FUNC_IDX),
                    ALT_SIGNAL_FUNC_SPI_SETTINGS),
-      f_alt_signal_clear(bus::idx_to_addr(clusterIdx, BLOCK_IDX, ALT_SIGNAL_SWITCHER_CLEAR_FUNC_IDX)),
-      f_alt_signal_sync(bus::idx_to_addr(clusterIdx, BLOCK_IDX, ALT_SIGNAL_SWITCHER_SYNC_FUNC_IDX)),
-      f_offset_loader(bus::idx_to_addr(clusterIdx, BLOCK_IDX, 0), OFFSETS_DATA_FUNC_IDX,
+      f_alt_signal_clear(bus::replace_function_idx(block_address, ALT_SIGNAL_SWITCHER_CLEAR_FUNC_IDX)),
+      f_alt_signal_sync(bus::replace_function_idx(block_address, ALT_SIGNAL_SWITCHER_SYNC_FUNC_IDX)),
+      f_offset_loader(bus::replace_function_idx(block_address, 0), OFFSETS_DATA_FUNC_IDX,
                       OFFSETS_LOAD_BASE_FUNC_IDX),
       output_input_map{0}, alt_signals{0}, offsets{0} {
   offsets.fill(decltype(f_offset_loader)::ZERO_OFFSET_RAW);
@@ -207,8 +207,6 @@ bool blocks::UBlock::set_offset(uint8_t output, float offset) {
   auto offset_raw = decltype(f_offset_loader)::offset_to_raw(offset);
   return set_offset(output, offset_raw);
 }
-
-bus::addr_t blocks::UBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
 
 void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), end(output_input_map), 0); }
 

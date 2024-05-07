@@ -11,7 +11,7 @@
 using namespace functions;
 using namespace blocks;
 
-UBlock uBlock{0};
+UBlock uBlock;
 UOffsetLoader offset_loader{bus::idx_to_addr(0, UBlock::BLOCK_IDX, 0), UBlock::OFFSETS_DATA_FUNC_IDX,
                             UBlock::OFFSETS_LOAD_BASE_FUNC_IDX};
 

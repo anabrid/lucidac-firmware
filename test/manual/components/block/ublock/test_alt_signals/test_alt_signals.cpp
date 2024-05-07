@@ -21,7 +21,7 @@ void tearDown() {
 }
 
 void test_function() {
-  UBlock ublock{0};
+  UBlock ublock;
   TEST_ASSERT_EQUAL(0, ublock.get_alt_signals());
 
   TEST_ASSERT(ublock.use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF));

@@ -14,8 +14,8 @@
 #include "block/cblock.h"
 #include "bus/functions.h"
 
-blocks::CBlock cblockdonor{0};
-blocks::CBlock cblockreciever{0};
+blocks::CBlock cblockdonor;
+blocks::CBlock cblockreciever;
 
 void test_object2json2object() {
   cblockdonor.init();
