@@ -76,13 +76,13 @@ public:
   const functions::TriggerFunction f_imatrix_reset;
   const functions::TriggerFunction f_imatrix_sync;
 
-  explicit IBlock(const uint8_t clusterIdx)
-      : FunctionBlock("I", clusterIdx), outputs{0}, f_cmd{bus::idx_to_addr(clusterIdx, BLOCK_IDX,
-                                                                           IMATRIX_COMMAND_SR_FUNC_IDX)},
-        f_imatrix_reset{bus::idx_to_addr(clusterIdx, BLOCK_IDX, IMATRIX_RESET_FUNC_IDX)},
-        f_imatrix_sync{bus::idx_to_addr(clusterIdx, BLOCK_IDX, IMATRIX_SYNC_FUNC_IDX)} {}
+  explicit IBlock(const bus::addr_t block_address)
+      : FunctionBlock("I", block_address), outputs{0}, f_cmd{bus::replace_function_idx(
+                                                           block_address, IMATRIX_COMMAND_SR_FUNC_IDX)},
+        f_imatrix_reset{bus::replace_function_idx(block_address, IMATRIX_RESET_FUNC_IDX)},
+        f_imatrix_sync{bus::replace_function_idx(block_address, IMATRIX_SYNC_FUNC_IDX)} {}
 
-  bus::addr_t get_block_address() override;
+  IBlock() : IBlock(bus::idx_to_addr(0, bus::I_BLOCK_IDX, 0)) {}
 
   void write_to_hardware() override;
 

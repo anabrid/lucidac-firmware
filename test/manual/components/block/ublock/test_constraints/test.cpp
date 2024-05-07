@@ -10,7 +10,7 @@
 
 using namespace blocks;
 
-UBlock ublock{0};
+UBlock ublock;
 
 void setUp() {
   // This is called before *each* test.

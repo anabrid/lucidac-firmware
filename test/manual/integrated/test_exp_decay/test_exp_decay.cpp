@@ -20,11 +20,11 @@ using namespace daq;
 using namespace blocks;
 
 OneshotDAQ DAQ{};
-MIntBlock intblock{0, blocks::MIntBlock::M2_IDX};
-UBlock ublock{0};
+MIntBlock intblock{MBlock::SLOT::M1};
+UBlock ublock;
 // Replace by complete CBlock sometime :)
 ::functions::AD5452 mdac{bus::idx_to_addr(0, bus::C_BLOCK_IDX, 1)};
-IBlock iblock{0};
+IBlock iblock;
 
 void setUp() {
   // Set stuff up here

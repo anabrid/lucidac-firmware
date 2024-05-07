@@ -60,9 +60,8 @@ protected:
   void write_upscaling_to_hardware();
 
 public:
-  explicit CBlock(uint8_t clusterIdx);
-
-  bus::addr_t get_block_address() override;
+  explicit CBlock(bus::addr_t block_address);
+  CBlock();
 
   /**
    * Set a particular digital potentiometer.

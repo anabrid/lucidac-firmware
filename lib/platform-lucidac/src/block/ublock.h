@@ -148,9 +148,9 @@ private:
   bool _is_connected(uint8_t input, uint8_t output);
 
 public:
-  explicit UBlock(uint8_t clusterIdx);
+  explicit UBlock(bus::addr_t block_address);
 
-  bus::addr_t get_block_address() override;
+  UBlock() : UBlock(bus::idx_to_addr(0, bus::U_BLOCK_IDX, 0)) {}
 
   void reset(bool keep_offsets) override;
 

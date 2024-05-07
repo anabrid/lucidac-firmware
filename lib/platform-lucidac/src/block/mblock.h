@@ -28,6 +28,8 @@ public:
   static constexpr uint8_t M1_IDX = bus::M1_BLOCK_IDX;
   static constexpr uint8_t M2_IDX = bus::M2_BLOCK_IDX;
 
+  enum class SLOT : uint8_t { M0 = 0, M1 = 1 };
+
   //! M1 input signal specifier for hard-coded usage, like MBlock::M1_INPUT<3>().
   template <int n> static constexpr uint8_t M1_INPUT() {
     static_assert(n < 8, "MBlock input must be less than 8.");
@@ -68,9 +70,10 @@ protected:
   uint8_t slot_idx;
 
 public:
-  MBlock(uint8_t cluster_idx, uint8_t slot_idx);
+  explicit MBlock(bus::addr_t block_address);
 
-  bus::addr_t get_block_address() override;
+  explicit MBlock(SLOT slot)
+      : MBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M1_BLOCK_IDX : bus::M2_BLOCK_IDX, 0)) {}
 };
 
 // HINT: Consider renaming this MBlockInt
@@ -95,7 +98,10 @@ private:
   void write_time_factors_to_hardware();
 
 public:
-  MIntBlock(uint8_t cluster_idx, uint8_t slot_idx);
+  explicit MIntBlock(bus::addr_t block_address);
+
+  explicit MIntBlock(SLOT slot)
+      : MIntBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M1_BLOCK_IDX : bus::M2_BLOCK_IDX, 0)) {}
 
   bool init() override;
 

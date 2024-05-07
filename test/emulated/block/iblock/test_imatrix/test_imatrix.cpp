@@ -84,7 +84,7 @@ void test_function() {
 }
 
 void test_block() {
-  IBlock iblock{0};
+  IBlock iblock;
   TEST_ASSERT_EACH_EQUAL_UINT32_MESSAGE(0, iblock.outputs.data(), iblock.outputs.size(),
                                         "IBlock outputs not initialized to zero.");
 

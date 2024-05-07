@@ -6,16 +6,17 @@
 #include "mblock.h"
 #include "logging.h"
 
-blocks::MBlock::MBlock(uint8_t cluster_idx, uint8_t slot_idx)
-    : blocks::FunctionBlock{std::string("M") + std::to_string(slot_idx - M1_IDX), cluster_idx},
-      slot_idx{slot_idx} {}
+blocks::MBlock::MBlock(const bus::addr_t block_address)
+    : blocks::FunctionBlock{std::string("M") + std::string(
+                                                   // Addresses 4, 9, 14 are M0
+                                                   // Addresses 5, 10, 15 are M1
+                                                   block_address % 5 ? "0" : "1"),
+                            block_address} {}
 
-bus::addr_t blocks::MBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, slot_idx, 0); }
-
-blocks::MIntBlock::MIntBlock(uint8_t cluster_idx, uint8_t slot_idx)
-    : blocks::MBlock{cluster_idx, slot_idx}, f_ic_dac(bus::idx_to_addr(cluster_idx, slot_idx, IC_FUNC_IDX)),
-      f_time_factor(bus::idx_to_addr(cluster_idx, slot_idx, TIME_FACTOR_FUNC_IDX), true),
-      f_time_factor_sync(bus::idx_to_addr(cluster_idx, slot_idx, TIME_FACTOR_SYNC_FUNC_IDX)), ic_raw{0} {
+blocks::MIntBlock::MIntBlock(const bus::addr_t block_address)
+    : blocks::MBlock{block_address}, f_ic_dac(bus::replace_function_idx(block_address, IC_FUNC_IDX)),
+      f_time_factor(bus::replace_function_idx(block_address, TIME_FACTOR_FUNC_IDX), true),
+      f_time_factor_sync(bus::replace_function_idx(block_address, TIME_FACTOR_SYNC_FUNC_IDX)), ic_raw{0} {
   std::fill(std::begin(time_factors), std::end(time_factors), DEFAULT_TIME_FACTOR);
 }
 

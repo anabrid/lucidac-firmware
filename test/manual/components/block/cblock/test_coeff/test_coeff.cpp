@@ -18,7 +18,7 @@ functions::TriggerFunction switcher_clear{
 
 auto base_addr = bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::COEFF_BASE_FUNC_IDX);
 
-blocks::CBlock cblock{0};
+blocks::CBlock cblock;
 
 std::array<functions::AD5452, 32> coeffs{
     functions::AD5452{base_addr, 0},  functions::AD5452{base_addr, 1},  functions::AD5452{base_addr, 2},

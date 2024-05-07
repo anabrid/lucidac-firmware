@@ -14,7 +14,7 @@
 #include "block/iblock.h"
 #include "bus/functions.h"
 
-blocks::IBlock iblockdonor{0};
+blocks::IBlock iblockdonor;
 
 void test_idx2hw2idx() {
   iblockdonor.init();
