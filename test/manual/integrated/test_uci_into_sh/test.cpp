@@ -143,7 +143,7 @@ void test() {
 void loop() {
   // CHOSE YOUR OFFSET AND TEST VALUES AND PUT IT IN THE ARRAYS
   float testvalues[] = {0};
-  float offsetvals[] = {-1.0f, -0.5f, -0.2f, -0.1f, -0.05f, -0.02f, -0.01f, 0.0f, 0.01f, 0.02f, 0.05f, 0.1f, 0.5f, 1.0f};  
+  float offsetvals[] = {-1.0f, -0.5f, -0.2f, -0.1f, -0.05f, -0.02f, -0.01f, 0.0f, 0.01f, 0.02f, 0.05f, 0.1f, 0.2f, 0.5f, 1.0f};  
   int countTestvalues = sizeof(testvalues) / sizeof(testvalues[0]);
   int countOffsetvals = sizeof(offsetvals) / sizeof(offsetvals[0]);
   for(int i = 0; (i < countTestvalues && i >= 0); i+= direction) {
