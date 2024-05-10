@@ -141,12 +141,17 @@ void test() {
 }
 
 void loop() {
-  offsetval = 0.1f;
-  float testvalues[] = {-1.0f, -0.5f, -0.1f, -0.05f, -0.01f, 0.0f, 0.01f, 0.02f, 0.03f, 0.04f, 0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f};
-  int count = sizeof(testvalues) / sizeof(testvalues[0]);
-  for(int i = 0; (i < count && i >= 0); i+= direction) {
-    testvalue = testvalues[i];
-    test();
-    delay(1000);
-  }  
+  // CHOSE YOUR OFFSET AND TEST VALUES AND PUT IT IN THE ARRAYS
+  float testvalues[] = {0};
+  float offsetvals[] = {-1.0f, -0.5f -0.2f, -0.1f, -0.05f, -0.02f, -0.01f, 0.0f, 0.01f, 0.02f, 0.05f, 0.1f, 0.5f, 1.0f};  
+  int countTestvalues = sizeof(testvalues) / sizeof(testvalues[0]);
+  int countOffsetvals = sizeof(offsetvals) / sizeof(offsetvals[0]);
+  for(int i = 0; (i < countTestvalues && i >= 0); i+= direction) {
+    for(int j = 0; (j < countOffsetvals && j >= 0); j+= direction) {
+      testvalue = testvalues[i];
+      offsetval = offsetvals[j];
+      test();
+      delay(1000);
+    }  
+  }    
 }
