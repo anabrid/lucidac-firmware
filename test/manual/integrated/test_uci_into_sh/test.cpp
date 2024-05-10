@@ -12,6 +12,14 @@
 
 using namespace blocks;
 
+auto start=millis();
+static float offsetval;
+static float testvalue;
+int direction = 1;
+const unsigned long debounceTime = 40;
+const unsigned long shortPressTime = 500;
+const unsigned long longPressTime = 5000;
+
 UBlock ublock{0};
 CBlock cblock{0};
 IBlock iblock{0};
@@ -48,7 +56,7 @@ void setup() {
   pinMode(29, INPUT_PULLUP);
 
   UNITY_BEGIN();
-  // RUN_TEST(test_init);
+  // INIT TEST;
   RUN_TEST(configure_ublock);
   RUN_TEST(configure_iblock);
 
@@ -57,48 +65,88 @@ void setup() {
   UNITY_END();
 }
 
-auto start = millis();
-
-void test(float coeff) {
-  // output 100mV
-  for (auto output : CBlock::OUTPUT_IDX_RANGE()) {
-    TEST_ASSERT(cblock.set_factor(output, 0.5f * 0.1f));
-  }
-  cblock.write_to_hardware();
-
-  delay(10);
-  shblock.set_track.trigger();
-  delay(1000);
-  // wait till button is pressed
+int readButton(unsigned long timeout) {
+  static unsigned long pressTime;
+  static unsigned long releaseTime;
+  unsigned long startTime = millis();
   while (digitalReadFast(29)) {
+    if (timeout != 0 && millis() - startTime >= timeout) {
+      return 1; // Timeout
+    }
   }
-  shblock.set_inject.trigger();
-  delay(10);
+  pressTime = millis();
+  if (pressTime - releaseTime < debounceTime) return 0;
+  while (!digitalReadFast(29)) {
+    if (timeout != 0 && millis() - startTime >= timeout) {
+      return 1; // Timeout
+    }
+  }
+  releaseTime = millis();
+  unsigned long pressDuration = releaseTime - pressTime;
+  if (pressDuration < shortPressTime) {
+    return 1;
+  } else if (pressDuration >= shortPressTime && pressDuration <= longPressTime) {
+    return 2;
+  }
+  else return 0;
+}
 
-  for (auto output : CBlock::OUTPUT_IDX_RANGE()) {
-    TEST_ASSERT(cblock.set_factor(output, 0.5f * coeff));
+void writeOffsetValue() {
+    for (auto output : CBlock::OUTPUT_IDX_RANGE()) {
+    TEST_ASSERT(cblock.set_factor(output, 0.5f * offsetval));
   }
   cblock.write_to_hardware();
 
-  // wait 60 seconds or exit if button is pressed
-  // 2 second safety
-  delay(2000);
-  start = millis();
-  while (millis() - start < 60000 - 2000 && digitalReadFast(29)) {
-  }
+  delay(10);
+}
 
+void writeTestValue() {
   for (auto output : CBlock::OUTPUT_IDX_RANGE()) {
-    TEST_ASSERT(cblock.set_factor(output, 0.5f * 0.1f));
-  }
+    TEST_ASSERT(cblock.set_factor(output, 0.5f * (testvalue + offsetval)));
+    }
   cblock.write_to_hardware();
 
   delay(10);
+}
+  
+void enterTrackMode() {
   shblock.set_track.trigger();
-  delay(1000);
+
+  //min 1s
+  delay(1000);  
+}
+
+void enterInjectMode() {
+  shblock.set_inject.trigger();
+
+  delay(10);
+}
+
+void wait4Button(unsigned long timeout) {
+  int buttonState = 0;
+  while (buttonState == 0) {
+    buttonState = readButton(timeout);
+  }
+  if (buttonState == 2) direction = -direction;  
+}
+
+void test() {
+  writeOffsetValue();  
+  enterTrackMode();
+  wait4Button(0);  
+  // TRIGGER !!!!
+  enterInjectMode();  
+  writeTestValue();
+  wait4Button(60000);  
 }
 
 void loop() {
-  test(1.1f);
-  delay(1000);
-  test(-0.9f);
+  offsetval = 0.1f;
+  float testvalues[] = {-1.0f, -0.5f, -0.1f, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f};
+  int count = sizeof(testvalues) / sizeof(testvalues[0]);
+  for(int i = 0; (i < count && i >= 0); i+= direction) {
+    testvalue = testvalues[i];
+    test();
+    delay(1000);
+  }  
 }
