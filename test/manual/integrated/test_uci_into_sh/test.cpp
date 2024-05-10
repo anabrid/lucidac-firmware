@@ -146,8 +146,8 @@ void loop() {
   float offsetvals[] = {-1.0f, -0.5f, -0.2f, -0.1f, -0.05f, -0.02f, -0.01f, 0.0f, 0.01f, 0.02f, 0.05f, 0.1f, 0.2f, 0.5f, 1.0f};  
   int countTestvalues = sizeof(testvalues) / sizeof(testvalues[0]);
   int countOffsetvals = sizeof(offsetvals) / sizeof(offsetvals[0]);
-  for(int i = 0; (i < countTestvalues && i >= 0); i+= direction) {
-    for(int j = 0; (j < countOffsetvals && j >= 0); j+= direction) {
+  for(int i = 0; (i < countTestvalues && i >= 0); i=(direction +i) % countTestvalues) {
+    for(int j = 0; (j < countOffsetvals && j >= 0); j=(direction +j) % countOffsetvals) {
       testvalue = testvalues[i];
       offsetval = offsetvals[j];
       test();
