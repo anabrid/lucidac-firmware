@@ -35,7 +35,7 @@ void tearDown() {
 
 void configure_ublock() {
   // SET UBLOCK OUTPUT TO +2V
-  ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_BIG_REF);
+  ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_SMALL_REF);
 
   for (auto output : UBlock::OUTPUT_IDX_RANGE()) {
     TEST_ASSERT(ublock.connect(output / 2, output));
@@ -54,7 +54,7 @@ void configure_iblock() {
 void setup() {
   bus::init();
   pinMode(29, INPUT_PULLUP);
-
+  Serial.begin(9600);
   UNITY_BEGIN();
   // INIT TEST;
   RUN_TEST(configure_ublock);
@@ -142,15 +142,20 @@ void test() {
 
 void loop() {
   // CHOSE YOUR OFFSET AND TEST VALUES AND PUT IT IN THE ARRAYS
-  float testvalues[] = {0};
-  float offsetvals[] = {-1.0f, -0.5f, -0.2f, -0.1f, -0.05f, -0.02f, -0.01f, 0.0f, 0.01f, 0.02f, 0.05f, 0.1f, 0.2f, 0.5f, 1.0f};  
+  float testvalues[] = {-0.01f};
+  //float testvalues[] = {*-0.01f, -0.005f, -0.002f, -0.001f, 0.0f, 0.001f, 0.002f, 0.005f, 0.01f};
+
+  float offsetvals[] = {-0.1f, 0.0f, 0.1f};  
   int countTestvalues = sizeof(testvalues) / sizeof(testvalues[0]);
   int countOffsetvals = sizeof(offsetvals) / sizeof(offsetvals[0]);
-  for(int i = 0; (i < countTestvalues && i >= 0); i= (((i + direction) % countTestvalues) + countTestvalues) % countTestvalues) {
-    for(int j = 0; (j < countOffsetvals && j >= 0); j=(((j + direction) % countOffsetvals) + countOffsetvals) % countOffsetvals) {
+  for(int i = 0; (i < countTestvalues && i >= 0); i= (((i + direction) % countTestvalues) + countTestvalues) % countTestvalues){
+    for(int j = 0; (j < countOffsetvals && j >= 0); j=(((j + direction) % countOffsetvals) + countOffsetvals) % countOffsetvals){
       testvalue = testvalues[i];
       offsetval = offsetvals[j];
+      Serial.println(testvalue);
+      Serial.println(offsetval);
       test();
+
       delay(1000);
     }  
   }    
