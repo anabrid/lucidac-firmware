@@ -34,8 +34,8 @@ void tearDown() {
 }
 
 void configure_ublock() {
-  // SET UBLOCK OUTPUT TO +2V
-  ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_BIG_REF);
+  // SET UBLOCK OUTPUT TO +0.2V
+  ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_SMALL_REF);
 
   for (auto output : UBlock::OUTPUT_IDX_RANGE()) {
     TEST_ASSERT(ublock.connect(output / 2, output));
@@ -44,7 +44,7 @@ void configure_ublock() {
 }
 
 void configure_iblock() {
-  // Set I Block to n to n connection
+  // SET IBLOCK TO N TO N CONNECTION
   for (auto output : IBlock::OUTPUT_IDX_RANGE()) {
     TEST_ASSERT(iblock.connect(output, output));
   }
@@ -54,14 +54,19 @@ void configure_iblock() {
 void setup() {
   bus::init();
   pinMode(29, INPUT_PULLUP);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWriteFast(LED_BUILTIN, LOW);
+  Serial.begin(9600);
+  for(int k = 0; k < 20; k++) {
+    digitalToggleFast(LED_BUILTIN);
+    delay(50);
+  }
 
-  UNITY_BEGIN();
-  // INIT TEST;
+ // INIT TEST;
+  UNITY_BEGIN(); 
   RUN_TEST(configure_ublock);
   RUN_TEST(configure_iblock);
-
   shblock.set_track.trigger();
-
   UNITY_END();
 }
 
@@ -71,24 +76,24 @@ int readButton(unsigned long timeout) {
   unsigned long startTime = millis();
   while (digitalReadFast(29)) {
     if (timeout != 0 && millis() - startTime >= timeout) {
-      return 1; // Timeout
+      return 1; // Timeout is like short button
     }
   }
   pressTime = millis();
   if (pressTime - releaseTime < debounceTime) return 0;
   while (!digitalReadFast(29)) {
     if (timeout != 0 && millis() - startTime >= timeout) {
-      return 1; // Timeout
+      return 1; // Timeout is like short button
     }
   }
   releaseTime = millis();
   unsigned long pressDuration = releaseTime - pressTime;
   if (pressDuration < shortPressTime) {
-    return 1;
+    return 1; // short button
   } else if (pressDuration >= shortPressTime && pressDuration <= longPressTime) {
-    return 2;
+    return 2; // long button
   }
-  else return 0;
+  else return 0; // ignore tooo long buttons
 }
 
 void writeOffsetValue() {
@@ -112,7 +117,7 @@ void writeTestValue() {
 void enterTrackMode() {
   shblock.set_track.trigger();
 
-  //min 1s
+  // MIN 1sec
   delay(1000);  
 }
 
@@ -134,22 +139,33 @@ void test() {
   writeOffsetValue();  
   enterTrackMode();
   wait4Button(0);  
-  // TRIGGER !!!!
+  // TRIGGER AND SHOW IT!!!!
+  digitalWriteFast(LED_BUILTIN, HIGH);
   enterInjectMode();  
   writeTestValue();
-  wait4Button(60000);  
+  wait4Button(60000);
+  digitalWriteFast(LED_BUILTIN, LOW);  
 }
 
 void loop() {
-  // CHOSE YOUR OFFSET AND TEST VALUES AND PUT IT IN THE ARRAYS
-  float testvalues[] = {0};
-  float offsetvals[] = {-1.0f, -0.5f, -0.2f, -0.1f, -0.05f, -0.02f, -0.01f, 0.0f, 0.01f, 0.02f, 0.05f, 0.1f, 0.2f, 0.5f, 1.0f};  
-  int countTestvalues = sizeof(testvalues) / sizeof(testvalues[0]);
+  // CHOSE YOUR OFFSET AND TEST VALUES AND PUT IT IN THE ARRAYS  
+  float offsetvals[] = {-0.5f, 0, 0.5f};
+  float testvalues[] = {-0.01f, -0.0033f, 0, 0.0033f, 0.01f};  
   int countOffsetvals = sizeof(offsetvals) / sizeof(offsetvals[0]);
-  for(int i = 0; (i < countTestvalues && i >= 0); i= (((i + direction) % countTestvalues) + countTestvalues) % countTestvalues) {
-    for(int j = 0; (j < countOffsetvals && j >= 0); j=(((j + direction) % countOffsetvals) + countOffsetvals) % countOffsetvals) {
-      testvalue = testvalues[i];
-      offsetval = offsetvals[j];
+  int countTestvalues = sizeof(testvalues) / sizeof(testvalues[0]);
+  // 2 NESTED BIDIRECTIONAL LOOPS (PRESS LONG 4 CHANGE DIRECTION)
+  for(int i = direction > 0 ? 0 : countOffsetvals - 1; (i < countOffsetvals && i >= 0); i += direction) {  
+    for(int j = direction > 0 ? 0 : countTestvalues - 1; (j < countTestvalues && j >= 0); j += direction) { 
+      offsetval = offsetvals[i];
+      testvalue = testvalues[j];
+      Serial.print("offsetval for next test = ");
+      Serial.println(offsetval, 4);
+      Serial.print("testvalue for next test = ");
+      Serial.println(testvalue, 4);
+      Serial.print("direction = ");
+      Serial.println(direction);
+      Serial.println();
+
       test();
       delay(1000);
     }  
