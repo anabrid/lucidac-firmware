@@ -92,7 +92,7 @@ private:
   std::array<uint16_t, 8> ic_raw;
   std::array<unsigned int, 8> time_factors;
 
-  void write_time_factors_to_hardware();
+  bool write_time_factors_to_hardware();
 
 public:
   MIntBlock(uint8_t cluster_idx, uint8_t slot_idx);
@@ -103,7 +103,7 @@ public:
 
   bool set_time_factor(uint8_t int_idx, unsigned int k);
 
-  void write_to_hardware() override;
+  [[nodiscard]] bool write_to_hardware() override;
 
   bool config_self_from_json(JsonObjectConst cfg) override;
 
@@ -118,7 +118,7 @@ public:
 public:
   using MBlock::MBlock;
 
-  void write_to_hardware() override;
+  [[nodiscard]] bool write_to_hardware() override;
 
 protected:
   bool config_self_from_json(JsonObjectConst cfg) override;

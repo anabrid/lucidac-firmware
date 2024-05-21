@@ -12,14 +12,14 @@ const SPISettings functions::ICommandRegisterFunction::DEFAULT_SPI_SETTINGS{
     4'000'000, MSBFIRST, SPI_MODE3 /* chip expects SPI MODE0, but CLK is inverted on the way */};
 
 functions::ICommandRegisterFunction::ICommandRegisterFunction(bus::addr_t address)
-    : DataFunction(address, DEFAULT_SPI_SETTINGS) {}
+    : SR74HCT595(address, DEFAULT_SPI_SETTINGS) {}
 
 uint8_t functions::ICommandRegisterFunction::chip_cmd_word(uint8_t chip_input_idx, uint8_t chip_output_idx,
                                                            bool connect) {
   return (connect ? 0b1'000'0000 : 0b0'000'0000) | ((chip_output_idx & 0x7) << 4) | (chip_input_idx & 0xF);
 }
 
-void blocks::IBlock::write_to_hardware() {
+bool blocks::IBlock::write_to_hardware() {
   f_imatrix_reset.trigger();
   delayNanoseconds(420);
 
@@ -77,12 +77,14 @@ void blocks::IBlock::write_to_hardware() {
       if (actual_data) {
         remembered_command = command;
         // Send out data
-        f_cmd.transfer32(command);
+        if(!f_cmd.transfer32(command))
+          return false;
         // Apply command
         f_imatrix_sync.trigger();
       }
     }
   }
+  return true;
 }
 
 bool blocks::IBlock::init() {

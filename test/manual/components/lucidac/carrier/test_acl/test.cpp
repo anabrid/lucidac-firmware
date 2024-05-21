@@ -25,7 +25,7 @@ void tearDown() {
 void test_init() { TEST_ASSERT(carrier_board.init()); }
 
 void test_acl_prg() {
-  carrier_board.f_acl_prg.transfer(0b11100110);
+  carrier_board.f_acl_prg.transfer8(0b11100110);
   carrier_board.f_acl_upd.trigger();
   TEST_ASSERT(true);
 }

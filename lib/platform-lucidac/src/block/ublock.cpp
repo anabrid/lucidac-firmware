@@ -119,19 +119,22 @@ uint8_t blocks::UBlock::change_transmission_mode(const Transmission_Mode mode,
   return transmission_mode_byte;
 }
 
-void blocks::UBlock::write_matrix_to_hardware() const {
-  f_umatrix.transfer(output_input_map);
+bool blocks::UBlock::write_matrix_to_hardware() const {
+  if (!f_umatrix.transfer(output_input_map))
+    return false;
   f_umatrix_sync.trigger();
+  return true;
 }
 
-void blocks::UBlock::write_transmission_mode_to_hardware() const {
-  transmission_mode_register.transfer(transmission_mode_byte);
+bool blocks::UBlock::write_transmission_mode_to_hardware() const {
+  if (!transmission_mode_register.transfer8(transmission_mode_byte))
+    return false;
   transmission_mode_sync.trigger();
+  return true;
 }
 
-void blocks::UBlock::write_to_hardware() {
-  write_matrix_to_hardware();
-  write_transmission_mode_to_hardware();
+bool blocks::UBlock::write_to_hardware() {
+  return write_matrix_to_hardware() && write_transmission_mode_to_hardware();
 }
 
 bus::addr_t blocks::UBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }

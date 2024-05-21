@@ -56,7 +56,7 @@ void test_block() {
   TEST_ASSERT(ublock.connect(14, 30));
   TEST_ASSERT(ublock.connect(15, 31));
 
-  ublock.write_to_hardware();
+  TEST_ASSERT(ublock.write_to_hardware());
 
   TEST_ASSERT(ublock.is_connected(0, 0));
   TEST_ASSERT(ublock.is_connected(1, 1));
@@ -92,7 +92,7 @@ void test_block() {
   TEST_ASSERT(ublock.is_connected(14, 30));
   TEST_ASSERT(ublock.is_connected(15, 31));
 
-  ublock.write_to_hardware();
+  TEST_ASSERT(ublock.write_to_hardware());
 
   TEST_ASSERT(ublock.disconnect(0, 0));
   TEST_ASSERT(ublock.disconnect(1, 1));
@@ -128,7 +128,7 @@ void test_block() {
   TEST_ASSERT(ublock.disconnect(14, 30));
   TEST_ASSERT(ublock.disconnect(15, 31));
 
-  ublock.write_to_hardware();
+  TEST_ASSERT(ublock.write_to_hardware());
 }
 
 void setup() {

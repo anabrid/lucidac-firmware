@@ -24,7 +24,10 @@ bool functions::DAC60508::write_register(uint8_t address, uint16_t data) const {
   get_raw_spi().transfer(address & 0b0'000'1111);
   get_raw_spi().transfer16(data);
   end_communication();
-  // One could possibly read the register back to check or use CRC
+
+#ifdef ANABRID_PEDANTIC
+  return data == read_register(address);
+#endif
   return true;
 }
 
@@ -46,9 +49,7 @@ float functions::DAC60508::raw_to_float(uint16_t raw) {
 }
 
 bool functions::DAC60508::set_channel(uint8_t idx, uint16_t value) const {
-  write_register(REG_DAC(idx), value);
-  // One could possibly read the register back to check or use CRC
-  return true;
+  return write_register(REG_DAC(idx), value);
 }
 
 void functions::DAC60508::init() const {

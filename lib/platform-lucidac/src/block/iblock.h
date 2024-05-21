@@ -11,6 +11,7 @@
 #include "block/base.h"
 #include "bus/bus.h"
 #include "bus/functions.h"
+#include "chips/SR74HCT595.h"
 
 namespace functions {
 
@@ -25,11 +26,11 @@ namespace functions {
  * See chip_cmd_word and IBlock::write_to_hardware for more information and the actual calculation of the
  * bitstream.
  */
-class ICommandRegisterFunction : public DataFunction {
+class ICommandRegisterFunction : public SR74HCT595 {
 public:
   static const SPISettings DEFAULT_SPI_SETTINGS;
 
-  using DataFunction::DataFunction;
+  using SR74HCT595::SR74HCT595;
   explicit ICommandRegisterFunction(bus::addr_t address);
 
   static uint8_t chip_cmd_word(uint8_t chip_input_idx, uint8_t chip_output_idx, bool connect = true);
@@ -82,13 +83,14 @@ public:
   const functions::TriggerFunction f_imatrix_sync;
 
   explicit IBlock(const uint8_t clusterIdx)
-      : FunctionBlock("I", clusterIdx), outputs{0}, f_cmd{bus::address_from_tuple(bus::I_BLOCK_BADDR(clusterIdx), 2)},
+      : FunctionBlock("I", clusterIdx), outputs{0},
+        f_cmd{bus::address_from_tuple(bus::I_BLOCK_BADDR(clusterIdx), 2)},
         f_imatrix_reset{bus::address_from_tuple(bus::I_BLOCK_BADDR(clusterIdx), 4)},
         f_imatrix_sync{bus::address_from_tuple(bus::I_BLOCK_BADDR(clusterIdx), 3)} {}
 
   bus::addr_t get_block_address() override;
 
-  void write_to_hardware() override;
+  [[nodiscard]] bool write_to_hardware() override;
 
   bool init() override;
 

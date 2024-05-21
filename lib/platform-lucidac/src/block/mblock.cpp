@@ -30,11 +30,12 @@ bool blocks::MIntBlock::set_ic(uint8_t idx, float value) {
   return true;
 }
 
-void blocks::MIntBlock::write_to_hardware() {
+bool blocks::MIntBlock::write_to_hardware() {
   for (decltype(ic_raw.size()) i = 0; i < ic_raw.size(); i++) {
-    f_ic_dac.set_channel(i, ic_raw[i]);
+    if (!f_ic_dac.set_channel(i, ic_raw[i]))
+      return false;
   }
-  write_time_factors_to_hardware();
+  return write_time_factors_to_hardware();
 }
 
 bool blocks::MIntBlock::init() {
@@ -52,15 +53,18 @@ bool blocks::MIntBlock::set_time_factor(uint8_t int_idx, unsigned int k) {
   return true;
 }
 
-void blocks::MIntBlock::write_time_factors_to_hardware() {
+bool blocks::MIntBlock::write_time_factors_to_hardware() {
   uint8_t switches = 0;
   for (size_t index = 0; index < time_factors.size(); index++) {
     if (time_factors[index] != DEFAULT_TIME_FACTOR) {
       switches |= 1 << index;
     }
   }
-  f_time_factor.transfer(switches);
+  if (!f_time_factor.transfer8(switches))
+    return false;
+
   f_time_factor_sync.trigger();
+  return true;
 }
 
 bool blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
@@ -126,7 +130,7 @@ void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
   }
 }
 
-void blocks::MMulBlock::write_to_hardware() {}
+bool blocks::MMulBlock::write_to_hardware() { return true; }
 
 bool blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
   // MMulBlock does not expect any configuration currently.

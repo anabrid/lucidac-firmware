@@ -40,7 +40,7 @@ void configure_ublock() {
   for (auto output : UBlock::OUTPUT_IDX_RANGE()) {
     TEST_ASSERT(ublock.connect(output / 2, output));
   }
-  ublock.write_to_hardware();
+  TEST_ASSERT(ublock.write_to_hardware());
 }
 
 void configure_iblock() {
@@ -48,7 +48,7 @@ void configure_iblock() {
   for (auto output : IBlock::OUTPUT_IDX_RANGE()) {
     TEST_ASSERT(iblock.connect(output, output));
   }
-  iblock.write_to_hardware();
+  TEST_ASSERT(iblock.write_to_hardware());
 }
 
 void setup() {
@@ -63,7 +63,7 @@ void setup() {
   }
 
  // INIT TEST;
-  UNITY_BEGIN(); 
+  UNITY_BEGIN();
   RUN_TEST(configure_ublock);
   RUN_TEST(configure_iblock);
   shblock.set_track.trigger();
@@ -100,7 +100,7 @@ void writeOffsetValue() {
     for (auto output : CBlock::OUTPUT_IDX_RANGE()) {
     TEST_ASSERT(cblock.set_factor(output, 0.5f * offsetval));
   }
-  cblock.write_to_hardware();
+  TEST_ASSERT(cblock.write_to_hardware());
 
   delay(10);
 }
@@ -109,16 +109,16 @@ void writeTestValue() {
   for (auto output : CBlock::OUTPUT_IDX_RANGE()) {
     TEST_ASSERT(cblock.set_factor(output, 0.5f * (testvalue + offsetval)));
     }
-  cblock.write_to_hardware();
+  TEST_ASSERT(cblock.write_to_hardware());
 
   delay(10);
 }
-  
+
 void enterTrackMode() {
   shblock.set_track.trigger();
 
   // MIN 1sec
-  delay(1000);  
+  delay(1000);
 }
 
 void enterInjectMode() {
@@ -132,30 +132,30 @@ void wait4Button(unsigned long timeout) {
   while (buttonState == 0) {
     buttonState = readButton(timeout);
   }
-  if (buttonState == 2) direction = -direction;  
+  if (buttonState == 2) direction = -direction;
 }
 
 void test() {
-  writeOffsetValue();  
+  writeOffsetValue();
   enterTrackMode();
-  wait4Button(0);  
+  wait4Button(0);
   // TRIGGER AND SHOW IT!!!!
   digitalWriteFast(LED_BUILTIN, HIGH);
-  enterInjectMode();  
+  enterInjectMode();
   writeTestValue();
   wait4Button(60000);
-  digitalWriteFast(LED_BUILTIN, LOW);  
+  digitalWriteFast(LED_BUILTIN, LOW);
 }
 
 void loop() {
-  // CHOSE YOUR OFFSET AND TEST VALUES AND PUT IT IN THE ARRAYS  
+  // CHOSE YOUR OFFSET AND TEST VALUES AND PUT IT IN THE ARRAYS
   float offsetvals[] = {-0.5f, 0, 0.5f};
-  float testvalues[] = {-0.01f, -0.0033f, 0, 0.0033f, 0.01f};  
+  float testvalues[] = {-0.01f, -0.0033f, 0, 0.0033f, 0.01f};
   int countOffsetvals = sizeof(offsetvals) / sizeof(offsetvals[0]);
   int countTestvalues = sizeof(testvalues) / sizeof(testvalues[0]);
   // 2 NESTED BIDIRECTIONAL LOOPS (PRESS LONG 4 CHANGE DIRECTION)
-  for(int i = direction > 0 ? 0 : countOffsetvals - 1; (i < countOffsetvals && i >= 0); i += direction) {  
-    for(int j = direction > 0 ? 0 : countTestvalues - 1; (j < countTestvalues && j >= 0); j += direction) { 
+  for(int i = direction > 0 ? 0 : countOffsetvals - 1; (i < countOffsetvals && i >= 0); i += direction) {
+    for(int j = direction > 0 ? 0 : countTestvalues - 1; (j < countTestvalues && j >= 0); j += direction) {
       offsetval = offsetvals[i];
       testvalue = testvalues[j];
       Serial.print("offsetval for next test = ");
@@ -168,6 +168,6 @@ void loop() {
 
       test();
       delay(1000);
-    }  
-  }    
+    }
+  }
 }

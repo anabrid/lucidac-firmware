@@ -9,7 +9,6 @@ bool blocks::SHBlock::config_self_from_json(JsonObjectConst cfg) { return false;
 
 bus::addr_t blocks::SHBlock::get_block_address() { return bus::SH_BLOCK_BADDR(cluster_idx); }
 
-void blocks::SHBlock::write_to_hardware() {}
+bool blocks::SHBlock::write_to_hardware() { return true; }
 
-blocks::SHBlock::SHBlock(const uint8_t clusterIdx)
-    : FunctionBlock("SH", clusterIdx) {}
+blocks::SHBlock::SHBlock(const uint8_t clusterIdx) : FunctionBlock("SH", clusterIdx) {}
