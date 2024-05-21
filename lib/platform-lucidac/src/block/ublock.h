@@ -31,7 +31,7 @@ public:
 
   //! Convert an output array to data packets and transfer to chip.
   //! Timing: ~5microseconds
-  template <size_t num_of_outputs> void transfer(const std::array<int8_t, num_of_outputs> &outputs) const;
+  template <size_t num_of_outputs> [[nodiscard]] bool transfer(const std::array<int8_t, num_of_outputs> &outputs) const;
 };
 
 } // namespace functions
@@ -151,9 +151,9 @@ public:
   change_transmission_mode(const Transmission_Mode mode,
                            const Transmission_Target target = Transmission_Target::REGULAR_AND_ALTERNATIVE);
 
-  void write_matrix_to_hardware() const;
-  void write_transmission_mode_to_hardware() const;
-  void write_to_hardware() override;
+  [[nodiscard]] bool write_matrix_to_hardware() const;
+  [[nodiscard]] bool write_transmission_mode_to_hardware() const;
+  [[nodiscard]] bool write_to_hardware() override;
 
   bool config_self_from_json(JsonObjectConst cfg) override;
 

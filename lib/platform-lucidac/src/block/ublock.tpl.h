@@ -5,16 +5,16 @@
 
 #pragma once
 
-#include <cstdint>
 #include <array>
+#include <cstdint>
 
 // hint: This function could be avoided to be a template if the signature
 //       was just transfer(const uint8_t* const outputs, uint8_t num_of_outputs).
 //       The template provides little advantage here.
 
 template <size_t num_of_outputs>
-void functions::UMatrixFunction::transfer(const std::array<int8_t, num_of_outputs>& outputs) const {
-  constexpr uint8_t NUM_BYTES = num_of_outputs*5/8;
+[[nodiscard]] bool functions::UMatrixFunction::transfer(const std::array<int8_t, num_of_outputs> &outputs) const {
+  constexpr uint8_t NUM_BYTES = num_of_outputs * 5 / 8;
   uint8_t buffer[NUM_BYTES] = {}; // initialized with zeros
 
   /*
@@ -56,5 +56,15 @@ void functions::UMatrixFunction::transfer(const std::array<int8_t, num_of_output
   }
 
   DataFunction::transfer(buffer, nullptr, sizeof(buffer));
+  
+#ifdef ANABRID_PEDANTIC
+  uint8_t read_buffer[NUM_BYTES] = {};
+  DataFunction::transfer(buffer, read_buffer, sizeof(buffer));
+
+  return memcmp(buffer, read_buffer, sizeof(buffer)) == 0;
+#endif
+
+  return true;
+
   // You must trigger the SYNC of the chip with the sync trigger function.
 }

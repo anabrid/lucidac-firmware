@@ -32,7 +32,7 @@ public:
 
   virtual bus::addr_t get_block_address() = 0;
 
-  virtual void write_to_hardware() = 0;
+  virtual bool write_to_hardware() = 0;
 
   std::vector<Entity *> get_child_entities() override {
 #ifdef ANABRID_DEBUG_ENTITY

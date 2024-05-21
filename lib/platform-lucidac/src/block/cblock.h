@@ -50,7 +50,7 @@ protected:
 
   std::array<uint16_t, NUM_COEFF> factors_{{0}};
 
-  void write_factors_to_hardware();
+ [[nodiscard]] bool write_factors_to_hardware();
 
 public:
   explicit CBlock(uint8_t clusterIdx);
@@ -70,10 +70,10 @@ public:
    *
    * @returns false in case of invalid input, true else.
    **/
-  bool set_factor(uint8_t idx, float factor);
+  [[nodiscard]] bool set_factor(uint8_t idx, float factor);
   float get_factor(uint8_t idx);
 
-  void write_to_hardware() override;
+  [[nodiscard]] bool write_to_hardware() override;
   void reset(bool keep_calibration) override;
 
   bool config_self_from_json(JsonObjectConst cfg) override;

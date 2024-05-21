@@ -55,19 +55,21 @@ float blocks::CBlock::get_factor(uint8_t idx) {
 bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   if (idx >= NUM_COEFF)
     return false;
-  if (factor > decltype(f_coeffs)::value_type::MAX_FACTOR or factor < decltype(f_coeffs)::value_type::MIN_FACTOR)
+  if (factor > decltype(f_coeffs)::value_type::MAX_FACTOR or
+      factor < decltype(f_coeffs)::value_type::MIN_FACTOR)
     return false;
 
   factors_[idx] = decltype(f_coeffs)::value_type::float_to_raw(factor);
   return true;
 }
 
-void blocks::CBlock::write_to_hardware() { write_factors_to_hardware(); }
+bool blocks::CBlock::write_to_hardware() { return write_factors_to_hardware(); }
 
-void blocks::CBlock::write_factors_to_hardware() {
+bool blocks::CBlock::write_factors_to_hardware() {
   for (size_t i = 0; i < f_coeffs.size(); i++) {
     f_coeffs[i].set_scale(factors_[i]);
   }
+  return true;
 }
 
 void blocks::CBlock::reset(bool keep_calibration) {

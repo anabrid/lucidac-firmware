@@ -28,29 +28,29 @@ void functions::DataFunction::end_communication() const {
   bus::spi.endTransaction();
 }
 
-uint8_t functions::DataFunction::transfer(uint8_t data) const {
-  begin_communication();
-  auto ret = bus::spi.transfer(data);
-  end_communication();
-  return ret;
-}
-
 void functions::DataFunction::transfer(const void *mosi_buf, void *miso_buf, size_t count) const {
   begin_communication();
   bus::spi.transfer(mosi_buf, miso_buf, count);
   end_communication();
 }
 
-uint16_t functions::DataFunction::transfer16(uint16_t data) const {
+uint8_t functions::DataFunction::transfer8(uint8_t data_in) const {
   begin_communication();
-  auto ret = bus::spi.transfer16(data);
+  auto ret = bus::spi.transfer(data_in);
   end_communication();
   return ret;
 }
 
-uint32_t functions::DataFunction::transfer32(uint32_t data) const {
+uint16_t functions::DataFunction::transfer16(uint16_t data_in) const {
   begin_communication();
-  auto ret = bus::spi.transfer32(data);
+  auto ret = bus::spi.transfer16(data_in);
+  end_communication();
+  return ret;
+}
+
+uint32_t functions::DataFunction::transfer32(uint32_t data_in) const {
+  begin_communication();
+  auto ret = bus::spi.transfer32(data_in);
   end_communication();
   return ret;
 }

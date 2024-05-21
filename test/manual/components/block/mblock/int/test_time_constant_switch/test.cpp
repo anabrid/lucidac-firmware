@@ -30,7 +30,7 @@ void test_init() {
 }
 
 void test_function() {
-  intblock.f_time_factor.transfer(0b01011011);
+  TEST_ASSERT(intblock.f_time_factor.transfer8(0b01011011));
   intblock.f_time_factor_sync.trigger();
   TEST_ASSERT(true);
 }
@@ -52,7 +52,7 @@ void test_block() {
   TEST_ASSERT_EQUAL(10000, intblock.time_factors[1]);
 
   // Write to hardware
-  intblock.write_time_factors_to_hardware();
+  TEST_ASSERT(intblock.write_time_factors_to_hardware());
 }
 
 void setup() {
