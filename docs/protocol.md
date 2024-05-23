@@ -92,6 +92,10 @@ Note that one can imagine writing a client which focusses on administrative issu
 (probably also only implementing synchronous communication) while another type of client
 might focus on actual computer usage (data science oriented)
 
+\todo
+Say something about stability of method calls. Also say about the structure of the different
+message types (in terms of request and response)
+
 ## Protocol elevation
 
 The concept of *protocol elevation* means the transport/encapsulation of the JSONL protocol over
