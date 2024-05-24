@@ -3,7 +3,6 @@
 //
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <QNEthernet.h>
@@ -16,6 +15,7 @@
 #include "run/run_manager.h"
 
 #define _ERROR_OUT_                                                                                           \
+  pinMode(13, OUTPUT);                                                                                        \
   while (true) {                                                                                              \
     digitalToggle(13);                                                                                        \
     delay(100);                                                                                               \
@@ -78,7 +78,7 @@ void setup() {
   // Initialize carrier board
   LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
   if (!carrier_.init()) {
-    LOG_ERROR("Error initializing carrier board.");
+    LOG_ERROR("Error: Unable to initialize carrier board.");
     _ERROR_OUT_
   }
 

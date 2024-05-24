@@ -352,3 +352,17 @@ void blocks::UBlock::config_self_to_json(JsonObject &cfg) {
       outputs_cfg.add(nullptr);
   }
 }
+
+blocks::UBlock *blocks::UBlock::from_entity_classifier(entities::EntityClassifier classifier,
+                                                       bus::addr_t block_address) {
+  if (!classifier or classifier.class_enum != CLASS_)
+    return nullptr;
+
+  // Currently, there are no different variants or versions
+  if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
+      classifier.version != entities::EntityClassifier::DEFAULT_)
+    return nullptr;
+
+  // Return default implementation
+  return new UBlock(block_address);
+}

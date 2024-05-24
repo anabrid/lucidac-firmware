@@ -6,7 +6,7 @@
 #include "mblock.h"
 #include "logging.h"
 
-blocks::MBlock::MBlock(const bus::addr_t block_address)
+blocks::MBlock::MBlock(bus::addr_t block_address)
     : blocks::FunctionBlock{std::string("M") + std::string(
                                                    // Addresses 4, 9, 14 are M0
                                                    // Addresses 5, 10, 15 are M1
@@ -150,4 +150,55 @@ bool blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
     }
   }
   return true;
+}
+
+// ███████ ███    ██ ████████ ██ ████████ ██    ██     ███████  █████   ██████ ████████  ██████  ██████  ██
+// ███████ ███████ ██      ████   ██    ██    ██    ██     ██  ██      ██      ██   ██ ██         ██    ██ ██
+// ██   ██ ██ ██      ██ █████   ██ ██  ██    ██    ██    ██      ████       █████   ███████ ██         ██ ██
+// ██ ██████  ██ █████   ███████ ██      ██  ██ ██    ██    ██    ██       ██        ██      ██   ██ ██ ██ ██
+// ██ ██   ██ ██ ██           ██ ███████ ██   ████    ██    ██    ██       ██        ██      ██   ██  ██████ ██
+// ██████  ██   ██ ██ ███████ ███████
+
+blocks::MBlock *blocks::MBlock::from_entity_classifier(entities::EntityClassifier classifier,
+                                                       const bus::addr_t block_address) {
+  if (!classifier or classifier.class_enum != entities::EntityClass::M_BLOCK)
+    return nullptr;
+
+  auto type = classifier.type_as<TYPES>();
+  switch (type) {
+  case TYPES::UNKNOWN:
+    // This is already checked by !classifier above
+    return nullptr;
+  case TYPES::M_MUL4_BLOCK:
+    return MMulBlock::from_entity_classifier(classifier, block_address);
+  case TYPES::M_INT8_BLOCK:
+    return MIntBlock::from_entity_classifier(classifier, block_address);
+  }
+  // Any unknown value results in a nullptr here.
+  // Adding default case to switch suppresses warnings about missing cases.
+  return nullptr;
+}
+
+blocks::MIntBlock *blocks::MIntBlock::from_entity_classifier(entities::EntityClassifier classifier,
+                                                             const bus::addr_t block_address) {
+  // Assume classifier has already been sanity checked
+  // Currently, there are no different variants or versions
+  if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
+      classifier.version != entities::EntityClassifier::DEFAULT_)
+    return nullptr;
+
+  // Return default implementation
+  return new MIntBlock(block_address);
+}
+
+blocks::MMulBlock *blocks::MMulBlock::from_entity_classifier(entities::EntityClassifier classifier,
+                                                             const bus::addr_t block_address) {
+  // Assume classifier has already been sanity checked
+  // Currently, there are no different variants or versions
+  if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
+      classifier.version != entities::EntityClassifier::DEFAULT_)
+    return nullptr;
+
+  // Return default implementation
+  return new MMulBlock(block_address);
 }

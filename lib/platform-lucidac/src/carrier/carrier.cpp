@@ -9,7 +9,7 @@
 
 std::string carrier::Carrier::get_system_mac() { return ::get_system_mac(); }
 
-carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}) {}
+carrier::Carrier::Carrier() : entities::Entity(""), clusters({lucidac::LUCIDAC(0)}) {}
 
 bool carrier::Carrier::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
