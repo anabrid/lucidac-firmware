@@ -13,6 +13,14 @@ namespace functions {}
 namespace blocks {
 
 class SHBlock : public blocks::FunctionBlock {
+public:
+  // Entity hardware identifier information.
+  static constexpr auto CLASS_ = entities::EntityClass::SH_BLOCK;
+
+  entities::EntityClass get_entity_class() const final { return CLASS_; };
+
+  static SHBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
+
 protected:
   const functions::TriggerFunction set_track{bus::address_from_tuple(bus::SH_BLOCK_BADDR(0), 2)};
   const functions::TriggerFunction set_track_at_ic{bus::address_from_tuple(bus::SH_BLOCK_BADDR(0), 3)};
@@ -24,11 +32,10 @@ protected:
   const functions::TriggerFunction set_inject{bus::address_from_tuple(bus::SH_BLOCK_BADDR(0), 7)};
 
 public:
-  explicit SHBlock(uint8_t clusterIdx);
+  SHBlock();
+  explicit SHBlock(bus::addr_t block_address);
 
   [[nodiscard]] bool write_to_hardware() override;
-
-  bus::addr_t get_block_address() override;
 
 protected:
   bool config_self_from_json(JsonObjectConst cfg) override;

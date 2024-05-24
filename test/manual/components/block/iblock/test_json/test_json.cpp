@@ -14,8 +14,8 @@
 #include "block/iblock.h"
 #include "bus/functions.h"
 
-blocks::IBlock iblockdonor{0};
-blocks::IBlock iblockreciever{0};
+blocks::IBlock iblockdonor;
+blocks::IBlock iblockreciever;
 
 void test_object2json2object() {
   iblockdonor.init();

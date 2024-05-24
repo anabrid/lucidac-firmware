@@ -20,7 +20,7 @@ void tearDown() {
 }
 
 void test_block() {
-  UBlock ublock(0);
+  UBlock ublock;
 
   TEST_ASSERT(ublock.connect(0, 0));
   TEST_ASSERT(ublock.connect(1, 1));

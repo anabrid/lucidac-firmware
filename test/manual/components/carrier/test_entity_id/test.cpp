@@ -7,6 +7,7 @@
 #include <unity.h>
 
 #define private public
+#define protected public
 #include "carrier/carrier.h"
 
 using namespace carrier;

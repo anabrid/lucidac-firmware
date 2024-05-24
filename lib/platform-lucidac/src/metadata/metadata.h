@@ -10,21 +10,31 @@
 
 #include "bus/bus.h"
 #include "bus/functions.h"
+#include "chips/EEPROM25AA02E64.h"
+#include "entity/entity.h"
 
 namespace metadata {
 
+enum class LayoutVersion : uint8_t { V1 = 1 };
+
 typedef struct __attribute__((packed)) MetadataMemoryLayoutV1 {
-  const uint16_t _memory_version_and_size;
-  const uint16_t _entity_class_and_type;
-  const uint8_t entity_variant;
-  const uint8_t entity_version;
-  const uint8_t entity_data[256 - 14];
+  const LayoutVersion version;
+  const uint16_t size;
+  const entities::EntityClassifier classifier;
+  const uint8_t entity_data[256 - 15];
   const uint8_t uuid[8];
-
-  uint8_t get_memory_version() const { return (_memory_version_and_size & 0xE000) >> 13; }
-
-  uint16_t get_memory_size() const { return _memory_version_and_size & 0x1FFF; }
 } MetadataMemoryLayoutV1;
+
+class MetadataReader : public functions::EEPROM25AA02E64 {
+public:
+  using functions::EEPROM25AA02E64::EEPROM25AA02E64;
+
+  entities::EntityClassifier read_entity_classifier() {
+    std::array<uint8_t, 4> data{0};
+    read(offsetof(MetadataMemoryLayoutV1, classifier), data.size(), data.data());
+    return {data[0], data[1], data[2], data[3]};
+  }
+};
 
 template <std::size_t dataSize> class MetadataMemory : public functions::DataFunction {
 private:
@@ -37,6 +47,8 @@ public:
   virtual size_t read_from_hardware(size_t byte_offset, size_t length, uint8_t *buffer) const = 0;
 
   size_t read_from_hardware() { return read_from_hardware(0, data.size(), data.data()); };
+
+  template <class Layout_> const Layout_ &as() const { return *((Layout_ *)(data.data())); }
 };
 
 } // namespace metadata

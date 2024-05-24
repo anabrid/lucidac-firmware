@@ -54,6 +54,13 @@ namespace blocks {
 
 class UBlock : public FunctionBlock {
 public:
+  // Entity hardware identifier information.
+  static constexpr auto CLASS_ = entities::EntityClass::U_BLOCK;
+
+  static UBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
+  ;
+
+public:
   static constexpr uint8_t BLOCK_IDX = bus::U_BLOCK_IDX;
 
   static constexpr uint8_t NUM_OF_INPUTS = 16;
@@ -122,9 +129,11 @@ private:
   bool _is_output_connected(const uint8_t output) const;
 
 public:
-  explicit UBlock(const uint8_t clusterIdx);
+  explicit UBlock(bus::addr_t block_address);
 
-  bus::addr_t get_block_address() override;
+  UBlock() : UBlock(bus::idx_to_addr(0, bus::U_BLOCK_IDX, 0)) {}
+
+  entities::EntityClass get_entity_class() const final { return entities::EntityClass::U_BLOCK; }
 
   void reset(const bool keep_offsets) override;
 
