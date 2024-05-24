@@ -93,9 +93,15 @@ bool msg::handlers::GetConfigMessageHandler::handle(JsonObjectConst msg_in, Json
 }
 
 bool msg::handlers::GetEntitiesRequestHandler::handle(JsonObjectConst msg_in, JsonObject &msg_out) {
-  auto serialized_data = R"({"00-00-00-00-00-00": {"/0": {"/M0": {"class": 2, "type": 0, "variant": 0, "version": 0}, "/M1": {"class": 2, "type": 1, "variant": 0, "version": 0}, "/U": {"class": 3, "type": 0, "variant": 0, "version": 0}, "/C": {"class": 4, "type": 0, "variant": 0, "version": 0}, "/I": {"class": 5, "type": 0, "variant": 0, "version": 0}, "class": 1, "type": 3, "variant": 0, "version": 0}, "class": 0, "type": 0, "variant": 0, "version": 0}})";
-  std::memcpy((void*)(serialized_data + 2), (void*)(carrier.get_entity_id().c_str()), 17);
-  msg_out["entities"] = serialized(serialized_data);
+  auto entities_obj = msg_out.createNestedObject("entities");
+  auto carrier_obj = entities_obj[carrier.get_entity_id()] = carrier.get_entity_classifier();
+  for (const auto &cluster : carrier.clusters) {
+    auto cluster_obj = carrier_obj["/" + cluster.get_entity_id()] = cluster.get_entity_classifier();
+    for (auto *block : cluster.get_blocks()) {
+      if (block)
+        cluster_obj["/" + block->get_entity_id()] = block->get_entity_classifier();
+    }
+  }
   return true;
 }
 

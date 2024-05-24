@@ -12,7 +12,7 @@ std::string carrier::Carrier::get_system_mac() { return ::get_system_mac(); }
 const SPISettings carrier::Carrier::F_ADC_SWITCHER_PRG_SPI_SETTINGS{
     4'000'000, MSBFIRST, SPI_MODE2 /* chip expects SPI MODE0, but CLK is inverted on the way */};
 
-carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}),
+carrier::Carrier::Carrier() : entities::Entity(""), clusters({lucidac::LUCIDAC(0)}),
                               f_acl_prg(bus::address_from_tuple(CARRIER_MADDR, ACL_PRG_FADDR), true),
                               f_acl_upd(bus::address_from_tuple(CARRIER_MADDR, ACL_UPD_FADDR)),
                               f_acl_clr(bus::address_from_tuple(CARRIER_MADDR, ACL_CRL_FADDR)),

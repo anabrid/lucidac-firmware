@@ -4,14 +4,27 @@ stages:
   - release
 
 
-test_job:
+test_native_job:
+  # Run all native tests
   stage: test
   image:
     name: $CI_REGISTRY/lucidac/firmware/hybrid-controller/platformio-build
   script:
     - apt update
     - apt install git build-essential -y
-    - pio test -e native --filter native/* --filter emulated/*  
+    - pio test -e native --filter native/* --filter emulated/*
+
+
+test_others_job:
+  # Compile all non-native test cases to check for incompatible changes in the codebase
+  # This helps with noticing that a change breaks an old test case
+  # This takes a fairly long time and may be disabled if it becomes too annoying
+  stage: test
+  allow_failure: true
+  image:
+    name: $CI_REGISTRY/lucidac/firmware/hybrid-controller/platformio-build
+  script:
+    - pio test -e teensy41 --without-uploading --without-testing --filter hardware/* --filter manual/* --ignore manual/teensy_basics/*
 
 
 build_job:

@@ -97,8 +97,6 @@ bool blocks::IBlock::init() {
   return true;
 }
 
-bus::addr_t blocks::IBlock::get_block_address() { return bus::I_BLOCK_BADDR(cluster_idx); }
-
 bool blocks::IBlock::_is_connected(uint8_t input, uint8_t output) {
   return outputs[output] & INPUT_BITMASK(input);
 }
@@ -228,4 +226,18 @@ void blocks::IBlock::config_self_to_json(JsonObject &cfg) {
       outputs_cfg.add(nullptr);
     }
   }
+}
+
+blocks::IBlock *blocks::IBlock::from_entity_classifier(entities::EntityClassifier classifier,
+                                                       bus::addr_t block_address) {
+  if (!classifier or classifier.class_enum != CLASS_)
+    return nullptr;
+
+  // Currently, there are no different variants or versions
+  if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
+      classifier.version != entities::EntityClassifier::DEFAULT_)
+    return nullptr;
+
+  // Return default implementation
+  return new IBlock(block_address);
 }

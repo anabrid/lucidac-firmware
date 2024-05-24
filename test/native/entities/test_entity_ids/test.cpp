@@ -14,11 +14,11 @@
 
 using namespace blocks;
 
-MIntBlock intblock1{0, MBlock::M1_IDX};
-MIntBlock intblock2{0, MBlock::M2_IDX};
-UBlock ublock{0};
-CBlock cblock{0};
-IBlock iblock{0};
+MIntBlock intblock1{MBlock::SLOT::M0};
+MIntBlock intblock2{MBlock::SLOT::M1};
+UBlock ublock;
+CBlock_SequentialAddresses cblock;
+IBlock iblock;
 
 void setUp() {
   // This is called before *each* test.
@@ -40,9 +40,4 @@ int main(int argc, char **argv) {
   UNITY_BEGIN();
   RUN_TEST(test_entity_ids);
   UNITY_END();
-}
-
-void loop() {
-  // test_function();
-  delay(100);
 }

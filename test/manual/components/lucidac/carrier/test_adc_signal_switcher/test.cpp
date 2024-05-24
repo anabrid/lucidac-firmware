@@ -27,7 +27,7 @@ void test_init() { TEST_ASSERT(carrier_board.init()); }
 void test_adc_switcher_matrix_reset() { carrier_board.f_adc_switcher_matrix_reset.trigger(); }
 
 void test_adc_prg() {
-  carrier_board.f_adc_switcher_prg.transfer(functions::ICommandRegisterFunction::chip_cmd_word(3, 5));
+  carrier_board.f_adc_switcher_prg.transfer8(functions::ICommandRegisterFunction::chip_cmd_word(3, 5));
   carrier_board.f_adc_switcher_sync.trigger();
   TEST_ASSERT(true);
 }

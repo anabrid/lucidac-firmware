@@ -12,13 +12,55 @@
   if (!(x))                                                                                                   \
     return false;
 
-auto lucidac::LUCIDAC::get_blocks() {
-  return std::array<blocks::FunctionBlock *, 5>{m1block, m2block, ublock, cblock, iblock};
+std::array<blocks::FunctionBlock *, 5> lucidac::LUCIDAC::get_blocks() const {
+  return {m1block, m2block, ublock, cblock, iblock};
 }
 
 bool lucidac::LUCIDAC::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   bus::init();
+
+  // Dynamically detect installed blocks
+  // Check if a block is already set, which may happen with a special constructor in the future
+  LOG(ANABRID_DEBUG_INIT, "Detecting installed blocks...");
+  if (!m1block) {
+    m1block = blocks::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M1_BLOCK_IDX, 0));
+    if (!m1block)
+      LOG(ANABRID_DEBUG_INIT, "Warning: M0-block is missing or unknown.");
+  }
+  if (!m2block) {
+    m2block = blocks::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M2_BLOCK_IDX, 0));
+    if (!m2block)
+      LOG(ANABRID_DEBUG_INIT, "Warning: M1-block is missing or unknown.");
+  }
+  if (!m1block and !m2block) {
+    LOG(ANABRID_DEBUG_INIT, "Error: Both M0 and M1-blocks are missing or unknown.");
+    return false;
+  }
+
+  if (!ublock) {
+    ublock = blocks::detect<blocks::UBlock>(bus::idx_to_addr(cluster_idx, bus::U_BLOCK_IDX, 0));
+    if (!ublock) {
+      LOG(ANABRID_DEBUG_INIT, "Error: U-block is missing or unknown.");
+      return false;
+    }
+  }
+  if (!cblock) {
+    cblock = blocks::detect<blocks::CBlock>(bus::idx_to_addr(cluster_idx, bus::C_BLOCK_IDX, 0));
+    if (!cblock) {
+      LOG(ANABRID_DEBUG_INIT, "Error: C-block is missing or unknown.");
+      return false;
+    }
+  }
+  if (!iblock) {
+    iblock = blocks::detect<blocks::IBlock>(bus::idx_to_addr(cluster_idx, bus::I_BLOCK_IDX, 0));
+    if (!iblock) {
+      LOG(ANABRID_DEBUG_INIT, "Error: I-block is missing or unknown.");
+      return false;
+    }
+  }
+
+  LOG(ANABRID_DEBUG_INIT, "Initialising detected blocks...");
   for (auto block : get_blocks()) {
     if (block && !block->init())
       return false;
@@ -29,13 +71,7 @@ bool lucidac::LUCIDAC::init() {
 }
 
 lucidac::LUCIDAC::LUCIDAC(uint8_t cluster_idx)
-    : entities::Entity(std::to_string(cluster_idx)), m1block{new blocks::MIntBlock{cluster_idx,
-                                                                                   blocks::MBlock::M1_IDX}},
-      m2block{new blocks::MMulBlock{cluster_idx, blocks::MBlock::M2_IDX}}, ublock{new blocks::UBlock{
-                                                                               cluster_idx}},
-      cblock{new blocks::CBlock{cluster_idx}}, iblock{new blocks::IBlock{cluster_idx}} {
-  // TODO: Check for existence of blocks here instead of initializing them without checking
-}
+    : entities::Entity(std::to_string(cluster_idx)), cluster_idx(cluster_idx) {}
 
 bool lucidac::LUCIDAC::calibrate(daq::BaseDAQ *daq) {
   // Return to a non-connected state, but keep calibrated offsets

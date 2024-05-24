@@ -23,12 +23,13 @@ const SPISettings functions::UMatrixFunction::DEFAULT_SPI_SETTINGS{4'000'000, MS
 functions::UMatrixFunction::UMatrixFunction(bus::addr_t address)
     : functions::DataFunction(address, DEFAULT_SPI_SETTINGS) {}
 
-blocks::UBlock::UBlock(const uint8_t clusterIdx)
-    : FunctionBlock("U", clusterIdx), f_umatrix(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_FUNC_IDX)),
-      f_umatrix_sync(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_SYNC_FUNC_IDX)),
-      f_umatrix_reset(bus::idx_to_addr(clusterIdx, BLOCK_IDX, UMATRIX_RESET_FUNC_IDX)), output_input_map{},
-      transmission_mode_register(bus::idx_to_addr(cluster_idx, BLOCK_IDX, TRANSMISSION_MODE_FUNC_IDX), true),
-      transmission_mode_sync(bus::idx_to_addr(cluster_idx, BLOCK_IDX, TRANSMISSION_MODE_SYNC_FUNC_IDX)),
+blocks::UBlock::UBlock(bus::addr_t block_address)
+    : FunctionBlock("U", block_address), f_umatrix(bus::replace_function_idx(block_address, UMATRIX_FUNC_IDX)),
+      f_umatrix_sync(bus::replace_function_idx(block_address, UMATRIX_SYNC_FUNC_IDX)),
+      f_umatrix_reset(bus::replace_function_idx(block_address, UMATRIX_RESET_FUNC_IDX)),
+      output_input_map{},
+      transmission_mode_register(bus::replace_function_idx(block_address, TRANSMISSION_MODE_FUNC_IDX), true),
+      transmission_mode_sync(bus::replace_function_idx(block_address, TRANSMISSION_MODE_SYNC_FUNC_IDX)),
       transmission_mode_byte(0) {
   reset_connections();
 }
@@ -137,8 +138,6 @@ bool blocks::UBlock::write_to_hardware() {
   return write_matrix_to_hardware() && write_transmission_mode_to_hardware();
 }
 
-bus::addr_t blocks::UBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
-
 void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), end(output_input_map), -1); }
 
 void blocks::UBlock::reset(const bool keep_offsets) {
@@ -209,4 +208,18 @@ void blocks::UBlock::config_self_to_json(JsonObject &cfg) {
     else
       outputs_cfg.add(nullptr);
   }
+}
+
+blocks::UBlock *blocks::UBlock::from_entity_classifier(entities::EntityClassifier classifier,
+                                                       bus::addr_t block_address) {
+  if (!classifier or classifier.class_enum != CLASS_)
+    return nullptr;
+
+  // Currently, there are no different variants or versions
+  if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
+      classifier.version != entities::EntityClassifier::DEFAULT_)
+    return nullptr;
+
+  // Return default implementation
+  return new UBlock(block_address);
 }

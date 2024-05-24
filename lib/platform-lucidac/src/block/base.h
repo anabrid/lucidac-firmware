@@ -21,16 +21,14 @@ namespace blocks {
  */
 class FunctionBlock : public entities::Entity {
 public:
-  const uint8_t cluster_idx;
+  const bus::addr_t block_address;
 
-  explicit FunctionBlock(std::string entity_id, const uint8_t clusterIdx)
-      : entities::Entity(std::move(entity_id)), cluster_idx(clusterIdx) {}
+  FunctionBlock(std::string entity_id, const bus::addr_t block_address)
+      : entities::Entity(std::move(entity_id)), block_address(block_address) {}
 
   virtual bool init() { return true; }
 
   virtual void reset(bool keep_calibration) {}
-
-  virtual bus::addr_t get_block_address() = 0;
 
   virtual bool write_to_hardware() = 0;
 

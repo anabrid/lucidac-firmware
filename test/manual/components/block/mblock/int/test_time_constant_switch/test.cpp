@@ -11,7 +11,7 @@
 
 using namespace blocks;
 
-MIntBlock intblock{0, MBlock::M1_IDX};
+MIntBlock intblock{MBlock::SLOT::M0};
 
 void setUp() {
   // This is called before *each* test.

@@ -53,6 +53,16 @@ namespace blocks {
  **/
 class IBlock : public FunctionBlock {
 public:
+  // Entity hardware identifier information.
+  static constexpr auto CLASS_ = entities::EntityClass::I_BLOCK;
+
+  entities::EntityClass get_entity_class() const final { return CLASS_; }
+
+  static IBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
+
+public:
+  static constexpr uint8_t BLOCK_IDX = bus::I_BLOCK_IDX;
+
   static constexpr uint32_t INPUT_BITMASK(uint8_t input_idx) { return static_cast<uint32_t>(1) << input_idx; }
 
   static constexpr uint8_t NUM_INPUTS = 32;
@@ -82,13 +92,13 @@ public:
   const functions::TriggerFunction f_imatrix_reset;
   const functions::TriggerFunction f_imatrix_sync;
 
-  explicit IBlock(const uint8_t clusterIdx)
-      : FunctionBlock("I", clusterIdx), outputs{0},
-        f_cmd{bus::address_from_tuple(bus::I_BLOCK_BADDR(clusterIdx), 2)},
-        f_imatrix_reset{bus::address_from_tuple(bus::I_BLOCK_BADDR(clusterIdx), 4)},
-        f_imatrix_sync{bus::address_from_tuple(bus::I_BLOCK_BADDR(clusterIdx), 3)} {}
+  explicit IBlock(const bus::addr_t block_address)
+      : FunctionBlock("I", block_address), outputs{0}, f_cmd{bus::replace_function_idx(
+                                                           block_address, 2)},
+        f_imatrix_reset{bus::replace_function_idx(block_address, 4)},
+        f_imatrix_sync{bus::replace_function_idx(block_address, 3)} {}
 
-  bus::addr_t get_block_address() override;
+  IBlock() : IBlock(bus::idx_to_addr(0, bus::I_BLOCK_IDX, 0)) {}
 
   [[nodiscard]] bool write_to_hardware() override;
 

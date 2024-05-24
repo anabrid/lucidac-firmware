@@ -5,10 +5,24 @@
 
 #include "shblock.h"
 
-bool blocks::SHBlock::config_self_from_json(JsonObjectConst cfg) { return false; }
+blocks::SHBlock::SHBlock(const bus::addr_t block_address) : FunctionBlock("SH", block_address) {}
 
-bus::addr_t blocks::SHBlock::get_block_address() { return bus::SH_BLOCK_BADDR(cluster_idx); }
+blocks::SHBlock::SHBlock() : SHBlock(bus::BLOCK_BADDR(0, bus::SH_BLOCK_IDX)) {}
+
+bool blocks::SHBlock::config_self_from_json(JsonObjectConst cfg) { return false; }
 
 bool blocks::SHBlock::write_to_hardware() { return true; }
 
-blocks::SHBlock::SHBlock(const uint8_t clusterIdx) : FunctionBlock("SH", clusterIdx) {}
+blocks::SHBlock *blocks::SHBlock::from_entity_classifier(entities::EntityClassifier classifier,
+                                                         bus::addr_t block_address) {
+  if (!classifier or classifier.class_enum != CLASS_)
+    return nullptr;
+
+  // Currently, there are no different variants or versions
+  if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
+      classifier.version != entities::EntityClassifier::DEFAULT_)
+    return nullptr;
+
+  // Return default implementation
+  return new SHBlock(block_address);
+}

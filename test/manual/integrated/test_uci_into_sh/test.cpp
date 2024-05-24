@@ -20,10 +20,12 @@ const unsigned long debounceTime = 40;
 const unsigned long shortPressTime = 500;
 const unsigned long longPressTime = 5000;
 
-UBlock ublock{0};
-CBlock cblock{0};
-IBlock iblock{0};
-SHBlock shblock{0};
+UBlock ublock;
+// All tests must select the exact version of the blocks used
+// Or in future use blocks::detect()
+CBlock_SequentialAddresses cblock;
+IBlock iblock;
+SHBlock shblock;
 
 void setUp() {
   // This is called before *each* test.

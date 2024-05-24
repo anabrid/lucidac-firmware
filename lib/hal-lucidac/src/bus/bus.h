@@ -7,6 +7,7 @@
 
 #include <array>
 #include <cstdint>
+#include <tuple>
 
 #include <Arduino.h>
 

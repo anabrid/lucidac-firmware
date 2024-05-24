@@ -14,7 +14,7 @@ using namespace blocks;
 using namespace daq;
 using namespace mode;
 
-MIntBlock intblock{0, MBlock::M1_IDX};
+MIntBlock intblock{MBlock::SLOT::M0};
 OneshotDAQ daq_{};
 
 void setUp() {
