@@ -15,6 +15,12 @@
 
 namespace blocks {
 
+// ██████   █████  ███████ ███████      ██████ ██       █████  ███████ ███████
+// ██   ██ ██   ██ ██      ██          ██      ██      ██   ██ ██      ██
+// ██████  ███████ ███████ █████       ██      ██      ███████ ███████ ███████
+// ██   ██ ██   ██      ██ ██          ██      ██      ██   ██      ██      ██
+// ██████  ██   ██ ███████ ███████      ██████ ███████ ██   ██ ███████ ███████
+
 /**
  * The Lucidac Coefficient Block (C-Block) is represented by this class.
  *
@@ -28,6 +34,15 @@ namespace blocks {
  *
  **/
 class CBlock : public FunctionBlock {
+public:
+  // Entity hardware identifier information.
+  // For CBlocks, there is only one entity type possible currently.
+  static constexpr auto CLASS_ = entities::EntityClass::C_BLOCK;
+  static constexpr uint8_t TYPE = 1;
+  enum class VARIANTS : uint8_t { UNKNOWN = 0, SEQUENTIAL_ADDRESSES = 1, MIXED_ADDRESSES = 2 };
+
+  static CBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
+
 public:
   static constexpr uint8_t BLOCK_IDX = bus::C_BLOCK_IDX;
 
@@ -59,9 +74,18 @@ protected:
   void write_factors_to_hardware();
   void write_upscaling_to_hardware();
 
+  CBlock(bus::addr_t block_address, std::array<const functions::AD5452, NUM_COEFF> fCoeffs,
+         functions::SR74HCT595 fUpscaling, functions::TriggerFunction fUpscalingSync,
+         functions::TriggerFunction fUpscalingClear);
+
 public:
   explicit CBlock(bus::addr_t block_address);
   CBlock();
+
+  entities::EntityClass get_entity_class() const final { return entities::EntityClass::C_BLOCK; }
+
+  // Variants exist, force them to differentiate themselves
+  uint8_t get_entity_variant() const override = 0;
 
   /**
    * Set a particular digital potentiometer.
@@ -86,6 +110,107 @@ public:
 
 protected:
   void config_self_to_json(JsonObject &cfg) override;
+};
+
+//  ██    ██  █████  ██████  ██  █████  ███    ██ ████████ ███████
+//  ██    ██ ██   ██ ██   ██ ██ ██   ██ ████   ██    ██    ██
+//  ██    ██ ███████ ██████  ██ ███████ ██ ██  ██    ██    ███████
+//   ██  ██  ██   ██ ██   ██ ██ ██   ██ ██  ██ ██    ██         ██
+//    ████   ██   ██ ██   ██ ██ ██   ██ ██   ████    ██    ███████
+
+class CBlock_SequentialAddresses : public CBlock {
+public:
+  explicit CBlock_SequentialAddresses(bus::addr_t block_address)
+      : CBlock(block_address,
+               {
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 0),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 1),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 2),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 3),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 4),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 5),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 6),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 7),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 8),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 9),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 10),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 11),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 12),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 13),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 14),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 15),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 16),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 17),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 18),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 19),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 20),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 21),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 22),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 23),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 24),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 25),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 26),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 27),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 28),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 29),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 30),
+                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31),
+               },
+               functions::SR74HCT595{bus::replace_function_idx(block_address, SCALE_SWITCHER)},
+               functions::TriggerFunction{bus::replace_function_idx(block_address, SCALE_SWITCHER_SYNC)},
+               functions::TriggerFunction{bus::replace_function_idx(block_address, SCALE_SWITCHER_CLEAR)}) {}
+
+  CBlock_SequentialAddresses() : CBlock_SequentialAddresses(bus::idx_to_addr(0, BLOCK_IDX, 0)) {}
+
+  uint8_t get_entity_variant() const final {
+    return static_cast<uint8_t>(CBlock::VARIANTS::SEQUENTIAL_ADDRESSES);
+  }
+};
+
+class CBlock_MixedAddresses : public CBlock {
+public:
+  explicit CBlock_MixedAddresses(const bus::addr_t block_address)
+      : CBlock(block_address,
+               {functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 0),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 1),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 2),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 3),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 4),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 5),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 6),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 7),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 8),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 9),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 10),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 11),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 12),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 13),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 14),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 0),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 1),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 2),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 3),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 4),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 5),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 6),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 7),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 8),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 9),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 10),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 11),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 12),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 13),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 14),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 15),
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 16)},
+               // TODO: Dynamic hardware detection is implemented for both REV0 as well as REV1,
+               //       but functions for scale switching have been removed in REV1.
+               functions::SR74HCT595(bus::NULL_ADDRESS), functions::TriggerFunction(bus::NULL_ADDRESS),
+               functions::TriggerFunction(bus::NULL_ADDRESS)) {}
+
+  CBlock_MixedAddresses() : CBlock_MixedAddresses(bus::idx_to_addr(0, BLOCK_IDX, 0)) {}
+
+  uint8_t get_entity_variant() const final { return static_cast<uint8_t>(CBlock::VARIANTS::MIXED_ADDRESSES); }
 };
 
 } // namespace blocks

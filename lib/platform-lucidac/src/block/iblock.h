@@ -51,6 +51,15 @@ namespace blocks {
  *
  **/
 class IBlock : public FunctionBlock {
+public:
+  // Entity hardware identifier information.
+  static constexpr auto CLASS_ = entities::EntityClass::I_BLOCK;
+
+  entities::EntityClass get_entity_class() const final { return CLASS_; }
+
+  static IBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
+  ;
+
 protected:
   void reset_outputs();
 

@@ -27,6 +27,8 @@ public:
 
   bool init();
 
+  entities::EntityClass get_entity_class() const override { return entities::EntityClass::CARRIER; }
+
   std::vector<Entity *> get_child_entities() override;
 
   Entity *get_child_entity(const std::string &child_id) override;

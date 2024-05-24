@@ -5,6 +5,12 @@
 
 #include "cblock.h"
 
+blocks::CBlock::CBlock(const bus::addr_t block_address, std::array<const functions::AD5452, NUM_COEFF> fCoeffs,
+                       functions::SR74HCT595 fUpscaling, functions::TriggerFunction fUpscalingSync,
+                       functions::TriggerFunction fUpscalingClear)
+    : FunctionBlock("C", block_address), f_coeffs(std::move(fCoeffs)), f_upscaling(std::move(fUpscaling)),
+      f_upscaling_sync(std::move(fUpscalingSync)), f_upscaling_clear(std::move(fUpscalingClear)) {}
+
 blocks::CBlock::CBlock(const bus::addr_t block_address)
     : FunctionBlock("C", block_address),
       f_coeffs{functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 0),
@@ -158,4 +164,25 @@ void blocks::CBlock::config_self_to_json(JsonObject &cfg) {
   for (auto idx = 0; idx < factors_.size(); idx++) {
     factors_cfg.add(get_factor(idx));
   }
+}
+
+blocks::CBlock *blocks::CBlock::from_entity_classifier(entities::EntityClassifier classifier,
+                                                       const bus::addr_t block_address) {
+  if (!classifier or classifier.class_enum != CLASS_ or classifier.type != TYPE)
+    return nullptr;
+
+  auto variant = classifier.variant_as<VARIANTS>();
+  switch (variant) {
+  case VARIANTS::UNKNOWN:
+    return nullptr;
+  case VARIANTS::SEQUENTIAL_ADDRESSES:
+    // There are no different versions of this variant currently
+    return new CBlock_SequentialAddresses(block_address);
+  case VARIANTS::MIXED_ADDRESSES:
+    // There are no different versions of this variant currently
+    return new CBlock_MixedAddresses(block_address);
+  }
+  // Any unknown value results in a nullptr here.
+  // Adding default case to switch suppresses warnings about missing cases.
+  return nullptr;
 }

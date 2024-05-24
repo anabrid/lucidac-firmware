@@ -16,6 +16,9 @@ namespace lucidac {
  * It serves as the primary entry point for on-microcontroller programming.
  **/
 class LUCIDAC : public entities::Entity {
+private:
+  uint8_t cluster_idx;
+
 public:
   blocks::MBlock *m1block = nullptr;
   blocks::MBlock *m2block = nullptr;
@@ -24,12 +27,15 @@ public:
   blocks::IBlock *iblock = nullptr;
 
   explicit LUCIDAC(uint8_t cluster_idx = 0);
+
   // TODO: Delete copy and assignment operators
   // LUCIDAC(LUCIDAC const &) = delete;
   // LUCIDAC &operator=(LUCIDAC const &) = delete;
 
+  entities::EntityClass get_entity_class() const final { return entities::EntityClass::CLUSTER; }
+
   bool init();
-  auto get_blocks();
+  std::array<blocks::FunctionBlock *, 5> get_blocks() const;
 
   bool calibrate(daq::BaseDAQ *daq);
 

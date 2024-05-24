@@ -18,7 +18,7 @@ functions::TriggerFunction switcher_sync{
 functions::TriggerFunction switcher_clear{
     bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::SCALE_SWITCHER_CLEAR)};
 
-blocks::CBlock cblock;
+blocks::CBlock_SequentialAddresses cblock;
 
 void setUp() {
   // This is called before *each* test.
