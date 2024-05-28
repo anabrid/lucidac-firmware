@@ -26,7 +26,7 @@ namespace net = qindesign::network;
 uint16_t server_port = 5732;
 net::EthernetServer server{server_port};
 
-carrier::Carrier carrier_;
+carrier::Carrier carrier_({Cluster(0)});
 
 class HackMessageHandler : public msg::handlers::MessageHandler {
 public:

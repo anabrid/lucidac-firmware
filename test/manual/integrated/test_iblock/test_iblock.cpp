@@ -12,10 +12,10 @@
 
 using namespace blocks;
 using namespace daq;
-using namespace lucidac;
+using namespace platform;
 using namespace mode;
 
-LUCIDAC luci{};
+Cluster cluster{};
 OneshotDAQ daq_{};
 
 void setUp() {
@@ -30,26 +30,26 @@ void test_init() {
   // Initialize mode controller (currently separate thing)
   ManualControl::init();
 
-  // Put LUCIDAC start-up sequence into a test case, so we can assert it worked.
-  TEST_ASSERT(luci.init());
+  // Put cluster start-up sequence into a test case, so we can assert it worked.
+  TEST_ASSERT(cluster.init());
   // Assert we have the necessary blocks
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.ublock, "U-Block not inserted");
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.cblock, "C-Block not inserted");
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.iblock, "I-Block not inserted");
-  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.m1block, "M1-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.ublock, "U-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.cblock, "C-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.iblock, "I-Block not inserted");
+  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.m1block, "M1-Block not inserted");
 
   // Calibrate
   TEST_ASSERT(daq_.init(0));
   delayMicroseconds(50);
-  TEST_ASSERT(luci.calibrate(&daq_));
+  TEST_ASSERT(cluster.calibrate(&daq_));
   delayMicroseconds(200);
 }
 
 void test_function() {
-  auto *intblock = (MIntBlock *)(luci.m1block);
+  auto *intblock = (MIntBlock *)(cluster.m1block);
 
   // Enable REF signals on U-Block
-  TEST_ASSERT(luci.ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF));
+  TEST_ASSERT(cluster.ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF));
   auto one = blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT;
 
   // Choose the multiplier to use, between [0,3]
@@ -69,7 +69,7 @@ void test_function() {
   /* ein anderer Test */
   /*
   for(int j=0; j<31; j++) {
-    luci.route(one, j, 0.5, mul_a);
+    cluster.route(one, j, 0.5, mul_a);
   }
   */
   int Nfails = 0;
@@ -81,15 +81,15 @@ void test_function() {
       if (alane == blane)
         continue; // a*a can not be mapped this way onto Lucidac
 
-      luci.ublock->reset(true); // important!
-      luci.iblock->reset(true); // important!
+      cluster.ublock->reset(true); // important!
+      cluster.iblock->reset(true); // important!
 
       // Manually set the values to test, overwriting the loop logic.
       // alane = 0; // 1;
       // blane = 1; // 2;
 
-      luci.route(one, alane, a, mul_a);
-      luci.route(one, blane, b, mul_b);
+      cluster.route(one, alane, a, mul_a);
+      cluster.route(one, blane, b, mul_b);
 
       // decide which ADC channel ADC[0-7] to use in a non-colliding way
       uint8_t adc_channel = 0;
@@ -97,21 +97,21 @@ void test_function() {
         adc_channel++;
         adc_channel = adc_channel % 7;
       }
-      luci.ublock->connect(mul_c, UBlock::OUTPUT_IDX_RANGE_TO_ADC()[adc_channel]);
+      cluster.ublock->connect(mul_c, UBlock::OUTPUT_IDX_RANGE_TO_ADC()[adc_channel]);
 
       // Connect ACL_OUT0 read out on port 8 only if non colliding.
       if (alane != 8 && blane != 8)
-        luci.ublock->connect(mul_c, 8);
+        cluster.ublock->connect(mul_c, 8);
 
       // Write config to hardware
-      luci.write_to_hardware();
+      cluster.write_to_hardware();
 
       // integrator mode actually irrelevant but spikes are nice for triggering on oscilloscope
       delayMicroseconds(1000);
       ManualControl::to_ic();
       delayMicroseconds(50);
 
-      // Check for correct output. Mind the negating multiplication on LUCIDAC.
+      // Check for correct output. Mind the negating multiplication on cluster.
       float expected_value = -a * b, actual_value = daq_.sample()[adc_channel];
       float accepted_relative_error = 0.15f;
       float accepted_absolute_error = 0.05f;

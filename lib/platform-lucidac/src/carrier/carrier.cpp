@@ -4,12 +4,10 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include "carrier.h"
-#include "logging.h"
-#include "mac_utils.h"
 
-std::string carrier::Carrier::get_system_mac() { return ::get_system_mac(); }
+carrier::Carrier::Carrier(std::vector<Cluster> clusters) : Entity(""), clusters(std::move(clusters)) {}
 
-carrier::Carrier::Carrier() : entities::Entity(""), clusters({lucidac::LUCIDAC(0)}) {}
+entities::EntityClass carrier::Carrier::get_entity_class() const { return entities::EntityClass::CARRIER; }
 
 bool carrier::Carrier::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
@@ -24,32 +22,24 @@ bool carrier::Carrier::init() {
   return true;
 }
 
-bool carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
-#ifdef ANABRID_DEBUG_ENTITY_CONFIG
-  Serial.println(__PRETTY_FUNCTION__);
-#endif
-  // Carrier has no own configuration parameters currently
-  // TODO: Have an option to fail on unexpected configuration
-  return true;
+std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
+  std::vector<entities::Entity *> children;
+  for (auto &cluster : clusters) {
+    children.push_back(&cluster);
+  }
+  return children;
 }
 
 entities::Entity *carrier::Carrier::get_child_entity(const std::string &child_id) {
-  // TODO: Use additional arguments of stoul to check if only part of the string was used
   auto cluster_idx = std::stoul(child_id);
   if (cluster_idx < 0 or clusters.size() < cluster_idx)
     return nullptr;
   return &clusters[cluster_idx];
 }
 
-std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
-#ifdef ANABRID_DEBUG_ENTITY
-  Serial.println(__PRETTY_FUNCTION__);
-#endif
-  std::vector<entities::Entity *> children;
-  for (auto &cluster : clusters) {
-    children.push_back(&cluster);
-  }
-  return children;
+bool carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
+  // TODO: Have an option to fail on unexpected configuration
+  return true;
 }
 
 void carrier::Carrier::write_to_hardware() {

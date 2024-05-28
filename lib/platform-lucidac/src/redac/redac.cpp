@@ -3,8 +3,8 @@
 //
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#pragma once
+#include "redac.h"
 
-#include <string>
-
-std::string get_system_mac();
+REDAC::REDAC() : Carrier({Cluster(0), Cluster(1), Cluster(2)}) {
+  // Other constructor stuff
+}

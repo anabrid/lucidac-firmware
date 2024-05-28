@@ -12,10 +12,10 @@
 
 using namespace blocks;
 using namespace daq;
-using namespace lucidac;
+using namespace platform;
 using namespace mode;
 
-LUCIDAC luci{};
+Cluster cluster{};
 OneshotDAQ daq_{};
 
 void setUp() {
@@ -30,26 +30,26 @@ void test_init() {
   // Initialize mode controller (currently separate thing)
   ManualControl::init();
 
-  // Put LUCIDAC start-up sequence into a test case, so we can assert it worked.
-  TEST_ASSERT(luci.init());
+  // Put cluster start-up sequence into a test case, so we can assert it worked.
+  TEST_ASSERT(cluster.init());
   // Assert we have the necessary blocks
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.ublock, "U-Block not inserted");
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.cblock, "C-Block not inserted");
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.iblock, "I-Block not inserted");
-  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.m1block, "M1-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.ublock, "U-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.cblock, "C-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.iblock, "I-Block not inserted");
+  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.m1block, "M1-Block not inserted");
 
   // Calibrate
   TEST_ASSERT(daq_.init(0));
   delayMicroseconds(50);
-  TEST_ASSERT(luci.calibrate(&daq_));
+  TEST_ASSERT(cluster.calibrate(&daq_));
   delayMicroseconds(200);
 }
 
 void test_function() {
-  auto *intblock = (MIntBlock *)(luci.m1block);
+  auto *intblock = (MIntBlock *)(cluster.m1block);
 
   // We need a +1 later
-  TEST_ASSERT(luci.ublock->use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF));
+  TEST_ASSERT(cluster.ublock->use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF));
 
   // Currently, not all coefficients are working :)
   uint8_t coeff_idx = 0;
@@ -66,39 +66,40 @@ void test_function() {
   TEST_ASSERT(intblock->set_ic(int_z, 0));
 
   // Integrator feedbacks
-  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(int_x), coeffs[coeff_idx++], -1.0f, MBlock::M1_INPUT(int_x)));
-  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(int_y), coeffs[coeff_idx++], -0.1f, MBlock::M1_INPUT(int_y)));
-  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(int_z), coeffs[coeff_idx++], -0.2667f, MBlock::M1_INPUT(int_z)));
+  TEST_ASSERT(cluster.route(MBlock::M1_OUTPUT(int_x), coeffs[coeff_idx++], -1.0f, MBlock::M1_INPUT(int_x)));
+  TEST_ASSERT(cluster.route(MBlock::M1_OUTPUT(int_y), coeffs[coeff_idx++], -0.1f, MBlock::M1_INPUT(int_y)));
+  TEST_ASSERT(cluster.route(MBlock::M1_OUTPUT(int_z), coeffs[coeff_idx++], -0.2667f, MBlock::M1_INPUT(int_z)));
 
   // Multiply x*y
   auto mul_xy = 0;
-  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(int_x), coeffs[coeff_idx++], 1.0f, MBlock::M2_INPUT(mul_xy * 2)));
   TEST_ASSERT(
-      luci.route(MBlock::M1_OUTPUT(int_y), coeffs[coeff_idx++], 1.0f, MBlock::M2_INPUT(mul_xy * 2 + 1)));
+      cluster.route(MBlock::M1_OUTPUT(int_x), coeffs[coeff_idx++], 1.0f, MBlock::M2_INPUT(mul_xy * 2)));
+  TEST_ASSERT(
+      cluster.route(MBlock::M1_OUTPUT(int_y), coeffs[coeff_idx++], 1.0f, MBlock::M2_INPUT(mul_xy * 2 + 1)));
   // and scale and connect to Z integrator
-  TEST_ASSERT(luci.route(MBlock::M2_OUTPUT(mul_xy), coeffs[coeff_idx++], -1.5f, MBlock::M1_INPUT(int_z)));
+  TEST_ASSERT(cluster.route(MBlock::M2_OUTPUT(mul_xy), coeffs[coeff_idx++], -1.5f, MBlock::M1_INPUT(int_z)));
 
   // Scale Z and add -1 and multiply with x
   auto mul_xz = 1;
-  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(int_z), coeffs[coeff_idx++], 2.68f, MBlock::M2_INPUT(mul_xz * 2)));
   TEST_ASSERT(
-      luci.route(UBlock::ALT_SIGNAL_REF_HALF_INPUT, coeffs[coeff_idx++], 1.0f, MBlock::M2_INPUT(mul_xz * 2)));
+      cluster.route(MBlock::M1_OUTPUT(int_z), coeffs[coeff_idx++], 2.68f, MBlock::M2_INPUT(mul_xz * 2)));
+  TEST_ASSERT(cluster.route(UBlock::ALT_SIGNAL_REF_HALF_INPUT, coeffs[coeff_idx++], 1.0f, MBlock::M2_INPUT(mul_xz * 2)));
   TEST_ASSERT(
-      luci.route(MBlock::M1_OUTPUT(int_x), coeffs[coeff_idx++], 1.0f, MBlock::M2_INPUT(mul_xz * 2 + 1)));
+      cluster.route(MBlock::M1_OUTPUT(int_x), coeffs[coeff_idx++], 1.0f, MBlock::M2_INPUT(mul_xz * 2 + 1)));
 
   // Add result to Y integrator input
-  TEST_ASSERT(luci.route(MBlock::M2_OUTPUT(mul_xz), coeffs[coeff_idx++], -1.536, MBlock::M1_INPUT(int_y)));
+  TEST_ASSERT(cluster.route(MBlock::M2_OUTPUT(mul_xz), coeffs[coeff_idx++], -1.536, MBlock::M1_INPUT(int_y)));
 
   // And add y on x
-  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(int_y), coeffs[coeff_idx++], 1.8, MBlock::M1_INPUT(int_x)));
+  TEST_ASSERT(cluster.route(MBlock::M1_OUTPUT(int_y), coeffs[coeff_idx++], 1.8, MBlock::M1_INPUT(int_x)));
 
   // Allow to read out integrator U block values on VG analog readout
-  luci.ublock->connect(MBlock::M1_OUTPUT(int_x), 8);
-  luci.ublock->connect(MBlock::M1_OUTPUT(int_y), 9);
-  luci.ublock->connect(MBlock::M1_OUTPUT(int_z), 10);
+  cluster.ublock->connect(MBlock::M1_OUTPUT(int_x), 8);
+  cluster.ublock->connect(MBlock::M1_OUTPUT(int_y), 9);
+  cluster.ublock->connect(MBlock::M1_OUTPUT(int_z), 10);
 
   // Write to hardware
-  luci.write_to_hardware();
+  cluster.write_to_hardware();
   delayMicroseconds(100);
 
   TEST_MESSAGE("Written to hardware, starting IC OP.");

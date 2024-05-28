@@ -11,7 +11,7 @@
 namespace blocks {
 
 /**
- * A function block represents one module in the LUCIDAC,
+ * A function block represents one module in a cluster,
  * such as an M-Block, C-Block, I-Block or U-Block.
  *
  * This class (or its children) typically holds the in-RAM representation

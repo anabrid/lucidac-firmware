@@ -12,10 +12,10 @@
 
 using namespace blocks;
 using namespace daq;
-using namespace lucidac;
+using namespace platform;
 using namespace mode;
 
-LUCIDAC luci{};
+Cluster cluster{};
 OneshotDAQ daq_{};
 
 void setUp() {
@@ -30,26 +30,26 @@ void test_init() {
   // Initialize mode controller (currently separate thing)
   ManualControl::init();
 
-  // Put LUCIDAC start-up sequence into a test case, so we can assert it worked.
-  TEST_ASSERT(luci.init());
+  // Put cluster start-up sequence into a test case, so we can assert it worked.
+  TEST_ASSERT(cluster.init());
   // Assert we have the necessary blocks
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.ublock, "U-Block not inserted");
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.cblock, "C-Block not inserted");
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.iblock, "I-Block not inserted");
-  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.m1block, "M1-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.ublock, "U-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.cblock, "C-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.iblock, "I-Block not inserted");
+  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.m1block, "M1-Block not inserted");
 
   // Calibrate
   TEST_ASSERT(daq_.init(0));
   delayMicroseconds(50);
-  TEST_ASSERT(luci.calibrate(&daq_));
+  TEST_ASSERT(cluster.calibrate(&daq_));
   delayMicroseconds(200);
 }
 
 void test_function() {
-  auto *intblock = (MIntBlock *)(luci.m1block);
+  auto *intblock = (MIntBlock *)(cluster.m1block);
 
   // We need a +1 later
-  TEST_ASSERT(luci.ublock->use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF));
+  TEST_ASSERT(cluster.ublock->use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF));
 
   // Choose integrators and set IC
   // An IC value's sign is actually equal to the output's sign (not inverted)
@@ -77,15 +77,15 @@ void test_function() {
 
   int poti = 0;
 
-#define patchi(a, b, c, d) TEST_ASSERT(luci.route(a, b, c, d))
-#define patch(a, b, c) TEST_ASSERT(luci.route(a, poti++, b, c))
+#define patchi(a, b, c, d) TEST_ASSERT(cluster.route(a, b, c, d))
+#define patch(a, b, c) TEST_ASSERT(cluster.route(a, poti++, b, c))
 
   poti = 4; // first three potis for ADC out
 
-  luci.ublock->connect(mx.out, UBlock::OUTPUT_IDX_RANGE_TO_ADC(0));
-  luci.ublock->connect(y.out, UBlock::OUTPUT_IDX_RANGE_TO_ADC(1));
-  luci.ublock->connect(z.out, UBlock::OUTPUT_IDX_RANGE_TO_ADC(2));
-  luci.ublock->connect(mult.out, UBlock::OUTPUT_IDX_RANGE_TO_ADC(3));
+  cluster.ublock->connect(mx.out, UBlock::OUTPUT_IDX_RANGE_TO_ADC(0));
+  cluster.ublock->connect(y.out, UBlock::OUTPUT_IDX_RANGE_TO_ADC(1));
+  cluster.ublock->connect(z.out, UBlock::OUTPUT_IDX_RANGE_TO_ADC(2));
+  cluster.ublock->connect(mult.out, UBlock::OUTPUT_IDX_RANGE_TO_ADC(3));
 
   // the following lines define the Roessler attractor. They were checked so many
   // times that we are really sure they should do it. But se also
@@ -103,17 +103,17 @@ void test_function() {
   // some confusion with the ACL_OUTs, easy to solve actually.
 
   // this is wrong:
-  luci.ublock->connect(mx.out, UBlock::IDX_RANGE_TO_ACL_OUT(0));   // 8 oder 15
-  luci.ublock->connect(y.out, UBlock::IDX_RANGE_TO_ACL_OUT(1));    // 9 oder 14
-  luci.ublock->connect(z.out, UBlock::IDX_RANGE_TO_ACL_OUT(2));    // 10 oder 13
-  luci.ublock->connect(mult.out, UBlock::IDX_RANGE_TO_ACL_OUT(3)); // 11 oder 12
+  cluster.ublock->connect(mx.out, UBlock::IDX_RANGE_TO_ACL_OUT(0));   // 8 oder 15
+  cluster.ublock->connect(y.out, UBlock::IDX_RANGE_TO_ACL_OUT(1));    // 9 oder 14
+  cluster.ublock->connect(z.out, UBlock::IDX_RANGE_TO_ACL_OUT(2));    // 10 oder 13
+  cluster.ublock->connect(mult.out, UBlock::IDX_RANGE_TO_ACL_OUT(3)); // 11 oder 12
 
   /*
     // this is right:
-    luci.ublock->connect(mx.out,   UBlock::IDX_RANGE_TO_ACL_OUT(4)); // 8 oder 15
-    luci.ublock->connect(y.out,    UBlock::IDX_RANGE_TO_ACL_OUT(5)); // 9 oder 14
-    luci.ublock->connect(z.out,    UBlock::IDX_RANGE_TO_ACL_OUT(6)); // 10 oder 13
-    luci.ublock->connect(mult.out, UBlock::IDX_RANGE_TO_ACL_OUT(7)); // 11 oder 12
+    cluster.ublock->connect(mx.out,   UBlock::IDX_RANGE_TO_ACL_OUT(4)); // 8 oder 15
+    cluster.ublock->connect(y.out,    UBlock::IDX_RANGE_TO_ACL_OUT(5)); // 9 oder 14
+    cluster.ublock->connect(z.out,    UBlock::IDX_RANGE_TO_ACL_OUT(6)); // 10 oder 13
+    cluster.ublock->connect(mult.out, UBlock::IDX_RANGE_TO_ACL_OUT(7)); // 11 oder 12
   */
 
   // This is another seperate test program:
@@ -123,20 +123,20 @@ void test_function() {
   */
 
   /*
-    luci.ublock->connect(mult.out, UBlock::IDX_RANGE_TO_ACL_OUT(0));
-    luci.ublock->connect(mult.out, UBlock::IDX_RANGE_TO_ACL_OUT(7));
-    //luci.ublock->connect(mult.out, UBlock::OUTPUT_IDX_RANGE_TO_ADC(0)); // egal weil poti=0
-    //luci.ublock->connect(mult.out, UBlock::OUTPUT_IDX_RANGE_TO_ADC(0)));
+    cluster.ublock->connect(mult.out, UBlock::IDX_RANGE_TO_ACL_OUT(0));
+    cluster.ublock->connect(mult.out, UBlock::IDX_RANGE_TO_ACL_OUT(7));
+    //cluster.ublock->connect(mult.out, UBlock::OUTPUT_IDX_RANGE_TO_ADC(0)); // egal weil poti=0
+    //cluster.ublock->connect(mult.out, UBlock::OUTPUT_IDX_RANGE_TO_ADC(0)));
 
     // readout
 
-    luci.ublock->connect(y.out,     UBlock::IDX_RANGE_TO_ACL_OUT(0));
-    luci.ublock->connect(z.out,     UBlock::IDX_RANGE_TO_ACL_OUT(1));
-    luci.ublock->connect(mult.out,  UBlock::IDX_RANGE_TO_ACL_OUT(2));
+    cluster.ublock->connect(y.out,     UBlock::IDX_RANGE_TO_ACL_OUT(0));
+    cluster.ublock->connect(z.out,     UBlock::IDX_RANGE_TO_ACL_OUT(1));
+    cluster.ublock->connect(mult.out,  UBlock::IDX_RANGE_TO_ACL_OUT(2));
   */
 
   // Write to hardware
-  luci.write_to_hardware();
+  cluster.write_to_hardware();
   delayMicroseconds(100);
 
   TEST_MESSAGE("Written to hardware, starting IC OP.");
