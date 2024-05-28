@@ -12,11 +12,11 @@
   if (!(x))                                                                                                   \
     return false;
 
-std::array<blocks::FunctionBlock *, 5> lucidac::LUCIDAC::get_blocks() const {
+std::array<blocks::FunctionBlock *, 5> platform::Cluster::get_blocks() const {
   return {m1block, m2block, ublock, cblock, iblock};
 }
 
-bool lucidac::LUCIDAC::init() {
+bool platform::Cluster::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   bus::init();
 
@@ -70,10 +70,10 @@ bool lucidac::LUCIDAC::init() {
   return true;
 }
 
-lucidac::LUCIDAC::LUCIDAC(uint8_t cluster_idx)
+platform::Cluster::Cluster(uint8_t cluster_idx)
     : entities::Entity(std::to_string(cluster_idx)), cluster_idx(cluster_idx) {}
 
-bool lucidac::LUCIDAC::calibrate(daq::BaseDAQ *daq) {
+bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
   RETURN_FALSE_IF_FAILED(calibrate_offsets_ublock_initial(daq));
   // Return to a non-connected state, but keep calibrated offsets
   reset(true);
@@ -81,7 +81,7 @@ bool lucidac::LUCIDAC::calibrate(daq::BaseDAQ *daq) {
   return true;
 }
 
-bool lucidac::LUCIDAC::calibrate_offsets_ublock_initial(daq::BaseDAQ *daq) {
+bool platform::Cluster::calibrate_offsets_ublock_initial(daq::BaseDAQ *daq) {
   // Reset
   ublock->reset(false);
   // Connect REF signal from UBlock to ADC outputs
@@ -104,14 +104,14 @@ bool lucidac::LUCIDAC::calibrate_offsets_ublock_initial(daq::BaseDAQ *daq) {
   // TODO: Finish calibration sequence
 }
 
-void lucidac::LUCIDAC::write_to_hardware() {
+void platform::Cluster::write_to_hardware() {
   for (auto block : get_blocks()) {
     if (block)
       block->write_to_hardware();
   }
 }
 
-bool lucidac::LUCIDAC::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out) {
+bool platform::Cluster::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out) {
   if (!ublock->connect(u_in, u_out))
     return false;
   if (!cblock->set_factor(u_out, c_factor))
@@ -121,7 +121,7 @@ bool lucidac::LUCIDAC::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_
   return true;
 }
 
-bool lucidac::LUCIDAC::route_alt_signal(uint16_t alt_signal, uint8_t u_out, float c_factor, uint8_t i_out) {
+bool platform::Cluster::route_alt_signal(uint16_t alt_signal, uint8_t u_out, float c_factor, uint8_t i_out) {
   if (!ublock->connect_alt_signal(alt_signal, u_out))
     return false;
   if (!cblock->set_factor(u_out, c_factor))
@@ -131,14 +131,14 @@ bool lucidac::LUCIDAC::route_alt_signal(uint16_t alt_signal, uint8_t u_out, floa
   return true;
 }
 
-void lucidac::LUCIDAC::reset(bool keep_calibration) {
+void platform::Cluster::reset(bool keep_calibration) {
   for (auto block : get_blocks()) {
     if (block)
       block->reset(keep_calibration);
   }
 }
 
-entities::Entity *lucidac::LUCIDAC::get_child_entity(const std::string &child_id) {
+entities::Entity *platform::Cluster::get_child_entity(const std::string &child_id) {
   if (child_id == "M0")
     return m1block;
   else if (child_id == "M1")
@@ -152,7 +152,7 @@ entities::Entity *lucidac::LUCIDAC::get_child_entity(const std::string &child_id
   return nullptr;
 }
 
-bool lucidac::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
+bool platform::Cluster::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
@@ -161,7 +161,7 @@ bool lucidac::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
   return true;
 }
 
-std::vector<entities::Entity *> lucidac::LUCIDAC::get_child_entities() {
+std::vector<entities::Entity *> platform::Cluster::get_child_entities() {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif

@@ -12,10 +12,10 @@
 
 using namespace blocks;
 using namespace daq;
-using namespace lucidac;
+using namespace platform;
 using namespace mode;
 
-LUCIDAC luci{};
+Cluster cluster{};
 OneshotDAQ daq_{};
 
 void setUp() {
@@ -32,28 +32,28 @@ void test_init() {
   // Initialize mode controller (currently separate thing)
   ManualControl::init();
 
-  // Put LUCIDAC start-up sequence into a test case, so we can assert it worked.
-  TEST_ASSERT(luci.init());
+  // Put cluster start-up sequence into a test case, so we can assert it worked.
+  TEST_ASSERT(cluster.init());
   // Assert we have the necessary blocks
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.ublock, "U-Block not inserted");
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.cblock, "C-Block not inserted");
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.iblock, "I-Block not inserted");
-  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.m1block, "M1-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.ublock, "U-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.cblock, "C-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.iblock, "I-Block not inserted");
+  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.m1block, "M1-Block not inserted");
 
   // Calibrate
   TEST_ASSERT(daq_.init(0));
   delayMicroseconds(50);
-  TEST_ASSERT(luci.calibrate(&daq_));
+  TEST_ASSERT(cluster.calibrate(&daq_));
   delayMicroseconds(200);
 }
 
 void test_function() {
-  auto *intblock = (MIntBlock *)(luci.m1block);
+  auto *intblock = (MIntBlock *)(cluster.m1block);
 
   TEST_MESSAGE("Hello from test");
 
   // We need a +1 later
-  TEST_ASSERT(luci.ublock->use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF));
+  TEST_ASSERT(cluster.ublock->use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF));
   // auto one = UBlock::ALT_SIGNAL_REF_HALF_INPUT;
 
   uint8_t one = 12; // Nehme 1 von Ausgang M-Block
@@ -80,7 +80,7 @@ void test_function() {
 
   String msg;
 #define route(a, b, c, d)                                                                                     \
-  TEST_ASSERT(luci.route(a, b, c, d));                                                                        \
+  TEST_ASSERT(cluster.route(a, b, c, d));                                                                        \
   msg = String("Route(") + String(a) + String(", ") + String(b) + String(",") + String(c) + String(",") +     \
         String(d) + String(")");                                                                              \
   TEST_MESSAGE(msg.c_str());
@@ -99,7 +99,7 @@ void test_function() {
   route(z_out, 2, 2.3f, mx_in);
   route(one, 3, 0.005f, z_in);
 
-  luci.write_to_hardware();
+  cluster.write_to_hardware();
   delayMicroseconds(100);
 
   for (;;) {

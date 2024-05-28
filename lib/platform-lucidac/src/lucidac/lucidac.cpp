@@ -3,8 +3,8 @@
 //
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#pragma once
+#include "lucidac.h"
 
-#include <string>
-
-std::string get_system_mac();
+LUCIDAC::LUCIDAC() : Carrier({Cluster(0)}) {
+  // Other constructor stuff
+}

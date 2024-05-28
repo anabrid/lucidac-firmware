@@ -12,10 +12,10 @@
 
 using namespace blocks;
 using namespace daq;
-using namespace lucidac;
+using namespace platform;
 using namespace mode;
 
-LUCIDAC luci{};
+Cluster cluster{};
 OneshotDAQ daq_{};
 
 void setUp() {
@@ -30,18 +30,18 @@ void test_init() {
   // Initialize mode controller (currently separate thing)
   ManualControl::init();
 
-  // Put LUCIDAC start-up sequence into a test case, so we can assert it worked.
-  TEST_ASSERT(luci.init());
+  // Put cluster start-up sequence into a test case, so we can assert it worked.
+  TEST_ASSERT(cluster.init());
   // Assert we have the necessary blocks
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.ublock, "U-Block not inserted");
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.cblock, "C-Block not inserted");
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.iblock, "I-Block not inserted");
-  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.m1block, "M1-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.ublock, "U-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.cblock, "C-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.iblock, "I-Block not inserted");
+  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.m1block, "M1-Block not inserted");
 
   // Calibrate
   TEST_ASSERT(daq_.init(0));
   delayMicroseconds(50);
-  TEST_ASSERT(luci.calibrate(&daq_));
+  TEST_ASSERT(cluster.calibrate(&daq_));
   delayMicroseconds(200);
 }
 
@@ -53,7 +53,7 @@ void test_init() {
   }
 
 void test_function() {
-  auto *intblock = (MIntBlock *)(luci.m1block);
+  auto *intblock = (MIntBlock *)(cluster.m1block);
 
   // Integrator to use [0..7]
   uint8_t i0 = 0;
@@ -72,11 +72,11 @@ void test_function() {
   TEST_ASSERT(intblock->set_time_factor(i0, 100));
   // get the 0.5 refrence signal from an unused Output of the M2 Mult Block
   uint8_t one = MBlock::M2_OUTPUT(5);
-  TEST_ASSERT(luci.route(one, 16, +1.0f, MBlock::M1_INPUT(i0)));
-  luci.ublock->connect(MBlock::M1_OUTPUT(i0), 8); // ACL_OUT0
-  luci.ublock->connect(MBlock::M1_OUTPUT(i0), 0); // ADC0
+  TEST_ASSERT(cluster.route(one, 16, +1.0f, MBlock::M1_INPUT(i0)));
+  cluster.ublock->connect(MBlock::M1_OUTPUT(i0), 8); // ACL_OUT0
+  cluster.ublock->connect(MBlock::M1_OUTPUT(i0), 0); // ADC0
 
-  luci.write_to_hardware();
+  cluster.write_to_hardware();
   delayMicroseconds(100);
 
   mode::ManualControl::to_ic();
@@ -100,21 +100,21 @@ void test_function() {
 
   TEST_MESSAGE("i0,clane,coeff_val,optime,abs_err_int_error");
   for (float coeff_val = 0.1; coeff_val < 1.0; coeff_val += 0.1) {
-    luci.reset(true); // keep calibration
+    cluster.reset(true); // keep calibration
 
     // coeff_val = 0.2;
     //  767488  for 0.1
 
     // "higher quality" source of reference signal
-    TEST_ASSERT(luci.ublock->use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF));
+    TEST_ASSERT(cluster.ublock->use_alt_signals(UBlock::ALT_SIGNAL_REF_HALF));
     auto one = UBlock::ALT_SIGNAL_REF_HALF_INPUT;
 
     const float ic = 0.0;
     TEST_ASSERT(intblock->set_ic(i0, ic));
-    TEST_ASSERT(luci.route(one, clane, coeff_val, MBlock::M1_INPUT(i0)));
-    TEST_ASSERT(luci.ublock->connect(MBlock::M1_OUTPUT(i0), adc_idx));
-    TEST_ASSERT(luci.ublock->connect(MBlock::M1_OUTPUT(i0), 8)); // ACL OUT1
-    luci.write_to_hardware();
+    TEST_ASSERT(cluster.route(one, clane, coeff_val, MBlock::M1_INPUT(i0)));
+    TEST_ASSERT(cluster.ublock->connect(MBlock::M1_OUTPUT(i0), adc_idx));
+    TEST_ASSERT(cluster.ublock->connect(MBlock::M1_OUTPUT(i0), 8)); // ACL OUT1
+    cluster.write_to_hardware();
     delayMicroseconds(100);
 
     // scanning the half domain in order to avoid issues with ADC sign problems above analog unit

@@ -12,10 +12,10 @@
 
 using namespace blocks;
 using namespace daq;
-using namespace lucidac;
+using namespace platform;
 using namespace mode;
 
-LUCIDAC luci{};
+Cluster cluster{};
 OneshotDAQ daq_{};
 
 void setUp() {
@@ -30,8 +30,8 @@ void test_init() {
   // Initialize mode controller (currently separate thing)
   ManualControl::init();
 
-  // Put LUCIDAC start-up sequence into a test case, so we can assert it worked.
-  TEST_ASSERT(luci.init());
+  // Put cluster start-up sequence into a test case, so we can assert it worked.
+  TEST_ASSERT(cluster.init());
 
   TEST_ASSERT(daq_.init(0));
   delayMicroseconds(50);
@@ -39,11 +39,11 @@ void test_init() {
   // Calibrate
   TEST_ASSERT(daq_.init(0));
   delayMicroseconds(50);
-  TEST_ASSERT(luci.calibrate(&daq_));
+  TEST_ASSERT(cluster.calibrate(&daq_));
   delayMicroseconds(200);
 }
 
-auto *mBlock = (MIntBlock *)(luci.m1block);
+auto *mBlock = (MIntBlock *)(cluster.m1block);
 
 uint32_t TquaterCirc = 162;
 
@@ -72,14 +72,14 @@ void draw_circ(float pos_x, float pos_y, float c_x, float c_y, float size, uint6
     rev = -1;
   }
 
-  luci.cblock->set_factor(0, -rev);
-  luci.cblock->set_factor(1, rev * c_x);
-  luci.cblock->set_factor(2, rev);
-  luci.cblock->set_factor(3, -rev * c_y);
-  luci.cblock->set_factor(4, 0);
-  luci.cblock->set_factor(5, 0);
-  luci.cblock->set_factor(6, 0);
-  luci.cblock->write_to_hardware();
+  cluster.cblock->set_factor(0, -rev);
+  cluster.cblock->set_factor(1, rev * c_x);
+  cluster.cblock->set_factor(2, rev);
+  cluster.cblock->set_factor(3, -rev * c_y);
+  cluster.cblock->set_factor(4, 0);
+  cluster.cblock->set_factor(5, 0);
+  cluster.cblock->set_factor(6, 0);
+  cluster.cblock->write_to_hardware();
 
   ManualControl::to_ic();
   delayMicroseconds(5);
@@ -93,14 +93,14 @@ void draw_line_horiz(float pos_x, float pos_y, float length) {
   mBlock->set_ic(y, pos_y);
   mBlock->write_to_hardware();
 
-  luci.cblock->set_factor(0, 0);
-  luci.cblock->set_factor(1, 0);
-  luci.cblock->set_factor(2, 0);
-  luci.cblock->set_factor(3, length);
-  luci.cblock->set_factor(4, 0);
-  luci.cblock->set_factor(5, 0);
-  luci.cblock->set_factor(6, 0);
-  luci.cblock->write_to_hardware();
+  cluster.cblock->set_factor(0, 0);
+  cluster.cblock->set_factor(1, 0);
+  cluster.cblock->set_factor(2, 0);
+  cluster.cblock->set_factor(3, length);
+  cluster.cblock->set_factor(4, 0);
+  cluster.cblock->set_factor(5, 0);
+  cluster.cblock->set_factor(6, 0);
+  cluster.cblock->write_to_hardware();
 
   ManualControl::to_ic();
   delayMicroseconds(5);
@@ -114,14 +114,14 @@ void draw_line_vert(float pos_x, float pos_y, float length) {
   mBlock->set_ic(y, pos_y);
   mBlock->write_to_hardware();
 
-  luci.cblock->set_factor(0, 0);
-  luci.cblock->set_factor(1, length);
-  luci.cblock->set_factor(2, 0);
-  luci.cblock->set_factor(3, 0);
-  luci.cblock->set_factor(4, 0);
-  luci.cblock->set_factor(5, 0);
-  luci.cblock->set_factor(6, 0);
-  luci.cblock->write_to_hardware();
+  cluster.cblock->set_factor(0, 0);
+  cluster.cblock->set_factor(1, length);
+  cluster.cblock->set_factor(2, 0);
+  cluster.cblock->set_factor(3, 0);
+  cluster.cblock->set_factor(4, 0);
+  cluster.cblock->set_factor(5, 0);
+  cluster.cblock->set_factor(6, 0);
+  cluster.cblock->write_to_hardware();
 
   ManualControl::to_ic();
   delayMicroseconds(5);
@@ -187,18 +187,18 @@ void draw_d(float pos_x, float pos_y, float size) {
 }
 
 void draw_anabrid() {
-  luci.reset(true);
+  cluster.reset(true);
 
-  luci.ublock->connect(x_out, UBlock::IDX_RANGE_TO_ACL_OUT(5));
-  luci.ublock->connect(y_out, UBlock::IDX_RANGE_TO_ACL_OUT(6));
+  cluster.ublock->connect(x_out, UBlock::IDX_RANGE_TO_ACL_OUT(5));
+  cluster.ublock->connect(y_out, UBlock::IDX_RANGE_TO_ACL_OUT(6));
 
-  luci.route(x_out, 0, 0, y_in);
-  luci.route(one, 1, 0, y_in);
+  cluster.route(x_out, 0, 0, y_in);
+  cluster.route(one, 1, 0, y_in);
 
-  luci.route(y_out, 2, 0, x_in);
-  luci.route(one, 3, 0, x_in);
+  cluster.route(y_out, 2, 0, x_in);
+  cluster.route(one, 3, 0, x_in);
 
-  luci.write_to_hardware();
+  cluster.write_to_hardware();
   delayMicroseconds(500);
 
   float size = 0.13;
@@ -223,8 +223,8 @@ void draw_anabrid() {
     draw_line_horiz(start + 5.1 * gap, 0, -5.1 * gap);
   }
 
-  luci.reset(true);
-  luci.write_to_hardware();
+  cluster.reset(true);
+  cluster.write_to_hardware();
 }
 
 void draw_damped_sin() {
@@ -233,14 +233,14 @@ void draw_damped_sin() {
   mBlock->set_ic(z, 1);
   mBlock->write_to_hardware();
 
-  luci.cblock->set_factor(0, 0);
-  luci.cblock->set_factor(1, 0);
-  luci.cblock->set_factor(2, 0);
-  luci.cblock->set_factor(3, 0.116);
-  luci.cblock->set_factor(4, -0.2);
-  luci.cblock->set_factor(5, 1);
-  luci.cblock->set_factor(6, -1);
-  luci.cblock->write_to_hardware();
+  cluster.cblock->set_factor(0, 0);
+  cluster.cblock->set_factor(1, 0);
+  cluster.cblock->set_factor(2, 0);
+  cluster.cblock->set_factor(3, 0.116);
+  cluster.cblock->set_factor(4, -0.2);
+  cluster.cblock->set_factor(5, 1);
+  cluster.cblock->set_factor(6, -1);
+  cluster.cblock->write_to_hardware();
 
   ManualControl::to_ic();
   delayMicroseconds(50);
@@ -250,22 +250,22 @@ void draw_damped_sin() {
 }
 
 void draw_logo() {
-  luci.reset(true);
+  cluster.reset(true);
 
-  luci.ublock->connect(x_out, UBlock::IDX_RANGE_TO_ACL_OUT(5));
-  luci.ublock->connect(y_out, UBlock::IDX_RANGE_TO_ACL_OUT(6));
+  cluster.ublock->connect(x_out, UBlock::IDX_RANGE_TO_ACL_OUT(5));
+  cluster.ublock->connect(y_out, UBlock::IDX_RANGE_TO_ACL_OUT(6));
 
-  luci.route(x_out, 0, 0, y_in);
-  luci.route(one, 1, 0, y_in);
+  cluster.route(x_out, 0, 0, y_in);
+  cluster.route(one, 1, 0, y_in);
 
-  luci.route(y_out, 2, 0, x_in);
-  luci.route(one, 3, 0, x_in);
+  cluster.route(y_out, 2, 0, x_in);
+  cluster.route(one, 3, 0, x_in);
 
-  luci.route(y_out, 4, 0, y_in);
-  luci.route(y_out, 5, 0, z_in);
-  luci.route(z_out, 6, 0, y_in);
+  cluster.route(y_out, 4, 0, y_in);
+  cluster.route(y_out, 5, 0, z_in);
+  cluster.route(z_out, 6, 0, y_in);
 
-  luci.write_to_hardware();
+  cluster.write_to_hardware();
   delayMicroseconds(500);
 
   for (;;) {
@@ -274,8 +274,8 @@ void draw_logo() {
     draw_line_horiz(1, 0, -2);
   }
 
-  luci.reset(true);
-  luci.write_to_hardware();
+  cluster.reset(true);
+  cluster.write_to_hardware();
 }
 
 void setup() {

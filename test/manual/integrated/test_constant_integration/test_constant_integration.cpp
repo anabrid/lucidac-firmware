@@ -12,10 +12,10 @@
 
 using namespace blocks;
 using namespace daq;
-using namespace lucidac;
+using namespace platform;
 using namespace mode;
 
-LUCIDAC luci{};
+Cluster cluster{};
 OneshotDAQ daq_{};
 
 void setUp() {
@@ -30,23 +30,23 @@ void test_init() {
   // Initialize mode controller (currently separate thing)
   ManualControl::init();
 
-  // Put LUCIDAC start-up sequence into a test case, so we can assert it worked.
-  TEST_ASSERT(luci.init());
+  // Put cluster start-up sequence into a test case, so we can assert it worked.
+  TEST_ASSERT(cluster.init());
   // Assert we have the necessary blocks
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.ublock, "U-Block not inserted");
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.cblock, "C-Block not inserted");
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.iblock, "I-Block not inserted");
-  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.m1block, "M1-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.ublock, "U-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.cblock, "C-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.iblock, "I-Block not inserted");
+  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.m1block, "M1-Block not inserted");
 
   // Calibrate
   TEST_ASSERT(daq_.init(0));
   delayMicroseconds(50);
-  TEST_ASSERT(luci.calibrate(&daq_));
+  TEST_ASSERT(cluster.calibrate(&daq_));
   delayMicroseconds(200);
 }
 
 void test_function() {
-  auto *intblock = (MIntBlock *)(luci.m1block);
+  auto *intblock = (MIntBlock *)(cluster.m1block);
 
   // Not ending this test can be handy when looking constantly
   // on the DSO and not having ideal trigger conditions.
@@ -77,21 +77,21 @@ void test_function() {
         uint8_t adc_channel = coeff_idx != 7 ? 7 : 0;
 
         // Reset
-        luci.reset(true);
+        cluster.reset(true);
         delayMicroseconds(500);
 
         // Enable REF signals on U-Block
-        TEST_ASSERT(luci.ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF));
+        TEST_ASSERT(cluster.ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF));
         // Route it once through to the integration module in M1 slot
         float factor = 0.5f;
-        luci.route(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, coeff_idx, factor, MBlock::M1_INPUT(i0));
+        cluster.route(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, coeff_idx, factor, MBlock::M1_INPUT(i0));
         // Route the result to an ADC input
-        luci.ublock->connect(MBlock::M1_OUTPUT(i0), UBlock::OUTPUT_IDX_RANGE_TO_ADC()[adc_channel]);
+        cluster.ublock->connect(MBlock::M1_OUTPUT(i0), UBlock::OUTPUT_IDX_RANGE_TO_ADC()[adc_channel]);
         // Define IC value
         float ic_value = 0.0f;
         intblock->set_ic(i0, ic_value);
         // Write config to hardware
-        luci.write_to_hardware();
+        cluster.write_to_hardware();
         delayMicroseconds(100);
 
         // Check for correct output
@@ -111,8 +111,8 @@ void test_function() {
         }
 
         // Change factor to negative
-        luci.cblock->set_factor(coeff_idx, -factor);
-        luci.cblock->write_to_hardware();
+        cluster.cblock->set_factor(coeff_idx, -factor);
+        cluster.cblock->write_to_hardware();
 
         // Set IC and then let it integrate
         ManualControl::to_ic();
