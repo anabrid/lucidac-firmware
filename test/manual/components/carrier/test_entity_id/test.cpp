@@ -12,7 +12,7 @@
 
 using namespace carrier;
 
-Carrier _carrier_board;
+Carrier _carrier_board({});
 
 void setUp() {
   // This is called before *each* test.

@@ -43,7 +43,7 @@ public:
  *
  * The communication is configured at constructor level, while the transfer
  * functions basically decorate the Arduino/Teensyduino SPIClass access
- * with lucidac bus adressing.
+ * with hardware bus addressing.
  **/
 class DataFunction : public Function {
 protected:

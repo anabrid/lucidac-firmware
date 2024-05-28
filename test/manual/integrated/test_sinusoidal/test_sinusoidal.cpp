@@ -12,10 +12,10 @@
 
 using namespace blocks;
 using namespace daq;
-using namespace lucidac;
+using namespace platform;
 using namespace mode;
 
-LUCIDAC luci{};
+Cluster cluster{};
 OneshotDAQ daq_{};
 
 void setUp() {
@@ -30,23 +30,23 @@ void test_init() {
   // Initialize mode controller (currently separate thing)
   ManualControl::init();
 
-  // Put LUCIDAC start-up sequence into a test case, so we can assert it worked.
-  TEST_ASSERT(luci.init());
+  // Put cluster start-up sequence into a test case, so we can assert it worked.
+  TEST_ASSERT(cluster.init());
   // Assert we have the necessary blocks
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.ublock, "U-Block not inserted");
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.cblock, "C-Block not inserted");
-  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.iblock, "I-Block not inserted");
-  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, luci.m1block, "M1-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.ublock, "U-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.cblock, "C-Block not inserted");
+  TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.iblock, "I-Block not inserted");
+  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.m1block, "M1-Block not inserted");
 
   // Calibrate
   TEST_ASSERT(daq_.init(0));
   delayMicroseconds(50);
-  TEST_ASSERT(luci.calibrate(&daq_));
+  TEST_ASSERT(cluster.calibrate(&daq_));
   delayMicroseconds(200);
 }
 
 void test_function() {
-  auto *intblock = (MIntBlock *)(luci.m1block);
+  auto *intblock = (MIntBlock *)(cluster.m1block);
 
   // Choose which pair of integrators [0..7] to use. The port indices i0 and i1 correspond
   // directly to the input and output of the M1 block.
@@ -72,35 +72,35 @@ void test_function() {
       String msg = String("Start lane = ") + String(ustart_lane);
       TEST_MESSAGE(msg.c_str());
 
-    //  luci.ublock->reset(true);
-    //  luci.iblock->reset(true);
+    //  cluster.ublock->reset(true);
+    //  cluster.iblock->reset(true);
 */
 
   // this combination of lanes (0 and 1) is known to work perfectly. Always.
-  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i0), 0, +1.0f, MBlock::M1_INPUT(i1)));
-  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i1), 1, -1.0f, MBlock::M1_INPUT(i0)));
+  TEST_ASSERT(cluster.route(MBlock::M1_OUTPUT(i0), 0, +1.0f, MBlock::M1_INPUT(i1)));
+  TEST_ASSERT(cluster.route(MBlock::M1_OUTPUT(i1), 1, -1.0f, MBlock::M1_INPUT(i0)));
 
   // Enable this line for a damped oscillation
-  // TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i1), 2, -0.1f, MBlock::M1_INPUT(i1))); // damping
+  // TEST_ASSERT(cluster.route(MBlock::M1_OUTPUT(i1), 2, -0.1f, MBlock::M1_INPUT(i1))); // damping
 
   /*
   // for testing the route additionally throught some multiplier, test these lines:
   // choose which multiplier to use, between 0 and 3
   uint8_t m0 = 3;
-  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i0), 2, +1.0f, MBlock::M2_INPUT(2*m0)));
-  TEST_ASSERT(luci.route(MBlock::M1_OUTPUT(i0), 3, +1.0f, MBlock::M2_INPUT(2*m0 + 1)));
+  TEST_ASSERT(cluster.route(MBlock::M1_OUTPUT(i0), 2, +1.0f, MBlock::M2_INPUT(2*m0)));
+  TEST_ASSERT(cluster.route(MBlock::M1_OUTPUT(i0), 3, +1.0f, MBlock::M2_INPUT(2*m0 + 1)));
   */
 
   /*
   if(ustart_lane != 8) {
-    luci.ublock->connect(MBlock::M1_OUTPUT(i0), 8); // OUT0
+    cluster.ublock->connect(MBlock::M1_OUTPUT(i0), 8); // OUT0
   }
   */
 
-  luci.ublock->connect(MBlock::M1_OUTPUT(i0), 8); // ACL_OUT0
-  luci.ublock->connect(MBlock::M1_OUTPUT(i1), 9); // ACL_OUT1
+  cluster.ublock->connect(MBlock::M1_OUTPUT(i0), 8); // ACL_OUT0
+  cluster.ublock->connect(MBlock::M1_OUTPUT(i1), 9); // ACL_OUT1
 
-  luci.write_to_hardware();
+  cluster.write_to_hardware();
   delayMicroseconds(100);
 
   for (;;) {

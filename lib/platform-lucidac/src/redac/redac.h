@@ -5,6 +5,13 @@
 
 #pragma once
 
-#include <string>
+#include "carrier/carrier.h"
 
-std::string get_system_mac();
+namespace platform {
+
+class REDAC : public carrier::Carrier {
+public:
+  REDAC();
+};
+
+} // namespace platform

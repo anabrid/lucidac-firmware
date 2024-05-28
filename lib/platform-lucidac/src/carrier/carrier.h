@@ -12,23 +12,21 @@
 #include "cluster.h"
 #include "chips/TMP127Q1.h"
 #include "entity/entity.h"
+#include "mac_utils.h"
 
-using namespace lucidac;
+using namespace platform;
 
 namespace carrier {
 
 class Carrier : public entities::Entity {
 public:
-  static std::string get_system_mac();
+  std::vector<Cluster> clusters;
 
-public:
-  std::array<LUCIDAC, 1> clusters;
+  explicit Carrier(std::vector<Cluster> clusters);
 
-  Carrier();
+  entities::EntityClass get_entity_class() const final;
 
-  bool init();
-
-  entities::EntityClass get_entity_class() const override { return entities::EntityClass::CARRIER; }
+  virtual bool init();
 
   std::vector<Entity *> get_child_entities() override;
 

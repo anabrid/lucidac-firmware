@@ -69,6 +69,10 @@ protected:
 
   CBlock(bus::addr_t block_address, std::array<const functions::AD5452, NUM_COEFF> fCoeffs);
 
+  CBlock(bus::addr_t block_address, std::array<const functions::AD5452, NUM_COEFF> fCoeffs,
+         functions::SR74HCT595 fUpscaling, functions::TriggerFunction fUpscalingSync,
+         functions::TriggerFunction fUpscalingClear);
+
 public:
   explicit CBlock(bus::addr_t block_address);
   CBlock();
