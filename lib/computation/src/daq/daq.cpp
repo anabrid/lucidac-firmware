@@ -381,7 +381,7 @@ float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
 
 const char *daq::BaseDAQ::raw_to_str(uint16_t raw) {
   size_t normalized_bracketed = 
-    max(min(raw_to_normalized(raw), helpers::normalized_to_float_str_arr.size()), 0);
+    std::max( (int)std::min(raw_to_normalized(raw), helpers::normalized_to_float_str_arr.size()), 0);
   return helpers::normalized_to_float_str_arr[normalized_bracketed];
 }
 

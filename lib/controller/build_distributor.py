@@ -142,6 +142,7 @@ code_files["distributor_generated.h"] = \
 
 code_files["distributor_generated.cpp"] = \
 """
+#ifdef ANABRID_FOR_TEENSY
 #include "build/distributor.h"
 
 // Interestingly, FLASHMEM and PROGMEM *do* have an effect in Teensy,
@@ -162,6 +163,7 @@ FLASHMEM void dist::write_to_json(JsonObject target, bool include_secrets) {
 %(distdb_secret_json_defines)s
   }
 }
+#endif /* ANABRID_FOR_TEENSY */
 """
 
 for fname, content in code_files.items():

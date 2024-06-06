@@ -21,7 +21,7 @@ public:
   const data_t &get_average() const;
 };
 
-template <size_t N> typename RunningAverageVec<N>::data_t RunningAverageVec<N>::add(RunningAverageVec::data_t data) {
+template <unsigned int N> typename RunningAverageVec<N>::data_t RunningAverageVec<N>::add(RunningAverageVec<N>::data_t data) {
   n += 1;
   for (size_t i = 0; i < N; i++) {
     average[i] = (average[i] * static_cast<float>(n - 1) + data[i]) / static_cast<float>(n);

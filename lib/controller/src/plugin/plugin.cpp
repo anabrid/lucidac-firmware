@@ -1,3 +1,5 @@
+#ifdef ANABRID_FOR_TEENSY
+
 #include <cstring> // memcpy
 
 #include "imxrt.h" // framework-arduinoteensy/cores/teensy4
@@ -184,3 +186,5 @@ int loader::SinglePluginLoader::load(const Plugin &new_plugin) {
 
 // instantiate global singleton here.
 loader::GlobalPluginLoader loader::PluginLoader;
+
+#endif /* ANABRID_FOR_TEENSY */

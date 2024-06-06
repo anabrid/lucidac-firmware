@@ -16,6 +16,8 @@
  **/
 class MetadataMemory74LVC138AD : public metadata::MetadataMemory<256> {
 public:
+  static const SPISettings DEFAULT_SPI_SETTINGS;
+
   explicit MetadataMemory74LVC138AD(bus::addr_t address)
       : metadata::MetadataMemory<256>(address, SPISettings(4'000'000, MSBFIRST, SPI_MODE0)) {}
 

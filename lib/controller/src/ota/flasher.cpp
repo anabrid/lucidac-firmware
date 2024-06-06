@@ -12,6 +12,7 @@
 // This code is released into the public domain.
 //******************************************************************************
 
+#ifdef ANABRID_FOR_TEENSY
 #include <stdint.h>     // uint32_t, etc.
 #include <Arduino.h>	// Serial, etc. (if used)
 #include <malloc.h>		// malloc(), free()
@@ -421,3 +422,4 @@ int loader::FirmwareFlasher::complete(JsonObjectConst msg_in, JsonObject &msg_ou
   return success;
 }
 
+#endif /* ANABRID_FOR_TEENSY */

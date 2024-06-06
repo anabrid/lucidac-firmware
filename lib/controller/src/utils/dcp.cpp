@@ -34,6 +34,8 @@
 // T4 DCP  AES SHA CRC32
 //  tests on channel 0  non-blocking  no context switching
 
+#ifdef ANABRID_FOR_TEENSY
+
 #include <Arduino.h> // noInterrupts(), interrupts()
 #include "utils/dcp.h"
 
@@ -707,3 +709,5 @@ void hash_sha1(const uint8_t* msg, size_t msg_len, uint8_t* out_hash) {
 }
 
 } // end of namespace
+
+#endif /* ANABRID_FOR_TEENSY */
