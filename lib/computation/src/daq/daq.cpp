@@ -1,4 +1,4 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
@@ -44,7 +44,9 @@ void interrupt() {
   // Clear interrupt
   channel.clearInterrupt();
   // Memory barrier
+#ifdef ARDUINO
   asm("DSB");
+#endif
 }
 
 std::array<volatile uint32_t, BUFFER_SIZE> get_buffer() { return buffer; }
@@ -393,7 +395,15 @@ std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, un
   return avg.get_average();
 }
 
-size_t daq::BaseDAQ::raw_to_normalized(uint16_t raw) { return max((raw * 611) / 1000, 1303) - 1303; }
+size_t daq::BaseDAQ::raw_to_normalized(uint16_t raw) {
+  // lower limit that returns meaningful index
+  if (raw < 2133)
+    return 0;
+  // TODO: upper limit that returns meaningful index
+  // if (raw > ...)
+  //   return ...;
+  return (raw * 611) / 1000 - 1303;
+}
 
 std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {
   // Trigger CNVST

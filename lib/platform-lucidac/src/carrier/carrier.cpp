@@ -1,14 +1,12 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "carrier/carrier.h"
-#include "utils/logging.h"
-#include "user/settings.h"
+#include "carrier.h"
 
-#include <cstring>
+carrier::Carrier::Carrier(std::vector<Cluster> clusters) : Entity(""), clusters(std::move(clusters)) {}
 
-carrier::Carrier::Carrier() : clusters({lucidac::LUCIDAC(0)}) {}
+entities::EntityClass carrier::Carrier::get_entity_class() const { return entities::EntityClass::CARRIER; }
 
 bool carrier::Carrier::init(std::string mac_addr) {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
@@ -22,27 +20,7 @@ bool carrier::Carrier::init(std::string mac_addr) {
   return true;
 }
 
-bool carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
-#ifdef ANABRID_DEBUG_ENTITY_CONFIG
-  Serial.println(__PRETTY_FUNCTION__);
-#endif
-  // Carrier has no own configuration parameters currently
-  // TODO: Have an option to fail on unexpected configuration
-  return true;
-}
-
-entities::Entity *carrier::Carrier::get_child_entity(const std::string &child_id) {
-  // TODO: Use additional arguments of stoul to check if only part of the string was used
-  auto cluster_idx = std::stoul(child_id);
-  if (cluster_idx < 0 or clusters.size() < cluster_idx)
-    return nullptr;
-  return &clusters[cluster_idx];
-}
-
 std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
-#ifdef ANABRID_DEBUG_ENTITY
-  Serial.println(__PRETTY_FUNCTION__);
-#endif
   std::vector<entities::Entity *> children;
   for (auto &cluster : clusters) {
     children.push_back(&cluster);
@@ -50,16 +28,22 @@ std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
   return children;
 }
 
+entities::Entity *carrier::Carrier::get_child_entity(const std::string &child_id) {
+  auto cluster_idx = std::stoul(child_id);
+  if (cluster_idx < 0 or clusters.size() < cluster_idx)
+    return nullptr;
+  return &clusters[cluster_idx];
+}
+
+bool carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
+  // TODO: Have an option to fail on unexpected configuration
+  return true;
+}
+
 void carrier::Carrier::write_to_hardware() {
   for (auto &cluster : clusters) {
     cluster.write_to_hardware();
   }
-}
-
-// singleton
-carrier::Carrier carrier_;
-carrier::Carrier &carrier::Carrier::get() {
-  return carrier_;
 }
 
 constexpr int error(int i) { return i; } // just some syntactic suggar
@@ -152,9 +136,15 @@ int carrier::Carrier::get_config(JsonObjectConst msg_in, JsonObject &msg_out) {
 }
 
 int carrier::Carrier::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
-  auto serialized_data = R"({"00-00-00-00-00-00": {"/0": {"/M0": {"class": 2, "type": 0, "variant": 0, "version": 0}, "/M1": {"class": 2, "type": 1, "variant": 0, "version": 0}, "/U": {"class": 3, "type": 0, "variant": 0, "version": 0}, "/C": {"class": 4, "type": 0, "variant": 0, "version": 0}, "/I": {"class": 5, "type": 0, "variant": 0, "version": 0}, "class": 1, "type": 3, "variant": 0, "version": 0}, "class": 0, "type": 0, "variant": 0, "version": 0}})";
-  std::memcpy((void*)(serialized_data + 2), (void*)(get_entity_id().c_str()), 17);
-  msg_out["entities"] = serialized(serialized_data);
+  auto entities_obj = msg_out.createNestedObject("entities");
+  auto carrier_obj = entities_obj[get_entity_id()] = get_entity_classifier();
+  for (const auto &cluster : clusters) {
+    auto cluster_obj = carrier_obj["/" + cluster.get_entity_id()] = cluster.get_entity_classifier();
+    for (auto *block : cluster.get_blocks()) {
+      if (block)
+        cluster_obj["/" + block->get_entity_id()] = block->get_entity_classifier();
+    }
+  }
   return success;
 }
 

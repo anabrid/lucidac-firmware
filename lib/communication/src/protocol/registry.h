@@ -9,6 +9,7 @@
 #include <string>
 
 #include "handler.h"
+#include "carrier/carrier.h"
 #include "user/auth.h"
 
 
@@ -44,7 +45,7 @@ public:
   void dump(); //< for debugging: Print Registry configuration to Serial
   void write_handler_names_to(JsonArray& target); ///< for structured output
 
-  void init(); ///< Actual registration of all handlers in code.
+  void init(carrier::Carrier& c); ///< Actual registration of all handlers in code.
 };
 
 // the singleton instance

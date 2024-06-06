@@ -1,50 +1,64 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include "block/cblock.h"
 
-blocks::CBlock::CBlock(uint8_t clusterIdx)
-    : FunctionBlock("C", clusterIdx),
-      f_coeffs{
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 0),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 1),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 2),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 3),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 4),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 5),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 6),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 7),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 8),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 9),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 10),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 11),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 12),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 13),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 14),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 15),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 16),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 17),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 18),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 19),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 20),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 21),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 22),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 23),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 24),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 25),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 26),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 27),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 28),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 29),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 30),
-          functions::AD5452(bus::idx_to_addr(clusterIdx, BLOCK_IDX, COEFF_BASE_FUNC_IDX), 31),
-      },
-      f_upscaling(bus::idx_to_addr(clusterIdx, BLOCK_IDX, SCALE_SWITCHER)),
-      f_upscaling_sync(bus::idx_to_addr(clusterIdx, BLOCK_IDX, SCALE_SWITCHER_SYNC)),
-      f_upscaling_clear(bus::idx_to_addr(clusterIdx, BLOCK_IDX, SCALE_SWITCHER_CLEAR)) {}
+blocks::CBlock::CBlock(const bus::addr_t block_address, std::array<const functions::AD5452, NUM_COEFF> fCoeffs,
+                       functions::SR74HCT595 fUpscaling, functions::TriggerFunction fUpscalingSync,
+                       functions::TriggerFunction fUpscalingClear)
+    : FunctionBlock("C", block_address), f_coeffs(std::move(fCoeffs)), f_upscaling(std::move(fUpscaling)),
+      f_upscaling_sync(std::move(fUpscalingSync)), f_upscaling_clear(std::move(fUpscalingClear)) {}
 
-bus::addr_t blocks::CBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, BLOCK_IDX, 0); }
+blocks::CBlock::CBlock(const bus::addr_t block_address)
+    : FunctionBlock("C", block_address),
+      f_coeffs{functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 0),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 1),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 2),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 3),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 4),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 5),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 6),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 7),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 8),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 9),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 10),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 11),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 12),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 13),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 14),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 15),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 16),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 17),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 18),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 19),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 20),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 21),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 22),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 23),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 24),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 25),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 26),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 27),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 28),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 29),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 30),
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31)},
+      f_upscaling(bus::replace_function_idx(block_address, SCALE_SWITCHER)),
+      f_upscaling_sync(bus::replace_function_idx(block_address, SCALE_SWITCHER_SYNC)),
+      f_upscaling_clear(bus::replace_function_idx(block_address, SCALE_SWITCHER_CLEAR)) {}
+
+blocks::CBlock::CBlock() : CBlock(bus::idx_to_addr(0, bus::C_BLOCK_IDX, 0)) {}
+
+float blocks::CBlock::get_factor(uint8_t idx) {
+  if (idx >= NUM_COEFF)
+    return 0.0f;
+
+  auto factor = decltype(f_coeffs)::value_type::raw_to_float(factors_[idx]);
+  if (is_upscaled(idx))
+    factor = factor * UPSCALING;
+  return factor;
+}
 
 bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   if (idx >= NUM_COEFF)
@@ -61,6 +75,12 @@ bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   }
   factors_[idx] = decltype(f_coeffs)::value_type::float_to_raw(factor);
   return true;
+}
+
+bool blocks::CBlock::is_upscaled(uint8_t idx) {
+  if (idx >= NUM_COEFF)
+    return false;
+  return upscaling_ & (1 << idx);
 }
 
 void blocks::CBlock::set_upscaling(uint8_t idx, bool enable = true) {
@@ -119,11 +139,11 @@ bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
         // TODO: Check conversion from string to number
         auto idx = std::stoul(keyval.key().c_str());
         // Values can either be direct factor float values or {"factor": 0.42} objects
-        if (keyval.value().is<JsonObjectConst>() and keyval.value().as<JsonObjectConst>().containsKey("factor")) {
+        if (keyval.value().is<JsonObjectConst>() and
+            keyval.value().as<JsonObjectConst>().containsKey("factor")) {
           if (!set_factor(idx, keyval.value().as<JsonObjectConst>()["factor"].as<float>()))
             return false;
-        }
-        else if (keyval.value().is<float>()) {
+        } else if (keyval.value().is<float>()) {
           if (!set_factor(idx, keyval.value().as<float>()))
             return false;
         } else {
@@ -140,7 +160,28 @@ bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
 void blocks::CBlock::config_self_to_json(JsonObject &cfg) {
   Entity::config_self_to_json(cfg);
   auto factors_cfg = cfg.createNestedArray("elements");
-  for (auto factor : factors_) {
-    factors_cfg.add(decltype(f_coeffs)::value_type::raw_to_float(factor));
+  for (auto idx = 0; idx < factors_.size(); idx++) {
+    factors_cfg.add(get_factor(idx));
   }
+}
+
+blocks::CBlock *blocks::CBlock::from_entity_classifier(entities::EntityClassifier classifier,
+                                                       const bus::addr_t block_address) {
+  if (!classifier or classifier.class_enum != CLASS_ or classifier.type != TYPE)
+    return nullptr;
+
+  auto variant = classifier.variant_as<VARIANTS>();
+  switch (variant) {
+  case VARIANTS::UNKNOWN:
+    return nullptr;
+  case VARIANTS::SEQUENTIAL_ADDRESSES:
+    // There are no different versions of this variant currently
+    return new CBlock_SequentialAddresses(block_address);
+  case VARIANTS::MIXED_ADDRESSES:
+    // There are no different versions of this variant currently
+    return new CBlock_MixedAddresses(block_address);
+  }
+  // Any unknown value results in a nullptr here.
+  // Adding default case to switch suppresses warnings about missing cases.
+  return nullptr;
 }

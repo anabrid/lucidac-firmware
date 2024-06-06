@@ -1,4 +1,4 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
@@ -127,7 +127,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
     // Configure first timer as pre-scaler
     // But we want to pre-scale as much as possible, even though we then lose resolution
     // But for op times in the range of seconds, we don't need microseconds resolution
-    auto order_of_magnitude = min(static_cast<unsigned int>(log10(op_time_ns)), 9);
+    auto order_of_magnitude = static_cast<unsigned int>(log10(op_time_ns));
     // Don't use float-type pow
     // Also divider can't be larger than 273, otherwise pre-scaler > 2^16
     unsigned int divider = 1;

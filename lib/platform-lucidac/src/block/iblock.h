@@ -1,4 +1,4 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
@@ -9,7 +9,6 @@
 
 #include "block/base.h"
 #include "bus/functions.h"
-#include "bus/bus.h"
 
 /// @brief  namespace for internal helpers
 namespace functions {
@@ -22,7 +21,8 @@ namespace functions {
  * Each is [DATA Y2 Y1 Y0 X3 X2 X1 X0]
  * Data bit comes first, most significant bit comes first (in SPI)
  *
- * See chip_cmd_word and IBlock::write_to_hardware for more information and the actual calculation of the bitstream.
+ * See chip_cmd_word and IBlock::write_to_hardware for more information and the actual calculation of the
+ * bitstream.
  */
 class ICommandRegisterFunction : public DataFunction {
 public:
@@ -35,7 +35,6 @@ public:
 };
 
 } // namespace functions
-
 
 namespace blocks {
 
@@ -51,6 +50,15 @@ namespace blocks {
  *
  **/
 class IBlock : public FunctionBlock {
+public:
+  // Entity hardware identifier information.
+  static constexpr auto CLASS_ = entities::EntityClass::I_BLOCK;
+
+  entities::EntityClass get_entity_class() const final { return CLASS_; }
+
+  static IBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
+  ;
+
 protected:
   void reset_outputs();
 
@@ -76,13 +84,13 @@ public:
   const functions::TriggerFunction f_imatrix_reset;
   const functions::TriggerFunction f_imatrix_sync;
 
-  explicit IBlock(const uint8_t clusterIdx)
-      : FunctionBlock("I", clusterIdx), outputs{0}, f_cmd{bus::idx_to_addr(clusterIdx, BLOCK_IDX,
-                                                                           IMATRIX_COMMAND_SR_FUNC_IDX)},
-        f_imatrix_reset{bus::idx_to_addr(clusterIdx, BLOCK_IDX, IMATRIX_RESET_FUNC_IDX)},
-        f_imatrix_sync{bus::idx_to_addr(clusterIdx, BLOCK_IDX, IMATRIX_SYNC_FUNC_IDX)} {}
+  explicit IBlock(const bus::addr_t block_address)
+      : FunctionBlock("I", block_address), outputs{0}, f_cmd{bus::replace_function_idx(
+                                                           block_address, IMATRIX_COMMAND_SR_FUNC_IDX)},
+        f_imatrix_reset{bus::replace_function_idx(block_address, IMATRIX_RESET_FUNC_IDX)},
+        f_imatrix_sync{bus::replace_function_idx(block_address, IMATRIX_SYNC_FUNC_IDX)} {}
 
-  bus::addr_t get_block_address() override;
+  IBlock() : IBlock(bus::idx_to_addr(0, bus::I_BLOCK_IDX, 0)) {}
 
   void write_to_hardware() override;
 
@@ -118,6 +126,9 @@ public:
   bool disconnect(uint8_t output);
 
   bool config_self_from_json(JsonObjectConst cfg) override;
+
+  uint8_t _hardware_to_logical_input(uint8_t hardware_input);
+  uint8_t _logical_to_hardware_input(uint8_t logical_input);
 };
 
 } // namespace blocks

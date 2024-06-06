@@ -1,9 +1,10 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include "run/run_manager.h"
 
+#include <Arduino.h>
 #include "daq/daq.h"
 #include "utils/logging.h"
 
@@ -34,7 +35,6 @@ void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunD
 
   run_data_handler->init();
   daq_.enable();
-  Serial.println("Run starts.");
   mode::FlexIOControl::force_start();
   delayMicroseconds(1);
 

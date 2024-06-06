@@ -1,4 +1,4 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
@@ -41,7 +41,7 @@ public:
   uint16_t read_register(uint8_t address) const;
   bool write_register(uint8_t address, uint16_t data) const;
   bool set_channel(uint8_t idx, uint16_t value) const;
-  void init();
+  void init() const;
 };
 
 } // namespace functions

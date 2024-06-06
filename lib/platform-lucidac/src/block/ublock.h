@@ -1,4 +1,4 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
@@ -20,7 +20,7 @@ void shift_5_left(uint8_t *buffer, size_t size);
 
 namespace functions {
 
-template <std::size_t num_of_outputs> class UMatrixFunction : public functions::DataFunction {
+class UMatrixFunction : public functions::DataFunction {
 public:
   static const SPISettings DEFAULT_SPI_SETTINGS;
 
@@ -29,7 +29,7 @@ public:
 
   //! Convert an output array to data packets and transfer to chip.
   //! Timing: ~5microseconds
-  void transfer(std::array<uint8_t, num_of_outputs> outputs) const;
+  template <size_t num_of_outputs> void transfer(const std::array<uint8_t, num_of_outputs> &outputs) const;
 };
 
 class UOffsetLoader {
@@ -49,8 +49,7 @@ protected:
   std::array<TriggerFunction, 4> f_triggers;
 
 public:
-  UOffsetLoader(bus::addr_t ublock_address, uint8_t offsets_data_func_idx,
-                         uint8_t offsets_load_base_func_idx);
+  UOffsetLoader(bus::addr_t ublock_address, uint8_t offsets_data_func_idx, uint8_t offsets_load_base_func_idx);
 
   static uint16_t build_cmd_word(uint8_t chip_output_idx, uint16_t offset_raw);
   static uint16_t offset_to_raw(float offset);
@@ -79,6 +78,13 @@ namespace blocks {
  **/
 class UBlock : public FunctionBlock {
 public:
+  // Entity hardware identifier information.
+  static constexpr auto CLASS_ = entities::EntityClass::U_BLOCK;
+
+  static UBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
+  ;
+
+public:
   static constexpr uint8_t BLOCK_IDX = bus::U_BLOCK_IDX;
 
   static constexpr uint8_t NUM_OF_INPUTS = 16;
@@ -93,7 +99,7 @@ public:
 
   static constexpr std::array<uint8_t, 8> IDX_RANGE_TO_ACL_OUT() {
     // return {15, 14, 13, 12, 11, 10, 9, 8};
-    return { 8,  9, 10, 11, 12, 13, 14, 15};
+    return {8, 9, 10, 11, 12, 13, 14, 15};
   };
 
   // TODO: Make this constexpr
@@ -126,7 +132,7 @@ public:
   static const SPISettings ALT_SIGNAL_FUNC_SPI_SETTINGS;
 
 protected:
-  const functions::UMatrixFunction<NUM_OF_OUTPUTS> f_umatrix;
+  const functions::UMatrixFunction f_umatrix;
   const functions::TriggerFunction f_umatrix_sync;
   // Reset disables all output, but rest of logic is unchanged according to datasheet.
   // But I don't really know what that means. Data is still shifted out after a reset
@@ -148,9 +154,11 @@ private:
   bool _is_connected(uint8_t input, uint8_t output);
 
 public:
-  explicit UBlock(uint8_t clusterIdx);
+  explicit UBlock(bus::addr_t block_address);
 
-  bus::addr_t get_block_address() override;
+  UBlock() : UBlock(bus::idx_to_addr(0, bus::U_BLOCK_IDX, 0)) {}
+
+  entities::EntityClass get_entity_class() const final { return entities::EntityClass::U_BLOCK; }
 
   void reset(bool keep_offsets) override;
 

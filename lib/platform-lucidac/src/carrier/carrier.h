@@ -1,4 +1,4 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
@@ -11,8 +11,9 @@
 
 #include "carrier/cluster.h"
 #include "entity/entity.h"
+#include "mac_utils.h"
 
-using namespace lucidac;
+using namespace platform;
 
 namespace carrier {
 
@@ -27,13 +28,15 @@ namespace carrier {
  **/
 class Carrier : public entities::Entity {
 public:
-  std::array<LUCIDAC, 1> clusters;
+  std::vector<Cluster> clusters;
 
-  Carrier();
+  explicit Carrier(std::vector<Cluster> clusters);
+
+  entities::EntityClass get_entity_class() const final;
 
   /// Initializes the carrier: Passes the Ethernet mac address as entity id
   /// and initializes all clusters.
-  bool init(std::string mac_addr);
+  virtual bool init(std::string mac_addr);
 
   std::vector<Entity *> get_child_entities() override;
 

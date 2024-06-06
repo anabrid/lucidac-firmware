@@ -21,19 +21,19 @@
 // allocate singleton storage
 msg::handlers::DynamicRegistry msg::handlers::Registry;
 
-void msg::handlers::DynamicRegistry::init() {
+void msg::handlers::DynamicRegistry::init(carrier::Carrier& c) {
   using namespace user::auth;
   using namespace msg::handlers;
 
   // Basics
   set("ping",                 100, new PingRequestHandler{}, SecurityLevel::RequiresNothing);
   set("help",                 200, new HelpHandler(), SecurityLevel::RequiresNothing);
-  set("reset",                300, new ResetRequestHandler(carrier::Carrier::get()), SecurityLevel::RequiresLogin); // TODO: Should probably be called "reset_config" or so, cf. reset_settings
+  set("reset",                300, new ResetRequestHandler(c), SecurityLevel::RequiresLogin); // TODO: Should probably be called "reset_config" or so, cf. reset_settings
 
   // Carrier and RunManager things
-  set("set_config",           400, new SetConfigMessageHandler(carrier::Carrier::get()), SecurityLevel::RequiresLogin);
-  set("get_config",           500, new GetConfigMessageHandler(carrier::Carrier::get()), SecurityLevel::RequiresLogin);
-  set("get_entities",         600, new GetEntitiesRequestHandler(carrier::Carrier::get()), SecurityLevel::RequiresLogin);
+  set("set_config",           400, new SetConfigMessageHandler(c), SecurityLevel::RequiresLogin);
+  set("get_config",           500, new GetConfigMessageHandler(c), SecurityLevel::RequiresLogin);
+  set("get_entities",         600, new GetEntitiesRequestHandler(c), SecurityLevel::RequiresLogin);
   set("start_run",            700, new StartRunRequestHandler(run::RunManager::get()), SecurityLevel::RequiresLogin);
 
   // manual hardware access

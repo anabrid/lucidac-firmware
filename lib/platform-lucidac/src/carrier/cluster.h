@@ -1,4 +1,4 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
@@ -8,7 +8,7 @@
 #include "daq/daq.h"
 #include "entity/entity.h"
 
-namespace lucidac {
+namespace platform {
 
 /**
  * The Lucidac class represents a single cluster. A cluster holds a number of
@@ -17,7 +17,10 @@ namespace lucidac {
  * 
  * \ingroup Singletons
  **/
-class LUCIDAC : public entities::Entity {
+class Cluster : public entities::Entity {
+private:
+  uint8_t cluster_idx;
+
 public:
   blocks::MBlock *m1block = nullptr;
   blocks::MBlock *m2block = nullptr;
@@ -25,20 +28,23 @@ public:
   blocks::CBlock *cblock = nullptr;
   blocks::IBlock *iblock = nullptr;
 
-  explicit LUCIDAC(uint8_t cluster_idx = 0);
+  explicit Cluster(uint8_t cluster_idx = 0);
+
   // TODO: Delete copy and assignment operators
-  //LUCIDAC(LUCIDAC const &) = delete;
-  //LUCIDAC &operator=(LUCIDAC const &) = delete;
+  // Cluster(Cluster const &) = delete;
+  // Cluster &operator=(Cluster const &) = delete;
+
+  entities::EntityClass get_entity_class() const final { return entities::EntityClass::CLUSTER; }
 
   bool init();
-  auto get_blocks();
+  std::array<blocks::FunctionBlock *, 5> get_blocks() const;
 
   bool calibrate(daq::BaseDAQ *daq);
 
   void write_to_hardware();
 
   /**
-   * Register a route throught the lucidac.
+   * Register a route throught the cluster.
    *
    * Note that this does not immediately configure hardware but just prepares the
    * in-memory representations of the individual blocks. Use write_to_hardware() to

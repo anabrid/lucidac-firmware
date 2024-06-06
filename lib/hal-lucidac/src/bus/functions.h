@@ -1,12 +1,10 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #pragma once
 
-#include <SPI.h>
 #include <array>
-#include <core_pins.h>
 #include <cstdint>
 
 #include "bus/bus.h"
@@ -46,7 +44,7 @@ public:
  *
  * The communication is configured at constructor level, while the transfer
  * functions basically decorate the Arduino/Teensyduino SPIClass access
- * with lucidac bus adressing.
+ * with hardware bus addressing.
  **/
 class DataFunction : public Function {
 protected:

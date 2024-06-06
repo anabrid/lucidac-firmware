@@ -3,7 +3,7 @@ Licensing
 
 This is an open source code which is licensed as following:
 
-> Copyright (c) 2023 anabrid GmbH
+> Copyright (c) 2024 anabrid GmbH
 >
 > Contact: https://www.anabrid.com/licensing/
 >

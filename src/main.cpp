@@ -1,7 +1,12 @@
+// Copyright (c) 2024 anabrid GmbH
+// Contact: https://www.anabrid.com/licensing/
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
+
 #include <Arduino.h>
 #include <cstring>
 #include <list>
 
+#include "carrier/carrier.h"
 #include "build/distributor.h"
 #include "protocol/client.h"
 #include "utils/logging.h"
@@ -14,6 +19,7 @@
 #include "utils/hashflash.h"
 #include "web/server.h"
 
+carrier::Carrier carrier_({Cluster(0)});
 net::EthernetServer eth_server;
 msg::MulticlientServer multi_server;
 
@@ -62,7 +68,7 @@ void setup() {
 
   // Initialize carrier board
   LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
-  if (!carrier::Carrier::get().init(user::UserSettings.ethernet.mac)) {
+  if (!carrier_.init(user::UserSettings.ethernet.mac)) {
     LOG_ERROR("Error initializing carrier board.");
     _ERROR_OUT_
   }
@@ -74,7 +80,7 @@ void setup() {
     _ERROR_OUT_
   }
 
-  msg::handlers::Registry.init(); // registers all commonly known messages
+  msg::handlers::Registry.init(carrier_); // registers all commonly known messages
 
   msg::handlers::Registry.set("hack", new HackMessageHandler(), user::auth::SecurityLevel::RequiresNothing);
   //LOG("msg::handlers::DynamicRegistry set up with handlers")
@@ -101,7 +107,7 @@ void loop() {
     *msg::JsonLinesProtocol::get().envelope_out
   };
   static client::RunDataNotificationHandler run_data_handler{
-    carrier::Carrier::get(),
+    carrier_,
     msg::JsonLinesProtocol::get().broadcast,
     *msg::JsonLinesProtocol::get().envelope_out
   };

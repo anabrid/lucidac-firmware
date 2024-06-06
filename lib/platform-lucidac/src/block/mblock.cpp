@@ -1,20 +1,21 @@
-// Copyright (c) 2023 anabrid GmbH
+// Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include "block/mblock.h"
 #include "utils/logging.h"
 
-blocks::MBlock::MBlock(uint8_t cluster_idx, uint8_t slot_idx)
-    : blocks::FunctionBlock{std::string("M") + std::to_string(slot_idx - M1_IDX), cluster_idx},
-      slot_idx{slot_idx} {}
+blocks::MBlock::MBlock(bus::addr_t block_address)
+    : blocks::FunctionBlock{std::string("M") + std::string(
+                                                   // Addresses 4, 9, 14 are M0
+                                                   // Addresses 5, 10, 15 are M1
+                                                   block_address % 5 ? "0" : "1"),
+                            block_address} {}
 
-bus::addr_t blocks::MBlock::get_block_address() { return bus::idx_to_addr(cluster_idx, slot_idx, 0); }
-
-blocks::MIntBlock::MIntBlock(uint8_t cluster_idx, uint8_t slot_idx)
-    : blocks::MBlock{cluster_idx, slot_idx}, f_ic_dac(bus::idx_to_addr(cluster_idx, slot_idx, IC_FUNC_IDX)),
-      f_time_factor(bus::idx_to_addr(cluster_idx, slot_idx, TIME_FACTOR_FUNC_IDX), true),
-      f_time_factor_sync(bus::idx_to_addr(cluster_idx, slot_idx, TIME_FACTOR_SYNC_FUNC_IDX)), ic_raw{0} {
+blocks::MIntBlock::MIntBlock(const bus::addr_t block_address)
+    : blocks::MBlock{block_address}, f_ic_dac(bus::replace_function_idx(block_address, IC_FUNC_IDX)),
+      f_time_factor(bus::replace_function_idx(block_address, TIME_FACTOR_FUNC_IDX), true),
+      f_time_factor_sync(bus::replace_function_idx(block_address, TIME_FACTOR_SYNC_FUNC_IDX)), ic_raw{0} {
   std::fill(std::begin(time_factors), std::end(time_factors), DEFAULT_TIME_FACTOR);
 }
 
@@ -141,11 +142,62 @@ bool blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
         return false;
       }
       // TODO: Check each element. But currently makes no sense
-      //for (const auto& element_cfg : elements_cfg) {
+      // for (const auto& element_cfg : elements_cfg) {
       //}
     } else {
       return false;
     }
   }
   return true;
+}
+
+// ███████ ███    ██ ████████ ██ ████████ ██    ██     ███████  █████   ██████ ████████  ██████  ██████  ██
+// ███████ ███████ ██      ████   ██    ██    ██    ██     ██  ██      ██      ██   ██ ██         ██    ██ ██
+// ██   ██ ██ ██      ██ █████   ██ ██  ██    ██    ██    ██      ████       █████   ███████ ██         ██ ██
+// ██ ██████  ██ █████   ███████ ██      ██  ██ ██    ██    ██    ██       ██        ██      ██   ██ ██ ██ ██
+// ██ ██   ██ ██ ██           ██ ███████ ██   ████    ██    ██    ██       ██        ██      ██   ██  ██████ ██
+// ██████  ██   ██ ██ ███████ ███████
+
+blocks::MBlock *blocks::MBlock::from_entity_classifier(entities::EntityClassifier classifier,
+                                                       const bus::addr_t block_address) {
+  if (!classifier or classifier.class_enum != entities::EntityClass::M_BLOCK)
+    return nullptr;
+
+  auto type = classifier.type_as<TYPES>();
+  switch (type) {
+  case TYPES::UNKNOWN:
+    // This is already checked by !classifier above
+    return nullptr;
+  case TYPES::M_MUL4_BLOCK:
+    return MMulBlock::from_entity_classifier(classifier, block_address);
+  case TYPES::M_INT8_BLOCK:
+    return MIntBlock::from_entity_classifier(classifier, block_address);
+  }
+  // Any unknown value results in a nullptr here.
+  // Adding default case to switch suppresses warnings about missing cases.
+  return nullptr;
+}
+
+blocks::MIntBlock *blocks::MIntBlock::from_entity_classifier(entities::EntityClassifier classifier,
+                                                             const bus::addr_t block_address) {
+  // Assume classifier has already been sanity checked
+  // Currently, there are no different variants or versions
+  if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
+      classifier.version != entities::EntityClassifier::DEFAULT_)
+    return nullptr;
+
+  // Return default implementation
+  return new MIntBlock(block_address);
+}
+
+blocks::MMulBlock *blocks::MMulBlock::from_entity_classifier(entities::EntityClassifier classifier,
+                                                             const bus::addr_t block_address) {
+  // Assume classifier has already been sanity checked
+  // Currently, there are no different variants or versions
+  if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
+      classifier.version != entities::EntityClassifier::DEFAULT_)
+    return nullptr;
+
+  // Return default implementation
+  return new MMulBlock(block_address);
 }
