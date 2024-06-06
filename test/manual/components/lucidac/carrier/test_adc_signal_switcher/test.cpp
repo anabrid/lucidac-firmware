@@ -6,6 +6,8 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#include "io/io.h"
+
 #define private public
 #define protected public
 #include "carrier/carrier.h"
@@ -39,7 +41,7 @@ void test_adc_sr_reset() {
 
 void setup() {
   bus::init();
-  pinMode(29, INPUT_PULLUP);
+  io::init();
 
   UNITY_BEGIN();
   // RUN_TEST(test_init);
@@ -51,8 +53,7 @@ void setup() {
 
 void loop() {
   // Re-run tests or do an action once the button is pressed
-  while (digitalReadFast(29)) {
-  }
+  io::block_until_button_press();
   test_adc_switcher_matrix_reset();
   delay(500);
 }

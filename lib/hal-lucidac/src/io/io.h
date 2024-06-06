@@ -5,10 +5,14 @@
 
 #pragma once
 
-#include <cstdint>
-
 namespace io {
 
-void change_register(volatile uint32_t &reg, uint32_t clear_mask, uint32_t set_mask);
+constexpr uint8_t PIN_BUTTON = 29;
+
+void init();
+
+bool get_button();
+
+void block_until_button_press();
 
 } // namespace io

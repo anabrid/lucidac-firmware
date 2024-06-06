@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#include "io/io.h"
 #include "metadata/74LVC138AD.tpl.hpp"
 
 MetadataMemory74LVC138AD chip{bus::address_from_tuple(10, 0)};
@@ -33,7 +34,7 @@ void test_read_uuid() {
 
 void setup() {
   bus::init();
-  pinMode(29, INPUT_PULLUP);
+  io::init();
 
   UNITY_BEGIN();
   RUN_TEST(test_read_uuid);
@@ -42,8 +43,7 @@ void setup() {
 
 void loop() {
   // Do an action once the button is pressed
-  while (digitalReadFast(29)) {
-  }
+  io::block_until_button_press();
   test_read_uuid();
   delay(500);
 }

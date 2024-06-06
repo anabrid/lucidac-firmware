@@ -6,6 +6,8 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#include "io/io.h"
+
 #define private public
 #define protected public
 #include "carrier/carrier.h"
@@ -28,7 +30,7 @@ void test_temperature() { TEST_ASSERT_FLOAT_WITHIN(2, 25.0f, carrier_board.f_tem
 
 void setup() {
   bus::init();
-  pinMode(29, INPUT_PULLUP);
+  io::init();
 
   UNITY_BEGIN();
   // RUN_TEST(test_init);
@@ -38,8 +40,7 @@ void setup() {
 
 void loop() {
   // Do an action once the button is pressed
-  while (digitalReadFast(29)) {
-  }
+  io::block_until_button_press();
   test_temperature();
   delay(500);
 }

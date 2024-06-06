@@ -5,7 +5,6 @@
 
 #include "bus.h"
 
-#include "io/ioregister.h"
 #include "logging.h"
 
 SPIClass &bus::spi = BUS_SPI_INTERFACE;

@@ -8,6 +8,7 @@
 
 #include "bus/bus.h"
 #include "chips/TMP127Q1.h"
+#include "io/io.h"
 
 using namespace functions;
 
@@ -35,6 +36,7 @@ void test_chip_function() { TEST_ASSERT_FLOAT_WITHIN(10, 30, chip.read_temperatu
 
 void setup() {
   bus::init();
+  io::init();
 
   UNITY_BEGIN();
   RUN_TEST(test_raw_conversion);
@@ -43,10 +45,8 @@ void setup() {
 }
 
 void loop() {
-  pinMode(29, INPUT_PULLUP);
-
   // Do an action once the button is pressed
-  while (digitalReadFast(29)) {
+  while (!io::get_button()) {
   }
   test_chip_function();
   delay(500);
