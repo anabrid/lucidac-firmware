@@ -10,11 +10,11 @@
 
 #define private public
 #define protected public
-#include "carrier/carrier.h"
+#include "lucidac/lucidac.h"
 
-using namespace carrier;
+using namespace platform;
 
-Carrier carrier_board({});
+LUCIDAC_HAL hal;
 
 void setUp() {
   // This is called before *each* test.
@@ -24,19 +24,11 @@ void tearDown() {
   // This is called after *each* test.
 }
 
-void test_init() { TEST_ASSERT(carrier_board.init()); }
+void test_adc_bus_matrix_reset() { hal.f_adc_switcher_matrix_reset.trigger(); }
 
-void test_adc_switcher_matrix_reset() { carrier_board.f_adc_switcher_matrix_reset.trigger(); }
-
-void test_adc_prg() {
-  carrier_board.f_adc_switcher_prg.transfer8(functions::ICommandRegisterFunction::chip_cmd_word(3, 5));
-  carrier_board.f_adc_switcher_sync.trigger();
-  TEST_ASSERT(true);
-}
-
-void test_adc_sr_reset() {
-  carrier_board.f_adc_switcher_sr_reset.trigger();
-  TEST_ASSERT(true);
+void test_adc_bus_matrix() {
+  TEST_ASSERT(hal.write_adc_bus_mux({0, 1, 2, 3, 4, 5, 6, 7}));
+  // TEST_ASSERT(hal.write_adc_bus_mux({8,9,10,11,12,13,14,15}));
 }
 
 void setup() {
@@ -44,9 +36,8 @@ void setup() {
   io::init();
 
   UNITY_BEGIN();
-  // RUN_TEST(test_init);
-  RUN_TEST(test_adc_switcher_matrix_reset);
-  RUN_TEST(test_adc_prg);
+  RUN_TEST(test_adc_bus_matrix_reset);
+  RUN_TEST(test_adc_bus_matrix);
   // RUN_TEST(test_adc_sr_reset);
   UNITY_END();
 }
@@ -54,6 +45,6 @@ void setup() {
 void loop() {
   // Re-run tests or do an action once the button is pressed
   io::block_until_button_press();
-  test_adc_switcher_matrix_reset();
+  test_adc_bus_matrix_reset();
   delay(500);
 }

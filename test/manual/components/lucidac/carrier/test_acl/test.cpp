@@ -6,13 +6,16 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#include "io/io.h"
+
 #define private public
 #define protected public
-#include "carrier/carrier.h"
+#include "lucidac/lucidac.h"
 
-using namespace carrier;
+using namespace platform;
+using ACL = LUCIDAC_HAL::ACL;
 
-Carrier carrier_board({});
+LUCIDAC_HAL hal;
 
 void setUp() {
   // This is called before *each* test.
@@ -22,27 +25,24 @@ void tearDown() {
   // This is called after *each* test.
 }
 
-void test_init() { TEST_ASSERT(carrier_board.init()); }
-
 void test_acl_prg() {
-  carrier_board.f_acl_prg.transfer8(0b11100110);
-  carrier_board.f_acl_upd.trigger();
-  TEST_ASSERT(true);
+  TEST_ASSERT(hal.write_acl({ACL::EXTERNAL, ACL::EXTERNAL, ACL::INTERNAL, ACL::EXTERNAL, ACL::INTERNAL,
+                             ACL::INTERNAL, ACL::EXTERNAL, ACL::INTERNAL}));
 }
 
 void test_acl_clear() {
-  carrier_board.f_acl_clr.trigger();
-  carrier_board.f_acl_upd.trigger();
+  hal.reset_acl();
   TEST_ASSERT(true);
 }
 
 void setup() {
   bus::init();
+  io::init();
 
   UNITY_BEGIN();
-  // RUN_TEST(test_init);
   RUN_TEST(test_acl_prg);
-  // RUN_TEST(test_acl_clear);
+  io::block_until_button_press();
+  RUN_TEST(test_acl_clear);
   UNITY_END();
 }
 
