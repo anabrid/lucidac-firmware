@@ -39,10 +39,9 @@ void tearDown() {
 
 void configure_ublock() {
   // SET UBLOCK OUTPUT TO +0.2V
-  ublock.change_transmission_mode(UBlock::Transmission_Mode::POS_SMALL_REF);
 
   for (auto output : UBlock::OUTPUT_IDX_RANGE()) {
-    TEST_ASSERT(ublock.connect(output / 2, output));
+    TEST_ASSERT(ublock.connect_alternative(UBlock::Transmission_Mode::POS_SMALL_REF, output));
   }
   TEST_ASSERT(ublock.write_to_hardware());
 }

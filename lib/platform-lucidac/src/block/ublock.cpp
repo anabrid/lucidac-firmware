@@ -26,11 +26,9 @@ functions::UMatrixFunction::UMatrixFunction(bus::addr_t address)
 blocks::UBlock::UBlock(bus::addr_t block_address)
     : FunctionBlock("U", block_address), f_umatrix(bus::replace_function_idx(block_address, UMATRIX_FUNC_IDX)),
       f_umatrix_sync(bus::replace_function_idx(block_address, UMATRIX_SYNC_FUNC_IDX)),
-      f_umatrix_reset(bus::replace_function_idx(block_address, UMATRIX_RESET_FUNC_IDX)),
-      output_input_map{},
+      f_umatrix_reset(bus::replace_function_idx(block_address, UMATRIX_RESET_FUNC_IDX)), output_input_map{},
       transmission_mode_register(bus::replace_function_idx(block_address, TRANSMISSION_MODE_FUNC_IDX), true),
-      transmission_mode_sync(bus::replace_function_idx(block_address, TRANSMISSION_MODE_SYNC_FUNC_IDX)),
-      transmission_mode_byte(0) {
+      transmission_mode_sync(bus::replace_function_idx(block_address, TRANSMISSION_MODE_SYNC_FUNC_IDX)) {
   reset_connections();
 }
 
@@ -44,13 +42,78 @@ bool blocks::UBlock::_io_sanity_check(const uint8_t input, const uint8_t output)
 
 void blocks::UBlock::_connect(const uint8_t input, const uint8_t output) { output_input_map[output] = input; }
 
-bool blocks::UBlock::connect(const uint8_t input, const uint8_t output, bool allow_disconnections) {
+bool blocks::UBlock::connect(const uint8_t input, const uint8_t output, bool force) {
   if (!_io_sanity_check(input, output))
     return false;
 
   // Check for other connections on the same output, unless we don't care if we overwrite them
-  if (!allow_disconnections and _is_output_connected(output))
+  if (!force and _is_output_connected(output))
     return false;
+
+  // Check if the transmission mode makes the specified connection impossible and if the mode can or should be
+  // chnged
+  if (a_side_mode != ANALOG_INPUT && ((output < 16 && input != 15) || (output >= 16 && input != 14))) {
+    if (!force)
+      if (is_input_connected(input))
+        return false;
+    change_a_side_transmission_mode(ANALOG_INPUT);
+  }
+
+  if (b_side_mode != ANALOG_INPUT && ((output < 16 && input == 15) || (output >= 16 && input == 14))) {
+    if (!force)
+      if (is_input_connected(input))
+        return false;
+    change_b_side_transmission_mode(ANALOG_INPUT);
+  }
+
+  _connect(input, output);
+  return true;
+}
+
+bool blocks::UBlock::connect_alternative(Transmission_Mode signal_mode, const uint8_t output, bool force,
+                                         bool use_a_side) {
+  if (!_o_sanity_check(output))
+    return false;
+
+  // Check for other connections on the same output, unless we don't care if we overwrite them
+  if (!force and _is_output_connected(output))
+    return false;
+
+  // Check if the transmission mode makes the specified connection impossible and if the mode can or should be
+  // chnged
+  if (a_side_mode != signal_mode && use_a_side) {
+    // TODO: force for a-side could be added, but since there wont be much use for an a-side
+    // alternative signal, you have to use force or set the correct signal mode
+    if (!force)
+      return false;
+    change_a_side_transmission_mode(signal_mode);
+  }
+
+  if (b_side_mode != signal_mode && !use_a_side) {
+    if (!force)
+      if (is_input_connected(14) || is_input_connected(15))
+        return false;
+    change_b_side_transmission_mode(signal_mode);
+    //! Note
+  }
+
+  // Make a one to one connection if possible. Uses Input zero as fallback
+  uint8_t input;
+  if (use_a_side) {
+    if (output < 15)
+      input = output;
+    else if (output == 15)
+      input = 0;
+    else if (output == 30)
+      input = 0;
+    else
+      input = output - 16;
+  } else {
+    if (output < 16)
+      input = 15;
+    else
+      input = 14;
+  }
 
   _connect(input, output);
   return true;
@@ -81,7 +144,7 @@ bool blocks::UBlock::_is_connected(const uint8_t input, const uint8_t output) co
   return output_input_map[output] == input;
 }
 
-bool blocks::UBlock::is_connected(const uint8_t input, const uint8_t output) {
+bool blocks::UBlock::is_connected(const uint8_t input, const uint8_t output) const {
   if (!_io_sanity_check(input, output))
     return false;
 
@@ -90,34 +153,52 @@ bool blocks::UBlock::is_connected(const uint8_t input, const uint8_t output) {
 
 bool blocks::UBlock::_is_output_connected(const uint8_t output) const { return output_input_map[output] >= 0; }
 
-bool blocks::UBlock::is_output_connected(const uint8_t output) {
+bool blocks::UBlock::is_output_connected(const uint8_t output) const {
   if (!_o_sanity_check(output))
     return false;
 
   return _is_output_connected(output);
 }
 
+bool blocks::UBlock::_is_input_connected(const uint8_t input) const {
+  for (const auto &output : output_input_map)
+    if (output == input)
+      return true;
+  return false;
+}
+
+bool blocks::UBlock::is_input_connected(const uint8_t input) const {
+  if (!_i_sanity_check(input))
+    return false;
+  return _is_input_connected(input);
+}
+
 constexpr uint8_t UBLOCK_TRANSMISSION_REGULAR_MASK = 0b0000'0111;
 constexpr uint8_t UBLOCK_TRANSMISSION_ALTERNATIVE_MASK = 0b0001'1001;
 constexpr uint8_t UBLOCK_TRANSMISSION_SIGNLESS_MASK = 0b0000'0110;
 
-uint8_t blocks::UBlock::change_transmission_mode(const Transmission_Mode mode,
-                                                 const Transmission_Target target) {
+uint8_t blocks::UBlock::change_a_side_transmission_mode(const Transmission_Mode mode) {
+  a_side_mode = mode;
+
+  transmission_mode_byte &= ~UBLOCK_TRANSMISSION_REGULAR_MASK;
+  transmission_mode_byte |= mode;
+  return transmission_mode_byte;
+}
+
+uint8_t blocks::UBlock::change_b_side_transmission_mode(const Transmission_Mode mode) {
+  b_side_mode = mode;
+
   bool sign = mode & 1;
   uint8_t rest = transmission_mode_byte;
 
-  if (target == Transmission_Target::REGULAR) {
-    rest &= ~UBLOCK_TRANSMISSION_REGULAR_MASK;
-    transmission_mode_byte = rest | mode;
-  } else if (target == Transmission_Target::ALTERNATIVE) {
-    rest &= ~UBLOCK_TRANSMISSION_ALTERNATIVE_MASK;
-    transmission_mode_byte = rest | (mode & UBLOCK_TRANSMISSION_SIGNLESS_MASK) << 2 | sign;
-  } else if (target == Transmission_Target::REGULAR_AND_ALTERNATIVE) {
-    rest &= ~(UBLOCK_TRANSMISSION_REGULAR_MASK | UBLOCK_TRANSMISSION_ALTERNATIVE_MASK);
-    transmission_mode_byte = rest | mode | (mode & UBLOCK_TRANSMISSION_SIGNLESS_MASK) << 2 | sign;
-  }
-
+  transmission_mode_byte &= ~UBLOCK_TRANSMISSION_ALTERNATIVE_MASK;
+  transmission_mode_byte |= (mode & UBLOCK_TRANSMISSION_SIGNLESS_MASK) << 2 | sign;
   return transmission_mode_byte;
+}
+
+uint8_t blocks::UBlock::change_all_transmission_modes(const Transmission_Mode mode) {
+  change_a_side_transmission_mode(mode);
+  return change_b_side_transmission_mode(mode);
 }
 
 bool blocks::UBlock::write_matrix_to_hardware() const {

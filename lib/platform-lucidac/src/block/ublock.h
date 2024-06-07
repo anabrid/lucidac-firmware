@@ -31,7 +31,8 @@ public:
 
   //! Convert an output array to data packets and transfer to chip.
   //! Timing: ~5microseconds
-  template <size_t num_of_outputs> [[nodiscard]] bool transfer(const std::array<int8_t, num_of_outputs> &outputs) const;
+  template <size_t num_of_outputs>
+  [[nodiscard]] bool transfer(const std::array<int8_t, num_of_outputs> &outputs) const;
 };
 
 } // namespace functions
@@ -91,8 +92,6 @@ public:
     GROUND = 0b110
   };
 
-  enum class Transmission_Target { REGULAR_AND_ALTERNATIVE, REGULAR, ALTERNATIVE };
-
 protected:
   const functions::UMatrixFunction f_umatrix;
   const functions::TriggerFunction f_umatrix_sync;
@@ -108,12 +107,24 @@ protected:
   const functions::SR74HCT595 transmission_mode_register;
   const functions::TriggerFunction transmission_mode_sync;
 
-  uint8_t transmission_mode_byte;
+  uint8_t transmission_mode_byte = 0;
+  Transmission_Mode a_side_mode = ANALOG_INPUT;
+  Transmission_Mode b_side_mode = ANALOG_INPUT;
 
   // Default sanity checks for input and output indizes
   static bool _i_sanity_check(const uint8_t input);
   static bool _o_sanity_check(const uint8_t output);
   static bool _io_sanity_check(const uint8_t input, const uint8_t output);
+
+  //! Changes the transmission mode of the regular ublock switches. Returns the shift register value for
+  //! debugging purposes
+  uint8_t change_a_side_transmission_mode(const Transmission_Mode mode);
+  //! Changes the transmission mode of the alternative ublock switches. Returns the shift register value for
+  //! debugging purposes
+  uint8_t change_b_side_transmission_mode(const Transmission_Mode mode);
+  //! Changes the transmission mode for all ublock switches. Returns the shift register value for debugging
+  //! purposes
+  uint8_t change_all_transmission_modes(const Transmission_Mode mode);
 
 private:
   //! Check whether an input is connected to an output, without sanity checks.
@@ -128,6 +139,8 @@ private:
   //! Check whether an output is connected to any input, without sanity checks.
   bool _is_output_connected(const uint8_t output) const;
 
+  bool _is_input_connected(const uint8_t input) const;
+
 public:
   explicit UBlock(bus::addr_t block_address);
 
@@ -139,8 +152,20 @@ public:
 
   void reset_connections();
 
-  //! Connect an input to an output, if output is unused. Both input and output are zero-based indizes.
-  bool connect(const uint8_t input, const uint8_t output, const bool allow_disconnections = false);
+  //! Connects a block input to a block output. If the current transmission mode would make the connection
+  //! impossible but could be changed without consequences, the mode will be adjusted. If the specified output
+  //! is already connected or the transmission mode can't be corrected, the function fails. If force is true
+  //! the output will be overwritten and the transmission mode will be adjusted.
+  bool connect(const uint8_t input, const uint8_t output, const bool force = false);
+
+  //! Connects an alternative input / non block input specified by signal_mode from the a- or b-side to a block
+  //! output. a-side inputs will be mapped one to one on the chip input if possible. Fallback chip is input 0.
+  //! If the current transmission mode would make the connection impossible but could be changed without
+  //! consequences, the mode will be adjusted. If the specified output is already connected or the transmission
+  //! mode can't be corrected, the function fails. If force is true the output will be overwritten and the
+  //! transmission mode will be adjusted.
+  bool connect_alternative(Transmission_Mode signal_type, const uint8_t output, const bool force = false,
+                           bool use_a_side = false);
 
   //! Disconnect an input from an output, if they are connected. Both input and output are zero-based indizes.
   bool disconnect(const uint8_t input, const uint8_t output);
@@ -148,17 +173,14 @@ public:
   //! Disconnect all inputs from an output. Fails for invalid arguments.
   bool disconnect(const uint8_t output);
 
-  //! Check whether an input is connected to an output.
-  bool is_connected(const uint8_t input, const uint8_t output);
+  //! Check whether an chip input is connected to an chip / block output.
+  bool is_connected(const uint8_t input, const uint8_t output) const;
 
-  //! Check whether an output is connected to any input.
-  bool is_output_connected(const uint8_t output);
+  //! Check whether an chip / block output is connected to any chip input.
+  bool is_output_connected(const uint8_t output) const;
 
-  //! Changes the transmission mode of the ublock for the calibration processes. Target specifies which of the
-  //! two paths are affected. Returns the altered byte for debugging purposes
-  uint8_t
-  change_transmission_mode(const Transmission_Mode mode,
-                           const Transmission_Target target = Transmission_Target::REGULAR_AND_ALTERNATIVE);
+  //! Check whether an chip input is connected to any output.
+  bool is_input_connected(const uint8_t input) const;
 
   [[nodiscard]] bool write_matrix_to_hardware() const;
   [[nodiscard]] bool write_transmission_mode_to_hardware() const;
