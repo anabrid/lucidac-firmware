@@ -18,6 +18,7 @@ namespace platform {
 class Cluster : public entities::Entity {
 private:
   uint8_t cluster_idx;
+
 public:
   blocks::MBlock *m1block = nullptr;
   blocks::MBlock *m2block = nullptr;
@@ -26,6 +27,7 @@ public:
   blocks::IBlock *iblock = nullptr;
 
   explicit Cluster(uint8_t cluster_idx = 0);
+
   // TODO: Delete copy and assignment operators
   // Cluster(Cluster const &) = delete;
   // Cluster &operator=(Cluster const &) = delete;
@@ -61,6 +63,9 @@ public:
    **/
   bool route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out);
 
+  bool add_constant(blocks::UBlock::Transmission_Mode signal_type, uint8_t u_out, float c_factor,
+                    uint8_t i_out);
+
   void reset(bool keep_calibration);
 
   std::vector<Entity *> get_child_entities() override;
@@ -70,4 +75,4 @@ public:
   bool config_self_from_json(JsonObjectConst cfg) override;
 };
 
-} // namespace lucidac
+} // namespace platform

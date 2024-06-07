@@ -97,6 +97,17 @@ bool platform::Cluster::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8
   return true;
 }
 
+bool platform::Cluster::add_constant(blocks::UBlock::Transmission_Mode signal_type, uint8_t u_out,
+                                     float c_factor, uint8_t i_out) {
+  if (!ublock->connect_alternative(signal_type, u_out))
+    return false;
+  if (!cblock->set_factor(u_out, c_factor))
+    return false;
+  if (!iblock->connect(u_out, i_out))
+    return false;
+  return true;
+}
+
 void platform::Cluster::reset(bool keep_calibration) {
   for (auto block : get_blocks()) {
     if (block)
