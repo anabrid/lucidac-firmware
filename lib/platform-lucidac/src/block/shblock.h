@@ -22,6 +22,7 @@ public:
   static SHBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
 
 protected:
+  // Default state after reset is inject with a potentially random inject current
   const functions::TriggerFunction set_track{bus::address_from_tuple(bus::SH_BLOCK_BADDR(0), 2)};
   const functions::TriggerFunction set_track_at_ic{bus::address_from_tuple(bus::SH_BLOCK_BADDR(0), 3)};
   const functions::TriggerFunction set_gain{bus::address_from_tuple(bus::SH_BLOCK_BADDR(0), 4)};
@@ -32,6 +33,8 @@ protected:
   const functions::TriggerFunction set_inject{bus::address_from_tuple(bus::SH_BLOCK_BADDR(0), 7)};
 
 public:
+  static constexpr uint8_t BLOCK_IDX = bus::SH_BLOCK_IDX;
+
   SHBlock();
   explicit SHBlock(bus::addr_t block_address);
 

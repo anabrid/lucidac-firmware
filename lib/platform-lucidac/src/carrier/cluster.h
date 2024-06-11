@@ -25,6 +25,7 @@ public:
   blocks::UBlock *ublock = nullptr;
   blocks::CBlock *cblock = nullptr;
   blocks::IBlock *iblock = nullptr;
+  blocks::SHBlock *shblock = nullptr;
 
   explicit Cluster(uint8_t cluster_idx = 0);
 
@@ -35,7 +36,7 @@ public:
   entities::EntityClass get_entity_class() const final { return entities::EntityClass::CLUSTER; }
 
   bool init();
-  std::array<blocks::FunctionBlock *, 5> get_blocks() const;
+  std::array<blocks::FunctionBlock *, 6> get_blocks() const;
 
   bool calibrate(daq::BaseDAQ *daq);
 

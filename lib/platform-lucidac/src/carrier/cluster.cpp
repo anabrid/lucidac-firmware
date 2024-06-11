@@ -12,8 +12,8 @@
   if (!(x))                                                                                                   \
     return false;
 
-std::array<blocks::FunctionBlock *, 5> platform::Cluster::get_blocks() const {
-  return {m1block, m2block, ublock, cblock, iblock};
+std::array<blocks::FunctionBlock *, 6> platform::Cluster::get_blocks() const {
+  return {m1block, m2block, ublock, cblock, iblock, shblock};
 }
 
 bool platform::Cluster::init() {
@@ -56,6 +56,13 @@ bool platform::Cluster::init() {
     iblock = blocks::detect<blocks::IBlock>(bus::idx_to_addr(cluster_idx, bus::I_BLOCK_IDX, 0));
     if (!iblock) {
       LOG(ANABRID_DEBUG_INIT, "Error: I-block is missing or unknown.");
+      return false;
+    }
+  }
+  if (!shblock) {
+    shblock = blocks::detect<blocks::SHBlock>(bus::idx_to_addr(cluster_idx, bus::SH_BLOCK_IDX, 0));
+    if (!shblock) {
+      LOG(ANABRID_DEBUG_INIT, "Error: SH-block is missing or unknown.");
       return false;
     }
   }
@@ -126,6 +133,8 @@ entities::Entity *platform::Cluster::get_child_entity(const std::string &child_i
     return cblock;
   else if (child_id == "I")
     return iblock;
+  else if (child_id == "SH")
+    return shblock;
   return nullptr;
 }
 
@@ -142,5 +151,5 @@ std::vector<entities::Entity *> platform::Cluster::get_child_entities() {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  return {m1block, m2block, ublock, cblock, iblock};
+  return {m1block, m2block, ublock, cblock, iblock, shblock};
 }
