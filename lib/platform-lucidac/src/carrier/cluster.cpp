@@ -33,38 +33,28 @@ bool platform::Cluster::init() {
     if (!m2block)
       LOG(ANABRID_DEBUG_INIT, "Warning: M1-block is missing or unknown.");
   }
-  if (!m1block and !m2block) {
+  if (!m1block and !m2block)
     LOG(ANABRID_DEBUG_INIT, "Error: Both M0 and M1-blocks are missing or unknown.");
-    return false;
-  }
 
   if (!ublock) {
     ublock = blocks::detect<blocks::UBlock>(bus::idx_to_addr(cluster_idx, bus::U_BLOCK_IDX, 0));
-    if (!ublock) {
+    if (!ublock)
       LOG(ANABRID_DEBUG_INIT, "Error: U-block is missing or unknown.");
-      return false;
-    }
   }
   if (!cblock) {
     cblock = blocks::detect<blocks::CBlock>(bus::idx_to_addr(cluster_idx, bus::C_BLOCK_IDX, 0));
-    if (!cblock) {
+    if (!cblock)
       LOG(ANABRID_DEBUG_INIT, "Error: C-block is missing or unknown.");
-      return false;
-    }
   }
   if (!iblock) {
     iblock = blocks::detect<blocks::IBlock>(bus::idx_to_addr(cluster_idx, bus::I_BLOCK_IDX, 0));
-    if (!iblock) {
+    if (!iblock)
       LOG(ANABRID_DEBUG_INIT, "Error: I-block is missing or unknown.");
-      return false;
-    }
   }
   if (!shblock) {
     shblock = blocks::detect<blocks::SHBlock>(bus::idx_to_addr(cluster_idx, bus::SH_BLOCK_IDX, 0));
-    if (!shblock) {
+    if (!shblock)
       LOG(ANABRID_DEBUG_INIT, "Error: SH-block is missing or unknown.");
-      return false;
-    }
   }
 
   LOG(ANABRID_DEBUG_INIT, "Initialising detected blocks...");
