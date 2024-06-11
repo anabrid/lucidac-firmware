@@ -17,6 +17,7 @@
 namespace blocks {
 
 template <class BlockT> BlockT *detect(const bus::addr_t block_address) {
+  LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   metadata::MetadataReader reader(block_address);
   auto classifier = reader.read_entity_classifier();
   LOG(ANABRID_DEBUG_INIT, (std::string("Read classifier ") + classifier.to_string() + " at address " +
