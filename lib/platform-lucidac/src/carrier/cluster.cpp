@@ -18,7 +18,6 @@ std::array<blocks::FunctionBlock *, 6> platform::Cluster::get_blocks() const {
 
 bool platform::Cluster::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
-  bus::init();
 
   // Dynamically detect installed blocks
   // Check if a block is already set, which may happen with a special constructor in the future
