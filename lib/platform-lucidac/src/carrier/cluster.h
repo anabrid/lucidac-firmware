@@ -40,7 +40,7 @@ public:
 
   bool calibrate(daq::BaseDAQ *daq);
 
-  void write_to_hardware();
+  [[nodiscard]] bool write_to_hardware();
 
   /**
    * Register a route throught the cluster.

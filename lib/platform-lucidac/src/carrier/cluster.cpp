@@ -76,11 +76,13 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
   return true;
 }
 
-void platform::Cluster::write_to_hardware() {
+bool platform::Cluster::write_to_hardware() {
   for (auto block : get_blocks()) {
     if (block)
-      block->write_to_hardware();
+      if (!block->write_to_hardware())
+        return false;
   }
+  return true;
 }
 
 bool platform::Cluster::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out) {

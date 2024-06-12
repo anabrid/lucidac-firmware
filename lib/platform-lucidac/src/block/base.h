@@ -30,7 +30,7 @@ public:
 
   virtual void reset(bool keep_calibration) {}
 
-  virtual bool write_to_hardware() = 0;
+  [[nodiscard]] virtual bool write_to_hardware() = 0;
 
   std::vector<Entity *> get_child_entities() override {
 #ifdef ANABRID_DEBUG_ENTITY
