@@ -34,7 +34,7 @@ public:
 
   bool config_self_from_json(JsonObjectConst cfg) override;
 
-  void write_to_hardware();
+  [[nodiscard]] bool write_to_hardware();
 
   // REV1 specific things
   // TODO: These are partly LUCIDAC specific things, which should be rebased on `56-refactor-...` branch.
