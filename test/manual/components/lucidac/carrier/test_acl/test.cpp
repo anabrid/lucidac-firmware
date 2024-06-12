@@ -26,8 +26,8 @@ void tearDown() {
 }
 
 void test_acl_prg() {
-  TEST_ASSERT(hal.write_acl({ACL::EXTERNAL, ACL::EXTERNAL, ACL::INTERNAL, ACL::EXTERNAL, ACL::INTERNAL,
-                             ACL::INTERNAL, ACL::EXTERNAL, ACL::INTERNAL}));
+  TEST_ASSERT(hal.write_acl({ACL::EXTERNAL_, ACL::EXTERNAL_, ACL::INTERNAL_, ACL::EXTERNAL_, ACL::INTERNAL_,
+                             ACL::INTERNAL_, ACL::EXTERNAL_, ACL::INTERNAL_}));
 }
 
 void test_acl_clear() {

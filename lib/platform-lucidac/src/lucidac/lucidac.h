@@ -43,9 +43,7 @@ protected:
 public:
   LUCIDAC_HAL();
 
-  enum class ACL {
-    INTERNAL = 0, EXTERNAL = 1
-  };
+  enum class ACL { INTERNAL_ = 0, EXTERNAL_ = 1 };
 
   //! Write bits to ACL shift register, from I-block input 24 (first element) to 31 (last element)
   bool write_acl(std::array<ACL, 8> acl);
@@ -61,7 +59,7 @@ public:
 
 class LUCIDAC : public carrier::Carrier {
 protected:
-  LUCIDAC_HAL* hardware{};
+  LUCIDAC_HAL *hardware{};
 
 public:
   LUCIDAC();

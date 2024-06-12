@@ -26,7 +26,7 @@ LUCIDAC_HAL::LUCIDAC_HAL()
 bool LUCIDAC_HAL::write_acl(std::array<LUCIDAC_HAL::ACL, 8> acl) {
   uint8_t sr = 0;
   for (size_t idx = 0; idx < acl.size(); idx++) {
-    if (acl[idx] == ACL::EXTERNAL) {
+    if (acl[idx] == ACL::EXTERNAL_) {
       sr |= 1 << idx;
     }
   }
