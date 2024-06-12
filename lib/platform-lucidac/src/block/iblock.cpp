@@ -9,7 +9,7 @@
 #include "logging.h"
 
 const SPISettings functions::ICommandRegisterFunction::DEFAULT_SPI_SETTINGS{
-    4'000'000, MSBFIRST, SPI_MODE3 /* chip expects SPI MODE0, but CLK is inverted on the way */};
+    4'000'000, MSBFIRST, SPI_MODE2 /* chip expects SPI MODE0, but CLK is inverted on the way */};
 
 functions::ICommandRegisterFunction::ICommandRegisterFunction(bus::addr_t address)
     : SR74HCT595(address, DEFAULT_SPI_SETTINGS) {}
