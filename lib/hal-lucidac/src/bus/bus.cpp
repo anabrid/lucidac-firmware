@@ -34,11 +34,13 @@ void bus::address_function(uint8_t maddr, uint8_t faddr) {
 
 void bus::address_function(bus::addr_t address) {
   bus::spi.beginTransaction(SPISettings(4'000'000, MSBFIRST, SPI_MODE2));
+  delayNanoseconds(200);
   digitalWriteFast(PIN_ADDR_CS, LOW);
   delayNanoseconds(200);
   bus::spi.transfer16(address);
   delayNanoseconds(200);
   digitalWriteFast(PIN_ADDR_CS, HIGH);
+  delayNanoseconds(200);
   bus::spi.endTransaction();
 }
 
