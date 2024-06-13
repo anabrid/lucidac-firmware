@@ -6,13 +6,10 @@
 
 #include <ArduinoJson.h>
 #include <QNEthernetClient.h>
-#include <QNEthernetUDP.h>
 
 #include "carrier/carrier.h"
 #include "daq/daq.h"
 #include "run/run.h"
-
-namespace net = qindesign::network;
 
 namespace client {
 
@@ -52,7 +49,6 @@ private:
   static constexpr size_t BUFFER_LENGTH =
       BUFFER_LENGTH_STATIC + daq::dma::BUFFER_SIZE / 2 * sizeof("[sD.FFF]") + sizeof(MESSAGE_END);
   char str_buffer[BUFFER_LENGTH]{};
-  net::EthernetUDP udp{};
 
   size_t actual_buffer_length = BUFFER_LENGTH;
 

@@ -1,10 +1,11 @@
-#include "user/settings.h"
 #include "web/server.h"
 #include "web/assets.h"
 #include "web/websockets.h"
 #include "utils/logging.h"
 #include "protocol/protocol.h"
 #include "build/distributor.h"
+#include "net/ethernet.h"
+#include "net/auth.h"
 
 #define ENABLE_AWOT_NAMESPACE
 #include "web/aWOT.h"
@@ -177,7 +178,7 @@ void set_cors(awot::Request& req, awot::Response& res) {
   res.set("Content-Type", "application/json");
   // Disable CORS for the time being
   // Note the maximum number of headers of the lib (can be avoided by directly printing)
-  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Origin", net::auth::Gatekeeper::get().access_control_allow_origin.c_str());
   res.set("Access-Control-Allow-Credentials", "true");
   res.set("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.set("Access-Control-Allow-Headers", "Origin, Cookie, Set-Cookie, Content-Type, Server");  
@@ -192,7 +193,7 @@ void api(awot::Request& req, awot::Response& res) {
   set_cors(req, res);
 
   // the following mimics the function
-  // msg::JsonLinesProtocol::get().process_tcp_input(req, user::auth::AuthentificationContext());
+  // msg::JsonLinesProtocol::get().process_tcp_input(req, net::auth::AuthentificationContext());
   // which does not work because it assumes input stream = output sream.
 
   auto error = deserializeJson(*msg::JsonLinesProtocol().get().envelope_in, req);
@@ -205,7 +206,7 @@ void api(awot::Request& req, awot::Response& res) {
     //Serial.println(error.c_str());
   } else {
     res.status(200);
-    static user::auth::AuthentificationContext c;
+    static net::auth::AuthentificationContext c;
     msg::JsonLinesProtocol().get().handleMessage(c);
     serializeJson(msg::JsonLinesProtocol().get().envelope_out->as<JsonObject>(), Serial);
     serializeJson(msg::JsonLinesProtocol().get().envelope_out->as<JsonObject>(), res);
@@ -222,7 +223,8 @@ void websocket_upgrade(awot::Request& req, awot::Response& res) {
   res.set("Server", SERVER_VERSION);
   auto ctx = (HTTPContext*) req.context;
 
-  // TODO: Check req.get("Origin") if it is allowed to connect.
+  // Important TODO:
+  // Check req.get("Origin") if it is allowed to connect.
   // Similar as in the CORS, have to keep a user setting of allowed origins.
 
   bool has_errors = false;
@@ -235,9 +237,9 @@ void websocket_upgrade(awot::Request& req, awot::Response& res) {
   if(!req.get("Sec-WebSocket-Key")) ERR("Missing Sec-Websocket-Key");
   if(has_errors) return;
 
-  if(ctx->server->clients.size() == user::UserSettings.ethernet.max_connections) {
+  if(ctx->server->clients.size() == net::StartupConfig::get().max_connections) {
       LOG3("Cannot accept new websocket connection because maximum number of connections (",
-        user::UserSettings.ethernet.max_connections, ") already reached.");
+        net::StartupConfig::get().max_connections, ") already reached.");
       res.status(500);
       res.set("Content-Type", "text/plain");
       res.println("Maximum number of concurrent websocket connections reached");
@@ -259,7 +261,7 @@ void websocket_upgrade(awot::Request& req, awot::Response& res) {
 }
 
 void web::LucidacWebServer::begin() {
-  ethserver.begin(80);
+  ethserver.begin(net::StartupConfig::get().webserver_port);
 
   allocate_interesting_headers(webapp);
 
@@ -269,8 +271,12 @@ void web::LucidacWebServer::begin() {
   webapp.post("/api", &api);
   webapp.options("/api", &api_preflight);
 
-  webapp.get("/websocket", &websocket_upgrade);
-  webapp.options("/websocket", &api_preflight);
+  if(net::StartupConfig::get().enable_websockets) {
+    webapp.get("/websocket", &websocket_upgrade);
+    webapp.options("/websocket", &api_preflight);
+  } else {
+    // should spill out some error explaining what is up
+  }
 
   /// TODO: Expose REST-like frontend for a few simple requests such as
   ///          GET       /rest/status
@@ -292,7 +298,7 @@ void web::LucidacWebServer::begin() {
 web::LucidacWebsocketsClient::LucidacWebsocketsClient(const net::EthernetClient &other) :
   socket(other),
   ws(std::shared_ptr<websockets::network::TcpClient>(new websockets::network::TcpClient(this))) {
-  user_context.set_remote_identifier( user::auth::RemoteIdentifier{ socket.remoteIP() } );
+  user_context.set_remote_identifier( net::auth::RemoteIdentifier{ socket.remoteIP() } );
 }
 
 /*
@@ -375,8 +381,8 @@ void web::LucidacWebServer::loop() {
         client->last_contact.reset();
       } else if(!client->socket.connected()) {
         client->socket.stop();
-      } else if(client->last_contact.expired(user::UserSettings.ethernet.connection_timeout_ms)) {
-        LOG5("Web client ", client_idx, ", timed out after ", user::UserSettings.ethernet.connection_timeout_ms, " ms of idling");
+      } else if(client->last_contact.expired(net::StartupConfig::get().connection_timeout_ms)) {
+        LOG5("Web client ", client_idx, ", timed out after ", net::StartupConfig::get().connection_timeout_ms, " ms of idling");
         client->ws.close(websockets::CloseReason_GoingAway);
         // consider...
         // client->socket.stop();

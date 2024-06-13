@@ -7,6 +7,11 @@
 #include "utils/logging.h"
 #include "utils/running_avg.h"
 
+#include "block/mblock.h"
+#include "block/ublock.h"
+#include "block/cblock.h"
+#include "block/iblock.h"
+
 #define RETURN_FALSE_IF_FAILED(x)                                                                             \
   if (!(x))                                                                                                   \
     return false;
@@ -18,6 +23,12 @@ std::array<blocks::FunctionBlock *, 5> platform::Cluster::get_blocks() const {
 bool platform::Cluster::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   bus::init();
+
+  m1block = new blocks::MIntBlock{cluster_idx};
+  m2block = new blocks::MMulBlock{cluster_idx};
+  ublock  = new blocks::UBlock{cluster_idx};
+  cblock  = new blocks::CBlock_SequentialAddresses{cluster_idx};
+  iblock  = new blocks::IBlock{cluster_idx};
 
   // Dynamically detect installed blocks
   // Check if a block is already set, which may happen with a special constructor in the future

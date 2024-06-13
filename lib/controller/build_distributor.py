@@ -22,7 +22,7 @@ try:
   # the following code demonstrates how to access build system variables.
   Import("env")
   #print(env.Dump())
-  interesting_fields = ["BOARD", "BOARD_MCU", "BUILD_TYPE", "UPLOAD_PROTOCOL"]
+  interesting_fields = ["BOARD", "BUILD_TYPE", "UPLOAD_PROTOCOL"]
   build_system = { k: env.Dictionary(k) for k in interesting_fields }
   build_flags = env.Dictionary('BUILD_FLAGS') # is a list
 except (NameError, KeyError):
@@ -54,7 +54,7 @@ warn = lambda msg: print("controller/build_distributor.py: WARN ", msg)
 # https://setuptools-git-versioning.readthedocs.io/en/stable/differences.html for a list, but
 # in the end they all call external git and parse the output.
 firmware_version = subprocess.getoutput("which git >/dev/null && git describe --tags || echo no-git-avail").strip()
-firmware_version_useful = bool(re.match("\d+\.\d+-\d+.*", firmware_version)) # a proper string is for instance "0.2-80-g302f016"
+firmware_version_useful = bool(re.match(r"\d+\.\d+-\d+.*", firmware_version)) # a proper string is for instance "0.2-80-g302f016"
 not_available = "N/A" # placeholder string used instead
 if not firmware_version_useful: firmware_version = not_available # instead of subprocess garbage
 
@@ -70,35 +70,23 @@ except ValueError:
 
 rename_keys = lambda dct, prefix='',suffix='': {prefix+k+suffix:v for k,v in dct.items()}
 
-# The following data are exemplaric and will be replaced with actual data one day.
+# Given that firmware builds are supposed to be published for allowing users
+# to update their LUCIDAC on their own, do not include things like device
+# serial keys here. Instead of the firmware, they shall be stored in "EEPROM",
+# cf. the src/nvmconfig/ subsystem.
 
 distdb = dict(
     OEM = "anabrid",
     OEM_MODEL_NAME = "LUCIDAC",
 
-    # hardware revision should actually be detectable from the boards but if
-    # it is not, this would be a place to describe it
-
-    OEM_HARDWARE_REVISION = "LUCIDAC-v1.2.3",
-
     BUILD_SYSTEM_NAME = "pio",
     **rename_keys(build_system, prefix="BUILD_SYSTEM_"),
     BUILD_FLAGS = " ".join(build_flags),
 
-    # These values are supposed to be determined when the device finishes
-    # self-tests and leaves the house, similar to THAT serial number procedure.
-    DEVICE_SERIAL_NUMBER = "123",
-    DEVICE_SERIAL_UUID = "26051bb5-7cb7-43fd-8d64-e24fdfa14489",
-    DEVICE_SERIAL_REGISTRATION_LINK = "https://anabrid.com/sn/lucidac/123/26051bb5-7cb7-43fd-8d64-e24fdfa14489",
-    DEFAULT_ADMIN_PASSWORD = "Iesh8Sae",
-
-    # the previous fields are actually secrets and should only be told on a secret channel.
-    SENSITIVE_FIELDS = 'DEVICE_SERIAL_UUID DEVICE_SERIAL_REGISTRATION_LINK DEFAULT_ADMIN_PASSWORD',
-
     FIRMWARE_VERSION = firmware_version,
     FIRMWARE_DATE = firmware_version_date,
 
-    PROTOCOL_VERSION = "0.0.1", # FIXME
+    PROTOCOL_VERSION = "0.0.2", # FIXME
     PROTOCOL_DATE = firmware_version_date, # FIXME
 )
 
@@ -114,15 +102,8 @@ esc = lambda s: s.replace(quote, '\\"')
 distdb_as_variables = "\n".join(f"const char {k}[] PROGMEM = {quote}{esc(v)}{quote};" for k,v in distdb.items())
 distdb_variable_lookup = "\n".join(f"  if(strcmp_P(key, (PGM_P)F({quote}{k}{quote}) )) return {k};" for k,v in distdb.items())
 distdb_as_defines = "\n".join(f"#define {k} {quote}{esc(v)}{quote}" for k,v in distdb.items())
-
 distdb_as_json_string_esc = esc(json.dumps(distdb));
-
-public_distdb = { k:v for k,v in distdb.items() if not k in distdb["SENSITIVE_FIELDS"].split() }
-secret_distdb = { k:v for k,v in distdb.items() if     k in distdb["SENSITIVE_FIELDS"].split() }
-distdb_public_as_json_string_esc = esc(json.dumps(public_distdb))
-
-distdb_public_json_defines = "\n".join(f"  target[{quote}{k}{quote}] = {k};" for k,v in public_distdb.items())
-distdb_secret_json_defines = "\n".join(f"    target[{quote}{k}{quote}] = {k};" for k,v in secret_distdb.items())
+distdb_as_json_defines = "\n".join(f"  target[{quote}{k}{quote}] = {k};" for k,v in distdb.items())
 
 code_files = {}
 
@@ -135,8 +116,6 @@ code_files["distributor_generated.h"] = \
 %(distdb_as_defines)s
 
 #define distdb_AS_JSON "%(distdb_as_json_string_esc)s"
-
-#define distdb_PUBLIC_AS_JSON "%(distdb_public_as_json_string_esc)s"
 
 """
 
@@ -153,15 +132,12 @@ FLASHMEM const char* dist::ident() {
   return OEM_MODEL_NAME " Hybrid Controller (" FIRMWARE_VERSION ")";
 }
 
-FLASHMEM const char* dist::as_json(bool include_secrets) {
-  return include_secrets ? distdb_AS_JSON : distdb_PUBLIC_AS_JSON;
+FLASHMEM const char* dist::as_json() {
+  return distdb_AS_JSON;
 }
 
-FLASHMEM void dist::write_to_json(JsonObject target, bool include_secrets) {
-%(distdb_public_json_defines)s
-  if(include_secrets) {
-%(distdb_secret_json_defines)s
-  }
+FLASHMEM void dist::write_to_json(JsonObject target) {
+%(distdb_as_json_defines)s
 }
 #endif /* ANABRID_FOR_TEENSY */
 """

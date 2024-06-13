@@ -10,7 +10,7 @@
 
 #include "handler.h"
 #include "carrier/carrier.h"
-#include "user/auth.h"
+#include "net/auth.h"
 
 
 namespace msg {
@@ -28,7 +28,7 @@ namespace handlers {
 class DynamicRegistry {
   struct RegistryEntry { // "named tuple"
     MessageHandler* handler;
-    user::auth::SecurityLevel clearance;
+    net::auth::SecurityLevel clearance;
   };
 
   std::map<std::string, RegistryEntry> entries;
@@ -37,10 +37,10 @@ class DynamicRegistry {
 
 public:
   MessageHandler *get(const std::string& msg_type);
-  user::auth::SecurityLevel requiredClearance(const std::string& msg_type);
+  net::auth::SecurityLevel requiredClearance(const std::string& msg_type);
 
-  bool set(const std::string& msg_type, MessageHandler *handler, user::auth::SecurityLevel minimumClearance);
-  bool set(const std::string& msg_type, int result_code_prefix, MessageHandler *handler, user::auth::SecurityLevel minimumClearance);
+  bool set(const std::string& msg_type, MessageHandler *handler, net::auth::SecurityLevel minimumClearance);
+  bool set(const std::string& msg_type, int result_code_prefix, MessageHandler *handler, net::auth::SecurityLevel minimumClearance);
 
   void dump(); //< for debugging: Print Registry configuration to Serial
   void write_handler_names_to(JsonArray& target); ///< for structured output
@@ -62,7 +62,7 @@ extern DynamicRegistry Registry;
   * 
   * \todo Could be a method of the Message Registry
   **/
-int handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out, user::auth::AuthentificationContext &user_context);
+int handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out, net::auth::AuthentificationContext &user_context);
 
 void process_serial_input();
 

@@ -46,12 +46,14 @@ namespace loader {
             //utils::hash_sha256(flash, flashimagelen(), checksum.data());
             //return checksum;
         };
+
+        static void toJson(JsonVariant target) {
+            target["size"] = len();
+            target["sha256sum"] = sha256sum().to_string();
+        }
     };
 
-    inline void convertToJson(const flashimage& src, JsonVariant info) {
-        info["size"] = src.len();
-        info["sha256sum"] = src.sha256sum().to_string();
-    }
+    inline void convertToJson(const flashimage& src, JsonVariant info) { src.toJson(info); }
 
 }
 

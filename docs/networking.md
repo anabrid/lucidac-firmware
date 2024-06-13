@@ -9,7 +9,7 @@ By default, the Hybrid Controller acts as a *DHCP client*. That means at startup
 connect to a DHCP server and get a DHCP lease. 
 
 The ethernet configuration can be customized at runtime with the user configuration messages.
-The actual behaviour is implemented [UserDefinedEthernet](@ref user::ethernet::UserDefinedEthernet)
+The actual behaviour is implemented [UserDefinedEthernet](@ref net::ethernet::UserDefinedEthernet)
 class. In particular, for the DHCP client, the hostname can be configured.
 
 If the DHCP client option is turned off,the IPv4 configuration can be set by passing the systems IP address,

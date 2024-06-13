@@ -13,15 +13,15 @@
 #include "protocol/registry.h"
 #include "protocol/handler.h"
 #include "protocol/protocol.h"
-#include "user/auth.h"
-#include "user/settings.h"
+#include "protocol/jsonl_server.h"
+#include "net/auth.h"
+#include "net/settings.h"
+#include "net/settings.h"
 #include "run/run_manager.h"
 #include "utils/hashflash.h"
 #include "web/server.h"
 
 carrier::Carrier carrier_({Cluster(0)});
-net::EthernetServer eth_server;
-msg::MulticlientServer multi_server;
 
 /// @ingroup MessageHandlers
 class HackMessageHandler : public msg::handlers::MessageHandler {
@@ -55,26 +55,19 @@ void setup() {
       loader::flashimage::sha256sum().to_string().c_str()
   );
 
-  LOG(ANABRID_DEBUG_INIT, "Loading settings from flash...");
-  user::UserSettings.read_from_eeprom();
-
-  LOG_START("UserPasswordAuthentification: "); LOG_JSON(user::UserSettings.auth.status); LOG_END();
-
   LOG(ANABRID_DEBUG_INIT, "Starting up Ethernet...");
-  user::UserSettings.ethernet.begin(&eth_server);
-  multi_server.server = &eth_server; // TODO: Make nicer
-
-  web::LucidacWebServer::get().begin();
+  net::StartupConfig::get().begin();
 
   // Initialize carrier board
+  // TODO, _ERROR_OUT_ shall not be used, see #116
   LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
-  if (!carrier_.init(user::UserSettings.ethernet.mac)) {
+  if (!carrier_.init(net::StartupConfig::get().mac)) {
     LOG_ERROR("Error initializing carrier board.");
     _ERROR_OUT_
   }
 
   // Initialize things related to runs
-  // ... Nothing yet :)
+  // TODO, _ERROR_OUT_ shall not be used, see #116
   if (!mode::FlexIOControl::init(mode::DEFAULT_IC_TIME, mode::DEFAULT_OP_TIME)) {
     LOG_ERROR("Error initializing FlexIO mode control.");
     _ERROR_OUT_
@@ -82,7 +75,7 @@ void setup() {
 
   msg::handlers::Registry.init(carrier_); // registers all commonly known messages
 
-  msg::handlers::Registry.set("hack", new HackMessageHandler(), user::auth::SecurityLevel::RequiresNothing);
+  msg::handlers::Registry.set("hack", new HackMessageHandler(), net::auth::SecurityLevel::RequiresNothing);
   //LOG("msg::handlers::DynamicRegistry set up with handlers")
   //msg::handlers::DynamicRegistry::dump();
 
@@ -93,10 +86,9 @@ void setup() {
 }
 
 void loop() {
-  multi_server.loop();
+  msg::JsonlServer::get().loop();
 
-  static user::auth::AuthentificationContext
-    admin_context{user::UserSettings.auth, user::auth::UserPasswordAuthentification::admin};
+  static net::auth::AuthentificationContext admin_context{net::auth::UserPasswordAuthentification::admin};
   msg::JsonLinesProtocol::get().process_serial_input(admin_context);
 
   web::LucidacWebServer::get().loop();

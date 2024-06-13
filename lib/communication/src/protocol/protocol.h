@@ -9,8 +9,8 @@
 #include <Print.h>
 
 #include "protocol/handler.h"
-#include "user/auth.h"
-#include "user/ethernet.h"
+#include "net/auth.h"
+#include "net/ethernet.h"
 #include "utils/durations.h"
 #include "utils/print-multiplexer.h"
 
@@ -30,22 +30,11 @@ public:
     void init(size_t envelope_size); ///< Allocates storage
     static JsonLinesProtocol& get(); ///< Singleton
 
-    void handleMessage(user::auth::AuthentificationContext &user_context);
-    void process_serial_input(user::auth::AuthentificationContext &user_context);
-    bool process_tcp_input(net::EthernetClient& stream, user::auth::AuthentificationContext &user_context);
-    void process_string_input(const std::string& envelope_in, std::string& envelope_out, user::auth::AuthentificationContext &user_context);
+    void handleMessage(net::auth::AuthentificationContext &user_context);
+    void process_serial_input(net::auth::AuthentificationContext &user_context);
+    bool process_tcp_input(net::EthernetClient& stream, net::auth::AuthentificationContext &user_context);
+    void process_string_input(const std::string& envelope_in, std::string& envelope_out, net::auth::AuthentificationContext &user_context);
 };
 
-struct MulticlientServer {
-    struct Client {
-        utils::duration last_contact; ///< Tracking lifetime with millis() to time-out a connection.
-        net::EthernetClient socket;
-        user::auth::AuthentificationContext user_context;
-    };
-
-    std::list<Client> clients;
-    net::EthernetServer* server;
-    void loop();
-};
 
 } // namespace msg

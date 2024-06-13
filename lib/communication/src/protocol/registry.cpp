@@ -9,30 +9,31 @@
 #include "handlers/carrier.h"
 #include "handlers/daq.h"
 #include "handlers/help.h"
+#include "handlers/ident.h"
 #include "handlers/loader_flasher.h"
 #include "handlers/loader_plugin.h"
-#include "handlers/ping.h"
-#include "handlers/run_manager.h"
-#include "handlers/status.h"
-#include "handlers/user_login.h"
-#include "handlers/user_settings.h"
 #include "handlers/mode_manual.h"
+#include "handlers/net_settings.h"
+#include "handlers/ping.h"
+#include "handlers/reboot.h"
+#include "handlers/run_manager.h"
+#include "handlers/login_lock.h"
 
 // allocate singleton storage
 msg::handlers::DynamicRegistry msg::handlers::Registry;
 
 void msg::handlers::DynamicRegistry::init(carrier::Carrier& c) {
-  using namespace user::auth;
+  using namespace net::auth;
   using namespace msg::handlers;
 
-  // Basics
+  // Stateless protocol basics
   set("ping",                 100, new PingRequestHandler{}, SecurityLevel::RequiresNothing);
   set("help",                 200, new HelpHandler(), SecurityLevel::RequiresNothing);
-  set("reset",                300, new ResetRequestHandler(c), SecurityLevel::RequiresLogin); // TODO: Should probably be called "reset_config" or so, cf. reset_settings
 
   // Carrier and RunManager things
-  set("set_config",           400, new SetConfigMessageHandler(c), SecurityLevel::RequiresLogin);
-  set("get_config",           500, new GetConfigMessageHandler(c), SecurityLevel::RequiresLogin);
+  set("reset_circuit",        300, new ResetRequestHandler(c), SecurityLevel::RequiresLogin);
+  set("set_circuit",          400, new SetConfigMessageHandler(c), SecurityLevel::RequiresLogin);
+  set("get_circuit",          500, new GetConfigMessageHandler(c), SecurityLevel::RequiresLogin);
   set("get_entities",         600, new GetEntitiesRequestHandler(c), SecurityLevel::RequiresLogin);
   set("start_run",            700, new StartRunRequestHandler(run::RunManager::get()), SecurityLevel::RequiresLogin);
 
@@ -40,15 +41,19 @@ void msg::handlers::DynamicRegistry::init(carrier::Carrier& c) {
   set("one_shot_daq",         800, new OneshotDAQHandler(), SecurityLevel::RequiresNothing);
   set("manual_mode",          900, new ManualControlHandler(), SecurityLevel::RequiresNothing);
 
+  set("net_get",             6000, new GetNetworkSettingsHandler(), SecurityLevel::RequiresAdmin);
+  set("net_set",             6100, new SetNetworkSettingsHandler(), SecurityLevel::RequiresAdmin);
+  set("net_reset",           6200, new ResetNetworkSettingsHandler(), SecurityLevel::RequiresAdmin);
+  set("net_status",          6300, new NetworkStatusHandler(), SecurityLevel::RequiresNothing);
+  // ^ this net_status won't contain sensitive information...
 
-  // TODO: It would be somewhat cleaner if the Hybrid Controller settings would be just part of the get_config/set_config idiom
-  //   because with this notation, we double the need for setters and getters.
-  set("get_settings",        2000, new GetSettingsHandler(), SecurityLevel::RequiresAdmin);
-  set("update_settings",     2100, new SetSettingsHandler(), SecurityLevel::RequiresAdmin);
-  set("reset_settings",      2200, new ResetSettingsHandler(), SecurityLevel::RequiresAdmin);
+  //set("status",            3000, new GetSystemStatus(), SecurityLevel::RequiresNothing);
+  set("login",               3100, new LoginHandler(), SecurityLevel::RequiresNothing);
+  set("lock_acquire",        3200, new LockAcquire(), SecurityLevel::RequiresLogin);
+  set("lock_release",        3300, new LockRelease(), SecurityLevel::RequiresLogin);
 
-  set("status",              3000, new GetSystemStatus(user::UserSettings.auth), SecurityLevel::RequiresNothing);
-  set("login",               3100, new LoginHandler(user::UserSettings.auth), SecurityLevel::RequiresNothing);
+  set("sys_ident",           3400, new GetSystemIdent(), SecurityLevel::RequiresNothing);
+  set("sys_reboot",          3500, new RebootHandler(), SecurityLevel::RequiresAdmin);
 
   set("load_plugin",         4100, new LoadPluginHandler(), SecurityLevel::RequiresAdmin);
   set("unload_plugin",       4200, new UnloadPluginHandler(), SecurityLevel::RequiresAdmin);
@@ -68,24 +73,24 @@ msg::handlers::MessageHandler *msg::handlers::DynamicRegistry::get(const std::st
   }
 }
 
-user::auth::SecurityLevel msg::handlers::DynamicRegistry::requiredClearance(const std::string &msg_type) {
+net::auth::SecurityLevel msg::handlers::DynamicRegistry::requiredClearance(const std::string &msg_type) {
   auto found = entries.find(msg_type);
   if (found != entries.end()) {
     return found->second.clearance;
   } else {
-    return user::auth::SecurityLevel::RequiresNothing;
+    return net::auth::SecurityLevel::RequiresNothing;
   }
 }
 
 bool msg::handlers::DynamicRegistry::set(const std::string &msg_type,
                                   msg::handlers::MessageHandler *handler,
-                                  user::auth::SecurityLevel minimumClearance) {
+                                  net::auth::SecurityLevel minimumClearance) {
   return set(msg_type, result_code_counter, handler, minimumClearance);
 }
 
 bool msg::handlers::DynamicRegistry::set(const std::string &msg_type, int result_code_prefix,
                                   msg::handlers::MessageHandler *handler,
-                                  user::auth::SecurityLevel minimumClearance) {
+                                  net::auth::SecurityLevel minimumClearance) {
   auto found = entries.find(msg_type);
   if (found != entries.end()) {
     return false;

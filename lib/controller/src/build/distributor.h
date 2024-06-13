@@ -31,10 +31,10 @@ namespace dist {
   const char* ident();
 
   /// Get the program memory database as already-serialized JSON String.
-  const char* as_json(bool include_secrets=true);
+  const char* as_json();
 
   /// Write the distributor database into an existing JSON document
-  void write_to_json(JsonObject target, bool include_secrets=true);
+  void write_to_json(JsonObject target);
 
 } // namespace dist
 

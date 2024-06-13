@@ -8,8 +8,8 @@
 #include <list>
 
 #include "websockets/client.h"
-#include "user/auth.h"
-#include "user/ethernet.h"
+#include "net/auth.h"
+#include "net/ethernet.h"
 #include "utils/durations.h"
 #include "QNEthernet.h"
 
@@ -21,7 +21,7 @@ namespace web {
    **/
   struct LucidacWebsocketsClient {
       utils::duration last_contact; ///< Tracking lifetime with millis() to time-out a connection.
-      user::auth::AuthentificationContext user_context;
+      net::auth::AuthentificationContext user_context;
       net::EthernetClient socket;
       websockets::WebsocketsClient ws;
       LucidacWebsocketsClient(const net::EthernetClient& other);

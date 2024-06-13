@@ -2,7 +2,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include "Printable.h"
+#include <ArduinoJson.h> // just for adapter
 
 namespace utils {
 
@@ -78,5 +78,14 @@ public:
 
 };
 
+inline void convertToJson(const UUID& uuid, JsonVariant target) {
+    for(int i=0; i<16;i++) target[i] = uuid.ar[i];
+}
+
+inline void convertFromJson(JsonVariantConst src, UUID& uuid) {
+    if(src.size() != 16) return;
+    for(int i=0; i<16; i++)
+        uuid.ar[i] = src.as<JsonArrayConst>()[i];
+}
 
 } // namespace utils

@@ -1,8 +1,10 @@
+/*
+
 #include "handlers/status.h"
 
 #include <Arduino.h>
-#include "user/ethernet.h"
-#include "user/auth.h"
+#include "net/ethernet.h"
+#include "net/auth.h"
 #include "build/distributor.h"
 #include "plugin/plugin.h"
 #include "ota/flasher.h"
@@ -16,7 +18,7 @@ int msg::handlers::GetSystemStatus::handle(JsonObjectConst msg_in, JsonObject &m
 
   if(do_all || msg_in["dist"].as<bool>()) {
     auto odist = msg_out.createNestedObject("dist");
-    dist::write_to_json(odist, /* include_secrets */ false);
+    dist::write_to_json(odist,  false); // include secrets = false
   }
 
   if(do_all || msg_in["flashimage"].as<bool>()) {
@@ -30,7 +32,7 @@ int msg::handlers::GetSystemStatus::handle(JsonObjectConst msg_in, JsonObject &m
 
   if(do_all || msg_in["ethernet"].as<bool>()) {
     auto oeth = msg_out.createNestedObject("ethernet");
-    user::ethernet::status(oeth);
+    net::ethernet::status(oeth);
   }
 
   if(do_all || msg_in["plugin"].as<bool>()) {
@@ -45,3 +47,5 @@ int msg::handlers::GetSystemStatus::handle(JsonObjectConst msg_in, JsonObject &m
 
   return success;
 }
+
+*/
