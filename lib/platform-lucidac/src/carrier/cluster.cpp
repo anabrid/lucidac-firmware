@@ -79,8 +79,10 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
 bool platform::Cluster::write_to_hardware() {
   for (auto block : get_blocks()) {
     if (block)
-      if (!block->write_to_hardware())
+      if (!block->write_to_hardware()) {
+        LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__ );
         return false;
+      }
   }
   return true;
 }

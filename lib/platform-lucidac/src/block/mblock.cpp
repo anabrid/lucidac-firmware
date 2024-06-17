@@ -33,8 +33,10 @@ bool blocks::MIntBlock::set_ic(uint8_t idx, float value) {
 
 bool blocks::MIntBlock::write_to_hardware() {
   for (decltype(ic_raw.size()) i = 0; i < ic_raw.size(); i++) {
-    if (!f_ic_dac.set_channel(i, ic_raw[i]))
+    if (!f_ic_dac.set_channel(i, ic_raw[i])) {
+      LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__ );
       return false;
+    }
   }
   return write_time_factors_to_hardware();
 }

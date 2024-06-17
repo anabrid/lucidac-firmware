@@ -77,8 +77,10 @@ bool blocks::IBlock::write_to_hardware() {
       if (actual_data) {
         remembered_command = command;
         // Send out data
-        if(!f_cmd.transfer32(command))
+        if(!f_cmd.transfer32(command)) {
+          LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__ );
           return false;
+        }
         // Apply command
         f_imatrix_sync.trigger();
       }

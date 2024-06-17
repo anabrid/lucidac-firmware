@@ -46,3 +46,9 @@
 #else
 #define LOG_ANABRID_DEBUG_DAQ(message) ((void)0)
 #endif
+
+#ifdef ANABRID_PEDANTIC
+#define LOG_ANABRID_PEDANTIC(message) __LOG(message)
+#else
+#define LOG_ANABRID_PEDANTIC(message) ((void)0)
+#endif

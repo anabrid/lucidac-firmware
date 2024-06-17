@@ -44,8 +44,10 @@ bool carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
 
 bool carrier::Carrier::write_to_hardware() {
   for (auto &cluster : clusters) {
-    if (!cluster.write_to_hardware())
+    if (!cluster.write_to_hardware()) {
+      LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__ );
       return false;
+    }
   }
   return true;
 }

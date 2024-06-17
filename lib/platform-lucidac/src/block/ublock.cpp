@@ -5,8 +5,9 @@
 
 #include <algorithm>
 
-#include "bus/functions.h"
 #include "ublock.h"
+
+#include "logging.h"
 
 void utils::shift_5_left(uint8_t *buffer, size_t size) {
   for (size_t idx = 0; idx < size - 1; idx++) {
@@ -216,7 +217,11 @@ bool blocks::UBlock::write_transmission_mode_to_hardware() const {
 }
 
 bool blocks::UBlock::write_to_hardware() {
-  return write_matrix_to_hardware() && write_transmission_mode_to_hardware();
+  if (!write_matrix_to_hardware() or !write_transmission_mode_to_hardware()) {
+    LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__ );
+    return false;
+  }
+  return true;
 }
 
 void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), end(output_input_map), -1); }

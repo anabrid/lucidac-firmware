@@ -5,6 +5,8 @@
 
 #include "cblock.h"
 
+#include "logging.h"
+
 blocks::CBlock::CBlock(const bus::addr_t block_address, std::array<const functions::AD5452, NUM_COEFF> fCoeffs)
     : FunctionBlock("C", block_address), f_coeffs(std::move(fCoeffs)) {}
 
@@ -64,7 +66,13 @@ bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   return true;
 }
 
-bool blocks::CBlock::write_to_hardware() { return write_factors_to_hardware(); }
+bool blocks::CBlock::write_to_hardware() {
+  if (!write_factors_to_hardware()) {
+    LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__ );
+    return false;
+  }
+  return true;
+}
 
 bool blocks::CBlock::write_factors_to_hardware() {
   for (size_t i = 0; i < f_coeffs.size(); i++) {
