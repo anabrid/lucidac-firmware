@@ -20,6 +20,7 @@ namespace net {
   using qindesign::network::Ethernet;
   using qindesign::network::EthernetServer;
   using qindesign::network::EthernetClient;
+  using qindesign::network::MDNS;
 
   using utils::MacAddress;
 
@@ -48,7 +49,7 @@ namespace net {
          enable_jsonl,     ///< Enable the JSONL TCP/IP server
          enable_webserver, ///< Enable embedded webserver for REST access
          enable_websockets,///< Enable websocket server ontop of webserver
-         enable_mdns;      ///< TODO implement
+         enable_mdns;      ///< Enable mDNS/zeroconf multicast service discovery
 
     int jsonl_port,        ///< TCP port for jsonl server
         webserver_port;    ///< TCP port for webserver

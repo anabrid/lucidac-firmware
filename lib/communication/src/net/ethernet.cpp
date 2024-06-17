@@ -142,6 +142,14 @@ void net::StartupConfig::begin_servers() {
 
   if(enable_webserver)
     web::LucidacWebServer::get().begin();
+
+  if(enable_mdns) {
+    MDNS.begin(hostname.c_str());
+    if(enable_jsonl)
+      MDNS.addService("_lucijsonl", "_tcp", jsonl_port);
+    if(enable_webserver)
+      MDNS.addService("_web", "_tcp", webserver_port);
+  }
 }
 
 void net::StartupConfig::begin() {
