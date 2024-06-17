@@ -7,7 +7,11 @@
 
 #include "io.h"
 
-void io::init() { pinMode(PIN_BUTTON, INPUT_PULLUP); }
+void io::init() {
+  for (auto pin :
+       {PIN_BUTTON, PIN_DIO_6, PIN_DIO_11, PIN_DIO_12, PIN_DIO_13, PIN_DIO_23, PIN_DIO_28, PIN_RESERVED_7})
+    pinMode(pin, INPUT_PULLUP);
+}
 
 bool io::get_button() { return !digitalReadFast(PIN_BUTTON); }
 
