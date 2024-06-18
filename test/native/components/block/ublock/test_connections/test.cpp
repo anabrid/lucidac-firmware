@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include <unity.h>
+#include <Arduino.h>
 
 #define private public
 #define protected public
