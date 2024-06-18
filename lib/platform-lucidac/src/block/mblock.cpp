@@ -17,7 +17,10 @@ blocks::MIntBlock::MIntBlock(const bus::addr_t block_address)
     : blocks::MBlock{block_address}, f_ic_dac(bus::replace_function_idx(block_address, IC_FUNC_IDX)),
       f_time_factor(bus::replace_function_idx(block_address, TIME_FACTOR_FUNC_IDX), true),
       f_time_factor_sync(bus::replace_function_idx(block_address, TIME_FACTOR_SYNC_FUNC_IDX)), ic_raw{0} {
-  std::fill(std::begin(time_factors), std::end(time_factors), DEFAULT_TIME_FACTOR);
+  // Copying solves a strange linker issue "relocation against ... in read-only section `.text'"
+  // TODO: Investigate problem further, replace by non-ugly solution
+  auto default_ = DEFAULT_TIME_FACTOR;
+  std::fill(std::begin(time_factors), std::end(time_factors), default_);
 }
 
 bool blocks::MIntBlock::set_ic(uint8_t idx, float value) {
