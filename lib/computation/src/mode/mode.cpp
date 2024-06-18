@@ -6,7 +6,6 @@
 #include "mode.h"
 
 #include <Arduino.h>
-#include <limits>
 
 void mode::ManualControl::init() {
   digitalWriteFast(PIN_MODE_IC, HIGH);
@@ -38,7 +37,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   _reset_qtmr_op();
 
   // Get FlexIO handler for initialization
-  auto flexio = FlexIOHandler::flexIOHandler_list[0];
+  auto flexio = FlexIOHandler::flexIOHandler_list[2];
 
   // We hardcode timer indices, otherwise we would need to use freeTimers all the time
   int _t_idx = -1;
@@ -84,7 +83,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   flexio->port().SHIFTCTL[s_ic] =
       FLEXIO_SHIFTCTL_TIMSEL(t_ic) | FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_ic] = 0;
-  flexio->port().SHIFTBUF[s_ic] = FLEXIO_STATE_SHIFTBUF(0b10111111, s_op);
+  flexio->port().SHIFTBUF[s_ic] = FLEXIO_STATE_SHIFTBUF(0b11101111, s_op);
 
   //
   // Configure OP state.
@@ -106,7 +105,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
     if (t_op >= 8)
       return false;
     flexio->port().TIMCTL[t_op] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) |
-                                  FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(13) | FLEXIO_TIMCTL_PINPOL;
+                                  FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(9) | FLEXIO_TIMCTL_PINPOL;
     flexio->port().TIMCFG[t_op] =
         FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(0b110) | FLEXIO_TIMCFG_TIMENA(6);
     flexio->port().TIMCMP[t_op] = op_time_ns * CLK_FREQ_MHz / 1000;
@@ -138,7 +137,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
                                   FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(8) | FLEXIO_TIMCTL_PINPOL;
     flexio->port().TIMCFG[t_op] =
         FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(0b110) | FLEXIO_TIMCFG_TIMENA(6);
-    flexio->port().TIMCMP[t_op] = divider*240 - 1;
+    flexio->port().TIMCMP[t_op] = divider * 240 - 1;
     // Configure second timer for 32bit total
     auto t_op_second = ++_t_idx;
     if (t_op_second >= 8)
@@ -148,10 +147,10 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
       return false;
     flexio->port().TIMCTL[t_op_second] = FLEXIO_TIMCTL_TRGSEL(4 * t_op + 3) | FLEXIO_TIMCTL_TRGSRC |
                                          FLEXIO_TIMCTL_TIMOD(3) | FLEXIO_TIMCTL_PINCFG(3) |
-                                         FLEXIO_TIMCTL_PINSEL(13) | FLEXIO_TIMCTL_PINPOL;
+                                         FLEXIO_TIMCTL_PINSEL(9) | FLEXIO_TIMCTL_PINPOL;
     flexio->port().TIMCFG[t_op_second] =
         FLEXIO_TIMCFG_TIMDEC(1) | FLEXIO_TIMCFG_TIMRST(0) | FLEXIO_TIMCFG_TIMDIS(1) | FLEXIO_TIMCFG_TIMENA(1);
-    flexio->port().TIMCMP[t_op_second] = (op_time_ns / (divider*1000ull)) * 2 - 1;
+    flexio->port().TIMCMP[t_op_second] = (op_time_ns / (divider * 1000ull)) * 2 - 1;
   }
 
   // Configure state change check timer as fast as possible
@@ -160,38 +159,70 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
     return false;
   flexio->port().TIMCTL[t_check] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) |
                                    FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(12);
-  flexio->port().TIMCFG[t_check] = FLEXIO_TIMCFG_TIMDIS(6) | FLEXIO_TIMCFG_TIMENA(6);
+  flexio->port().TIMCFG[t_check] = FLEXIO_TIMCFG_TIMDIS(0) | FLEXIO_TIMCFG_TIMENA(6);
   flexio->port().TIMCMP[t_check] = 0x0000'0001;
 
   // Configure state shifter
   flexio->port().SHIFTCTL[s_op] = FLEXIO_SHIFTCTL_TIMSEL(t_check) | FLEXIO_SHIFTCTL_PINCFG(3) |
-                                  FLEXIO_SHIFTCTL_PINSEL(13) | FLEXIO_SHIFTCTL_SMOD_STATE;
+                                  FLEXIO_SHIFTCTL_PINSEL(9) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_op] = 0;
-  flexio->port().SHIFTBUF[s_op] =
-      FLEXIO_STATE_SHIFTBUF(0b11011111, s_ic, s_ic, s_ic, s_ic, s_ic, s_ic, s_op, s_end);
+  // Next state after OP depends on FlexIO inputs 9 (1 if op time over), 10 (0 if overload), 11 (0 if exthalt)
+  // Check with priority op-time-over > overload > ext halt
+  // Comments are t/T whether op-time-over, o/O whether overload active, e/E wether ext halt is true
+  flexio->port().SHIFTBUF[s_op] = FLEXIO_STATE_SHIFTBUF(0b11011111, // Inputs [11-10-9]
+                                                        s_overload, // [0-0-0] = [E-O-t]
+                                                        s_end,      // [0-0-1] = [E-O-T]
+                                                        s_exthalt,  // [0-1-0] = [E-o-t]
+                                                        s_end,      // [0-1-1] = [E-o-T]
+                                                        s_overload, // [1-0-0] = [e-O-t]
+                                                        s_end,      // [1-0-1] = [e-O-T]
+                                                        s_op,       // [1-1-0] = [e-o-t]
+                                                        s_end       // [1-1-1] = [e-o-T]
+  );
 
   //
   // Configure END state.
   //
 
   flexio->port().SHIFTCTL[s_end] =
-      FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_PINSEL(13) | FLEXIO_SHIFTCTL_SMOD_STATE;
+      FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_PINSEL(9) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_end] = 0;
-  flexio->port().SHIFTBUF[s_end] =
-      FLEXIO_STATE_SHIFTBUF(0b11111111, s_end);
+  flexio->port().SHIFTBUF[s_end] = FLEXIO_STATE_SHIFTBUF(0b11111111, s_end);
+
+  //
+  // Configure OVERLOAD state.
+  //
+
+  flexio->port().SHIFTCTL[s_overload] = FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_SMOD_STATE;
+  flexio->port().SHIFTCFG[s_overload] = 0;
+  flexio->port().SHIFTBUF[s_overload] = FLEXIO_STATE_SHIFTBUF(0b11111111, s_overload);
+
+  //
+  // Configure EXT HALT state.
+  //
+
+  // EXT HALT is a paused state which resumes as soon as the signal is no longer active.
+  // But "resuming" is only partially correct, since the full op time is restarted.
+  // Thus, the OP state after EXT HALT runs for the full OP time, not just the remainder.
+  // This can be solved similarly to the ADC by gating a timer with the OP signal,
+  // but that requires additional connections on the PCB.
+  // For all currently envisioned EXT HALT applications (e.g. control-systems), this is okay.
+  flexio->port().SHIFTCTL[s_exthalt] = FLEXIO_SHIFTCTL_TIMSEL(t_check) | FLEXIO_SHIFTCTL_PINCFG(3) |
+                                       FLEXIO_SHIFTCTL_PINSEL(9) | FLEXIO_SHIFTCTL_SMOD_STATE;
+  flexio->port().SHIFTCFG[s_exthalt] = 0;
+  // When selecting next state based on inputs [11-10-9], ignore anything but EXT HALT (11).
+  flexio->port().SHIFTBUF[s_exthalt] =
+      FLEXIO_STATE_SHIFTBUF(0b11111111, s_exthalt, s_exthalt, s_exthalt, s_exthalt, s_op, s_op, s_op, s_op);
 
   //
   // Configure miscellaneous flexio stuff
   //
 
   // Put relevant pins into FlexIO mode
-  for (auto pin : {PIN_MODE_IC, PIN_MODE_OP, static_cast<uint8_t>(5) /* FlexIO1:8 for testing outputs */,
-                   static_cast<uint8_t>(52) /* FlexIO1:12 for testing outputs */,
-                   static_cast<uint8_t>(49) /* FlexIO1:13 for testing outputs */,
-                   static_cast<uint8_t>(50) /* FlexIO1:14 for testing outputs */,
-                   static_cast<uint8_t>(54) /* FlexIO1:15 for testing outputs */}) {
-    if (flexio->mapIOPinToFlexPin(pin) == 0xff)
+  for (auto pin : {PIN_MODE_IC, PIN_MODE_OP, PIN_MODE_OVERLOAD, PIN_MODE_EXTHALT}) {
+    if (flexio->mapIOPinToFlexPin(pin) == 0xff) {
       return false;
+    }
     flexio->setIOPinToFlexMode(pin);
   }
 
@@ -200,44 +231,46 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
 }
 
 void mode::FlexIOControl::disable() {
-  auto flexio = FlexIOHandler::flexIOHandler_list[0];
+  auto flexio = FlexIOHandler::flexIOHandler_list[2];
   flexio->port().CTRL &= ~FLEXIO_CTRL_FLEXEN;
 }
 
 void mode::FlexIOControl::enable() {
-  auto flexio = FlexIOHandler::flexIOHandler_list[0];
+  auto flexio = FlexIOHandler::flexIOHandler_list[2];
   flexio->port().CTRL |= FLEXIO_CTRL_FLEXEN;
 }
 
 void mode::FlexIOControl::force_start() { to_ic(); }
 
 void mode::FlexIOControl::to_idle() {
-  auto flexio = FlexIOHandler::flexIOHandler_list[0];
+  auto flexio = FlexIOHandler::flexIOHandler_list[2];
   flexio->port().SHIFTSTATE = s_idle;
 }
 
 void mode::FlexIOControl::to_ic() {
-  auto flexio = FlexIOHandler::flexIOHandler_list[0];
+  auto flexio = FlexIOHandler::flexIOHandler_list[2];
   flexio->port().SHIFTSTATE = s_ic;
 }
 
 void mode::FlexIOControl::to_op() {
-  auto flexio = FlexIOHandler::flexIOHandler_list[0];
+  auto flexio = FlexIOHandler::flexIOHandler_list[2];
   flexio->port().SHIFTSTATE = s_op;
 }
 
-void mode::FlexIOControl::to_pause() {
-  auto flexio = FlexIOHandler::flexIOHandler_list[0];
-  flexio->port().SHIFTSTATE = s_pause;
+void mode::FlexIOControl::to_exthalt() {
+  auto flexio = FlexIOHandler::flexIOHandler_list[2];
+  flexio->port().SHIFTSTATE = s_exthalt;
 }
 
 void mode::FlexIOControl::to_end() {
-  auto flexio = FlexIOHandler::flexIOHandler_list[0];
+  auto flexio = FlexIOHandler::flexIOHandler_list[2];
   flexio->port().SHIFTSTATE = s_end;
 }
 
 void mode::FlexIOControl::reset() {
-  auto flexio = FlexIOHandler::flexIOHandler_list[0];
+  disable();
+  delayMicroseconds(1);
+  auto flexio = FlexIOHandler::flexIOHandler_list[2];
   flexio->port().CTRL |= FLEXIO_CTRL_SWRST;
   delayMicroseconds(1);
   flexio->port().CTRL &= ~FLEXIO_CTRL_SWRST;
@@ -296,6 +329,17 @@ unsigned long long mode::FlexIOControl::get_actual_op_time() {
 }
 
 bool mode::FlexIOControl::is_done() {
-  auto flexio = FlexIOHandler::flexIOHandler_list[0];
-  return flexio->port().SHIFTSTATE == s_end;
+  auto flexio = FlexIOHandler::flexIOHandler_list[2];
+  auto state = flexio->port().SHIFTSTATE;
+  return state == s_end or state == s_overload;
+}
+
+bool mode::FlexIOControl::is_overloaded() {
+  auto flexio = FlexIOHandler::flexIOHandler_list[2];
+  return flexio->port().SHIFTSTATE == s_overload;
+}
+
+bool mode::FlexIOControl::is_exthalt() {
+  auto flexio = FlexIOHandler::flexIOHandler_list[2];
+  return flexio->port().SHIFTSTATE == s_exthalt;
 }
