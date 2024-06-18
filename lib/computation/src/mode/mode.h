@@ -11,8 +11,10 @@
 
 namespace mode {
 
-constexpr uint8_t PIN_MODE_IC = 2;
-constexpr uint8_t PIN_MODE_OP = 3;
+constexpr uint8_t PIN_MODE_IC = 40;
+constexpr uint8_t PIN_MODE_OP = 41;
+constexpr uint8_t PIN_MODE_OVERLOAD = 20;
+constexpr uint8_t PIN_MODE_EXTHALT = 21;
 constexpr uint8_t PIN_QTMR_OP_GATE = 12;
 
 constexpr unsigned int DEFAULT_IC_TIME = 100'000;
@@ -29,9 +31,11 @@ public:
 class FlexIOControl {
 private:
   static constexpr uint8_t CLK_SEL = 3, CLK_PRED = 0, CLK_PODF = 0;
-  static constexpr uint8_t s_idle = 0, s_ic = 1, s_op = 2, s_pause = 3, s_end = 4;
+  static constexpr uint8_t s_idle = 0, s_ic = 1, s_op = 2, s_exthalt = 3, s_end = 4, s_overload = 5;
 
-  static constexpr std::array<uint8_t, 5> get_states() { return {s_idle, s_ic, s_op, s_pause, s_end}; }
+  static constexpr std::array<uint8_t, 6> get_states() {
+    return {s_idle, s_ic, s_op, s_exthalt, s_end, s_overload};
+  }
 
   static constexpr auto FLEXIO_SHIFTCTL_SMOD_STATE = FLEXIO_SHIFTCTL_SMOD(6);
 
@@ -80,10 +84,13 @@ public:
   static void to_idle();
   static void to_ic();
   static void to_op();
-  static void to_pause();
+  static void to_exthalt();
   static void to_end();
 
   static bool is_done();
+
+  static bool is_overloaded();
+  static bool is_exthalt();
 
   static void delay_till_done();
 };
