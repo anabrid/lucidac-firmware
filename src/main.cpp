@@ -52,6 +52,8 @@ void setup() {
   while (!Serial && millis() < 4000) {
     // Wait for Serial, but not forever
   }
+
+  bus::init();
   LOG(ANABRID_DEBUG_INIT, "Hello.");
 
   // Initialize ethernet communication
