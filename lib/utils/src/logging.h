@@ -8,7 +8,9 @@
 // The actual logging call
 #ifdef ARDUINO
 #include <Arduino.h>
-#define __LOG(message) Serial.println(message);
+#define __LOG(message)                                                                                        \
+  Serial.println(message);                                                                                    \
+  Serial.flush();
 #else
 #include <iostream>
 #define __LOG(message) std::cerr << message;
