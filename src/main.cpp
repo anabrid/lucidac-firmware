@@ -7,8 +7,8 @@
 #include <ArduinoJson.h>
 #include <QNEthernet.h>
 
-#include "carrier/carrier.h"
 #include "logging.h"
+#include "lucidac/lucidac.h"
 #include "protocol/client.h"
 #include "protocol/handlers.h"
 #include "run/run.h"
@@ -26,7 +26,9 @@ namespace net = qindesign::network;
 uint16_t server_port = 5732;
 net::EthernetServer server{server_port};
 
-carrier::Carrier carrier_({Cluster(0)});
+LUCIDAC carrier_;
+
+#define protected public
 
 class HackMessageHandler : public msg::handlers::MessageHandler {
 public:

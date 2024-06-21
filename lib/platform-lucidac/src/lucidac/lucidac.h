@@ -65,6 +65,14 @@ protected:
 public:
   LUCIDAC();
 
+  bool init() override;
+
+  std::vector<Entity *> get_child_entities() override;
+
+  Entity *get_child_entity(const std::string &child_id) override;
+
+  [[nodiscard]] virtual bool write_to_hardware();
+
   lucidac::FrontPlane front_plane;
 };
 

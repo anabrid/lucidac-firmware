@@ -9,9 +9,10 @@
 #include <ArduinoJson.h>
 #include <array>
 
-#include "cluster.h"
 #include "chips/TMP127Q1.h"
+#include "cluster.h"
 #include "entity/entity.h"
+#include "is_number.h"
 #include "mac_utils.h"
 
 using namespace platform;
