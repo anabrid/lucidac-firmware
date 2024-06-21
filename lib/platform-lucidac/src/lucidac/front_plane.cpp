@@ -9,6 +9,10 @@ platform::lucidac::FrontPlane::FrontPlane() : entities::Entity("FP") {}
 
 bool platform::lucidac::FrontPlane::init() { return signal_generator.init(); }
 
+bool platform::lucidac::FrontPlane::write_to_hardware() {
+  return leds.write_to_hardware() && signal_generator.write_to_hardware();
+}
+
 platform::lucidac::FrontPlane::LEDs::LEDs()
     : led_register(bus::address_from_tuple(2, LED_REGISTER_IDX), true),
       led_register_store(bus::address_from_tuple(2, LED_REGISTER_STORE_IDX)),
@@ -49,9 +53,7 @@ bool platform::lucidac::FrontPlane::SignalGenerator::init() {
   return digital_analog_converter.init() && function_generator.init();
 }
 
-void platform::lucidac::FrontPlane::SignalGenerator::set_frequency(float frequency) {
-  _frequency = frequency;
-}
+void platform::lucidac::FrontPlane::SignalGenerator::set_frequency(float frequency) { _frequency = frequency; }
 
 void platform::lucidac::FrontPlane::SignalGenerator::set_phase(float phase) { _phase = phase; }
 
@@ -175,89 +177,68 @@ platform::lucidac::FrontPlane::from_entity_classifier(entities::EntityClassifier
 }
 
 bool platform::lucidac::FrontPlane::config_self_from_json(JsonObjectConst cfg) {
-  if (!cfg["leds"]["signal_generator"]) {
-    if (cfg["leds"].is<uint8_t>())
-      leds.set_all(cfg["leds"]);
-    else
-      return false;
+  if (cfg["leds"].is<uint8_t>())
+    leds.set_all(cfg["leds"]);
 
-    if (cfg["signal_generator"].is<JsonObjectConst>()) {
-      auto cfg_generator = cfg["signal_generator"].as<JsonObjectConst>();
-      if (!cfg_generator["frequency"]["phase"]["wave_form"]["amplitude"]["square_voltage_low"]
-                        ["square_voltage_high"]["offset"]["sleep"]["dac_outputs"]) {
-        if (cfg_generator["frequency"].is<float>())
-          signal_generator.set_frequency(cfg_generator["frequency"]);
-        else
-          return false;
+  if (cfg["signal_generator"].is<JsonObjectConst>()) {
+    auto cfg_generator = cfg["signal_generator"].as<JsonObjectConst>();
+    if (cfg_generator["frequency"].is<float>())
+      signal_generator.set_frequency(cfg_generator["frequency"]);
 
-        if (cfg_generator["phase"].is<float>())
-          signal_generator.set_phase(cfg_generator["phase"]);
-        else
-          return false;
+    if (cfg_generator["phase"].is<float>())
+      signal_generator.set_phase(cfg_generator["phase"]);
 
-        if (cfg_generator["wave_form"].is<std::string>()) {
-          std::string wave_form = cfg_generator["wave_form"];
-          if (wave_form == "sine")
-            signal_generator.set_wave_form(functions::AD9834::WaveForm::SINE);
-          else if (wave_form == "sine_and_square")
-            signal_generator.set_wave_form(functions::AD9834::WaveForm::SINE_AND_SQUARE);
-          else if (wave_form == "triangle")
-            signal_generator.set_wave_form(functions::AD9834::WaveForm::TRIANGLE);
-          else
-            return false;
-        } else
-          return false;
-
-        if (cfg_generator["amplitude"].is<float>())
-          signal_generator.set_amplitude(cfg_generator["amplitude"]);
-        else
-          return false;
-
-        if (cfg_generator["square_voltage_low"].is<float>())
-          signal_generator.set_square_voltage_low(cfg_generator["square_voltage_low"]);
-        else
-          return false;
-
-        if (cfg_generator["square_voltage_high"].is<float>())
-          signal_generator.set_square_voltage_high(cfg_generator["square_voltage_high"]);
-        else
-          return false;
-
-        if (cfg_generator["offset"].is<float>())
-          signal_generator.set_offset(cfg_generator["offset"]);
-        else
-          return false;
-
-        if (cfg_generator["sleep"].is<bool>()) {
-          if (cfg_generator["sleep"])
-            signal_generator.sleep();
-          else
-            signal_generator.awake();
-        } else
-          return false;
-
-        if (cfg_generator["dac_outputs"].is<JsonArrayConst>()) {
-          auto dac_outputs = cfg_generator["dac_outputs"].as<JsonArrayConst>();
-          if (dac_outputs.size() != 2)
-            return false;
-
-          if (dac_outputs[0].is<float>())
-            if (!signal_generator.set_dac_out0(dac_outputs[0]))
-              return false;
-
-          if (dac_outputs[1].is<float>())
-            if (!signal_generator.set_dac_out1(dac_outputs[1]))
-              return false;
-        }
-
-      } else
+    if (cfg_generator["wave_form"].is<std::string>()) {
+      std::string wave_form = cfg_generator["wave_form"];
+      if (wave_form == "sine")
+        signal_generator.set_wave_form(functions::AD9834::WaveForm::SINE);
+      else if (wave_form == "sine_and_square")
+        signal_generator.set_wave_form(functions::AD9834::WaveForm::SINE_AND_SQUARE);
+      else if (wave_form == "triangle")
+        signal_generator.set_wave_form(functions::AD9834::WaveForm::TRIANGLE);
+      else
         return false;
-    } else
-      return false;
+    }
 
-    return true;
+    if (cfg_generator["amplitude"].is<float>())
+      if (!signal_generator.set_amplitude(cfg_generator["amplitude"]))
+        return false;
+
+    if (cfg_generator["square_voltage_low"].is<float>())
+      if (!signal_generator.set_square_voltage_low(cfg_generator["square_voltage_low"]))
+        return false;
+
+    if (cfg_generator["square_voltage_high"].is<float>())
+      if (!signal_generator.set_square_voltage_high(cfg_generator["square_voltage_high"]))
+        return false;
+
+    if (cfg_generator["offset"].is<float>())
+      if (!signal_generator.set_offset(cfg_generator["offset"]))
+        return false;
+
+    if (cfg_generator["sleep"].is<bool>()) {
+      if (cfg_generator["sleep"])
+        signal_generator.sleep();
+      else
+        signal_generator.awake();
+    }
+
+    if (cfg_generator["dac_outputs"].is<JsonArrayConst>()) {
+      auto dac_outputs = cfg_generator["dac_outputs"].as<JsonArrayConst>();
+      if (dac_outputs.size() != 2)
+        return false;
+
+      if (dac_outputs[0].is<float>())
+        if (!signal_generator.set_dac_out0(dac_outputs[0]))
+          return false;
+
+      if (dac_outputs[1].is<float>())
+        if (!signal_generator.set_dac_out1(dac_outputs[1]))
+          return false;
+    }
   }
-  return false;
+
+  return true;
 }
 
 void platform::lucidac::FrontPlane::config_self_to_json(JsonObject &cfg) {

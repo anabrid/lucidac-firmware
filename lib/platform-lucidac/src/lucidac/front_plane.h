@@ -61,6 +61,9 @@ public:
   //! Initializes the front plane and puts the frequency generator to sleep.
   bool init();
 
+  //! Writes the hardware state of the LEDs and the signal generator
+  bool write_to_hardware();
+
   class LEDs {
   public:
     LEDs();
@@ -88,7 +91,7 @@ public:
   class SignalGenerator {
   public:
     SignalGenerator();
-    //! Initializes the frequency generator and puts it to sleep.
+    //! Initializes the signal generator and puts it to sleep.
     bool init();
 
     //! Sets the frequency of the sine / triangle output in Hz. Note that the square output will always operate
