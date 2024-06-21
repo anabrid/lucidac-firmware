@@ -4,9 +4,13 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include <Arduino.h>
+#include <SPI.h>
 #include <unity.h>
 
 #include "io/io.h"
+
+#define protected public
+#define private public
 #include "mode/mode.h"
 
 //  !!!!!!!!!!!!
@@ -20,6 +24,7 @@
 //
 // WARNING: Some test cases need manual connections to fake overload & exthalt signals!
 // Connect the following pins manually to PIN_MODE_OVERLOAD and PIN_MODE_EXTHALT!
+// Also connect SPI_CLK and MOSI to SYNC_CLK and SYNC_ID
 constexpr uint8_t FAKE_OVERLOAD_PIN = io::PIN_DIO_11;
 constexpr uint8_t FAKE_EXTHALT_PIN = io::PIN_DIO_12;
 
@@ -119,6 +124,36 @@ void test_approximate_run_time() {
   }
 }
 
+void test_sync_master() {
+  SPI1.begin();
+  SPI1.beginTransaction(SPISettings(4'000'000, MSBFIRST, SPI_MODE0));
+
+  TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000, mode::Sync::MASTER));
+
+  TEST_MESSAGE("Press button to trigger state machine.");
+  io::block_until_button_press();
+
+  // Send 16 zeros, which should trigger nothing
+  SPI1.transfer16(0b00000000'00000000);
+  delayMicroseconds(10);
+  TEST_ASSERT(FlexIOControl::is_idle());
+
+  // Send a bunch of matching data, which should trigger
+  SPI1.transfer16(0b11110000'10101010);
+  delayMicroseconds(10);
+  TEST_ASSERT_FALSE(FlexIOControl::is_idle());
+
+  // Check if we are going into OP and end after op time
+  delayMicroseconds(100);
+  TEST_ASSERT(FlexIOControl::is_op());
+  delayMicroseconds(200);
+  TEST_ASSERT(FlexIOControl::is_done());
+}
+
+void test_sync_slave() {
+  TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000, mode::Sync::SLAVE));
+}
+
 void setup() {
   io::init();
 
@@ -136,6 +171,8 @@ void setup() {
   RUN_TEST(test_approximate_run_time);
   RUN_TEST(test_exthalt);
   RUN_TEST(test_overload);
+  RUN_TEST(test_sync_master);
+  //RUN_TEST(test_sync_slave);
   UNITY_END();
 }
 

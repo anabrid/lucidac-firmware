@@ -9,24 +9,28 @@
 #include <bitset>
 #include <unity.h>
 
-constexpr uint8_t PIN_DATA_IN = 3; // FlexIO 1:5
+#include "io/io.h"
+
+constexpr uint8_t PIN_DATA_IN = 23; // FlexIO 1:5
 constexpr uint8_t PIN_MOSI1_OUT = 26;
-constexpr uint8_t PIN_CLK_IN = 4;    // FlexIO 1:6
+constexpr uint8_t PIN_CLK_IN = 22;    // FlexIO 1:6
 constexpr uint8_t PIN_SCK1_OUT = 27; // SPI1 CLK
-constexpr uint8_t PIN_TRIGGER_OUT = 5;
+constexpr uint8_t PIN_TRIGGER_OUT = 38;
 
 // Use FlexIO 1 in this example
-auto flexio = FlexIOHandler::flexIOHandler_list[0];
+auto flexio = FlexIOHandler::flexIOHandler_list[2];
 // Global variables for timer/shifter flexio index
 uint8_t _timer = 0xff;
 uint8_t _shifter = 0xff;
 
 void setUp() {
   // This is called before *each* test.
+  digitalWriteFast(io::PIN_RESERVED_7, HIGH);
 }
 
 void tearDown() {
   // This is called after *each* test.
+  digitalWriteFast(io::PIN_RESERVED_7, LOW);
 }
 
 void test_connection(uint8_t pin_out, uint8_t pin_in, const char *msg) {
@@ -34,6 +38,7 @@ void test_connection(uint8_t pin_out, uint8_t pin_in, const char *msg) {
   pinMode(pin_out, OUTPUT);
   pinMode(pin_in, INPUT);
   digitalWriteFast(pin_out, HIGH);
+  delayMicroseconds(1);
   TEST_ASSERT_MESSAGE(digitalReadFast(pin_in), msg);
   digitalWriteFast(pin_out, LOW);
 }
@@ -98,12 +103,12 @@ void test_flexio_setup() {
       FLEXIO_TIMCTL_TRGSEL(4 * _shifter + 1) | FLEXIO_TIMCTL_TRGSRC | FLEXIO_TIMCTL_PINCFG(3) |
       FLEXIO_TIMCTL_PINSEL(_flexio_pin_trigger_out) | FLEXIO_TIMCTL_TIMOD(1);
   flexio->port().TIMCFG[_triggered_timer] = FLEXIO_TIMCFG_TIMDIS(2) | FLEXIO_TIMCFG_TIMENA(6);
-  flexio->port().TIMCMP[_triggered_timer] = 0x0000'08'00;
+  flexio->port().TIMCMP[_triggered_timer] = 0x0000'01'00;
   // Set IO pin to FlexIO mode
   flexio->setIOPinToFlexMode(PIN_TRIGGER_OUT);
 
   // Enable this FlexIO
-  delay(100);
+  delayMicroseconds(1);
   flexio->port().CTRL = FLEXIO_CTRL_FLEXEN;
 }
 
@@ -115,9 +120,6 @@ void test_flexio() {
   TEST_ASSERT_BITS_LOW(1 << _shifter, flexio->port().SHIFTSTAT);
   // SHIFTERR = a match has occurred at any time, should not be set (this is cleared in setup)
   TEST_ASSERT_BITS_LOW(1 << _shifter, flexio->port().SHIFTERR);
-
-  SPI1.begin();
-  SPI1.beginTransaction(SPISettings(4'000'000, MSBFIRST, SPI_MODE0));
 
   // Send 16 zeros
   SPI1.transfer16(0b00000000'00000000);
@@ -142,10 +144,21 @@ void test_flexio() {
 }
 
 void setup() {
+  io::init();
+  // We use some pins as test/trigger signals in this test
+  // Overwrite their pin mode
+  pinMode(io::PIN_RESERVED_7, OUTPUT);
+
   UNITY_BEGIN();
   RUN_TEST(test_connections);
+
+  // Use direct access to SPI for this test
+  // SPI.begin() must happen after test_connections
+  SPI1.begin();
+  SPI1.beginTransaction(SPISettings(4'000'000, MSBFIRST, SPI_MODE0));
   RUN_TEST(test_flexio_setup);
   RUN_TEST(test_flexio);
+
   UNITY_END();
 }
 

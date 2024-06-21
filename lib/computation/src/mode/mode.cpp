@@ -31,7 +31,7 @@ void mode::ManualControl::to_halt() {
   digitalWriteFast(PIN_MODE_OP, HIGH);
 }
 
-bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_time_ns) {
+bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_time_ns, mode::Sync sync) {
   // Initialize and reset QTMR
   _init_qtmr_op();
   _reset_qtmr_op();
@@ -41,6 +41,8 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
 
   // We hardcode timer indices, otherwise we would need to use freeTimers all the time
   int _t_idx = -1;
+  // TODO: Hand-tune constraints
+  ++_t_idx;
 
   // Set clock settings
   // For (3, 0, 0) the clock frequency is 480'000'000
@@ -51,12 +53,58 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   // flexio->port().CTRL |= FLEXIO_CTRL_FASTACC;
 
   //
+  // Configure sync matcher
+  //
+
+  uint8_t t_sync_clk = ++_t_idx;
+  if (t_sync_clk >= 8)
+    return false;
+  // Get internal FlexIO pins from external pins
+  uint8_t _sck_flex_pin = flexio->mapIOPinToFlexPin(PIN_SYNC_CLK);
+  if (_sck_flex_pin == 0xff)
+    return false;
+
+  // Configure a timer to track signal of PIN_SYNC_CLK
+  flexio->port().TIMCTL[t_sync_clk] = FLEXIO_TIMCTL_PINSEL(_sck_flex_pin) | FLEXIO_TIMCTL_TIMOD(1);
+  flexio->port().TIMCFG[t_sync_clk] = FLEXIO_TIMCFG_TIMOUT(1) | FLEXIO_TIMCFG_TIMDEC(2);
+  flexio->port().TIMCMP[t_sync_clk] = 0x0000'FF'00;
+
+  // Select a shifter for monitoring PIN_SYNC_ID
+  auto _flexio_pin_data_in = flexio->mapIOPinToFlexPin(PIN_SYNC_ID);
+  if (_flexio_pin_data_in == 0xff)
+    return false;
+  // Configure the shifter into continuous match mode, monitoring SYNC_CLK_ID
+  flexio->port().SHIFTCTL[z_sync_match] = FLEXIO_SHIFTCTL_TIMSEL(t_sync_clk) |
+                                      FLEXIO_SHIFTCTL_PINSEL(_flexio_pin_data_in) |
+                                      FLEXIO_SHIFTCTL_SMOD(0b101);
+  flexio->port().SHIFTCFG[z_sync_match] = 0;
+  // Set compare value in SHIFTBUF[31:16] and mask in SHIFTBUF[15:0] (1=mask, 0=no mask)
+  flexio->port().SHIFTBUF[z_sync_match] = 0b01010101'00001111'00000000'00000000;
+
+  // Get a timer which is enabled when there is a match
+  auto t_sync_trigger = ++_t_idx;
+  if (t_sync_trigger >= 8)
+    return false;
+  // Configure timer
+  flexio->port().TIMCTL[t_sync_trigger] =
+      FLEXIO_TIMCTL_TRGSEL(4 * z_sync_match + 1) | FLEXIO_TIMCTL_TRGSRC | FLEXIO_TIMCTL_TIMOD(1);
+  flexio->port().TIMCFG[t_sync_trigger] = FLEXIO_TIMCFG_TIMDIS(2) | FLEXIO_TIMCFG_TIMENA(6);
+  flexio->port().TIMCMP[t_sync_trigger] = 0x0000'01'00;
+
+  //
   //  Configure IDLE state
   //
 
-  flexio->port().SHIFTCTL[s_idle] = FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_SMOD_STATE;
+  switch (sync) {
+  case Sync::NONE:
+    flexio->port().SHIFTCTL[s_idle] = FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_SMOD_STATE;
+    flexio->port().SHIFTBUF[s_idle] = FLEXIO_STATE_SHIFTBUF(0b11111111, s_idle);
+  case Sync::MASTER:
+  case Sync::SLAVE:
+    flexio->port().SHIFTCTL[s_idle] = FLEXIO_SHIFTCTL_TIMSEL(t_sync_trigger) | FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_SMOD_STATE;
+    flexio->port().SHIFTBUF[s_idle] = FLEXIO_STATE_SHIFTBUF(0b11111111, s_ic);
+  }
   flexio->port().SHIFTCFG[s_idle] = 0;
-  flexio->port().SHIFTBUF[s_idle] = FLEXIO_STATE_SHIFTBUF(0b11111111, s_idle);
 
   //
   //  Configure IC state
@@ -105,7 +153,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
     if (t_op >= 8)
       return false;
     flexio->port().TIMCTL[t_op] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) |
-                                  FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(9) | FLEXIO_TIMCTL_PINPOL;
+                                  FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(12) | FLEXIO_TIMCTL_PINPOL;
     flexio->port().TIMCFG[t_op] =
         FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(0b110) | FLEXIO_TIMCFG_TIMENA(6);
     flexio->port().TIMCMP[t_op] = op_time_ns * CLK_FREQ_MHz / 1000;
@@ -133,8 +181,8 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
     auto t_op = ++_t_idx;
     if (t_op >= 8)
       return false;
-    flexio->port().TIMCTL[t_op] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) |
-                                  FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(8) | FLEXIO_TIMCTL_PINPOL;
+    flexio->port().TIMCTL[t_op] =
+        FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) | FLEXIO_TIMCTL_PINPOL;
     flexio->port().TIMCFG[t_op] =
         FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(0b110) | FLEXIO_TIMCFG_TIMENA(6);
     flexio->port().TIMCMP[t_op] = divider * 240 - 1;
@@ -147,7 +195,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
       return false;
     flexio->port().TIMCTL[t_op_second] = FLEXIO_TIMCTL_TRGSEL(4 * t_op + 3) | FLEXIO_TIMCTL_TRGSRC |
                                          FLEXIO_TIMCTL_TIMOD(3) | FLEXIO_TIMCTL_PINCFG(3) |
-                                         FLEXIO_TIMCTL_PINSEL(9) | FLEXIO_TIMCTL_PINPOL;
+                                         FLEXIO_TIMCTL_PINSEL(12) | FLEXIO_TIMCTL_PINPOL;
     flexio->port().TIMCFG[t_op_second] =
         FLEXIO_TIMCFG_TIMDEC(1) | FLEXIO_TIMCFG_TIMRST(0) | FLEXIO_TIMCFG_TIMDIS(1) | FLEXIO_TIMCFG_TIMENA(1);
     flexio->port().TIMCMP[t_op_second] = (op_time_ns / (divider * 1000ull)) * 2 - 1;
@@ -157,35 +205,33 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   auto t_check = ++_t_idx;
   if (t_check >= 8)
     return false;
-  flexio->port().TIMCTL[t_check] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) |
-                                   FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(12);
+  flexio->port().TIMCTL[t_check] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3);
   flexio->port().TIMCFG[t_check] = FLEXIO_TIMCFG_TIMDIS(0) | FLEXIO_TIMCFG_TIMENA(6);
   flexio->port().TIMCMP[t_check] = 0x0000'0001;
 
   // Configure state shifter
   flexio->port().SHIFTCTL[s_op] = FLEXIO_SHIFTCTL_TIMSEL(t_check) | FLEXIO_SHIFTCTL_PINCFG(3) |
-                                  FLEXIO_SHIFTCTL_PINSEL(9) | FLEXIO_SHIFTCTL_SMOD_STATE;
+                                  FLEXIO_SHIFTCTL_PINSEL(10) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_op] = 0;
-  // Next state after OP depends on FlexIO inputs 9 (1 if op time over), 10 (0 if overload), 11 (0 if exthalt)
+  // Next state after OP depends on FlexIO inputs 10 (0 if overload), 11 (0 if exthalt), 12 (1 if op time over)
   // Check with priority op-time-over > overload > ext halt
   // Comments are t/T whether op-time-over, o/O whether overload active, e/E wether ext halt is true
   flexio->port().SHIFTBUF[s_op] = FLEXIO_STATE_SHIFTBUF(0b11011111, // Inputs [11-10-9]
-                                                        s_overload, // [0-0-0] = [E-O-t]
-                                                        s_end,      // [0-0-1] = [E-O-T]
-                                                        s_exthalt,  // [0-1-0] = [E-o-t]
-                                                        s_end,      // [0-1-1] = [E-o-T]
-                                                        s_overload, // [1-0-0] = [e-O-t]
-                                                        s_end,      // [1-0-1] = [e-O-T]
-                                                        s_op,       // [1-1-0] = [e-o-t]
-                                                        s_end       // [1-1-1] = [e-o-T]
+                                                        s_overload, // [0-0-0] = [t-E-O]
+                                                        s_exthalt,  // [0-0-1] = [t-E-o]
+                                                        s_overload, // [0-1-0] = [t-e-O]
+                                                        s_op,       // [0-1-1] = [t-e-o]
+                                                        s_end,      // [1-0-0] = [T-E-O]
+                                                        s_end,      // [1-0-1] = [T-E-o]
+                                                        s_end,      // [1-1-0] = [T-e-O]
+                                                        s_end       // [1-1-1] = [T-e-o]
   );
 
   //
   // Configure END state.
   //
 
-  flexio->port().SHIFTCTL[s_end] =
-      FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_PINSEL(9) | FLEXIO_SHIFTCTL_SMOD_STATE;
+  flexio->port().SHIFTCTL[s_end] = FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_end] = 0;
   flexio->port().SHIFTBUF[s_end] = FLEXIO_STATE_SHIFTBUF(0b11111111, s_end);
 
@@ -208,18 +254,18 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   // but that requires additional connections on the PCB.
   // For all currently envisioned EXT HALT applications (e.g. control-systems), this is okay.
   flexio->port().SHIFTCTL[s_exthalt] = FLEXIO_SHIFTCTL_TIMSEL(t_check) | FLEXIO_SHIFTCTL_PINCFG(3) |
-                                       FLEXIO_SHIFTCTL_PINSEL(9) | FLEXIO_SHIFTCTL_SMOD_STATE;
+                                       FLEXIO_SHIFTCTL_PINSEL(10) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_exthalt] = 0;
-  // When selecting next state based on inputs [11-10-9], ignore anything but EXT HALT (11).
+  // When selecting next state based on inputs [12-11-10], ignore anything but EXT HALT (11).
   flexio->port().SHIFTBUF[s_exthalt] =
-      FLEXIO_STATE_SHIFTBUF(0b11111111, s_exthalt, s_exthalt, s_exthalt, s_exthalt, s_op, s_op, s_op, s_op);
+      FLEXIO_STATE_SHIFTBUF(0b11111111, s_exthalt, s_exthalt, s_op, s_op, s_exthalt, s_exthalt, s_op, s_op);
 
   //
   // Configure miscellaneous flexio stuff
   //
 
   // Put relevant pins into FlexIO mode
-  for (auto pin : {PIN_MODE_IC, PIN_MODE_OP, PIN_MODE_OVERLOAD, PIN_MODE_EXTHALT}) {
+  for (auto pin : {PIN_MODE_IC, PIN_MODE_OP, PIN_MODE_OVERLOAD, PIN_MODE_EXTHALT, PIN_SYNC_ID, PIN_SYNC_CLK}) {
     if (flexio->mapIOPinToFlexPin(pin) == 0xff) {
       return false;
     }
@@ -326,6 +372,16 @@ void mode::FlexIOControl::_init_qtmr_op() {
 unsigned long long mode::FlexIOControl::get_actual_op_time() {
   // TODO: This is currently measured, but of course it can be calculated
   return (TMR1_CNTR2 * 0xFFFF + TMR1_CNTR1) * 671 / 100;
+}
+
+bool mode::FlexIOControl::is_idle() {
+  auto flexio = FlexIOHandler::flexIOHandler_list[2];
+  return flexio->port().SHIFTSTATE == s_idle;
+}
+
+bool mode::FlexIOControl::is_op() {
+  auto flexio = FlexIOHandler::flexIOHandler_list[2];
+  return flexio->port().SHIFTSTATE == s_op;
 }
 
 bool mode::FlexIOControl::is_done() {

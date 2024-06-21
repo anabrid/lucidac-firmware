@@ -11,14 +11,20 @@
 
 namespace mode {
 
-constexpr uint8_t PIN_MODE_IC = 40;
-constexpr uint8_t PIN_MODE_OP = 41;
-constexpr uint8_t PIN_MODE_OVERLOAD = 20;
-constexpr uint8_t PIN_MODE_EXTHALT = 21;
-constexpr uint8_t PIN_QTMR_OP_GATE = 12;
+constexpr uint8_t PIN_MODE_IC = 40;       // FlexIO 3:4
+constexpr uint8_t PIN_MODE_OP = 41;       // FlexIO 3:5
+constexpr uint8_t PIN_MODE_OVERLOAD = 20; // FlexIO 3:10
+constexpr uint8_t PIN_MODE_EXTHALT = 21;  // FlexIO 3:11
+constexpr uint8_t PIN_SYNC_CLK = 22;      // FlexIO 3:8
+constexpr uint8_t PIN_SYNC_ID = 23;       // FlexIO 3:9
+constexpr uint8_t PIN_QTMR_OP_GATE = 12;  // QTimer11
 
 constexpr unsigned int DEFAULT_IC_TIME = 100'000;
 constexpr unsigned long long DEFAULT_OP_TIME = 1'000'000;
+
+enum class Sync {
+  NONE, MASTER, SLAVE
+};
 
 class ManualControl {
 public:
@@ -31,7 +37,7 @@ public:
 class FlexIOControl {
 private:
   static constexpr uint8_t CLK_SEL = 3, CLK_PRED = 0, CLK_PODF = 0;
-  static constexpr uint8_t s_idle = 0, s_ic = 1, s_op = 2, s_exthalt = 3, s_end = 4, s_overload = 5;
+  static constexpr uint8_t s_idle = 0, s_ic = 1, s_op = 2, s_exthalt = 3, s_end = 4, s_overload = 5, z_sync_match = 7;
 
   static constexpr std::array<uint8_t, 6> get_states() {
     return {s_idle, s_ic, s_op, s_exthalt, s_end, s_overload};
@@ -69,7 +75,7 @@ private:
   }
 
 public:
-  static bool init(unsigned int ic_time_ns, unsigned long long op_time_ns);
+  static bool init(unsigned int ic_time_ns, unsigned long long op_time_ns, Sync sync = Sync::NONE);
 
   static void disable();
   static void enable();
@@ -87,8 +93,9 @@ public:
   static void to_exthalt();
   static void to_end();
 
+  static bool is_idle();
+  static bool is_op();
   static bool is_done();
-
   static bool is_overloaded();
   static bool is_exthalt();
 
