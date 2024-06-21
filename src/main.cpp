@@ -28,8 +28,6 @@ net::EthernetServer server{server_port};
 
 LUCIDAC carrier_;
 
-#define protected public
-
 class HackMessageHandler : public msg::handlers::MessageHandler {
 public:
   bool handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
