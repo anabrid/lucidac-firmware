@@ -28,6 +28,7 @@ template <class BlockT> BlockT *detect(const bus::addr_t block_address) {
   case entities::EntityClass::UNKNOWN:
   case entities::EntityClass::CARRIER:
   case entities::EntityClass::CLUSTER:
+  case entities::EntityClass::FRONT_PLANE:
     return nullptr;
   case entities::EntityClass::M_BLOCK:
   case entities::EntityClass::U_BLOCK:

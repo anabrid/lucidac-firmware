@@ -291,6 +291,7 @@ void blocks::UBlock::config_self_to_json(JsonObject &cfg) {
   for (const auto &output : output_input_map) {
     if (output)
       outputs_cfg.add(output - 1);
+    // TODO: This -1 may have to be removed due to the changes on the output matrix
     else
       outputs_cfg.add(nullptr);
   }

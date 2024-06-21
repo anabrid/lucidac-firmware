@@ -7,7 +7,7 @@
 #include <unity.h>
 
 #include "block/blocks.h"
-#include "chips/EEPROM25AA02E64.h"
+#include "chips/EEPROM25AA02.h"
 
 using namespace blocks;
 using namespace functions;

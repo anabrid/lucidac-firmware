@@ -7,6 +7,7 @@
 #include <unity.h>
 
 #define protected public
+#define private public
 #include "bus/functions.h"
 #include "chips/DAC60508.h"
 
