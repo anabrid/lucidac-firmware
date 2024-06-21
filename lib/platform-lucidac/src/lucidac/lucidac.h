@@ -6,6 +6,7 @@
 #pragma once
 
 #include "carrier/carrier.h"
+#include "front_plane.h"
 
 namespace platform {
 
@@ -63,6 +64,8 @@ protected:
 
 public:
   LUCIDAC();
+
+  lucidac::FrontPlane front_plane;
 };
 
 } // namespace platform
