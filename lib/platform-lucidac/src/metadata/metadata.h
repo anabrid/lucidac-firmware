@@ -10,7 +10,7 @@
 
 #include "bus/bus.h"
 #include "bus/functions.h"
-#include "chips/EEPROM25AA02E64.h"
+#include "chips/EEPROM25AA02.h"
 #include "entity/entity.h"
 
 namespace metadata {
@@ -25,9 +25,9 @@ typedef struct __attribute__((packed)) MetadataMemoryLayoutV1 {
   const uint8_t uuid[8];
 } MetadataMemoryLayoutV1;
 
-class MetadataReader : public functions::EEPROM25AA02E64 {
+class MetadataReader : public functions::EEPROM25AA02 {
 public:
-  using functions::EEPROM25AA02E64::EEPROM25AA02E64;
+  using functions::EEPROM25AA02::EEPROM25AA02;
 
   entities::EntityClassifier read_entity_classifier() {
     std::array<uint8_t, 4> data{0};
