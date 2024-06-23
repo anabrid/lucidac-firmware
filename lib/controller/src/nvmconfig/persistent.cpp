@@ -13,7 +13,7 @@ void nvmconfig::PersistentSettingsWriter::info(JsonObject msg_out) {
 
 void nvmconfig::PersistentSettingsWriter::toJson(JsonObject target) {
   for(auto const& sys : subsystems)
-    sys->toJson(target[sys->name()]);
+    sys->toJson(target.createNestedObject(sys->name()));
 }
 
 void nvmconfig::PersistentSettingsWriter::fromJson(JsonObjectConst target) {
@@ -36,8 +36,8 @@ void nvmconfig::PersistentSettingsWriter::read_from_eeprom() {
         ? deserializeJson(deserialized_conf, eepromStream)
         : deserializeMsgPack(deserialized_conf, eepromStream);
     if(error) {
-        Serial.print("Error while reading configuration from EEPROM:");
-        Serial.println(error.c_str());
+        LOG_ERROR("nvmconfig::PersistentSettingsWriter::read_from_eeprom(): Failure, will fall back to default values.");
+        LOG4("DeserializationError code: ", error.code(), " and explanation: ", error.c_str());
     }
 
     version = deserialized_conf["version"];
@@ -60,7 +60,7 @@ size_t nvmconfig::PersistentSettingsWriter::write_to_eeprom() {
 
     LOGMEV("Consumed %d Bytes from %d available ones (%.2f%%); Serialization: %s\n",
       consumed_size, eeprom_size, 100.0 * consumed_size/eeprom_size,
-      use_messagepack ? "JSON" : "Messagepack"
+      use_messagepack ? "Messagepack" : "JSON"
     );
 
     return consumed_size;

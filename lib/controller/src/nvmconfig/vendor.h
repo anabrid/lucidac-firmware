@@ -21,11 +21,14 @@ namespace nvmconfig {
      * 
      */
     struct VendorOTP : nvmconfig::PersistentSettings {
-        int serial_number;
+        constexpr static uint16_t invalid_serial_number = 0;
+        uint16_t serial_number = invalid_serial_number;
         utils::UUID serial_uuid;
         std::string default_admin_password;
 
         std::string name() const { return "immutable"; }
+
+        bool is_valid() const { return serial_number != invalid_serial_number; }
 
         void reset_defaults() { /* No-OP by definition */ }
         void fromJson(JsonObjectConst src) {

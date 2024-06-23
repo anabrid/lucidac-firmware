@@ -101,6 +101,9 @@ void net::StartupConfig::begin_ip() {
 
   LOG2("MAC: ", toString(mac).c_str())
 
+  // TODO: Should indicate the state of the IP aquisition on the
+  //       LEDs of the LUCIDAC front.
+
   if(enable_dhcp) {
       LOG2("DHCP with Hostname: ", hostname.c_str());
       net::Ethernet.setHostname(hostname.c_str());
@@ -136,26 +139,17 @@ void net::StartupConfig::begin_ip() {
   LOG4("JSONL Listening on ", net::Ethernet.localIP(), ":", jsonl_port);
 }
 
-void net::StartupConfig::begin_servers() {
+void net::StartupConfig::begin_mdns() {
+  MDNS.begin(hostname.c_str());
   if(enable_jsonl)
-    msg::JsonlServer::get().begin();
-
+    MDNS.addService("_lucijsonl", "_tcp", jsonl_port);
   if(enable_webserver)
-    web::LucidacWebServer::get().begin();
-
-  if(enable_mdns) {
-    MDNS.begin(hostname.c_str());
-    if(enable_jsonl)
-      MDNS.addService("_lucijsonl", "_tcp", jsonl_port);
-    if(enable_webserver)
-      MDNS.addService("_http", "_tcp", webserver_port);
-  }
+    MDNS.addService("_http", "_tcp", webserver_port);
 }
 
 void net::StartupConfig::begin() {
   net::register_settings();
   begin_ip();
-  begin_servers();
 }
 
 void net::status(JsonObject &msg_out) {

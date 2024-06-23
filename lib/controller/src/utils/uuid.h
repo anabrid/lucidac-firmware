@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h> // just for adapter
+#include <string>
+#include <cstdlib>
 
 namespace utils {
 
@@ -13,10 +15,11 @@ namespace utils {
  * but borrows the printing code.
  * 
  * Generation is like UUID{0x26,0x5,0x1b,0xb5,0x7c,0xb7,0x43,0xfd,0x8d,0x64,0xe2,0x4f,0xdf,0xa1,0x44,0x89}
+ * or like UUID::from_String("2d2f7585-c53c-465b-8844-1294c52dc917").
  **/
 struct UUID { // : public Printable { // no inheritance to maintain POD
 public:
-    uint8_t ar[16];
+    uint8_t ar[16] = {0};
     // hint: Could also use something like the following if helps.
     /*
        union {
@@ -26,66 +29,54 @@ public:
 	   } _ar;
     */
 
+   /**
+    * Checks if UUID is all zeros, can be used for detecting illegal values
+    * and failed conversions
+    **/
+   bool allZero() {
+      for(size_t i=0; i<16; i++) if(ar[i] != 0) return false;
+      return true;
+   }
 
-    // TODO: Should unit test whether this is correct
-    void toCharArray(char *_buffer) const {
-        //  process 16 bytes build up the char array.
-        for (uint8_t i = 0, j = 0; i < 16; i++)
-        {
-            //  multiples of 4 between 8 and 20 get a -.
-            //  note we are processing 2 digits in one loop.
-            if ((i & 0x1) == 0)
-            {
-                if ((4 <= i) && (i <= 10)) 
-                {
-                    _buffer[j++] = '-';
-                }
-            }
+    bool operator==(const UUID& other) {
+        for(int i=0; i<16; i++) if(other.ar[i] != ar[i]) return false;
+        return true;
+    }
 
-            ////  process one byte at the time instead of a nibble
-            //uint8_t nr   = i / 4;
-            uint8_t xx   = ar[i];
-            uint8_t ch   = xx & 0x0F;
-            _buffer[j++] = (ch < 10) ? '0' + ch : ('a' - 10) + ch;
+    void toCharArray(char *_buffer) const;
+    String toString() const;
+    size_t printTo(Print& p) const;
 
-            ch = (xx >> 4) & 0x0F;
-            //ar[nr] >>= 8;
-            _buffer[j++] = (ch < 10) ? '0' + ch : ('a' - 10) + ch;
+    /// Parses standard UUID representation such as "2d2f7585-c53c-465b-8844-1294c52dc917",
+    /// returns an allZero instance in case of error.
+    static UUID fromString(const char* str);
+
+    /// Provides only the Array representation
+    void toJson(JsonArray target) const {
+        for(int i=0; i<16;i++) target[i] = ar[i];
+    }
+    
+    void fromJson(JsonArrayConst src) {
+        if(src.size() != 16) return;
+        for(int i=0; i<16; i++) ar[i] = src[i];
+    }
+
+    /// Can read both string and array representation
+    void fromJson(JsonVariantConst src) {
+        if(src.is<const char*>()) {
+            fromString(src.as<const char*>());
+        } else {
+            fromJson(src.as<JsonArrayConst>());
         }
-
-        //  if (_upperCase)
-        //  {
-        //    for (int i = 0; i < 37; i++)
-        //    {
-        //      _buffer[i] = toUpper(_buffer[i]);
-        //    }
-        //  }
-        _buffer[36] = 0;
     }
-
-    String toString() const {
-        char _buffer[37];
-        toCharArray(_buffer);
-        return String(_buffer);
-    }
-
-    size_t  printTo(Print& p) const {
-        //  UUID in string format
-        char  _buffer[37];
-        toCharArray(_buffer);
-        return p.print(_buffer);
-    }
-
 };
 
 inline void convertToJson(const UUID& uuid, JsonVariant target) {
-    for(int i=0; i<16;i++) target[i] = uuid.ar[i];
+    uuid.toJson(target.to<JsonArray>());
 }
 
 inline void convertFromJson(JsonVariantConst src, UUID& uuid) {
-    if(src.size() != 16) return;
-    for(int i=0; i<16; i++)
-        uuid.ar[i] = src.as<JsonArrayConst>()[i];
+    uuid.fromJson(src);
 }
 
 } // namespace utils

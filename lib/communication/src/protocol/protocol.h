@@ -15,10 +15,16 @@
 #include "utils/print-multiplexer.h"
 
 namespace msg {
+
 /**
- * Speaks the JsonLines protocol over serial or TCP/IP.
+ * This class is a responder that handles incoming messages in the
+ * JsonLines Protocol language over various inputs, which can be
+ * Serial input, a TCP/IP input or even a string input.
+ *
  * Handles messages according to the global msg::handler::Registry.
- * \ingroup Singletons
+ * \ingroup Singletons.
+ * 
+ * TODO: Probably rename this class to sth like "JsonLinesResponder"
  **/
 class JsonLinesProtocol {
 public:
@@ -31,6 +37,7 @@ public:
     static JsonLinesProtocol& get(); ///< Singleton
 
     void handleMessage(net::auth::AuthentificationContext &user_context);
+
     void process_serial_input(net::auth::AuthentificationContext &user_context);
     bool process_tcp_input(net::EthernetClient& stream, net::auth::AuthentificationContext &user_context);
     void process_string_input(const std::string& envelope_in, std::string& envelope_out, net::auth::AuthentificationContext &user_context);

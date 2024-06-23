@@ -11,7 +11,6 @@
 
 #include "carrier/cluster.h"
 #include "entity/entity.h"
-#include "mac_utils.h"
 
 using namespace platform;
 

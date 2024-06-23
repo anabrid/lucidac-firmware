@@ -2,6 +2,15 @@
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
+/**
+ * @file Main entrance file for the LUCIDAC/REDAC firmware.
+ * 
+ * This file contains the Arduino-style setup() and loop()
+ * functions and serves as main entrance point for the PlatformIO
+ * `teensy41` environment (`pio run -e teensy41`). It includes
+ * all the actual code from the `lib` directory.
+ **/
+
 #include <Arduino.h>
 #include <cstring>
 #include <list>
@@ -22,6 +31,7 @@
 #include "web/server.h"
 
 carrier::Carrier carrier_({Cluster(0)});
+auto& netconf = net::StartupConfig::get();
 
 /// @ingroup MessageHandlers
 class HackMessageHandler : public msg::handlers::MessageHandler {
@@ -56,7 +66,13 @@ void setup() {
   );
 
   LOG(ANABRID_DEBUG_INIT, "Starting up Ethernet...");
-  net::StartupConfig::get().begin();
+  netconf.begin();
+  if(netconf.enable_mdns)
+    netconf.begin_mdns();
+  if(netconf.enable_jsonl)
+    msg::JsonlServer::get().begin();
+  if(netconf.enable_webserver)
+    web::LucidacWebServer::get().begin();
 
   // Initialize carrier board
   // TODO, _ERROR_OUT_ shall not be used, see #116
@@ -86,12 +102,14 @@ void setup() {
 }
 
 void loop() {
-  msg::JsonlServer::get().loop();
+  if(netconf.enable_jsonl)
+    msg::JsonlServer::get().loop();
 
   static net::auth::AuthentificationContext admin_context{net::auth::UserPasswordAuthentification::admin};
   msg::JsonLinesProtocol::get().process_serial_input(admin_context);
 
-  web::LucidacWebServer::get().loop();
+  if(netconf.enable_webserver)
+    web::LucidacWebServer::get().loop();
 
   // Currently, the following prints to all connected clients.
   static client::RunStateChangeNotificationHandler run_state_change_handler{

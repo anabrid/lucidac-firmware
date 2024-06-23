@@ -68,8 +68,8 @@ namespace net {
     uint32_t connection_timeout_ms; ///< (Runtime-changable) Time after idling connections time out.
     uint8_t  max_connections;       ///< (Runtime-changable) Maximum number of parallel connections accepted
 
-    void begin_ip();
-    void begin_servers();
+    void begin_ip();   ///< Calls net::Ethernet.begin, sets IP address
+    void begin_mdns(); ///< Calls net::MDNS.begin
     void begin();
 
     void fromJson(JsonObjectConst src);
