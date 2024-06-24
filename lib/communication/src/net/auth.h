@@ -218,7 +218,13 @@ public:
 
   void set_remote_identifier(RemoteIdentifier r) { _remote = r; }
 
-  bool can_do(SecurityLevel task) const { return auth().can_do(_user, task); }
+  bool can_do(SecurityLevel task) const {
+    // TODO Also implement IP-based access here
+    return
+      !Gatekeeper::get().enable_auth ||
+      !Gatekeeper::get().enable_users ||
+      auth().can_do(_user, task);
+  }
   bool hasBetterClearenceThen(const User& other) const {
     return 
        (can_do(SecurityLevel::RequiresAdmin) && !auth().can_do(other, SecurityLevel::RequiresAdmin)) ||
