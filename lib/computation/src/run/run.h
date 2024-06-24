@@ -27,21 +27,25 @@ public:
   RunState new_;
 };
 
+/**
+ * The RunConfig data structure defines the properties for a run. It is specified
+ * by the user and forms the properties of a @see Run.
+ **/
 class RunConfig {
 public:
-  unsigned int ic_time = 100'000;
-  unsigned long long op_time = 500'000'000;
-  bool halt_on_overload = true;
+  unsigned int ic_time = 100'000;            ///< Requested Initial Conditions time in Nanoseconds
+  unsigned long long op_time = 500'000'000;  ///< Requested Operations time in Nanoseconds
+  bool halt_on_overload = true;              ///< Whether to halt the computation on an overload condition
 
   static RunConfig from_json(JsonObjectConst &json);
 };
 
 class Run {
 public:
-  const std::string id;
-  RunConfig config;
-  RunState state = RunState::NEW;
-  daq::DAQConfig daq_config;
+  const std::string id; ///< (User-provided) Supposed to be a UUID which allows to identify Out-of-band messages
+  RunConfig config;     ///< (User-provided) timing requests
+  RunState state = RunState::NEW; ///< (System-steered)
+  daq::DAQConfig daq_config;  ///< (User-provided) Data Aquisition request
 
 protected:
   std::queue<RunStateChange, std::array<RunStateChange, 7>> history;
