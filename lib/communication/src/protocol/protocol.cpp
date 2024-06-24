@@ -76,20 +76,14 @@ void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &u
     return_code = msg_handler->handle(envelope_in["msg"].as<JsonObjectConst>(), msg_out);
   }
 
-  // Always include a success field for replies (out of band notifications won't run throught
-  // this method, for example client::RunStateChangeNotificationHandler::handle)
-  envelope_out["success"] = return_code == 0;
-
   if (return_code != 0) {
     // Message could not be handled, mark envelope as unsuccessful
     envelope_out["error"] = msg_out["error"];
-    envelope_out["error_code"] = return_code;
     envelope_out.remove("msg");
     LOG_ALWAYS("Error while handling message.");
   }
 
-  // If message generated a response or an error, actually sent it out
-  // return (!msg_out.isNull() or !envelope_out["success"].as<bool>());
+  envelope_out["code"] = return_code;
 }
 
 utils::SerialLineReader serial_line_reader;

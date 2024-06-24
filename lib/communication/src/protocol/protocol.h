@@ -36,6 +36,13 @@ public:
     void init(size_t envelope_size); ///< Allocates storage
     static JsonLinesProtocol& get(); ///< Singleton
 
+    /**
+     * Handles the JSON document currently stored in `envelope_in` and
+     * stores the answer in the `envelope_out` accordingly.
+     *
+     * Note that some out-of-band messages don't run throught this method,
+     * for examle @see client::RunStateChangeNotificationHandler::handle().
+     **/
     void handleMessage(net::auth::AuthentificationContext &user_context);
 
     void process_serial_input(net::auth::AuthentificationContext &user_context);
