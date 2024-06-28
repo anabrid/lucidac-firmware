@@ -9,11 +9,14 @@
 #ifdef ARDUINO
 #include <Arduino.h>
 #define __LOG(message)                                                                                        \
-  Serial.println(message);                                                                                    \
-  Serial.flush();
+  {                                                                                                           \
+    Serial.println(message);                                                                                  \
+    Serial.flush();                                                                                           \
+  }
 #else
 #include <iostream>
-#define __LOG(message) std::cerr << message;
+#define __LOG(message)                                                                                        \
+  { std::cerr << message; }
 #endif
 
 // A logging macro, which accepts an optional LOG_FLAG (e.g. ANABRID_DEBUG_INIT) and a message.
