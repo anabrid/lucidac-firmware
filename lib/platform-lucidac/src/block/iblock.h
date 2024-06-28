@@ -84,7 +84,7 @@ protected:
 
   void config_self_to_json(JsonObject &cfg) override;
 
-  bool _is_connected(uint8_t input, uint8_t output);
+  bool _is_connected(uint8_t input, uint8_t output) const;
 
 public:
   std::array<uint32_t, NUM_OUTPUTS> outputs;
@@ -93,10 +93,9 @@ public:
   const functions::TriggerFunction f_imatrix_sync;
 
   explicit IBlock(const bus::addr_t block_address)
-      : FunctionBlock("I", block_address), outputs{0}, f_cmd{bus::replace_function_idx(
-                                                           block_address, 2)},
-        f_imatrix_reset{bus::replace_function_idx(block_address, 4)},
-        f_imatrix_sync{bus::replace_function_idx(block_address, 3)} {}
+      : FunctionBlock("I", block_address), outputs{0}, f_cmd{bus::replace_function_idx(block_address, 2)},
+        f_imatrix_reset{bus::replace_function_idx(block_address, 4)}, f_imatrix_sync{bus::replace_function_idx(
+                                                                          block_address, 3)} {}
 
   IBlock() : IBlock(bus::idx_to_addr(0, bus::I_BLOCK_IDX, 0)) {}
 
@@ -125,7 +124,7 @@ public:
   bool connect(uint8_t input, uint8_t output, bool exclusive = false, bool allow_input_splitting = false);
 
   //! Whether an input is connected to an output.
-  bool is_connected(uint8_t input, uint8_t output);
+  bool is_connected(uint8_t input, uint8_t output) const;
 
   //! Disconnect one input from an output. Fails for invalid arguments or if no input is connected.
   bool disconnect(uint8_t input, uint8_t output);

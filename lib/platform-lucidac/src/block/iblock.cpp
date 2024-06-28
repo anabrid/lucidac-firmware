@@ -77,8 +77,8 @@ bool blocks::IBlock::write_to_hardware() {
       if (actual_data) {
         remembered_command = command;
         // Send out data
-        if(!f_cmd.transfer32(command)) {
-          LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__ );
+        if (!f_cmd.transfer32(command)) {
+          LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
           return false;
         }
         // Apply command
@@ -99,11 +99,11 @@ bool blocks::IBlock::init() {
   return true;
 }
 
-bool blocks::IBlock::_is_connected(uint8_t input, uint8_t output) {
+bool blocks::IBlock::_is_connected(uint8_t input, uint8_t output) const {
   return outputs[output] & INPUT_BITMASK(input);
 }
 
-bool blocks::IBlock::is_connected(uint8_t input, uint8_t output) {
+bool blocks::IBlock::is_connected(uint8_t input, uint8_t output) const {
   if (output >= NUM_OUTPUTS or input >= NUM_INPUTS)
     return false;
   return _is_connected(input, output);
