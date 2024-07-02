@@ -34,6 +34,12 @@ public:
     read(offsetof(MetadataMemoryLayoutV1, classifier), data.size(), data.data());
     return {data[0], data[1], data[2], data[3]};
   }
+
+  std::array<uint8_t, 8> read_eui() {
+    std::array<uint8_t, 8> data{0};
+    read(offsetof(MetadataMemoryLayoutV1, uuid), data.size(), data.data());
+    return data;
+  }
 };
 
 template <std::size_t dataSize> class MetadataMemory : public functions::DataFunction {
