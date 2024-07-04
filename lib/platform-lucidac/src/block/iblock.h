@@ -6,6 +6,7 @@
 #pragma once
 
 #include <array>
+#include <bitset>
 #include <cstdint>
 
 #include "block/base.h"
@@ -86,19 +87,27 @@ protected:
 
   bool _is_connected(uint8_t input, uint8_t output) const;
 
-public:
   std::array<uint32_t, NUM_OUTPUTS> outputs;
   const functions::ICommandRegisterFunction f_cmd;
   const functions::TriggerFunction f_imatrix_reset;
   const functions::TriggerFunction f_imatrix_sync;
 
+  std::bitset<NUM_INPUTS> scaling_factors = 0;
+  const functions::SR74HCT595 scaling_register;
+  const functions::TriggerFunction scaling_register_sync;
+
+public:
   explicit IBlock(const bus::addr_t block_address)
       : FunctionBlock("I", block_address), outputs{0}, f_cmd{bus::replace_function_idx(block_address, 2)},
         f_imatrix_reset{bus::replace_function_idx(block_address, 4)}, f_imatrix_sync{bus::replace_function_idx(
-                                                                          block_address, 3)} {}
+                                                                          block_address, 3)},
+        scaling_register{bus::replace_function_idx(block_address, 5), true},
+        scaling_register_sync{bus::replace_function_idx(block_address, 6)} {}
 
   IBlock() : IBlock(bus::idx_to_addr(0, bus::I_BLOCK_IDX, 0)) {}
 
+  [[nodiscard]] bool write_imatrix_to_hardware();
+  [[nodiscard]] bool write_scaling_to_hardware();
   [[nodiscard]] bool write_to_hardware() override;
 
   bool init() override;
@@ -131,6 +140,23 @@ public:
 
   //! Disconnect all inputs from an output. Fails for invalid arguments.
   bool disconnect(uint8_t output);
+
+  //! Sets the input scale of the corresponding output. If upscale is false, a factor of 1.0 is applied, if
+  //! upscale is true, a factor of 10.0 will be used.
+  bool set_scale(uint8_t output, bool upscale);
+
+  //! Sets all 32 input scales. If the corresponding bit is false, a factor of 1.0 is applied, if true, a
+  //! factor of 10.0 will be used.
+  void set_scales(std::bitset<NUM_INPUTS> scales);
+
+  //! Sets all 32 input scales to the default 1.0.
+  void reset_scales();
+
+  //! Returns the input scale of the corresponding output.
+  float get_scale(uint8_t output) const;
+
+  //! Returns all input scales. A low bit indicates a factor of 1.0, a high bit indicates a factor of 10.0.
+  std::bitset<NUM_INPUTS> get_scales() const { return scaling_factors; }
 
   bool config_self_from_json(JsonObjectConst cfg) override;
 };

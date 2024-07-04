@@ -19,7 +19,7 @@ uint8_t functions::ICommandRegisterFunction::chip_cmd_word(uint8_t chip_input_id
   return (connect ? 0b1'000'0000 : 0b0'000'0000) | ((chip_output_idx & 0x7) << 4) | (chip_input_idx & 0xF);
 }
 
-bool blocks::IBlock::write_to_hardware() {
+bool blocks::IBlock::write_imatrix_to_hardware() {
   f_imatrix_reset.trigger();
   delayNanoseconds(420);
 
@@ -89,6 +89,17 @@ bool blocks::IBlock::write_to_hardware() {
   return true;
 }
 
+bool blocks::IBlock::write_scaling_to_hardware() {
+  if (!scaling_register.transfer32(scaling_factors.to_ulong())) {
+    LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
+    return false;
+  }
+  scaling_register_sync.trigger();
+  return true;
+}
+
+bool blocks::IBlock::write_to_hardware() { return write_scaling_to_hardware() && write_imatrix_to_hardware(); }
+
 bool blocks::IBlock::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   if (!FunctionBlock::init()) {
@@ -140,6 +151,7 @@ void blocks::IBlock::reset_outputs() {
 void blocks::IBlock::reset(bool keep_calibration) {
   FunctionBlock::reset(keep_calibration);
   reset_outputs();
+  reset_scales();
 }
 
 bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
@@ -212,6 +224,24 @@ bool blocks::IBlock::disconnect(uint8_t output) {
     return false;
   outputs[output] = 0;
   return true;
+}
+
+bool blocks::IBlock::set_scale(uint8_t output, bool upscale) {
+  if (output > 32)
+    return false;
+  scaling_factors[output] = upscale;
+  return true;
+}
+
+void blocks::IBlock::set_scales(std::bitset<NUM_INPUTS> scales) { scaling_factors = scales; }
+
+void blocks::IBlock::reset_scales() { scaling_factors.reset(); }
+
+float blocks::IBlock::get_scale(uint8_t output) const {
+  if (output > 32)
+    return -1.0f;
+  else
+    return scaling_factors[output] ? 10.0f : 1.0f;
 }
 
 void blocks::IBlock::config_self_to_json(JsonObject &cfg) {

@@ -80,7 +80,7 @@ bool platform::Cluster::write_to_hardware() {
   for (auto block : get_blocks()) {
     if (block)
       if (!block->write_to_hardware()) {
-        LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__ );
+        LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
         return false;
       }
   }
@@ -88,6 +88,12 @@ bool platform::Cluster::write_to_hardware() {
 }
 
 bool platform::Cluster::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out) {
+  if (fabs(c_factor) > 1.0f) {
+    c_factor = c_factor * 0.1f;
+    iblock->set_scale(u_out, true);
+  } else
+    iblock->set_scale(u_out, false);
+
   if (!ublock->connect(u_in, u_out))
     return false;
   if (!cblock->set_factor(u_out, c_factor))
@@ -99,6 +105,12 @@ bool platform::Cluster::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8
 
 bool platform::Cluster::add_constant(blocks::UBlock::Transmission_Mode signal_type, uint8_t u_out,
                                      float c_factor, uint8_t i_out) {
+  if (fabs(c_factor) > 1.0f) {
+    c_factor = c_factor * 0.1f;
+    iblock->set_scale(u_out, true);
+  } else
+    iblock->set_scale(u_out, false);
+
   if (!ublock->connect_alternative(signal_type, u_out))
     return false;
   if (!cblock->set_factor(u_out, c_factor))
