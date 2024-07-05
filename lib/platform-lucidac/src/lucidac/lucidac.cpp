@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include "lucidac.h"
+#include "entity/entity.h"
 
 const SPISettings platform::LUCIDAC_HAL::F_ADC_SWITCHER_PRG_SPI_SETTINGS{
     4'000'000, MSBFIRST, SPI_MODE2 /* chip expects SPI MODE0, but CLK is inverted on the way */};
@@ -77,20 +78,43 @@ bool LUCIDAC_HAL::write_adc_bus_mux(std::array<int8_t, 8> channels) {
 
 void LUCIDAC_HAL::reset_adc_bus_mux() { f_adc_switcher_matrix_reset.trigger(); }
 
-bool LUCIDAC::init() { return front_plane.init() && this->carrier::Carrier::init(); }
+bool LUCIDAC::init() {
+  if (!Carrier::init())
+    return false;
+
+  LOG(ANABRID_DEBUG_INIT, "Detecting front-plane...");
+  if (!front_plane) {
+    front_plane = entities::detect<lucidac::FrontPlane>(bus::address_from_tuple(2, 0));
+    if (!front_plane) {
+      LOG(ANABRID_DEBUG_INIT, "Warning: Front-plane is missing or unknown.");
+    }
+  }
+
+  LOG(ANABRID_DEBUG_INIT, "Initialising detected front-plane...");
+  if (front_plane && !front_plane->init())
+    return false;
+  LOG(ANABRID_DEBUG_INIT, "Front-plane initialized.");
+
+  return true;
+}
 
 std::vector<entities::Entity *> LUCIDAC::get_child_entities() {
   auto entities = this->carrier::Carrier::get_child_entities();
-  entities.push_back(&front_plane);
+  if (front_plane)
+    entities.push_back(front_plane);
   return entities;
 }
 
 entities::Entity *LUCIDAC::get_child_entity(const std::string &child_id) {
   if (child_id == "FP")
-    return &front_plane;
+    return front_plane;
   return this->carrier::Carrier::get_child_entity(child_id);
 }
 
 bool LUCIDAC::write_to_hardware() {
-  return front_plane.write_to_hardware() && this->carrier::Carrier::write_to_hardware();
+  if (!this->carrier::Carrier::write_to_hardware())
+    return false;
+  if (front_plane)
+    return front_plane->write_to_hardware();
+  return true;
 }

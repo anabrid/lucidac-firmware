@@ -11,7 +11,7 @@
 #include "bus/bus.h"
 #include "bus/functions.h"
 #include "chips/EEPROM25AA02.h"
-#include "entity/entity.h"
+#include "entity/base.h"
 
 namespace metadata {
 

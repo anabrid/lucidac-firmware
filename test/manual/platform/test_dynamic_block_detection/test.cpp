@@ -8,6 +8,7 @@
 
 #include "block/blocks.h"
 #include "chips/EEPROM25AA02.h"
+#include "entity/entity.h"
 
 #include "test_fmtlib.h"
 
@@ -67,7 +68,7 @@ void test_prepare_eeprom() {
 
   EEPROM25AA02 sh_eeprom(bus::idx_to_addr(0, SHBlock::BLOCK_IDX, 0));
   TEST_ASSERT(sh_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
-                              static_cast<uint8_t>(entities::EntityClass::SH_BLOCK)));
+                               static_cast<uint8_t>(entities::EntityClass::SH_BLOCK)));
   TEST_ASSERT(sh_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1, 1));
   TEST_ASSERT(sh_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 1));
   TEST_ASSERT(sh_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
@@ -81,12 +82,12 @@ void test_prepare_eeprom() {
 }
 
 void test_detect_block() {
-  TEST_ASSERT(detect<MBlock>(bus::idx_to_addr(0, MBlock::M1_IDX, 0)));
-  TEST_ASSERT(detect<MBlock>(bus::idx_to_addr(0, MBlock::M2_IDX, 0)));
-  TEST_ASSERT(detect<UBlock>(bus::idx_to_addr(0, UBlock::BLOCK_IDX, 0)));
-  TEST_ASSERT(detect<CBlock>(bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0)));
-  TEST_ASSERT(detect<IBlock>(bus::idx_to_addr(0, IBlock::BLOCK_IDX, 0)));
-  TEST_ASSERT(detect<SHBlock>(bus::idx_to_addr(0, SHBlock::BLOCK_IDX, 0)));
+  TEST_ASSERT(entities::detect<MBlock>(bus::idx_to_addr(0, MBlock::M1_IDX, 0)));
+  TEST_ASSERT(entities::detect<MBlock>(bus::idx_to_addr(0, MBlock::M2_IDX, 0)));
+  TEST_ASSERT(entities::detect<UBlock>(bus::idx_to_addr(0, UBlock::BLOCK_IDX, 0)));
+  TEST_ASSERT(entities::detect<CBlock>(bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0)));
+  TEST_ASSERT(entities::detect<IBlock>(bus::idx_to_addr(0, IBlock::BLOCK_IDX, 0)));
+  TEST_ASSERT(entities::detect<SHBlock>(bus::idx_to_addr(0, SHBlock::BLOCK_IDX, 0)));
 }
 
 void test_read_euis() {

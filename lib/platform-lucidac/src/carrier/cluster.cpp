@@ -23,12 +23,12 @@ bool platform::Cluster::init() {
   // Check if a block is already set, which may happen with a special constructor in the future
   LOG(ANABRID_DEBUG_INIT, "Detecting installed blocks...");
   if (!m1block) {
-    m1block = blocks::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M1_BLOCK_IDX, 0));
+    m1block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M1_BLOCK_IDX, 0));
     if (!m1block)
       LOG(ANABRID_DEBUG_INIT, "Warning: M0-block is missing or unknown.");
   }
   if (!m2block) {
-    m2block = blocks::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M2_BLOCK_IDX, 0));
+    m2block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M2_BLOCK_IDX, 0));
     if (!m2block)
       LOG(ANABRID_DEBUG_INIT, "Warning: M1-block is missing or unknown.");
   }
@@ -36,22 +36,22 @@ bool platform::Cluster::init() {
     LOG(ANABRID_DEBUG_INIT, "Error: Both M0 and M1-blocks are missing or unknown.");
 
   if (!ublock) {
-    ublock = blocks::detect<blocks::UBlock>(bus::idx_to_addr(cluster_idx, bus::U_BLOCK_IDX, 0));
+    ublock = entities::detect<blocks::UBlock>(bus::idx_to_addr(cluster_idx, bus::U_BLOCK_IDX, 0));
     if (!ublock)
       LOG(ANABRID_DEBUG_INIT, "Error: U-block is missing or unknown.");
   }
   if (!cblock) {
-    cblock = blocks::detect<blocks::CBlock>(bus::idx_to_addr(cluster_idx, bus::C_BLOCK_IDX, 0));
+    cblock = entities::detect<blocks::CBlock>(bus::idx_to_addr(cluster_idx, bus::C_BLOCK_IDX, 0));
     if (!cblock)
       LOG(ANABRID_DEBUG_INIT, "Error: C-block is missing or unknown.");
   }
   if (!iblock) {
-    iblock = blocks::detect<blocks::IBlock>(bus::idx_to_addr(cluster_idx, bus::I_BLOCK_IDX, 0));
+    iblock = entities::detect<blocks::IBlock>(bus::idx_to_addr(cluster_idx, bus::I_BLOCK_IDX, 0));
     if (!iblock)
       LOG(ANABRID_DEBUG_INIT, "Error: I-block is missing or unknown.");
   }
   if (!shblock) {
-    shblock = blocks::detect<blocks::SHBlock>(bus::idx_to_addr(cluster_idx, bus::SH_BLOCK_IDX, 0));
+    shblock = entities::detect<blocks::SHBlock>(bus::idx_to_addr(cluster_idx, bus::SH_BLOCK_IDX, 0));
     if (!shblock)
       LOG(ANABRID_DEBUG_INIT, "Error: SH-block is missing or unknown.");
   }
