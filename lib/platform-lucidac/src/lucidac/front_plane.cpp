@@ -163,7 +163,8 @@ bool platform::lucidac::FrontPlane::SignalGenerator::write_to_hardware() {
 }
 
 platform::lucidac::FrontPlane *
-platform::lucidac::FrontPlane::from_entity_classifier(entities::EntityClassifier classifier) {
+platform::lucidac::FrontPlane::from_entity_classifier(entities::EntityClassifier classifier,
+                                                      __attribute__((__unused__)) bus::addr_t block_address) {
   if (!classifier or classifier.class_enum != CLASS_)
     return nullptr;
 

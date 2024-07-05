@@ -30,7 +30,8 @@ public:
   // Entity hardware identifier information.
   static constexpr auto CLASS_ = entities::EntityClass::FRONT_PLANE;
 
-  static FrontPlane *from_entity_classifier(entities::EntityClassifier classifier);
+  static FrontPlane *from_entity_classifier(entities::EntityClassifier classifier,
+                                            __attribute__((__unused__)) bus::addr_t block_address);
 
   entities::EntityClass get_entity_class() const final { return CLASS_; }
 

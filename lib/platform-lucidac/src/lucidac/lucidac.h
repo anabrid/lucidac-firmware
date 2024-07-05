@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "block/blocks.h"
 #include "carrier/carrier.h"
 #include "front_plane.h"
 
@@ -71,9 +72,9 @@ public:
 
   Entity *get_child_entity(const std::string &child_id) override;
 
-  [[nodiscard]] virtual bool write_to_hardware();
+  [[nodiscard]] bool write_to_hardware() override;
 
-  lucidac::FrontPlane front_plane;
+  lucidac::FrontPlane *front_plane;
 };
 
 } // namespace platform
