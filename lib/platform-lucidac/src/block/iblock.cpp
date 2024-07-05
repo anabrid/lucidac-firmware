@@ -151,7 +151,7 @@ void blocks::IBlock::reset_outputs() {
 void blocks::IBlock::reset(bool keep_calibration) {
   FunctionBlock::reset(keep_calibration);
   reset_outputs();
-  reset_scales();
+  reset_upscaling();
 }
 
 bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
@@ -226,22 +226,22 @@ bool blocks::IBlock::disconnect(uint8_t output) {
   return true;
 }
 
-bool blocks::IBlock::set_scale(uint8_t output, bool upscale) {
+bool blocks::IBlock::set_upscaling(uint8_t output, bool upscale) {
   if (output > 32)
     return false;
   scaling_factors[output] = upscale;
   return true;
 }
 
-void blocks::IBlock::set_scales(std::bitset<NUM_INPUTS> scales) { scaling_factors = scales; }
+void blocks::IBlock::set_upscaling(std::bitset<NUM_INPUTS> scales) { scaling_factors = scales; }
 
-void blocks::IBlock::reset_scales() { scaling_factors.reset(); }
+void blocks::IBlock::reset_upscaling() { scaling_factors.reset(); }
 
-float blocks::IBlock::get_scale(uint8_t output) const {
+bool blocks::IBlock::get_upscaling(uint8_t output) const {
   if (output > 32)
-    return -1.0f;
+    return false;
   else
-    return scaling_factors[output] ? 10.0f : 1.0f;
+    return scaling_factors[output];
 }
 
 void blocks::IBlock::config_self_to_json(JsonObject &cfg) {
@@ -273,3 +273,9 @@ blocks::IBlock *blocks::IBlock::from_entity_classifier(entities::EntityClassifie
   // Return default implementation
   return new IBlock(block_address);
 }
+
+const std::array<uint32_t, blocks::IBlock::NUM_OUTPUTS> &blocks::IBlock::get_outputs() const {
+  return outputs;
+}
+
+void blocks::IBlock::set_outputs(const std::array<uint32_t, NUM_OUTPUTS> &outputs_) { outputs = outputs_; }

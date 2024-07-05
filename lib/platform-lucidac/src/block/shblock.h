@@ -10,6 +10,10 @@
 
 namespace functions {}
 
+namespace platform {
+class Cluster;
+}
+
 namespace blocks {
 
 class SHBlock : public blocks::FunctionBlock {
@@ -40,8 +44,12 @@ public:
 
   [[nodiscard]] bool write_to_hardware() override;
 
+  void compensate_hardware_offsets();
+
 protected:
   bool config_self_from_json(JsonObjectConst cfg) override;
+
+  friend class ::platform::Cluster;
 };
 
 } // namespace blocks

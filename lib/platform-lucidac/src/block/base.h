@@ -10,6 +10,10 @@
 
 namespace blocks {
 
+class FunctionBlockHAL {
+  virtual float read_temperature() = 0;
+};
+
 /**
  * A function block represents one module in a cluster,
  * such as an M-Block, C-Block, I-Block or U-Block.

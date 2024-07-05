@@ -37,21 +37,21 @@ void test_scaling_register() {
   std::bitset<IBlock::NUM_INPUTS> factors;
 
   factors.set();
-  iblock->set_scales(factors);
+  iblock->set_upscaling(factors);
 
   TEST_ASSERT(iblock->write_scaling_to_hardware());
 
   delay(10);
 
   factors.reset();
-  iblock->set_scales(factors);
+  iblock->set_upscaling(factors);
 
   TEST_ASSERT(iblock->write_scaling_to_hardware());
 
   delay(10);
 
   factors = 0xCAFE;
-  iblock->set_scales(factors);
+  iblock->set_upscaling(factors);
 
   TEST_ASSERT(iblock->write_scaling_to_hardware());
 }

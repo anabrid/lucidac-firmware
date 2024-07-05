@@ -74,6 +74,9 @@ public:
   Entity *get_child_entity(const std::string &child_id) override;
 
   bool config_self_from_json(JsonObjectConst cfg) override;
+
+protected:
+  bool _calibrate_offsets();
 };
 
 } // namespace platform

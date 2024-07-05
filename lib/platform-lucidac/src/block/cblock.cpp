@@ -68,7 +68,7 @@ bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
 
 bool blocks::CBlock::write_to_hardware() {
   if (!write_factors_to_hardware()) {
-    LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__ );
+    LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
     return false;
   }
   return true;
@@ -76,7 +76,7 @@ bool blocks::CBlock::write_to_hardware() {
 
 bool blocks::CBlock::write_factors_to_hardware() {
   for (size_t i = 0; i < f_coeffs.size(); i++) {
-    f_coeffs[i].set_scale(factors_[i]);
+    f_coeffs[i].set_scale(decltype(f_coeffs)::value_type::raw_to_float(factors_[i]) * gain_corrections_[i]);
   }
   return true;
 }
@@ -86,7 +86,27 @@ void blocks::CBlock::reset(bool keep_calibration) {
   for (size_t i = 0; i < NUM_COEFF; i++) {
     set_factor(i, 0.f);
   }
+  if (!keep_calibration)
+    reset_gain_corrections();
 }
+
+const std::array<float, blocks::CBlock::NUM_COEFF> &blocks::CBlock::get_gain_corrections() const {
+  return gain_corrections_;
+}
+
+void blocks::CBlock::reset_gain_corrections() {
+  std::fill(gain_corrections_.begin(), gain_corrections_.end(), 1.0f);
+}
+
+void blocks::CBlock::set_gain_corrections(const std::array<float, NUM_COEFF> &corrections) {
+    gain_corrections_ = corrections;
+};
+
+bool blocks::CBlock::set_gain_correction(const uint8_t coeff_idx, const float correction) {
+  if (coeff_idx > NUM_COEFF)
+    return false;
+  gain_corrections_[coeff_idx] = correction;
+};
 
 bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG

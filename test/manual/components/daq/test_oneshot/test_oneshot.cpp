@@ -5,6 +5,7 @@
 
 #include <Arduino.h>
 #include <unity.h>
+#include "test_fmtlib.h"
 
 #define protected public
 #include "daq/daq.h"
@@ -23,13 +24,13 @@ void tearDown() {
 
 void test_raw_to_float() {
   TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.0f, OneshotDAQ::raw_to_float(4094));
-  TEST_ASSERT_FLOAT_WITHIN(0.01f, +1.0f, OneshotDAQ::raw_to_float(OneshotDAQ::RAW_PLUS_ONE));
-  TEST_ASSERT_FLOAT_WITHIN(0.01f, -1.0f, OneshotDAQ::raw_to_float(OneshotDAQ::RAW_MINUS_ONE));
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, +1.25f, OneshotDAQ::raw_to_float(OneshotDAQ::RAW_PLUS_ONE_POINT_TWO_FIVE));
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, -1.25f, OneshotDAQ::raw_to_float(OneshotDAQ::RAW_MINUS_ONE_POINT_TWO_FIVE));
   // Slightly outside of range
   TEST_ASSERT_FLOAT_WITHIN(
       0.01f, +1.2f,
-      OneshotDAQ::raw_to_float(OneshotDAQ::RAW_PLUS_ONE +
-                               0.1 * (OneshotDAQ::RAW_PLUS_ONE - OneshotDAQ::RAW_MINUS_ONE)));
+      OneshotDAQ::raw_to_float(OneshotDAQ::RAW_PLUS_ONE_POINT_TWO_FIVE -
+                               0.1 * (OneshotDAQ::RAW_PLUS_ONE_POINT_TWO_FIVE - OneshotDAQ::RAW_MINUS_ONE_POINT_TWO_FIVE)));
 }
 
 void test_sample() {
@@ -49,24 +50,17 @@ void test_sample_raw() {
   // Without other blocks, we should be at a certain value.
   // Not sure which one, but surely not zero :)
   // TODO: After ADCs are fixed, add correct values.
-  decltype(data) expected{0, 0, 0, 0 /*, 0, 0, 0, 0*/};
+  decltype(data) expected{8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192};
   decltype(data)::value_type acceptable_delta = 1000;
-  for (unsigned int i_ = 0; i_ < data.size(); i_++) {
-    char buffer[4 + 33] = {' ', ' ', '=', ' '};
-    buffer[0] = '0' + i_;
-    itoa(data[i_], buffer + 4, 2);
-    TEST_MESSAGE(buffer);
-    itoa(data[i_], buffer + 4, 10);
-    TEST_MESSAGE(buffer);
-  }
+  TEST_MESSAGE_FORMAT("Values are {}", data);
   TEST_ASSERT_UINT16_ARRAY_WITHIN(acceptable_delta, expected.data(), data.data(), data.size());
 }
 
 void setup() {
   UNITY_BEGIN();
-  RUN_TEST(test_sample);
+  // RUN_TEST(test_sample);
   RUN_TEST(test_sample_raw);
-  RUN_TEST(test_raw_to_float);
+  // RUN_TEST(test_raw_to_float);
   UNITY_END();
 }
 

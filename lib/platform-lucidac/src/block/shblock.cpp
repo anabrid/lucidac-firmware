@@ -26,3 +26,10 @@ blocks::SHBlock *blocks::SHBlock::from_entity_classifier(entities::EntityClassif
   // Return default implementation
   return new SHBlock(block_address);
 }
+
+void blocks::SHBlock::compensate_hardware_offsets() {
+  set_track.trigger();
+  delay(100);
+  set_inject.trigger();
+  delay(100);
+}

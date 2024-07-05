@@ -13,6 +13,10 @@
 #include "chips/AD5452.h"
 #include "chips/SR74HCT595.h"
 
+namespace platform {
+class Calibration;
+}
+
 namespace blocks {
 
 // ██████   █████  ███████ ███████      ██████ ██       █████  ███████ ███████
@@ -64,6 +68,9 @@ protected:
   std::array<const functions::AD5452, NUM_COEFF> f_coeffs;
 
   std::array<uint16_t, NUM_COEFF> factors_{{0}};
+  std::array<float, NUM_COEFF> gain_corrections_{
+      {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+       1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
 
   [[nodiscard]] bool write_factors_to_hardware();
 
@@ -98,6 +105,14 @@ public:
   [[nodiscard]] bool set_factor(uint8_t idx, float factor);
   float get_factor(uint8_t idx);
 
+  const std::array<float, NUM_COEFF> &get_gain_corrections() const;
+
+  void set_gain_corrections(const std::array<float, NUM_COEFF> &corrections);
+
+  void reset_gain_corrections();
+
+  bool set_gain_correction(uint8_t coeff_idx, const float correction);
+
   [[nodiscard]] bool write_to_hardware() override;
   void reset(bool keep_calibration) override;
 
@@ -105,6 +120,8 @@ public:
 
 protected:
   void config_self_to_json(JsonObject &cfg) override;
+
+  friend class ::platform::Calibration;
 };
 
 //  ██    ██  █████  ██████  ██  █████  ███    ██ ████████ ███████

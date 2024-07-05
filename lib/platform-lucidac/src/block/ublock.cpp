@@ -202,6 +202,17 @@ uint8_t blocks::UBlock::change_all_transmission_modes(const Transmission_Mode mo
   return change_b_side_transmission_mode(mode);
 }
 
+uint8_t
+blocks::UBlock::change_all_transmission_modes(const std::pair<Transmission_Mode, Transmission_Mode> modes) {
+  change_a_side_transmission_mode(modes.first);
+  return change_b_side_transmission_mode(modes.second);
+}
+
+std::pair<blocks::UBlock::Transmission_Mode, blocks::UBlock::Transmission_Mode>
+blocks::UBlock::get_all_transmission_modes() const {
+  return std::make_pair(a_side_mode, b_side_mode);
+}
+
 bool blocks::UBlock::write_matrix_to_hardware() const {
   if (!f_umatrix.transfer(output_input_map))
     return false;
@@ -218,7 +229,7 @@ bool blocks::UBlock::write_transmission_mode_to_hardware() const {
 
 bool blocks::UBlock::write_to_hardware() {
   if (!write_matrix_to_hardware() or !write_transmission_mode_to_hardware()) {
-    LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__ );
+    LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
     return false;
   }
   return true;
