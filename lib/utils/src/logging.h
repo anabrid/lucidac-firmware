@@ -57,3 +57,9 @@
 #else
 #define LOG_ANABRID_PEDANTIC(message) ((void)0)
 #endif
+
+#ifdef ANABRID_DEBUG_CALIBRATION
+#define LOG_ANABRID_DEBUG_CALIBRATION(message) __LOG(message)
+#else
+#define LOG_ANABRID_DEBUG_CALIBRATION(message) ((void)0)
+#endif

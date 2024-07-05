@@ -7,12 +7,17 @@
 
 #include <array>
 #include <cstdint>
+#include <utility>
 
 #include "block/base.h"
 #include "bus/bus.h"
 #include "bus/functions.h"
 #include "carrier/analog.h"
 #include "chips/SR74HCT595.h"
+
+namespace platform {
+class Cluster;
+}
 
 namespace utils {
 
@@ -125,6 +130,11 @@ protected:
   //! Changes the transmission mode for all ublock switches. Returns the shift register value for debugging
   //! purposes
   uint8_t change_all_transmission_modes(const Transmission_Mode mode);
+  //! Changes the transmission mode for all ublock switches. Returns the shift register value for debugging
+  //! purposes
+  uint8_t change_all_transmission_modes(const std::pair<Transmission_Mode, Transmission_Mode> modes);
+
+  std::pair<Transmission_Mode, Transmission_Mode> get_all_transmission_modes() const;
 
 private:
   //! Check whether an input is connected to an output, without sanity checks.
@@ -190,6 +200,8 @@ public:
 
 protected:
   void config_self_to_json(JsonObject &cfg) override;
+
+  friend class ::platform::Cluster;
 };
 
 } // namespace blocks

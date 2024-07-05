@@ -51,7 +51,7 @@ void test() {
   factors.set();
   factors[2] = false;
   Serial.println(factors.to_string().c_str());
-  cluster.iblock->set_scales(factors);
+  cluster.iblock->set_upscaling(factors);
 
   TEST_ASSERT(cluster.write_to_hardware());
 }

@@ -79,8 +79,6 @@ public:
   };
 
 protected:
-  void reset_outputs();
-
   bool _connect_from_json(const JsonVariantConst &input_spec, uint8_t output);
 
   void config_self_to_json(JsonObject &cfg) override;
@@ -112,7 +110,13 @@ public:
 
   bool init() override;
 
+  void reset_outputs();
+
   void reset(bool keep_calibration) override;
+
+  const std::array<uint32_t, NUM_OUTPUTS> &get_outputs() const;
+
+  void set_outputs(const std::array<uint32_t, NUM_OUTPUTS> &outputs_);
 
   /**
    * Connects an input line [0..31] to an output line [0..15]
@@ -143,17 +147,17 @@ public:
 
   //! Sets the input scale of the corresponding output. If upscale is false, a factor of 1.0 is applied, if
   //! upscale is true, a factor of 10.0 will be used.
-  bool set_scale(uint8_t output, bool upscale);
+  bool set_upscaling(uint8_t output, bool upscale);
 
   //! Sets all 32 input scales. If the corresponding bit is false, a factor of 1.0 is applied, if true, a
   //! factor of 10.0 will be used.
-  void set_scales(std::bitset<NUM_INPUTS> scales);
+  void set_upscaling(std::bitset<NUM_INPUTS> scales);
 
   //! Sets all 32 input scales to the default 1.0.
-  void reset_scales();
+  void reset_upscaling();
 
   //! Returns the input scale of the corresponding output.
-  float get_scale(uint8_t output) const;
+  bool get_upscaling(uint8_t output) const;
 
   //! Returns all input scales. A low bit indicates a factor of 1.0, a high bit indicates a factor of 10.0.
   std::bitset<NUM_INPUTS> get_scales() const { return scaling_factors; }

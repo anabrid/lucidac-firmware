@@ -69,10 +69,113 @@ bool platform::Cluster::init() {
 platform::Cluster::Cluster(uint8_t cluster_idx)
     : entities::Entity(std::to_string(cluster_idx)), cluster_idx(cluster_idx) {}
 
+bool platform::Cluster::_calibrate_offsets() {
+  LOG_ANABRID_DEBUG_CALIBRATION("Calibrating offsets");
+
+  auto old_transmission_modes = ublock->get_all_transmission_modes();
+
+  ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::GROUND);
+  if (!ublock->write_to_hardware())
+    return false;
+
+  shblock->compensate_hardware_offsets();
+
+  ublock->change_all_transmission_modes(old_transmission_modes);
+  if (!ublock->write_to_hardware())
+    return false;
+
+  return true;
+}
+
 bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
-  // Return to a non-connected state, but keep calibrated offsets
-  reset(true);
-  write_to_hardware();
+  // Save current U-block transmission modes and set them to zero
+  LOG_ANABRID_DEBUG_CALIBRATION("Starting calibration");
+  auto old_transmission_modes = ublock->get_all_transmission_modes();
+  ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::GROUND);
+  // Save and reset I-block connections
+  const auto saved_iblock = *iblock;
+  iblock->reset_outputs();
+  // Actually write to hardware
+  LOG_ANABRID_DEBUG_CALIBRATION("Reset ublock and i block");
+  if (!ublock->write_to_hardware() and iblock->write_to_hardware()) {
+    // TODO: Restore configuration in this and other failure cases
+    return false;
+  }
+
+  for (auto i_out_idx : blocks::IBlock::OUTPUT_IDX_RANGE()) {
+    for (auto i_in_idx : blocks::IBlock::INPUT_IDX_RANGE()) {
+      if (!saved_iblock.is_connected(i_in_idx, i_out_idx))
+        continue;
+
+      if (!ublock->is_output_connected(i_in_idx))
+        continue;
+
+      if (!iblock->connect(i_in_idx, i_out_idx))
+        return false;
+
+      if (!iblock->write_to_hardware())
+        return false;
+
+      delay(100);
+
+      LOG_ANABRID_DEBUG_CALIBRATION("Calibrating connection: ");
+      LOG_ANABRID_DEBUG_CALIBRATION(i_in_idx);
+      LOG_ANABRID_DEBUG_CALIBRATION(i_out_idx);
+
+      _calibrate_offsets();
+
+      if (!iblock->get_upscaling(i_in_idx))
+        ublock->change_all_transmission_modes(blocks::UBlock::POS_BIG_REF);
+      else
+        ublock->change_all_transmission_modes(blocks::UBlock::POS_SMALL_REF);
+
+      if (!ublock->write_to_hardware())
+        return false;
+
+      shblock->set_gain.trigger();
+      if (i_out_idx < 8)
+        shblock->set_gain_channels_zero_to_seven.trigger();
+      else
+        shblock->set_gain_channels_eight_to_fifteen.trigger();
+
+      delay(100);
+
+      auto m_adc = daq->sample_avg(10, 1000)[i_out_idx % 8];
+      LOG_ANABRID_DEBUG_CALIBRATION(m_adc);
+      auto wanted_factor = cblock->get_factor(i_in_idx);
+      auto gain_correction = wanted_factor / m_adc;
+      LOG_ANABRID_DEBUG_CALIBRATION(gain_correction);
+      cblock->set_gain_correction(i_in_idx, gain_correction);
+
+      iblock->disconnect(i_in_idx, i_out_idx);
+      if (!iblock->write_to_hardware())
+        return false;
+      LOG_ANABRID_DEBUG_CALIBRATION(" ");
+    }
+  }
+
+  // For "safety", set all U-block inputs to zero before restoring I-block connections
+  LOG_ANABRID_DEBUG_CALIBRATION("Setting ublock to ground for safety");
+  ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::GROUND);
+  if (!ublock->write_to_hardware())
+    return false;
+  // Restore I-block connections
+  iblock->set_outputs(saved_iblock.get_outputs());
+  LOG_ANABRID_DEBUG_CALIBRATION("Restoring iblock");
+  if (!iblock->write_to_hardware())
+    return false;
+
+  // Calibrate offsets again, since they have been changed by correcting the coefficients
+  if (!_calibrate_offsets())
+    return false;
+
+  // Restore original U-block transmission modes
+  ublock->change_all_transmission_modes(old_transmission_modes);
+  // Write them to hardware
+  LOG_ANABRID_DEBUG_CALIBRATION("Restoring ublock");
+  if (!ublock->write_to_hardware())
+    return false;
+
   return true;
 }
 
@@ -90,9 +193,9 @@ bool platform::Cluster::write_to_hardware() {
 bool platform::Cluster::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out) {
   if (fabs(c_factor) > 1.0f) {
     c_factor = c_factor * 0.1f;
-    iblock->set_scale(u_out, true);
+    iblock->set_upscaling(u_out, true);
   } else
-    iblock->set_scale(u_out, false);
+    iblock->set_upscaling(u_out, false);
 
   if (!ublock->connect(u_in, u_out))
     return false;
@@ -107,9 +210,9 @@ bool platform::Cluster::add_constant(blocks::UBlock::Transmission_Mode signal_ty
                                      float c_factor, uint8_t i_out) {
   if (fabs(c_factor) > 1.0f) {
     c_factor = c_factor * 0.1f;
-    iblock->set_scale(u_out, true);
+    iblock->set_upscaling(u_out, true);
   } else
-    iblock->set_scale(u_out, false);
+    iblock->set_upscaling(u_out, false);
 
   if (!ublock->connect_alternative(signal_type, u_out))
     return false;

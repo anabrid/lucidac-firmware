@@ -6,9 +6,12 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "block/iblock.h"
 #include "bus/bus.h"
 #include "bus/functions.h"
+
+#define private public
+#define protected public
+#include "block/iblock.h"
 
 using namespace blocks;
 using namespace bus;
@@ -86,7 +89,7 @@ void test_block() {
   // Sending the data uses 2 x transfer32, and each time a sync is done via a TriggerFunction
   When(Method(ArduinoFake(SPI), transfer32)).Return(0, 0);
   // Do it!
-  iblock.write_to_hardware();
+  iblock.write_imatrix_to_hardware();
 
   // verify SPI call arguments, which are interlaced by address setting
   Verify(Method(ArduinoFake(SPI), transfer32).Using(ICommandRegisterFunction::chip_cmd_word(0, 0)) +

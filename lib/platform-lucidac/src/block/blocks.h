@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "ctrlblock.h"
 #include "cblock.h"
 #include "iblock.h"
 #include "mblock.h"
