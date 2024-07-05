@@ -189,6 +189,31 @@ bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
       }
     }
   }
+
+  if (cfg["upscaling"].is<JsonObjectConst>()) {
+    for (JsonPairConst keyval : cfg["upscaling"].as<JsonObjectConst>()) {
+      if (!keyval.value().is<bool>())
+        return false;
+
+      auto input = std::stoul(keyval.key().c_str());
+      if (input > NUM_INPUTS)
+        return false;
+
+      set_upscaling(input, keyval.value());
+    }
+  }
+
+  if (cfg["upscaling"].is<JsonArrayConst>()) {
+    auto array = cfg["upscaling"].as<JsonArrayConst>();
+    if (array.size() != NUM_INPUTS)
+      return false;
+
+    for (uint8_t input = 0; input < NUM_INPUTS; input++) {
+      if (!array[input].is<bool>())
+        return false;
+      set_upscaling(input, array[input]);
+    }
+  }
   return true;
 }
 
@@ -257,6 +282,14 @@ void blocks::IBlock::config_self_to_json(JsonObject &cfg) {
     } else {
       outputs_cfg.add(nullptr);
     }
+  }
+
+  auto upscaling_cfg = cfg.createNestedArray("upscaling");
+  for (uint8_t input = 0; input < NUM_INPUTS; input++) {
+    if (scaling_factors[input])
+      upscaling_cfg.add(true);
+    else
+      upscaling_cfg.add(false);
   }
 }
 

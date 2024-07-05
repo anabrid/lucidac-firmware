@@ -160,7 +160,7 @@ public:
   bool get_upscaling(uint8_t output) const;
 
   //! Returns all input scales. A low bit indicates a factor of 1.0, a high bit indicates a factor of 10.0.
-  std::bitset<NUM_INPUTS> get_scales() const { return scaling_factors; }
+  const std::bitset<NUM_INPUTS> &get_upscales() const { return scaling_factors; }
 
   bool config_self_from_json(JsonObjectConst cfg) override;
 };
