@@ -29,7 +29,7 @@ void tearDown() {
 }
 
 void init() {
-  iblock = blocks::detect<blocks::IBlock>(bus::idx_to_addr(0, bus::I_BLOCK_IDX, 0));
+  iblock = entities::detect<blocks::IBlock>(bus::idx_to_addr(0, bus::I_BLOCK_IDX, 0));
   TEST_ASSERT_NOT_NULL(iblock);
 }
 
