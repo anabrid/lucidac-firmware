@@ -4,23 +4,26 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include <Arduino.h>
+#include <iostream>
 #include <unity.h>
 
 #define protected public
 #define private public
 
 #include "block/blocks.h"
-#include "carrier/carrier.h"
+#include "lucidac/lucidac.h"
 
 #include "daq/daq.h"
 
 using namespace blocks;
+using namespace entities;
 
-carrier::Carrier carrier_({Cluster(0)});
-auto &cluster = carrier_.clusters[0];
+platform::LUCIDAC lucidac_;
+auto &cluster = lucidac_.clusters[0];
+daq::OneshotDAQ DAQ;
 
 void init() {
-  TEST_ASSERT(carrier_.init());
+  TEST_ASSERT(lucidac_.init());
   Serial.println("Starting: ");
 
   cluster.shblock->set_track.trigger();
@@ -29,19 +32,50 @@ void init() {
   delay(100);
 
   cluster.shblock->set_gain_channels_zero_to_seven.trigger();
+
+  cluster.shblock->set_gain.trigger();
+
   TEST_ASSERT(cluster.ublock->connect_alternative(UBlock::POS_BIG_REF, 0));
-  TEST_ASSERT(cluster.cblock->set_factor(0, 1.0f));
-  TEST_ASSERT(cluster.iblock->connect(0, 7));
-  TEST_ASSERT(carrier_.write_to_hardware());
+  TEST_ASSERT(cluster.cblock->set_factor(0, 0.0f));
+  TEST_ASSERT(cluster.iblock->connect(0, 0));
+  TEST_ASSERT(cluster.write_to_hardware());
 }
 
 void setup() {
   bus::init();
+  DAQ.init(0);
   UNITY_BEGIN();
+
+  pinMode(29, OUTPUT);
+
+  digitalWrite(29, LOW);
+  delay(1000);
 
   RUN_TEST(init);
 
-  UNITY_END();
+  delay(1000);
+
+  digitalWrite(29, HIGH);
+  delay(10);
+  digitalWrite(29, LOW);
+
+  std::cout << std::fixed;
 }
 
-void loop() {}
+float coeff = -1.0f;
+
+void loop() {
+  cluster.cblock->set_factor(0, coeff);
+  cluster.cblock->write_to_hardware();
+
+  // std::cout << millis() << ":    Coefficient: " << coeff << "    DAQ: " << DAQ.sample_raw(0) << std::endl;
+  std::cout << millis() << "," << coeff << "," << DAQ.sample_raw(0) << std::endl;
+
+  delay(40);
+
+  coeff += 0.002f;
+
+  if (coeff > 1.0f)
+    while (1)
+      ;
+}
