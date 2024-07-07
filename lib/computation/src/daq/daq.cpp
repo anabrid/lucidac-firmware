@@ -374,7 +374,10 @@ bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate_unus
 }
 
 float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
-  return ((static_cast<float>(raw) - RAW_MINUS_ONE_POINT_TWO_FIVE) / (RAW_PLUS_ONE_POINT_TWO_FIVE - RAW_MINUS_ONE_POINT_TWO_FIVE)) * -2.5f + 1.25f;
+  return ((static_cast<float>(raw) - RAW_MINUS_ONE_POINT_TWO_FIVE) /
+          (RAW_PLUS_ONE_POINT_TWO_FIVE - RAW_MINUS_ONE_POINT_TWO_FIVE)) *
+             -2.5f +
+         1.25f;
 }
 
 const char *daq::BaseDAQ::raw_to_str(uint16_t raw) {
@@ -431,3 +434,13 @@ std::array<float, daq::NUM_CHANNELS> daq::OneshotDAQ::sample() {
 float daq::OneshotDAQ::sample(uint8_t index) { return sample()[index]; }
 
 uint16_t daq::OneshotDAQ::sample_raw(uint8_t index) { return sample_raw()[index]; }
+
+std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_avg_raw(size_t samples,
+                                                                        unsigned int delay_us) {
+  utils::RunningAverageNew<std::array<uint16_t, daq::NUM_CHANNELS>> avg;
+  for (size_t i = 0; i < samples; i++) {
+    avg.add(sample_raw());
+    delayMicroseconds(delay_us);
+  }
+  return avg.get_average();
+}

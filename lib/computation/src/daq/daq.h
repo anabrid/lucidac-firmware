@@ -94,6 +94,8 @@ public:
   /// Extracts a single number of a full word capture.
   uint16_t sample_raw(uint8_t index);
   float sample(uint8_t index) override;
+
+  std::array<uint16_t, NUM_CHANNELS> sample_avg_raw(size_t samples, unsigned int delay_us);
 };
 
 } // namespace daq
