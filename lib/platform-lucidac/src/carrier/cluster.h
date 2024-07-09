@@ -39,6 +39,7 @@ public:
   std::array<blocks::FunctionBlock *, 6> get_blocks() const;
 
   bool calibrate(daq::BaseDAQ *daq);
+  bool calibrate_offsets();
 
   [[nodiscard]] bool write_to_hardware();
 
@@ -74,9 +75,6 @@ public:
   Entity *get_child_entity(const std::string &child_id) override;
 
   bool config_self_from_json(JsonObjectConst cfg) override;
-
-protected:
-  bool _calibrate_offsets();
 };
 
 } // namespace platform

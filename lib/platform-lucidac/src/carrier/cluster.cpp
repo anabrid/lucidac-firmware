@@ -69,7 +69,7 @@ bool platform::Cluster::init() {
 platform::Cluster::Cluster(uint8_t cluster_idx)
     : entities::Entity(std::to_string(cluster_idx)), cluster_idx(cluster_idx) {}
 
-bool platform::Cluster::_calibrate_offsets() {
+bool platform::Cluster::calibrate_offsets() {
   LOG_ANABRID_DEBUG_CALIBRATION("Calibrating offsets");
 
   auto old_transmission_modes = ublock->get_all_transmission_modes();
@@ -122,7 +122,7 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
       LOG_ANABRID_DEBUG_CALIBRATION(i_in_idx);
       LOG_ANABRID_DEBUG_CALIBRATION(i_out_idx);
 
-      _calibrate_offsets();
+      calibrate_offsets();
 
       if (!iblock->get_upscaling(i_in_idx))
         ublock->change_all_transmission_modes(blocks::UBlock::POS_BIG_REF);
@@ -166,7 +166,7 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
     return false;
 
   // Calibrate offsets again, since they have been changed by correcting the coefficients
-  if (!_calibrate_offsets())
+  if (!calibrate_offsets())
     return false;
 
   // Restore original U-block transmission modes
