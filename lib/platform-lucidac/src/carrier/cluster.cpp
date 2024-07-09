@@ -93,6 +93,7 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
   auto old_transmission_modes = ublock->get_all_transmission_modes();
   ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::GROUND);
   // Save and reset I-block connections
+  // This is necessary as we can not calibrate sums and we want to calibrate lanes individually
   const auto saved_iblock = *iblock;
   iblock->reset_outputs();
   // Actually write to hardware
@@ -102,51 +103,67 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
     return false;
   }
 
+  // Next, we iterate through all connections on the I-block and calibrate each lane individually.
+  // This is suboptimal, as in principle we could measure 8 gain corrections at the same time.
+  // Iterating over I-block connections is easier than iterating over U-block outputs.
   for (auto i_out_idx : blocks::IBlock::OUTPUT_IDX_RANGE()) {
     for (auto i_in_idx : blocks::IBlock::INPUT_IDX_RANGE()) {
+      // Only do something is this lane is used in the original I-block configuration
       if (!saved_iblock.is_connected(i_in_idx, i_out_idx))
         continue;
-
+      // Only do something is this lane is actually receiving a signal
       if (!ublock->is_output_connected(i_in_idx))
         continue;
 
+      // Restore this connection
       if (!iblock->connect(i_in_idx, i_out_idx))
         return false;
-
+      // Actually write to hardware
       if (!iblock->write_to_hardware())
         return false;
 
+      // Chill for a bit
       delay(100);
-
       LOG_ANABRID_DEBUG_CALIBRATION("Calibrating connection: ");
       LOG_ANABRID_DEBUG_CALIBRATION(i_in_idx);
       LOG_ANABRID_DEBUG_CALIBRATION(i_out_idx);
 
+      // First step is always to calibrate offsets
       calibrate_offsets();
 
+      // Depending on whether upscaling is enabled for this lane, we apply +1 or +0.1 reference
+      // This is done on all lanes (but no other I-block connection exists, so no other current flows)
       if (!iblock->get_upscaling(i_in_idx))
         ublock->change_all_transmission_modes(blocks::UBlock::POS_BIG_REF);
       else
         ublock->change_all_transmission_modes(blocks::UBlock::POS_SMALL_REF);
-
+      // Actually write to hardware
       if (!ublock->write_to_hardware())
         return false;
 
+      // Change SH-block into gain mode and select correct gain channel group
       shblock->set_gain.trigger();
       if (i_out_idx < 8)
         shblock->set_gain_channels_zero_to_seven.trigger();
       else
         shblock->set_gain_channels_eight_to_fifteen.trigger();
 
+      // Chill for a bit
       delay(100);
 
+      // Measure gain output
+      // TODO: Move ctrlblock_hal.write_adc_bus_muxers(blocks::CTRLBlock::ADCBus::CL0_GAIN) into here
       auto m_adc = daq->sample_avg(10, 1000)[i_out_idx % 8];
       LOG_ANABRID_DEBUG_CALIBRATION(m_adc);
+      // Calculate necessary gain correction
       auto wanted_factor = cblock->get_factor(i_in_idx);
       auto gain_correction = wanted_factor / m_adc;
       LOG_ANABRID_DEBUG_CALIBRATION(gain_correction);
-      cblock->set_gain_correction(i_in_idx, gain_correction);
+      // Set gain correction on C-block, which will automatically get applied when writing to hardware
+      if (!cblock->set_gain_correction(i_in_idx, gain_correction))
+        return false;
 
+      // Disconnect this lane again
       iblock->disconnect(i_in_idx, i_out_idx);
       if (!iblock->write_to_hardware())
         return false;
@@ -163,6 +180,10 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
   iblock->set_outputs(saved_iblock.get_outputs());
   LOG_ANABRID_DEBUG_CALIBRATION("Restoring iblock");
   if (!iblock->write_to_hardware())
+    return false;
+
+  // Write C-block to hardware to apply gain corrections
+  if (!cblock->write_to_hardware())
     return false;
 
   // Calibrate offsets again, since they have been changed by correcting the coefficients

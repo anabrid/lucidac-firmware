@@ -40,7 +40,7 @@ void test_init_and_blocks() {
   }
 }
 
-void test_route_reference() {
+void test_calibration() {
   // Connect ADC_BUS on CTRL-Block
   ctrlblock_hal.write_adc_bus_muxers(blocks::CTRLBlock::ADCBus::CL0_GAIN);
   // io::block_until_button_press();
@@ -76,7 +76,7 @@ void setup() {
 
   UNITY_BEGIN();
   RUN_TEST(test_init_and_blocks);
-  RUN_TEST(test_route_reference);
+  RUN_TEST(test_calibration);
   UNITY_END();
 }
 
