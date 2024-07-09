@@ -9,7 +9,7 @@
 const SPISettings platform::LUCIDAC_HAL::F_ADC_SWITCHER_PRG_SPI_SETTINGS{
     4'000'000, MSBFIRST, SPI_MODE2 /* chip expects SPI MODE0, but CLK is inverted on the way */};
 
-LUCIDAC::LUCIDAC() : Carrier({Cluster(0)}) {
+LUCIDAC::LUCIDAC() : Carrier({Cluster(0)}), hardware(new LUCIDAC_HAL()) {
   // Other constructor stuff
 }
 
