@@ -106,6 +106,7 @@ bool blocks::CBlock::set_gain_correction(const uint8_t coeff_idx, const float co
   if (coeff_idx > NUM_COEFF)
     return false;
   gain_corrections_[coeff_idx] = correction;
+  return true;
 };
 
 bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
