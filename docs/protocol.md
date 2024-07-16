@@ -1,4 +1,4 @@
-# REDAC communication protocol
+# REDAC communication protocol                                       {#protocol}
 
 The firmware uses a [JSON Lines](https://jsonlines.org/) plain text protocol for communication.
 It *mostly* follows a client/server idiom where the microcontroller is the server
@@ -116,3 +116,4 @@ in a uniform resource identifier (URI). The following connection types are sugge
 Note that the usage of these URIs is out of scope for the protocol but a good practice. For
 instance, the NI-VISA standard proposes a similar but way more complex
 [resource syntax](https://www.ni.com/docs/en-US/bundle/ni-visa/page/visa-resource-syntax-and-examples.html)
+
