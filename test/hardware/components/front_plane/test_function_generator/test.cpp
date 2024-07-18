@@ -29,7 +29,7 @@ void setup() {
 
   front.init();
 
-  TEST_ASSERT(front.signal_generator.set_amplitude(2.5f));
+  TEST_ASSERT(front.signal_generator.set_amplitude(1.25f));
   TEST_ASSERT(front.signal_generator.set_square_voltage_levels(-1.0f, 1.0f));
   TEST_ASSERT(front.signal_generator.set_offset(0.0f));
 
