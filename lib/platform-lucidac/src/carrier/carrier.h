@@ -45,8 +45,6 @@ public:
 
   void write_to_hardware();
 
-  static Carrier& get(); ///< Singleton access
-
   ///@addtogroup User-Functions
   ///@{
   int set_config(JsonObjectConst msg_in, JsonObject &msg_out);
