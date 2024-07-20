@@ -181,7 +181,7 @@ struct Gatekeeper : nvmconfig::PersistentSettings {
 
   std::string name() const { return "auth"; }
   void reset_defaults();
-  void fromJson(JsonObjectConst src) {
+  void fromJson(JsonObjectConst src, nvmconfig::Context c = nvmconfig::Context::Flash) override {
     JSON_GET(src, enable_auth);
     JSON_GET(src, enable_users);
     JSON_GET(src, enable_whitelist);
@@ -189,7 +189,7 @@ struct Gatekeeper : nvmconfig::PersistentSettings {
     JSON_GET(src, whitelist);
     JSON_GET_AS(src, access_control_allow_origin, std::string);
   }
-  void toJson(JsonObject target) const {
+  void toJson(JsonObject target, nvmconfig::Context c = nvmconfig::Context::Flash) const override {
     JSON_SET(target, enable_auth);
     JSON_SET(target, enable_users);
     JSON_SET(target, enable_whitelist);

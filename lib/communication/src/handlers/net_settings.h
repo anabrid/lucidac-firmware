@@ -13,9 +13,7 @@ namespace handlers {
 class GetNetworkSettingsHandler : public MessageHandler {
 public:
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
-    // could get string handles as in net::StartupConfig::get().name()
-    msg_out["eth"] = net::StartupConfig::get();
-    msg_out["auth"] = net::auth::Gatekeeper::get();
+    nvmconfig::PersistentSettingsWriter::get().toJson(msg_out, nvmconfig::Context::User);
     return success;
   }
 };
@@ -24,17 +22,16 @@ public:
 class SetNetworkSettingsHandler : public MessageHandler {
 public:
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
-    if(msg_in.containsKey("eth"))
-      net::StartupConfig::get().fromJson(msg_in["eth"]);
-    if(msg_in.containsKey("auth"))
-      net::auth::Gatekeeper::get().fromJson(msg_in["auth"]);
+    nvmconfig::PersistentSettingsWriter::get().fromJson(msg_in, nvmconfig::Context::User);
 
-    // Check whether register_for_write() was called in all all
-    //  fromJson assignments!
-    // probably call by hand...
+    if(!msg_in.containsKey("no_write"))
+      nvmconfig::PersistentSettingsWriter::get().write_to_eeprom();
 
-    nvmconfig::PersistentSettingsWriter::get().write_to_eeprom();
-    // TODO find out whether success or not
+    // Since ArduinoJSON has no good methods of finding whether data
+    // deserialization worked correctly, return the new values to the
+    // client so he can check by himself.
+    GetNetworkSettingsHandler().handle(/*is ignored*/msg_in, msg_out);
+
     return success;
   }
 };

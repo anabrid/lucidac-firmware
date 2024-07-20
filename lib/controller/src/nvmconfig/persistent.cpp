@@ -11,14 +11,19 @@ void nvmconfig::PersistentSettingsWriter::info(JsonObject msg_out) {
     msg_out["consumed_bytes"] = write_to_eeprom();
 }
 
-void nvmconfig::PersistentSettingsWriter::toJson(JsonObject target) {
-  for(auto const& sys : subsystems)
-    sys->toJson(target.createNestedObject(sys->name()));
+void nvmconfig::PersistentSettingsWriter::toJson(JsonObject target, Context c) {
+  for(auto const& sys : subsystems) {
+    sys->toJson(target.createNestedObject(sys->name()), c);
+    if(!target[sys->name()].size())
+      target.remove(sys->name());
+  }
 }
 
-void nvmconfig::PersistentSettingsWriter::fromJson(JsonObjectConst target) {
-  for(auto const& sys : subsystems)
-    sys->fromJson(target[sys->name()]);
+void nvmconfig::PersistentSettingsWriter::fromJson(JsonObjectConst target, Context c) {
+  for(auto const& sys : subsystems) {
+    if(target.containsKey(sys->name()))
+      sys->fromJson(target[sys->name()],c );
+  }
 }
 
 void nvmconfig::PersistentSettingsWriter::reset_defaults(bool do_write_to_eeprom) {
@@ -43,15 +48,16 @@ void nvmconfig::PersistentSettingsWriter::read_from_eeprom() {
     version = deserialized_conf["version"];
 
     if(!error && version >= required_magic) {
-        fromJson(deserialized_conf.as<JsonObjectConst>());
+        fromJson(deserialized_conf.as<JsonObjectConst>(), Context::Flash);
     } else {
         reset_defaults(/*write_to_eeprom*/ false);
     }
 }
 
 size_t nvmconfig::PersistentSettingsWriter::write_to_eeprom() {
-    StaticJsonDocument<eeprom_size> serialized_conf;
-    toJson(serialized_conf.to<JsonObject>());
+    StaticJsonDocument<eeprom_size> serialized_conf_doc;
+    auto serialized_conf = serialized_conf_doc.to<JsonObject>();
+    toJson(serialized_conf, Context::Flash);
     StreamUtils::EepromStream eepromStream(eeprom_address, eeprom_size);
     size_t consumed_size =
         use_messagepack

@@ -72,8 +72,8 @@ namespace net {
     void begin_mdns(); ///< Calls net::MDNS.begin
     void begin();
 
-    void fromJson(JsonObjectConst src);
-    void toJson(JsonObject target) const;
+    void fromJson(JsonObjectConst src, nvmconfig::Context c = nvmconfig::Context::Flash) override;
+    void toJson(JsonObject target, nvmconfig::Context c = nvmconfig::Context::Flash) const override;
 
     static StartupConfig& get() {
         static StartupConfig instance;

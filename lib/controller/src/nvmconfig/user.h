@@ -29,12 +29,12 @@ namespace nvmconfig {
         std::string name() const { return "user"; }
         void reset_defaults() { delete doc; }
         void clear() { delete doc; }
-        void fromJson(JsonObjectConst src) {
+        void fromJson(JsonObjectConst src, Context c = Context::Flash) override {
             if(!doc) doc = new DynamicJsonDocument(max_doc_bytes);
             else doc->clear();
             *doc = src;
         }
-        void toJson(JsonObject target) const {
+        void toJson(JsonObject target, Context c = Context::Flash) const override {
             if(doc) target = doc->as<JsonObject>();
         }
 

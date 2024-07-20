@@ -53,7 +53,7 @@ void net::StartupConfig::reset_defaults() {
 
 
 
-void net::StartupConfig::fromJson(JsonObjectConst src) {
+void net::StartupConfig::fromJson(JsonObjectConst src, nvmconfig::Context c) {
   JSON_GET(src, enable_ethernet);
   JSON_GET(src, enable_dhcp);
   JSON_GET(src, enable_jsonl);
@@ -74,7 +74,7 @@ void net::StartupConfig::fromJson(JsonObjectConst src) {
   if(hostname.length() > 250) hostname = hostname.substr(0, 250);
 }
 
-void net::StartupConfig::toJson(JsonObject target) const {
+void net::StartupConfig::toJson(JsonObject target, nvmconfig::Context c) const {
   JSON_SET(target, enable_ethernet);
   JSON_SET(target, enable_dhcp);
   JSON_SET(target, enable_jsonl);

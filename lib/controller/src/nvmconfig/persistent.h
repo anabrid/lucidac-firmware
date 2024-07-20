@@ -9,11 +9,24 @@
 
 namespace nvmconfig {
 
+/**
+ * @brief JSON Conversion Context.
+ * 
+ * This toggle allows to differentiate in fromJson/toJson which kind
+ * of representation is wanted. It even allows to include or exclude
+ * fields, as it is done in @file vendor.h where the information is
+ * basically hidden to the user-side.
+ **/
+enum class Context {
+  User, ///< User-Facing (writing/reading)
+  Flash ///< Flash-Facing (writing/reading)
+};
+
 struct PersistentSettings {
     virtual std::string name() const = 0;
     virtual void reset_defaults() = 0;
-    virtual void fromJson(JsonObjectConst src) = 0;
-    virtual void toJson(JsonObject target) const = 0;
+    virtual void fromJson(JsonObjectConst src, Context c) = 0;
+    virtual void toJson(JsonObject target, Context c) const = 0;
 
     /// Clear local memory in order to save RAM if an object is not
     /// needed during runtime but only at startup.
@@ -40,6 +53,10 @@ static constexpr uint64_t required_magic = 0xAA02;
  * Values will be hold in the instance and synced to the EEPROM only via calls
  * to read_from_eeprom() or write_to_eeprom().
  * 
+ * Note that, given that this class can use the more compact MessagePack
+ * representation instead of classical JSON, the objects on the flash are
+ * usually smaller then the ones transfered over network.
+ * 
  * \ingroup Singletons
  **/
 class PersistentSettingsWriter {
@@ -58,8 +75,18 @@ public:
 
   // these methods just thread over subsystems
   void reset_defaults(bool write_to_eeprom=true);
-  void fromJson(JsonObjectConst src);
-  void toJson(JsonObject target);
+
+  /**
+   * This will only call the respective fromJson call in the subsystem
+   * if its key is given in the object.
+   */
+  void fromJson(JsonObjectConst src, Context c);
+
+  /** 
+   * Note that empty subsystems get removed, i.e.
+   * if their toJson call doesn't fill the Object, it is omitted.
+   */
+  void toJson(JsonObject target, Context c);
 
   void info(JsonObject target);
 
