@@ -15,6 +15,10 @@ via the `/dev/ttyACM0` file. You can grab them at https://www.pjrc.com/teensy/00
 also ensure to be in the correct user group to access this file; after adding yourself to the group (such as
 `sudo gpasswd -a YOUR-LOCAL-USERNAME dialout`), you have to sign out and sign in again on your desktop.
 
+Sometimes this still doesn't work and you have to prepend `pio` calls that upload with `sudo`. If this doesn't
+work because you have PlatformIO installed as a user and not system-wide, you can use `sudo -E env pio ...`
+in order to export/expose your python environment to the sudo call.
+
 ## Hello World from the test suite
 When you start with `pio`, make sure to *always* run it from the root directory of this repository. You can make
 a first *hello world* with this command:
