@@ -28,6 +28,7 @@ bool platform::Cluster::init() {
   ublock  = new blocks::UBlock{cluster_idx};
   cblock  = new blocks::CBlock_SequentialAddresses{cluster_idx};
   iblock  = new blocks::IBlock{cluster_idx};
+  shblock = new blocks::SHBlock{cluster_idx};
 
   // Dynamically detect installed blocks
   // Check if a block is already set, which may happen with a special constructor in the future
@@ -48,22 +49,22 @@ bool platform::Cluster::init() {
   if (!ublock) {
     ublock = entities::detect<blocks::UBlock>(bus::idx_to_addr(cluster_idx, bus::U_BLOCK_IDX, 0));
     if (!ublock)
-      LOG(ANABRID_DEBUG_INIT, "Error: U-block is missing or unknown.");
+      LOG_ERROR("Error: U-block is missing or unknown.");
   }
   if (!cblock) {
     cblock = entities::detect<blocks::CBlock>(bus::idx_to_addr(cluster_idx, bus::C_BLOCK_IDX, 0));
     if (!cblock)
-      LOG(ANABRID_DEBUG_INIT, "Error: C-block is missing or unknown.");
+      LOG_ERROR("Error: C-block is missing or unknown.");
   }
   if (!iblock) {
     iblock = entities::detect<blocks::IBlock>(bus::idx_to_addr(cluster_idx, bus::I_BLOCK_IDX, 0));
     if (!iblock)
-      LOG(ANABRID_DEBUG_INIT, "Error: I-block is missing or unknown.");
+      LOG_ERROR("Error: I-block is missing or unknown.");
   }
   if (!shblock) {
     shblock = entities::detect<blocks::SHBlock>(bus::idx_to_addr(cluster_idx, bus::SH_BLOCK_IDX, 0));
     if (!shblock)
-      LOG(ANABRID_DEBUG_INIT, "Error: SH-block is missing or unknown.");
+      LOG_ERROR("Error: SH-block is missing or unknown.");
   }
 
   LOG(ANABRID_DEBUG_INIT, "Initialising detected blocks...");

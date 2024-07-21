@@ -7,7 +7,7 @@
 
 #include "block/blocks.h"
 #include "carrier/carrier.h"
-#include "front_plane.h"
+#include "lucidac/front_plane.h"
 
 namespace platform {
 

@@ -15,7 +15,7 @@
 #include <cstring>
 #include <list>
 
-#include "carrier/carrier.h"
+#include "lucidac/lucidac.h"
 #include "build/distributor.h"
 #include "protocol/client.h"
 #include "utils/logging.h"
@@ -31,7 +31,7 @@
 #include "utils/hashflash.h"
 #include "web/server.h"
 
-carrier::Carrier carrier_({Cluster(0)});
+platform::LUCIDAC carrier_;
 auto& netconf = net::StartupConfig::get();
 
 /// @ingroup MessageHandlers
@@ -53,6 +53,13 @@ public:
   }
 };
 
+void setup_remote_log() {
+  IPAddress remote{192,168,68,96};
+  static EthernetClient client;
+  client.connect(remote, 1234);
+  msg::Log::get().sinks.add(&client);
+}
+
 void setup() {
   // Initialize serial communication
   Serial.begin(0);
@@ -62,6 +69,8 @@ void setup() {
 
   msg::Log::get().sinks.add(&Serial);
   msg::Log::get().sinks.add(&msg::StartupLog::get());
+
+  bus::init();
 
   LOG_ALWAYS(dist::ident());
   LOGV("Flash image (%d bytes) sha256 sum: %s\n",
@@ -78,19 +87,29 @@ void setup() {
   if(netconf.enable_webserver)
     web::LucidacWebServer::get().begin();
 
+  setup_remote_log();
+  LOG_ALWAYS("Have set up remote log");
+
   // Initialize carrier board
   // TODO, _ERROR_OUT_ shall not be used, see #116
   LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
   if (!carrier_.init()) {
     LOG_ERROR("Error initializing carrier board.");
-    _ERROR_OUT_
+    //_ERROR_OUT_
   }
+
+/*
+  for(;;) {
+     Serial.println("Logging worked");
+     msg::StartupLog::get().stream_to_json(Serial);
+  }
+*/
 
   // Initialize things related to runs
   // TODO, _ERROR_OUT_ shall not be used, see #116
   if (!mode::FlexIOControl::init(mode::DEFAULT_IC_TIME, mode::DEFAULT_OP_TIME)) {
     LOG_ERROR("Error initializing FlexIO mode control.");
-    _ERROR_OUT_
+    //_ERROR_OUT_
   }
 
   msg::handlers::Registry.init(carrier_); // registers all commonly known messages
