@@ -97,6 +97,13 @@ void net::StartupConfig::begin_ip() {
     LOG_ALWAYS("Ethernet disabled by user setting");
   }
 
+  //if(!net::Ethernet.linkState()) {
+    // TODO: This is only a workaround in the moment and requires later
+    //       setup with the onLinkState callback
+    //LOG_ALWAYS("Ethernet: No link detected. Skipping Ethernet setup.");
+    //return;
+  //}
+
   if(valid(mac)) net::Ethernet.setMACAddress(mac.mac); // else keep system default
 
   LOG2("MAC: ", toString(mac).c_str())
@@ -112,7 +119,7 @@ void net::StartupConfig::begin_ip() {
         //_ERROR_OUT_
       }
       LOG(ANABRID_DEBUG_INIT, "Waiting for IP address on ethernet...");
-      if (!net::Ethernet.waitForLocalIP(3 /* seconds*/)) {
+      if (!net::Ethernet.waitForLocalIP(2*1000 /* ms*/)) {
         LOG_ERROR("Error getting IP address.");
         //_ERROR_OUT_
       }
