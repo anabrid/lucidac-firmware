@@ -82,7 +82,7 @@ namespace utils {
 
     void val(bool b) {
        check_comma();
-       output.print(b ? "true," : "false,");
+       output.print(b ? "true" : "false");
        needs_comma();
     }
 

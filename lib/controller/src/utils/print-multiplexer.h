@@ -23,40 +23,53 @@ namespace utils {
    * TODO: Could be improved with accepting EthernetClients which have a writeFully
    *       method.
    * 
+   * TODO: This code is awful. Improve in any manner.
+   * 
    * See also https://github.com/bblanchon/ArduinoStreamUtils for something
    * more sane.
    */
   class PrintMultiplexer : public Print {
     std::list<Print*> targets;
+    std::vector<size_t> ret_values;
+
+    void prepare_ret_values(size_t expected) {
+      if(ret_values.size() != targets.size()) {
+        ret_values.resize(targets.size());
+      }
+      for(size_t i=0; i < ret_values.size(); i++)
+        ret_values[i] = expected;
+    }
 
   public:
     void add(Print* target) { targets.push_back(target); }
     void remove(Print* target) { targets.remove(target); }
-    
+
     // Printables which go to all clients
     virtual size_t write(uint8_t b) override {
-        std::vector<size_t> ret;
-        for(auto& target : targets) if(target) ret.push_back(target->write(b));
-        if(!std::all_of(ret.cbegin(), ret.cend(), [](size_t i) { return i == 1; })) {
-           // TODO: For circular dependency reasons, cannot use the Logging facilities because
-           //       this is part of it.
-           //LOG_ALWAYS("PrintMultiplexer: write(byte) failed for at least one target.");
-        }
-        return ret.size()>0 ? ret[0] : /*devnull*/ 1;
+      prepare_ret_values(1);
+      size_t i = 0;
+      for(auto& target : targets) if(target) ret_values[i++] = target->write(b);
+      if(!std::all_of(ret_values.cbegin(), ret_values.cend(), [](size_t i) { return i == 1; })) {
+          // TODO: For circular dependency reasons, cannot use the Logging facilities because
+          //       this is part of it.
+          //LOG_ALWAYS("PrintMultiplexer: write(byte) failed for at least one target.");
+      }
+      return ret_values.size()>0 ? ret_values[0] : /*devnull*/ 1;
     }
     
     size_t write(const uint8_t *buffer, size_t size) override {
-        std::vector<size_t> ret;
-        for(auto& target : targets) if(target) ret.push_back(target->write(buffer, size));
-        if(!std::all_of(ret.cbegin(), ret.cend(), [size](size_t i) { return i == size; })) {
-           // TODO: For circular dependency reasons, cannot use the Logging facilities because
-           //       this is part of it.
-            //LOG_ALWAYS("PrintMultiplexer: write(buffer,size) failed for at least one target.");
+      prepare_ret_values(size);
+      size_t i = 0;
+      for(auto& target : targets) if(target) ret_values[i++] = target->write(buffer, size);
+      if(!std::all_of(ret_values.cbegin(), ret_values.cend(), [size](size_t i) { return i == size; })) {
+          // TODO: For circular dependency reasons, cannot use the Logging facilities because
+          //       this is part of it.
+          //LOG_ALWAYS("PrintMultiplexer: write(buffer,size) failed for at least one target.");
 
-            //Serial.printf("size=%d\n", size);
-            //for(auto & r : ret) { Serial.printf("ret = %d\n", r); }
-        }
-        return ret.size()>0 ? ret[0] : size;
+          //Serial.printf("size=%d\n", size);
+          //for(auto & r : ret) { Serial.printf("ret = %d\n", r); }
+      }
+      return ret_values.size()>0 ? ret_values[0] : /*devnull*/ size;
     }
     virtual void flush() override {
         for(auto& target : targets) if(target)  target->flush();
