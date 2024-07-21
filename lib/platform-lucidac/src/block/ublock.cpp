@@ -4,8 +4,9 @@
 
 #include <algorithm>
 
-#include "bus/functions.h"
-#include "block/ublock.h"
+#include "ublock.h"
+
+#include "utils/logging.h"
 
 void utils::shift_5_left(uint8_t *buffer, size_t size) {
   for (size_t idx = 0; idx < size - 1; idx++) {
@@ -22,260 +23,222 @@ const SPISettings functions::UMatrixFunction::DEFAULT_SPI_SETTINGS{4'000'000, MS
 functions::UMatrixFunction::UMatrixFunction(bus::addr_t address)
     : functions::DataFunction(address, DEFAULT_SPI_SETTINGS) {}
 
-const SPISettings functions::UOffsetLoader::OFFSETS_FUNC_SPI_SETTINGS{8'000'000, MSBFIRST, SPI_MODE2};
-
-void functions::UOffsetLoader::trigger_load(uint8_t offset_idx) const {
-  if (offset_idx >= blocks::UBlock::NUM_OF_OUTPUTS)
-    return;
-  f_triggers[offset_idx / OUTPUTS_PER_CHIP].trigger();
-}
-
-void functions::UOffsetLoader::set_offset_and_write_to_hardware(uint8_t offset_idx,
-                                                                uint16_t offset_raw) const {
-  auto cmd = build_cmd_word(offset_idx % OUTPUTS_PER_CHIP, offset_raw);
-  /*
-   * CARE: Offset correction does not have an address, it listens to SPI all the time
-   * It happens that we can address a non-existent function, but if something changes
-   * (e.g. default CLK polarity), this may break.
-   * Then send data without data function or fix hardware :)
-   */
-  f_offsets.transfer16(cmd);
-  trigger_load(offset_idx);
-}
-
-void functions::UOffsetLoader::set_offsets_and_write_to_hardware(std::array<uint16_t, 32> offsets_raw) const {
-  for (unsigned int offset_idx = 0; offset_idx < offsets_raw.size(); offset_idx++) {
-    set_offset_and_write_to_hardware(offset_idx, offsets_raw[offset_idx]);
-  }
-}
-
-uint16_t functions::UOffsetLoader::build_cmd_word(uint8_t chip_output_idx, uint16_t offset_raw) {
-  // Offset chips expect 4bit address (output select) and 10bit value.
-  // With REVERSE=LOW, the expected incoming bits are [4bit address LSBFIRST][10bit value MSBFIRST].
-  // Since we send 16bit, we need to prepend 2bits in front that will be discarded.
-
-  // Filter offset_idx, chip does nothing with address=0
-  if (chip_output_idx > MAX_CHIP_OUTPUT_IDX)
-    return 0;
-
-  // Limit offset_raw to MAX_OFFSET_RAW
-  if (offset_raw > MAX_OFFSET_RAW)
-    offset_raw = MAX_OFFSET_RAW;
-
-  // Lookup table to reverse address in final bit positions
-  constexpr std::array<uint16_t, 8> addr_lookup{
-      0b00'1000'0000000000, 0b00'0100'0000000000, 0b00'1100'0000000000, 0b00'0010'0000000000,
-      0b00'1010'0000000000, 0b00'0110'0000000000, 0b00'1110'0000000000, 0b00'0001'0000000000,
-  };
-
-  // Combine the two bit patterns
-  return offset_raw | addr_lookup[chip_output_idx];
-}
-
-functions::UOffsetLoader::UOffsetLoader(bus::addr_t ublock_address, uint8_t offsets_data_func_idx,
-                                        uint8_t offsets_load_base_func_idx)
-    : f_offsets{bus::replace_function_idx(ublock_address, offsets_data_func_idx), OFFSETS_FUNC_SPI_SETTINGS},
-      f_triggers{
-          TriggerFunction{bus::replace_function_idx(ublock_address, offsets_load_base_func_idx + 0)},
-          TriggerFunction{bus::replace_function_idx(ublock_address, offsets_load_base_func_idx + 1)},
-          TriggerFunction{bus::replace_function_idx(ublock_address, offsets_load_base_func_idx + 2)},
-          TriggerFunction{bus::replace_function_idx(ublock_address, offsets_load_base_func_idx + 3)},
-      } {}
-
-uint16_t functions::UOffsetLoader::offset_to_raw(float offset) {
-  // Truncate offset
-  if (offset >= MAX_OFFSET)
-    return MAX_OFFSET_RAW;
-  if (offset <= MIN_OFFSET)
-    return MIN_OFFSET_RAW;
-
-  // Assumes +/- is symmetrical
-  // TODO: Consider MIN_OFFSET_RAW if it's ever non-zero.
-  auto offset_scaled = (offset - MIN_OFFSET) / (MAX_OFFSET - MIN_OFFSET);
-  return static_cast<uint16_t>(offset_scaled * float(MAX_OFFSET_RAW));
-}
-
-const SPISettings blocks::UBlock::ALT_SIGNAL_FUNC_SPI_SETTINGS{4'000'000, MSBFIRST, SPI_MODE1};
-
 blocks::UBlock::UBlock(bus::addr_t block_address)
     : FunctionBlock("U", block_address), f_umatrix(bus::replace_function_idx(block_address, UMATRIX_FUNC_IDX)),
       f_umatrix_sync(bus::replace_function_idx(block_address, UMATRIX_SYNC_FUNC_IDX)),
-      f_umatrix_reset(bus::replace_function_idx(block_address, UMATRIX_RESET_FUNC_IDX)),
-      f_alt_signal(bus::replace_function_idx(block_address, ALT_SIGNAL_SWITCHER_FUNC_IDX),
-                   ALT_SIGNAL_FUNC_SPI_SETTINGS),
-      f_alt_signal_clear(bus::replace_function_idx(block_address, ALT_SIGNAL_SWITCHER_CLEAR_FUNC_IDX)),
-      f_alt_signal_sync(bus::replace_function_idx(block_address, ALT_SIGNAL_SWITCHER_SYNC_FUNC_IDX)),
-      f_offset_loader(bus::replace_function_idx(block_address, 0), OFFSETS_DATA_FUNC_IDX,
-                      OFFSETS_LOAD_BASE_FUNC_IDX),
-      output_input_map{0}, alt_signals{0}, offsets{0} {
-  offsets.fill(decltype(f_offset_loader)::ZERO_OFFSET_RAW);
+      f_umatrix_reset(bus::replace_function_idx(block_address, UMATRIX_RESET_FUNC_IDX)), output_input_map{},
+      transmission_mode_register(bus::replace_function_idx(block_address, TRANSMISSION_MODE_FUNC_IDX), true),
+      transmission_mode_sync(bus::replace_function_idx(block_address, TRANSMISSION_MODE_SYNC_FUNC_IDX)) {
+  reset_connections();
 }
 
-bool blocks::UBlock::connect(uint8_t input, uint8_t output, bool allow_disconnections) {
-  // Sanity check
-  if (input >= NUM_OF_INPUTS or output >= NUM_OF_OUTPUTS)
+bool blocks::UBlock::_i_sanity_check(const uint8_t input) { return input < NUM_OF_INPUTS; }
+
+bool blocks::UBlock::_o_sanity_check(const uint8_t output) { return output < NUM_OF_OUTPUTS; }
+
+bool blocks::UBlock::_io_sanity_check(const uint8_t input, const uint8_t output) {
+  return _i_sanity_check(input) && _o_sanity_check(output);
+}
+
+void blocks::UBlock::_connect(const uint8_t input, const uint8_t output) { output_input_map[output] = input; }
+
+bool blocks::UBlock::connect(const uint8_t input, const uint8_t output, bool force) {
+  if (!_io_sanity_check(input, output))
     return false;
 
   // Check for other connections on the same output, unless we don't care if we overwrite them
-  if (!allow_disconnections and output_input_map[output]) {
+  if (!force and _is_output_connected(output))
     return false;
+
+  // Check if the transmission mode makes the specified connection impossible and if the mode can or should be
+  // chnged
+  if (a_side_mode != ANALOG_INPUT && ((output < 16 && input != 15) || (output >= 16 && input != 14))) {
+    if (!force)
+      if (is_input_connected(input))
+        return false;
+    change_a_side_transmission_mode(ANALOG_INPUT);
   }
 
-  output_input_map[output] = input + 1;
+  if (b_side_mode != ANALOG_INPUT && ((output < 16 && input == 15) || (output >= 16 && input == 14))) {
+    if (!force)
+      if (is_input_connected(input))
+        return false;
+    change_b_side_transmission_mode(ANALOG_INPUT);
+  }
+
+  _connect(input, output);
   return true;
 }
 
-bool blocks::UBlock::disconnect(uint8_t input, uint8_t output) {
-  // Sanity check
-  if (input >= NUM_OF_INPUTS or output >= NUM_OF_OUTPUTS)
+bool blocks::UBlock::connect_alternative(Transmission_Mode signal_mode, const uint8_t output, bool force,
+                                         bool use_a_side) {
+  if (!_o_sanity_check(output))
+    return false;
+
+  // Check for other connections on the same output, unless we don't care if we overwrite them
+  if (!force and _is_output_connected(output))
+    return false;
+
+  // Check if the transmission mode makes the specified connection impossible and if the mode can or should be
+  // chnged
+  if (a_side_mode != signal_mode && use_a_side) {
+    // TODO: force for a-side could be added, but since there wont be much use for an a-side
+    // alternative signal, you have to use force or set the correct signal mode
+    if (!force)
+      return false;
+    change_a_side_transmission_mode(signal_mode);
+  }
+
+  if (b_side_mode != signal_mode && !use_a_side) {
+    if (!force)
+      if (is_input_connected(14) || is_input_connected(15))
+        return false;
+    change_b_side_transmission_mode(signal_mode);
+    //! Note
+  }
+
+  // Make a one to one connection if possible. Uses Input zero as fallback
+  uint8_t input;
+  if (use_a_side) {
+    if (output < 15)
+      input = output;
+    else if (output == 15)
+      input = 0;
+    else if (output == 30)
+      input = 0;
+    else
+      input = output - 16;
+  } else {
+    if (output < 16)
+      input = 15;
+    else
+      input = 14;
+  }
+
+  _connect(input, output);
+  return true;
+}
+
+void blocks::UBlock::_disconnect(const uint8_t output) { output_input_map[output] = -1; }
+
+bool blocks::UBlock::disconnect(const uint8_t input, const uint8_t output) {
+  if (!_io_sanity_check(input, output))
     return false;
 
   if (_is_connected(input, output)) {
-    output_input_map[output] = 0;
+    _disconnect(output);
     return true;
   } else {
     return false;
   }
 }
 
-bool blocks::UBlock::disconnect(uint8_t output) {
-  if (output >= NUM_OF_OUTPUTS)
+bool blocks::UBlock::disconnect(const uint8_t output) {
+  if (!_o_sanity_check(output))
     return false;
-  output_input_map[output] = 0;
+  _disconnect(output);
   return true;
 }
 
-bool blocks::UBlock::_is_connected(uint8_t input, uint8_t output) {
-  return output_input_map[output] == input + 1;
+bool blocks::UBlock::_is_connected(const uint8_t input, const uint8_t output) const {
+  return output_input_map[output] == input;
 }
 
-bool blocks::UBlock::is_connected(uint8_t input, uint8_t output) {
-  // Sanity check
-  if (input >= NUM_OF_INPUTS or output >= NUM_OF_OUTPUTS)
+bool blocks::UBlock::is_connected(const uint8_t input, const uint8_t output) const {
+  if (!_io_sanity_check(input, output))
     return false;
 
   return _is_connected(input, output);
 }
 
-void blocks::UBlock::write_alt_signal_to_hardware() const {
-  f_alt_signal.transfer16(alt_signals);
-  f_alt_signal_sync.trigger();
+bool blocks::UBlock::_is_output_connected(const uint8_t output) const { return output_input_map[output] >= 0; }
+
+bool blocks::UBlock::is_output_connected(const uint8_t output) const {
+  if (!_o_sanity_check(output))
+    return false;
+
+  return _is_output_connected(output);
 }
 
-void blocks::UBlock::write_offsets_to_hardware() const {
-  f_offset_loader.set_offsets_and_write_to_hardware(offsets);
+bool blocks::UBlock::_is_input_connected(const uint8_t input) const {
+  for (const auto &output : output_input_map)
+    if (output == input)
+      return true;
+  return false;
 }
 
-void blocks::UBlock::write_matrix_to_hardware() const {
-  f_umatrix.transfer(output_input_map);
+bool blocks::UBlock::is_input_connected(const uint8_t input) const {
+  if (!_i_sanity_check(input))
+    return false;
+  return _is_input_connected(input);
+}
+
+constexpr uint8_t UBLOCK_TRANSMISSION_REGULAR_MASK = 0b0000'0111;
+constexpr uint8_t UBLOCK_TRANSMISSION_ALTERNATIVE_MASK = 0b0001'1001;
+constexpr uint8_t UBLOCK_TRANSMISSION_SIGNLESS_MASK = 0b0000'0110;
+
+uint8_t blocks::UBlock::change_a_side_transmission_mode(const Transmission_Mode mode) {
+  a_side_mode = mode;
+
+  transmission_mode_byte &= ~UBLOCK_TRANSMISSION_REGULAR_MASK;
+  transmission_mode_byte |= mode;
+  return transmission_mode_byte;
+}
+
+uint8_t blocks::UBlock::change_b_side_transmission_mode(const Transmission_Mode mode) {
+  b_side_mode = mode;
+
+  bool sign = mode & 1;
+  uint8_t rest = transmission_mode_byte;
+
+  transmission_mode_byte &= ~UBLOCK_TRANSMISSION_ALTERNATIVE_MASK;
+  transmission_mode_byte |= (mode & UBLOCK_TRANSMISSION_SIGNLESS_MASK) << 2 | sign;
+  return transmission_mode_byte;
+}
+
+uint8_t blocks::UBlock::change_all_transmission_modes(const Transmission_Mode mode) {
+  change_a_side_transmission_mode(mode);
+  return change_b_side_transmission_mode(mode);
+}
+
+uint8_t
+blocks::UBlock::change_all_transmission_modes(const std::pair<Transmission_Mode, Transmission_Mode> modes) {
+  change_a_side_transmission_mode(modes.first);
+  return change_b_side_transmission_mode(modes.second);
+}
+
+std::pair<blocks::UBlock::Transmission_Mode, blocks::UBlock::Transmission_Mode>
+blocks::UBlock::get_all_transmission_modes() const {
+  return std::make_pair(a_side_mode, b_side_mode);
+}
+
+bool blocks::UBlock::write_matrix_to_hardware() const {
+  if (!f_umatrix.transfer(output_input_map))
+    return false;
   f_umatrix_sync.trigger();
-}
-
-void blocks::UBlock::write_to_hardware() {
-  write_alt_signal_to_hardware();
-  write_offsets_to_hardware();
-  write_matrix_to_hardware();
-}
-
-bool blocks::UBlock::use_alt_signals(uint16_t alt_signal) {
-  if (alt_signal > MAX_ALT_SIGNAL)
-    return false;
-  alt_signals |= alt_signal;
   return true;
 }
 
-bool blocks::UBlock::is_alt_signal_used(uint16_t alt_signal) const { return alt_signals & alt_signal; }
-
-uint16_t blocks::UBlock::get_alt_signals() const { return alt_signals; }
-
-void blocks::UBlock::reset_offsets() {
-  std::fill(begin(offsets), end(offsets), decltype(f_offset_loader)::ZERO_OFFSET_RAW);
-}
-
-bool blocks::UBlock::set_offset(uint8_t output, uint16_t offset_raw) {
-  if (output >= NUM_OF_OUTPUTS)
+bool blocks::UBlock::write_transmission_mode_to_hardware() const {
+  if (!transmission_mode_register.transfer8(transmission_mode_byte))
     return false;
-  if ((offset_raw < decltype(f_offset_loader)::MIN_OFFSET_RAW) or
-      (offset_raw > decltype(f_offset_loader)::MAX_OFFSET_RAW))
-    return false;
-  offsets[output] = offset_raw;
+  transmission_mode_sync.trigger();
   return true;
 }
 
-bool blocks::UBlock::set_offset(uint8_t output, float offset) {
-  auto offset_raw = decltype(f_offset_loader)::offset_to_raw(offset);
-  return set_offset(output, offset_raw);
+bool blocks::UBlock::write_to_hardware() {
+  if (!write_matrix_to_hardware() or !write_transmission_mode_to_hardware()) {
+    LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
+    return false;
+  }
+  return true;
 }
 
-void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), end(output_input_map), 0); }
+void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), end(output_input_map), -1); }
 
-void blocks::UBlock::reset_alt_signals() { alt_signals = 0; }
-
-void blocks::UBlock::reset(bool keep_offsets) {
+void blocks::UBlock::reset(const bool keep_offsets) {
   FunctionBlock::reset(keep_offsets);
   reset_connections();
-  reset_alt_signals();
-  if (!keep_offsets)
-    reset_offsets();
-}
-
-bool blocks::UBlock::change_offset(uint8_t output, float delta) {
-  auto delta_raw =
-      decltype(f_offset_loader)::offset_to_raw(delta) - decltype(f_offset_loader)::ZERO_OFFSET_RAW;
-  return set_offset(output, static_cast<uint16_t>(offsets[output] + delta_raw));
-}
-
-bool blocks::UBlock::connect_alt_signal(uint16_t alt_signal, uint8_t output) {
-  // Sanity check
-  if (alt_signal > MAX_ALT_SIGNAL)
-    return false;
-
-  // Some alt signals may only be connected to certain outputs
-  bool success = false;
-  if (alt_signal == ALT_SIGNAL_REF_HALF) {
-    success = connect(ALT_SIGNAL_REF_HALF_INPUT, output, false);
-  } else {
-    if (output < 16)
-      return false;
-
-    // Select input depending on alt_signal
-    uint8_t input;
-    switch (alt_signal) {
-    case ALT_SIGNAL_ACL0:
-      input = 8;
-      break;
-    case ALT_SIGNAL_ACL1:
-      input = 9;
-      break;
-    case ALT_SIGNAL_ACL2:
-      input = 10;
-      break;
-    case ALT_SIGNAL_ACL3:
-      input = 11;
-      break;
-    case ALT_SIGNAL_ACL4:
-      input = 12;
-      break;
-    case ALT_SIGNAL_ACL5:
-      input = 13;
-      break;
-    case ALT_SIGNAL_ACL6:
-      input = 14;
-      break;
-    case ALT_SIGNAL_ACL7:
-      input = 15;
-      break;
-    default:
-      return false;
-    }
-    success = connect(input, output, false);
-  }
-
-  // Enable alt signal, but only if signal was connected successfully
-  if (success)
-    alt_signals |= alt_signal;
-
-  return success;
 }
 
 bool blocks::UBlock::config_self_from_json(JsonObjectConst cfg) {
@@ -326,15 +289,6 @@ bool blocks::UBlock::config_self_from_json(JsonObjectConst cfg) {
       }
     }
   }
-  if (cfg.containsKey("alt_signals")) {
-    if (cfg["alt_signals"].is<JsonArrayConst>()) {
-      for (JsonVariantConst signal : cfg["alt_signals"].as<JsonArrayConst>()) {
-        if (!signal.is<unsigned short>())
-          return false;
-        alt_signals |= 1 << signal.as<unsigned short>();
-      }
-    }
-  }
 
   // The combination of checks above must not ignore any valid config dictionary
   return true;
@@ -347,6 +301,7 @@ void blocks::UBlock::config_self_to_json(JsonObject &cfg) {
   for (const auto &output : output_input_map) {
     if (output)
       outputs_cfg.add(output - 1);
+    // TODO: This -1 may have to be removed due to the changes on the output matrix
     else
       outputs_cfg.add(nullptr);
   }

@@ -20,6 +20,10 @@ public:
 
   using DataFunction::DataFunction;
   SR74HCT595(bus::addr_t address, bool shift_clock=false);
+
+  bool transfer8(uint8_t data_in, uint8_t *data_out = nullptr) const;
+  bool transfer16(uint16_t data_in, uint16_t *data_out = nullptr) const;
+  bool transfer32(uint32_t data_in, uint32_t *data_out = nullptr) const;
 };
 
 }

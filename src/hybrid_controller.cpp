@@ -77,7 +77,7 @@ void setup() {
   // Initialize carrier board
   // TODO, _ERROR_OUT_ shall not be used, see #116
   LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
-  if (!carrier_.init(net::StartupConfig::get().mac)) {
+  if (!carrier_.init()) {
     LOG_ERROR("Error initializing carrier board.");
     _ERROR_OUT_
   }

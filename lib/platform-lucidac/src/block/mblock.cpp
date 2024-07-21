@@ -7,16 +7,19 @@
 
 blocks::MBlock::MBlock(bus::addr_t block_address)
     : blocks::FunctionBlock{std::string("M") + std::string(
-                                                   // Addresses 4, 9, 14 are M0
-                                                   // Addresses 5, 10, 15 are M1
-                                                   block_address % 5 ? "0" : "1"),
+                                                   // Addresses 12, 20, 28 are M0
+                                                   // Addresses 13, 21, 29 are M1
+                                                   block_address % 8 == 4 ? "0" : "1"),
                             block_address} {}
 
 blocks::MIntBlock::MIntBlock(const bus::addr_t block_address)
     : blocks::MBlock{block_address}, f_ic_dac(bus::replace_function_idx(block_address, IC_FUNC_IDX)),
       f_time_factor(bus::replace_function_idx(block_address, TIME_FACTOR_FUNC_IDX), true),
       f_time_factor_sync(bus::replace_function_idx(block_address, TIME_FACTOR_SYNC_FUNC_IDX)), ic_raw{0} {
-  std::fill(std::begin(time_factors), std::end(time_factors), DEFAULT_TIME_FACTOR);
+  // Copying solves a strange linker issue "relocation against ... in read-only section `.text'"
+  // TODO: Investigate problem further, replace by non-ugly solution
+  auto default_ = DEFAULT_TIME_FACTOR;
+  std::fill(std::begin(time_factors), std::end(time_factors), default_);
 }
 
 bool blocks::MIntBlock::set_ic(uint8_t idx, float value) {
@@ -30,11 +33,14 @@ bool blocks::MIntBlock::set_ic(uint8_t idx, float value) {
   return true;
 }
 
-void blocks::MIntBlock::write_to_hardware() {
+bool blocks::MIntBlock::write_to_hardware() {
   for (decltype(ic_raw.size()) i = 0; i < ic_raw.size(); i++) {
-    f_ic_dac.set_channel(i, ic_raw[i]);
+    if (!f_ic_dac.set_channel(i, ic_raw[i])) {
+      LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__ );
+      return false;
+    }
   }
-  write_time_factors_to_hardware();
+  return write_time_factors_to_hardware();
 }
 
 bool blocks::MIntBlock::init() {
@@ -52,15 +58,18 @@ bool blocks::MIntBlock::set_time_factor(uint8_t int_idx, unsigned int k) {
   return true;
 }
 
-void blocks::MIntBlock::write_time_factors_to_hardware() {
+bool blocks::MIntBlock::write_time_factors_to_hardware() {
   uint8_t switches = 0;
   for (size_t index = 0; index < time_factors.size(); index++) {
     if (time_factors[index] != DEFAULT_TIME_FACTOR) {
       switches |= 1 << index;
     }
   }
-  f_time_factor.transfer(switches);
+  if (!f_time_factor.transfer8(switches))
+    return false;
+
   f_time_factor_sync.trigger();
+  return true;
 }
 
 bool blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
@@ -126,7 +135,7 @@ void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
   }
 }
 
-void blocks::MMulBlock::write_to_hardware() {}
+bool blocks::MMulBlock::write_to_hardware() { return true; }
 
 bool blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
   // MMulBlock does not expect any configuration currently.

@@ -4,49 +4,55 @@
 
 #include "bus/bus.h"
 
-#include "io/ioregister.h"
 #include "utils/logging.h"
 
 SPIClass &bus::spi = BUS_SPI_INTERFACE;
 
 void bus::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
-  for (const auto pin : PINS_BADDR) {
-    pinMode(pin, OUTPUT);
-    digitalWriteFast(pin, LOW);
-  }
-  for (const auto pin : PINS_FADDR) {
-    pinMode(pin, OUTPUT);
-    digitalWriteFast(pin, LOW);
-  }
-  bus::release_address();
+
+  pinMode(PIN_ADDR_CS, OUTPUT);
+  digitalWriteFast(PIN_ADDR_CS, HIGH);
+  pinMode(PIN_ADDR_LATCH, OUTPUT);
+  digitalWriteFast(PIN_ADDR_LATCH, LOW);
+  pinMode(PIN_ADDR_RESET, OUTPUT);
+  digitalWriteFast(PIN_ADDR_RESET, HIGH);
+
   bus::spi.begin();
   bus::spi.setMISO(39);
-}
-
-void bus::_change_address_register(uint32_t clear_mask, uint32_t set_mask) {
-  io::change_register(GPIO6_DR, clear_mask, set_mask);
-}
-
-void bus::address_block(uint8_t cluster_idx, uint8_t block_idx) {
-  address_function(cluster_idx, block_idx, 0);
-}
-
-void bus::address_function_only(uint8_t func_idx) {
-  uint32_t mask = (func_idx & 0x3F) << PINS_FADDR_BIT_SHIFT;
-  _change_address_register(FADDR_BITS_MASK, mask);
+  bus::deactivate_address();
 }
 
 void bus::address_function(uint8_t cluster_idx, uint8_t block_idx, uint8_t func_idx) {
   address_function(idx_to_addr(cluster_idx, block_idx, func_idx));
 }
 
+void bus::address_function(uint8_t maddr, uint8_t faddr) {
+  address_function(address_from_tuple(maddr, faddr));
+}
+
 void bus::address_function(bus::addr_t address) {
-  _change_address_register(ADDR_BITS_MASK, bus::address_to_register(address));
+  bus::spi.beginTransaction(SPISettings(4'000'000, MSBFIRST, SPI_MODE2));
+  delayNanoseconds(200);
+  digitalWriteFast(PIN_ADDR_CS, LOW);
+  delayNanoseconds(200);
+  bus::spi.transfer16(address);
+  delayNanoseconds(200);
+  digitalWriteFast(PIN_ADDR_CS, HIGH);
+  delayNanoseconds(200);
+  bus::spi.endTransaction();
 }
 
-void bus::release_address() {
-  address_function(bus::NULL_ADDRESS);
+void bus::deactivate_address() {
+  digitalWriteFast(PIN_ADDR_RESET, LOW);
+  delayNanoseconds(200);
+  activate_address();
+  delayNanoseconds(200);
+  digitalWriteFast(PIN_ADDR_RESET, HIGH);
 }
 
-void bus::address_board_function(uint8_t func_idx) { address_function(board_function_to_addr(func_idx)); }
+void bus::activate_address() {
+  digitalWriteFast(PIN_ADDR_LATCH, HIGH);
+  delayNanoseconds(200);
+  digitalWriteFast(PIN_ADDR_LATCH, LOW);
+}

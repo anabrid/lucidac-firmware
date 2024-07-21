@@ -4,11 +4,10 @@
 
 #include "block/cblock.h"
 
-blocks::CBlock::CBlock(const bus::addr_t block_address, std::array<const functions::AD5452, NUM_COEFF> fCoeffs,
-                       functions::SR74HCT595 fUpscaling, functions::TriggerFunction fUpscalingSync,
-                       functions::TriggerFunction fUpscalingClear)
-    : FunctionBlock("C", block_address), f_coeffs(std::move(fCoeffs)), f_upscaling(std::move(fUpscaling)),
-      f_upscaling_sync(std::move(fUpscalingSync)), f_upscaling_clear(std::move(fUpscalingClear)) {}
+#include "utils/logging.h"
+
+blocks::CBlock::CBlock(const bus::addr_t block_address, std::array<const functions::AD5452, NUM_COEFF> fCoeffs)
+    : FunctionBlock("C", block_address), f_coeffs(std::move(fCoeffs)) {}
 
 blocks::CBlock::CBlock(const bus::addr_t block_address)
     : FunctionBlock("C", block_address),
@@ -43,10 +42,7 @@ blocks::CBlock::CBlock(const bus::addr_t block_address)
                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 28),
                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 29),
                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 30),
-               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31)},
-      f_upscaling(bus::replace_function_idx(block_address, SCALE_SWITCHER)),
-      f_upscaling_sync(bus::replace_function_idx(block_address, SCALE_SWITCHER_SYNC)),
-      f_upscaling_clear(bus::replace_function_idx(block_address, SCALE_SWITCHER_CLEAR)) {}
+               functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31)} {}
 
 blocks::CBlock::CBlock() : CBlock(bus::idx_to_addr(0, bus::C_BLOCK_IDX, 0)) {}
 
@@ -55,55 +51,33 @@ float blocks::CBlock::get_factor(uint8_t idx) {
     return 0.0f;
 
   auto factor = decltype(f_coeffs)::value_type::raw_to_float(factors_[idx]);
-  if (is_upscaled(idx))
-    factor = factor * UPSCALING;
   return factor;
 }
 
 bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   if (idx >= NUM_COEFF)
     return false;
-  if (factor > MAX_FACTOR)
+  if (factor > decltype(f_coeffs)::value_type::MAX_FACTOR or
+      factor < decltype(f_coeffs)::value_type::MIN_FACTOR)
     return false;
-  if (factor < MIN_FACTOR)
-    return false;
-  if (factor > MAX_REAL_FACTOR or factor < MIN_REAL_FACTOR) {
-    set_upscaling(idx, true);
-    factor = factor / UPSCALING;
-  } else {
-    set_upscaling(idx, false);
-  }
+
   factors_[idx] = decltype(f_coeffs)::value_type::float_to_raw(factor);
   return true;
 }
 
-bool blocks::CBlock::is_upscaled(uint8_t idx) {
-  if (idx >= NUM_COEFF)
+bool blocks::CBlock::write_to_hardware() {
+  if (!write_factors_to_hardware()) {
+    LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
     return false;
-  return upscaling_ & (1 << idx);
-}
-
-void blocks::CBlock::set_upscaling(uint8_t idx, bool enable = true) {
-  if (enable)
-    upscaling_ |= 1 << idx;
-  else
-    upscaling_ &= ~(1 << idx);
-}
-
-void blocks::CBlock::write_to_hardware() {
-  write_factors_to_hardware();
-  write_upscaling_to_hardware();
-}
-
-void blocks::CBlock::write_factors_to_hardware() {
-  for (size_t i = 0; i < f_coeffs.size(); i++) {
-    f_coeffs[i].set_scale(factors_[i]);
   }
+  return true;
 }
 
-void blocks::CBlock::write_upscaling_to_hardware() {
-  f_upscaling.transfer32(upscaling_);
-  f_upscaling_sync.trigger();
+bool blocks::CBlock::write_factors_to_hardware() {
+  for (size_t i = 0; i < f_coeffs.size(); i++) {
+    f_coeffs[i].set_scale(decltype(f_coeffs)::value_type::raw_to_float(factors_[i]) * gain_corrections_[i]);
+  }
+  return true;
 }
 
 void blocks::CBlock::reset(bool keep_calibration) {
@@ -111,7 +85,28 @@ void blocks::CBlock::reset(bool keep_calibration) {
   for (size_t i = 0; i < NUM_COEFF; i++) {
     set_factor(i, 0.f);
   }
+  if (!keep_calibration)
+    reset_gain_corrections();
 }
+
+const std::array<float, blocks::CBlock::NUM_COEFF> &blocks::CBlock::get_gain_corrections() const {
+  return gain_corrections_;
+}
+
+void blocks::CBlock::reset_gain_corrections() {
+  std::fill(gain_corrections_.begin(), gain_corrections_.end(), 1.0f);
+}
+
+void blocks::CBlock::set_gain_corrections(const std::array<float, NUM_COEFF> &corrections) {
+    gain_corrections_ = corrections;
+};
+
+bool blocks::CBlock::set_gain_correction(const uint8_t coeff_idx, const float correction) {
+  if (coeff_idx > NUM_COEFF)
+    return false;
+  gain_corrections_[coeff_idx] = correction;
+  return true;
+};
 
 bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG

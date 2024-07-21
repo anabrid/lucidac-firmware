@@ -9,7 +9,8 @@
 #include <array>
 #include <string>
 
-#include "carrier/cluster.h"
+#include "chips/TMP127Q1.h"
+#include "cluster.h"
 #include "entity/entity.h"
 
 using namespace platform;
@@ -33,9 +34,7 @@ public:
 
   entities::EntityClass get_entity_class() const final;
 
-  /// Initializes the carrier: Passes the Ethernet mac address as entity id
-  /// and initializes all clusters.
-  virtual bool init(std::string mac_addr);
+  virtual bool init();
 
   std::vector<Entity *> get_child_entities() override;
 
@@ -43,7 +42,14 @@ public:
 
   bool config_self_from_json(JsonObjectConst cfg) override;
 
-  void write_to_hardware();
+  [[nodiscard]] virtual bool write_to_hardware();
+
+  // REV1 specific things
+  // TODO: These are partly LUCIDAC specific things, which should be rebased on `56-refactor-...` branch.
+public:
+  // Module addresses
+  static constexpr uint8_t CARRIER_MADDR = 5;
+
 
   ///@addtogroup User-Functions
   ///@{

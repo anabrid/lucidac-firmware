@@ -13,9 +13,20 @@ using namespace fakeit;
 void setUp() {
   // This is called before *each* test.
   ArduinoFakeReset();
+
+  // mock all delay* calls
+  When(Method(ArduinoFake(Function), delay)).AlwaysReturn();
+  When(Method(ArduinoFake(Function), delayMicroseconds)).AlwaysReturn();
+  When(Method(ArduinoFake(Function), delayNanoseconds)).AlwaysReturn();
+
+  // mock SPI configuration calls
   When(OverloadedMethod(ArduinoFake(SPI), begin, void(void))).AlwaysReturn();
+  When(OverloadedMethod(ArduinoFake(SPI), end, void(void))).AlwaysReturn();
+
+  // mock GPIO calls
   When(OverloadedMethod(ArduinoFake(Function), pinMode, void(uint8_t, uint8_t))).AlwaysReturn();
   When(OverloadedMethod(ArduinoFake(Function), digitalWrite, void(uint8_t, uint8_t))).AlwaysReturn();
+
   bus::init();
 }
 
@@ -23,21 +34,19 @@ void tearDown() {
   // This is called after *each* test.
 }
 
-void test_address_register() {
-  TEST_ASSERT_BITS(bus::ADDR_BITS_MASK, address_to_register(NULL_ADDRESS), GPIO6_DR);
-  bus::address_function(1, 3, 7);
-  TEST_ASSERT_BITS(bus::ADDR_BITS_MASK, address_to_register(idx_to_addr(1,3,7)), GPIO6_DR);
-}
+void test_address_via_shift_register() {
+  SPISettings settings(4'000'000, MSBFIRST, SPI_MODE2);
+  When(Method(ArduinoFake(SPI), beginTransaction).Using(settings)).Return();
+  When(Method(ArduinoFake(SPI), transfer16)).Return();
+  When(Method(ArduinoFake(SPI), endTransaction)).Return();
 
-void test_address_register_again() {
-  TEST_ASSERT_BITS(bus::ADDR_BITS_MASK, address_to_register(NULL_ADDRESS), GPIO6_DR);
-  bus::address_function(static_cast<bus::addr_t>(3));
-  TEST_ASSERT_BITS(bus::ADDR_BITS_MASK, 0b0000'000000'0011'00'00000000'00000000, GPIO6_DR);
+  bus::address_function(1, 3, 7);
+
+  Verify(Method(ArduinoFake(SPI), transfer16).Using(0b00000111'00010011)).Once();
 }
 
 int main(int argc, char **argv) {
   UNITY_BEGIN();
-  RUN_TEST(test_address_register);
-  RUN_TEST(test_address_register_again);
+  RUN_TEST(test_address_via_shift_register);
   UNITY_END();
 }

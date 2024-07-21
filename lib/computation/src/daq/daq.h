@@ -28,8 +28,8 @@ std::array<volatile uint32_t, BUFFER_SIZE> get_buffer();
 
 class BaseDAQ {
 protected:
-  static constexpr uint16_t RAW_MINUS_ONE = 2461;
-  static constexpr uint16_t RAW_PLUS_ONE = 5733;
+  static constexpr uint16_t RAW_MINUS_ONE_POINT_TWO_FIVE = 0;
+  static constexpr uint16_t RAW_PLUS_ONE_POINT_TWO_FIVE = 16383;
 
 public:
   virtual bool init(unsigned int sample_rate) = 0;
@@ -92,7 +92,10 @@ public:
   std::array<float, NUM_CHANNELS> sample() override;
 
   /// Extracts a single number of a full word capture.
+  uint16_t sample_raw(uint8_t index);
   float sample(uint8_t index) override;
+
+  std::array<uint16_t, NUM_CHANNELS> sample_avg_raw(size_t samples, unsigned int delay_us);
 
   // Call via protocol
   ///@ingroup User-Functions

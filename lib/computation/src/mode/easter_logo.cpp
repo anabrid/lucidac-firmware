@@ -168,8 +168,8 @@ struct DrawAnabridLogo {
   void draw_anabrid() {
     cluster.reset(true);
 
-    cluster.ublock->connect(x_out, UBlock::IDX_RANGE_TO_ACL_OUT(5));
-    cluster.ublock->connect(y_out, UBlock::IDX_RANGE_TO_ACL_OUT(6));
+    cluster.ublock->connect(x_out, 5); // FIXME UBlock::IDX_RANGE_TO_ACL_OUT(5));
+    cluster.ublock->connect(y_out, 6); // FIXME UBlock::IDX_RANGE_TO_ACL_OUT(6));
 
     cluster.route(x_out, 0, 0, y_in);
     cluster.route(one, 1, 0, y_in);
@@ -231,8 +231,8 @@ struct DrawAnabridLogo {
   void draw_logo() {
     cluster.reset(true);
 
-    cluster.ublock->connect(x_out, UBlock::IDX_RANGE_TO_ACL_OUT(5));
-    cluster.ublock->connect(y_out, UBlock::IDX_RANGE_TO_ACL_OUT(6));
+    cluster.ublock->connect(x_out, 5); // FIXME UBlock::IDX_RANGE_TO_ACL_OUT(5));
+    cluster.ublock->connect(y_out, 6); // FIXME UBlock::IDX_RANGE_TO_ACL_OUT(6));
 
     cluster.route(x_out, 0, 0, y_in);
     cluster.route(one, 1, 0, y_in);

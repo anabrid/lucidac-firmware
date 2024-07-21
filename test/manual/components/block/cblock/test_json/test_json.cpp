@@ -20,8 +20,8 @@ blocks::CBlock_SequentialAddresses cblockreciever;
 void test_object2json2object() {
   cblockdonor.init();
   int num_coeff = cblockdonor.NUM_COEFF;
-  float max_factor = cblockdonor.MAX_FACTOR;
-  float min_factor = cblockdonor.MIN_FACTOR;
+  float max_factor = decltype(cblockdonor.f_coeffs)::value_type::MAX_FACTOR;
+  float min_factor = decltype(cblockdonor.f_coeffs)::value_type::MIN_FACTOR;
 
   for (int i = 0; i < num_coeff; i++) {
     float coeff_in_range = (max_factor * i + (num_coeff - i) * min_factor) / num_coeff;

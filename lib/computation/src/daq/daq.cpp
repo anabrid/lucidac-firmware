@@ -72,7 +72,7 @@ bool ContinuousDAQ::stream(bool partial) {
     return false;
 
   // Default values for streaming
-  volatile uint32_t* active_buffer_part;
+  volatile uint32_t *active_buffer_part;
   size_t outer_count = dma::BUFFER_SIZE / daq_config.get_num_channels() / 2;
 
   // Change streaming parameters depending on whether the first or second half of buffer is streamed
@@ -95,8 +95,7 @@ bool ContinuousDAQ::stream(bool partial) {
   } else
     return true;
 
-  run_data_handler->handle(active_buffer_part, outer_count,
-                           daq_config.get_num_channels(), run);
+  run_data_handler->handle(active_buffer_part, outer_count, daq_config.get_num_channels(), run);
   return true;
 }
 
@@ -376,7 +375,10 @@ bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate_unus
 }
 
 float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
-  return ((static_cast<float>(raw) - RAW_MINUS_ONE) / (RAW_PLUS_ONE - RAW_MINUS_ONE)) * 2.0f - 1.0f;
+  return ((static_cast<float>(raw) - RAW_MINUS_ONE_POINT_TWO_FIVE) /
+          (RAW_PLUS_ONE_POINT_TWO_FIVE - RAW_MINUS_ONE_POINT_TWO_FIVE)) *
+             -2.5f +
+         1.25f;
 }
 
 const char *daq::BaseDAQ::raw_to_str(uint16_t raw) {
@@ -396,13 +398,8 @@ std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, un
 }
 
 size_t daq::BaseDAQ::raw_to_normalized(uint16_t raw) {
-  // lower limit that returns meaningful index
-  if (raw < 2133)
-    return 0;
-  // TODO: upper limit that returns meaningful index
-  // if (raw > ...)
-  //   return ...;
-  return (raw * 611) / 1000 - 1303;
+  // exact conversion is 0.152658243301, but we only care about so much precision
+  return (static_cast<size_t>(raw) * 1527) / 1000;
 }
 
 std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {
@@ -439,6 +436,18 @@ std::array<float, daq::NUM_CHANNELS> daq::OneshotDAQ::sample() {
 }
 
 float daq::OneshotDAQ::sample(uint8_t index) { return sample()[index]; }
+
+uint16_t daq::OneshotDAQ::sample_raw(uint8_t index) { return sample_raw()[index]; }
+
+std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_avg_raw(size_t samples,
+                                                                        unsigned int delay_us) {
+  utils::RunningAverageNew<std::array<uint16_t, daq::NUM_CHANNELS>> avg;
+  for (size_t i = 0; i < samples; i++) {
+    avg.add(sample_raw());
+    delayMicroseconds(delay_us);
+  }
+  return avg.get_average();
+}
 
 int daq::OneshotDAQ::sample(JsonObjectConst msg_in, JsonObject &msg_out) {
   std::array<float, daq::NUM_CHANNELS> data{};

@@ -8,17 +8,17 @@
 #include "utils/logging.h"
 
 const SPISettings functions::ICommandRegisterFunction::DEFAULT_SPI_SETTINGS{
-    4'000'000, MSBFIRST, SPI_MODE3 /* chip expects SPI MODE0, but CLK is inverted on the way */};
+    4'000'000, MSBFIRST, SPI_MODE2 /* chip expects SPI MODE0, but CLK is inverted on the way */};
 
 functions::ICommandRegisterFunction::ICommandRegisterFunction(bus::addr_t address)
-    : DataFunction(address, DEFAULT_SPI_SETTINGS) {}
+    : SR74HCT595(address, DEFAULT_SPI_SETTINGS) {}
 
 uint8_t functions::ICommandRegisterFunction::chip_cmd_word(uint8_t chip_input_idx, uint8_t chip_output_idx,
                                                            bool connect) {
   return (connect ? 0b1'000'0000 : 0b0'000'0000) | ((chip_output_idx & 0x7) << 4) | (chip_input_idx & 0xF);
 }
 
-void blocks::IBlock::write_to_hardware() {
+bool blocks::IBlock::write_imatrix_to_hardware() {
   f_imatrix_reset.trigger();
   delayNanoseconds(420);
 
@@ -31,9 +31,6 @@ void blocks::IBlock::write_to_hardware() {
   uint32_t remembered_command = 0;
   for (decltype(outputs.size()) output_idx = 0; output_idx < outputs.size() / 2; output_idx++) {
     uint32_t command = 0;
-
-    //  We are iterating over hardware indexes and look up the appropriate place in logically
-    //  sequentially indexed table.
     const auto oidx_one_two = output_idx;
     const auto oidx_three_four = output_idx + outputs.size() / 2;
     if (!outputs[oidx_one_two] && !outputs[oidx_three_four])
@@ -44,15 +41,8 @@ void blocks::IBlock::write_to_hardware() {
 
       command = 0;
 
-      // On REV0 hardware, some inputs are wrongly connected/labeled
-      // (see https://lab.analogparadigm.com/lucidac/hardware/i-block/-/issues/2)
-      // and need to be fixed according to _logical_to_hardware_input.
-      // We can do so in the inner loop, because the correction is only ever switching inputs on the same chip.
-      // _logical_to_hardware_input is written to handle inputs from 0...NUM_INPUTS,
-      // but in fact we only need to correct 0...NUM_INPUTS/2.
-      // TODO: Remove once hardware is fixed.
-      const auto iidx_one_three = _logical_to_hardware_input(input_idx);
-      const auto iidx_two_four = _logical_to_hardware_input(input_idx + NUM_INPUTS / 2);
+      const auto iidx_one_three = input_idx;
+      const auto iidx_two_four = input_idx + NUM_INPUTS / 2;
       bool actual_data = false;
       // First chip combines oidx_one_two and iidx_one_three
       if (outputs[oidx_one_two] & INPUT_BITMASK(iidx_one_three)) {
@@ -86,13 +76,28 @@ void blocks::IBlock::write_to_hardware() {
       if (actual_data) {
         remembered_command = command;
         // Send out data
-        f_cmd.transfer32(command);
+        if (!f_cmd.transfer32(command)) {
+          LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
+          return false;
+        }
         // Apply command
         f_imatrix_sync.trigger();
       }
     }
   }
+  return true;
 }
+
+bool blocks::IBlock::write_scaling_to_hardware() {
+  if (!scaling_register.transfer32(scaling_factors.to_ulong())) {
+    LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
+    return false;
+  }
+  scaling_register_sync.trigger();
+  return true;
+}
+
+bool blocks::IBlock::write_to_hardware() { return write_scaling_to_hardware() && write_imatrix_to_hardware(); }
 
 bool blocks::IBlock::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
@@ -104,36 +109,14 @@ bool blocks::IBlock::init() {
   return true;
 }
 
-bool blocks::IBlock::_is_connected(uint8_t input, uint8_t output) {
+bool blocks::IBlock::_is_connected(uint8_t input, uint8_t output) const {
   return outputs[output] & INPUT_BITMASK(input);
 }
 
-bool blocks::IBlock::is_connected(uint8_t input, uint8_t output) {
+bool blocks::IBlock::is_connected(uint8_t input, uint8_t output) const {
   if (output >= NUM_OUTPUTS or input >= NUM_INPUTS)
     return false;
   return _is_connected(input, output);
-}
-
-uint8_t blocks::IBlock::_hardware_to_logical_input(uint8_t hardware_input) {
-  // Manually fix pin-numbering, see https://lab.analogparadigm.com/lucidac/hardware/i-block/-/issues/2
-  // TODO: Remove once hardware is fixed.
-  if ((hardware_input >= 8 && hardware_input <= 13) || (hardware_input >= 24 && hardware_input <= 29)) {
-    return hardware_input - 2;
-  } else if ((hardware_input >= 6 && hardware_input <= 7) || (hardware_input >= 22 && hardware_input <= 23)) {
-    return hardware_input + 6;
-  }
-  return hardware_input;
-}
-
-uint8_t blocks::IBlock::_logical_to_hardware_input(uint8_t logical_input) {
-  // Manually fix pin-numbering, see https://lab.analogparadigm.com/lucidac/hardware/i-block/-/issues/2
-  // TODO: Remove once hardware is fixed.
-  if ((logical_input >= 6 && logical_input <= 11) || (logical_input >= 22 && logical_input <= 27)) {
-    return logical_input + 2;
-  } else if ((logical_input >= 12 && logical_input <= 13) || (logical_input >= 28 && logical_input <= 29)) {
-    return logical_input - 6;
-  }
-  return logical_input;
 }
 
 bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool allow_input_splitting) {
@@ -145,7 +128,7 @@ bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool
     for (size_t other_output_idx = 0; other_output_idx < outputs.size(); other_output_idx++) {
       if (output == other_output_idx)
         continue;
-      if (is_connected(input, other_output_idx)) { // operates on logical indexes
+      if (is_connected(input, other_output_idx)) {
         return false;
       }
     }
@@ -167,6 +150,7 @@ void blocks::IBlock::reset_outputs() {
 void blocks::IBlock::reset(bool keep_calibration) {
   FunctionBlock::reset(keep_calibration);
   reset_outputs();
+  reset_upscaling();
 }
 
 bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
@@ -202,6 +186,31 @@ bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
         if (!_connect_from_json(input_spec, idx++))
           return false;
       }
+    }
+  }
+
+  if (cfg["upscaling"].is<JsonObjectConst>()) {
+    for (JsonPairConst keyval : cfg["upscaling"].as<JsonObjectConst>()) {
+      if (!keyval.value().is<bool>())
+        return false;
+
+      auto input = std::stoul(keyval.key().c_str());
+      if (input > NUM_INPUTS)
+        return false;
+
+      set_upscaling(input, keyval.value());
+    }
+  }
+
+  if (cfg["upscaling"].is<JsonArrayConst>()) {
+    auto array = cfg["upscaling"].as<JsonArrayConst>();
+    if (array.size() != NUM_INPUTS)
+      return false;
+
+    for (uint8_t input = 0; input < NUM_INPUTS; input++) {
+      if (!array[input].is<bool>())
+        return false;
+      set_upscaling(input, array[input]);
     }
   }
   return true;
@@ -241,6 +250,24 @@ bool blocks::IBlock::disconnect(uint8_t output) {
   return true;
 }
 
+bool blocks::IBlock::set_upscaling(uint8_t output, bool upscale) {
+  if (output > 32)
+    return false;
+  scaling_factors[output] = upscale;
+  return true;
+}
+
+void blocks::IBlock::set_upscaling(std::bitset<NUM_INPUTS> scales) { scaling_factors = scales; }
+
+void blocks::IBlock::reset_upscaling() { scaling_factors.reset(); }
+
+bool blocks::IBlock::get_upscaling(uint8_t output) const {
+  if (output > 32)
+    return false;
+  else
+    return scaling_factors[output];
+}
+
 void blocks::IBlock::config_self_to_json(JsonObject &cfg) {
   Entity::config_self_to_json(cfg);
   // Save outputs into cfg
@@ -254,6 +281,14 @@ void blocks::IBlock::config_self_to_json(JsonObject &cfg) {
     } else {
       outputs_cfg.add(nullptr);
     }
+  }
+
+  auto upscaling_cfg = cfg.createNestedArray("upscaling");
+  for (uint8_t input = 0; input < NUM_INPUTS; input++) {
+    if (scaling_factors[input])
+      upscaling_cfg.add(true);
+    else
+      upscaling_cfg.add(false);
   }
 }
 
@@ -270,3 +305,9 @@ blocks::IBlock *blocks::IBlock::from_entity_classifier(entities::EntityClassifie
   // Return default implementation
   return new IBlock(block_address);
 }
+
+const std::array<uint32_t, blocks::IBlock::NUM_OUTPUTS> &blocks::IBlock::get_outputs() const {
+  return outputs;
+}
+
+void blocks::IBlock::set_outputs(const std::array<uint32_t, NUM_OUTPUTS> &outputs_) { outputs = outputs_; }

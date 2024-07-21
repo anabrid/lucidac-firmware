@@ -27,6 +27,7 @@ public:
   blocks::UBlock *ublock = nullptr;
   blocks::CBlock *cblock = nullptr;
   blocks::IBlock *iblock = nullptr;
+  blocks::SHBlock *shblock = nullptr;
 
   explicit Cluster(uint8_t cluster_idx = 0);
 
@@ -37,11 +38,12 @@ public:
   entities::EntityClass get_entity_class() const final { return entities::EntityClass::CLUSTER; }
 
   bool init();
-  std::array<blocks::FunctionBlock *, 5> get_blocks() const;
+  std::array<blocks::FunctionBlock *, 6> get_blocks() const;
 
   bool calibrate(daq::BaseDAQ *daq);
+  bool calibrate_offsets();
 
-  void write_to_hardware();
+  [[nodiscard]] bool write_to_hardware();
 
   /**
    * Register a route throught the cluster.
@@ -65,11 +67,8 @@ public:
    **/
   bool route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out);
 
-  /**
-   * Register a route using one of the alternate signals. See `route` for additional information.
-   * Some alt signals may not be arbitrarily routed.
-   */
-  bool route_alt_signal(uint16_t alt_signal, uint8_t u_out, float c_factor, uint8_t i_out);
+  bool add_constant(blocks::UBlock::Transmission_Mode signal_type, uint8_t u_out, float c_factor,
+                    uint8_t i_out);
 
   void reset(bool keep_calibration);
 
@@ -78,9 +77,6 @@ public:
   Entity *get_child_entity(const std::string &child_id) override;
 
   bool config_self_from_json(JsonObjectConst cfg) override;
-
-protected:
-  bool calibrate_offsets_ublock_initial(daq::BaseDAQ *daq);
 };
 
-} // namespace lucidac
+} // namespace platform

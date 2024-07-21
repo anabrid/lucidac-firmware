@@ -7,6 +7,7 @@
 #include <unity.h>
 
 #include "metadata/74LVC138AD.tpl.hpp"
+#include "test_fmtlib.h"
 
 MetadataMemory74LVC138AD chip{bus::idx_to_addr(0, bus::C_BLOCK_IDX, bus::METADATA_FUNC_IDX)};
 
@@ -33,6 +34,9 @@ void test_read_uuid() {
   // Read UUID
   chip.read_from_hardware(offsetof(metadata::MetadataMemoryLayoutV1, uuid),
                           sizeof(metadata::MetadataMemoryLayoutV1::uuid), uuid_is.data());
+
+  TEST_MESSAGE_FORMAT("Data read from {} to +{} is {}", offsetof(metadata::MetadataMemoryLayoutV1, uuid),
+                      sizeof(metadata::MetadataMemoryLayoutV1::uuid), uuid_is);
 
   // Check UUID
   TEST_ASSERT_EQUAL_UINT8_ARRAY(uuid_should.data(), uuid_is.data(), uuid_should.size());

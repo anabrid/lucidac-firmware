@@ -21,8 +21,6 @@ namespace functions {
 class Function {
 public:
   const bus::addr_t address;
-  virtual void set_address() const;
-  virtual void release_address() const;
 
   // explicit keyword shall most certainly avoid accidental downcasting
   explicit Function(bus::addr_t address);
@@ -67,10 +65,11 @@ public:
   void begin_communication() const;
   void end_communication() const;
 
+protected:
   void transfer(const void *mosi_buf, void *miso_buf, size_t count) const;
-  uint8_t transfer(uint8_t data) const;
-  uint16_t transfer16(uint16_t data) const;
-  uint32_t transfer32(uint32_t data) const;
+  uint8_t transfer8(uint8_t data_in) const;
+  uint16_t transfer16(uint16_t data_in) const;
+  uint32_t transfer32(uint32_t data_in) const;
 };
 
 } // namespace functions

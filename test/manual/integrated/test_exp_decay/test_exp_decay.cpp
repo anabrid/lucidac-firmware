@@ -66,7 +66,7 @@ void test_exp_decay() {
 
   // IBlock should connect (CBlock BL_OUT0 = IBlock BL_OUT0 (=input!)) to (M2 Block IN0 = IBlock MBL_IN0
   // (!kicad schematic is not up-to-date) = IBlock output 0)
-  iblock.outputs[0] = IBlock::INPUT_BITMASK(0);
+  iblock.connect(0, 0);
   iblock.write_to_hardware();
 
   digitalWriteFast(LED_BUILTIN, HIGH);

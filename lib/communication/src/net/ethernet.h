@@ -54,7 +54,7 @@ namespace net {
     int jsonl_port,        ///< TCP port for jsonl server
         webserver_port;    ///< TCP port for webserver
 
-    MacAddress mac;      ///< Custom MAC address. Defaults to original permanent system Mac.
+    MacAddress mac;       ///< Custom MAC address. Defaults to original permanent system Mac.
     std::string hostname; ///< used only for DHCP client. Maximum 250 characters.
 
     IPAddress

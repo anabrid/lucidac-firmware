@@ -9,6 +9,10 @@
 
 namespace blocks {
 
+class FunctionBlockHAL {
+  virtual float read_temperature() = 0;
+};
+
 /**
  * A function block represents one module in a cluster,
  * such as an M-Block, C-Block, I-Block or U-Block.
@@ -29,7 +33,7 @@ public:
 
   virtual void reset(bool keep_calibration) {}
 
-  virtual void write_to_hardware() = 0;
+  [[nodiscard]] virtual bool write_to_hardware() = 0;
 
   std::vector<Entity *> get_child_entities() override {
 #ifdef ANABRID_DEBUG_ENTITY

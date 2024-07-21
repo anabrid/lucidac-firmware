@@ -52,6 +52,18 @@
 #define LOG_ANABRID_DEBUG_DAQ(message) ((void)0)
 #endif
 
+#ifdef ANABRID_PEDANTIC
+#define LOG_ANABRID_PEDANTIC(message) __LOG(message)
+#else
+#define LOG_ANABRID_PEDANTIC(message) ((void)0)
+#endif
+
+#ifdef ANABRID_DEBUG_CALIBRATION
+#define LOG_ANABRID_DEBUG_CALIBRATION(message) __LOG(message)
+#else
+#define LOG_ANABRID_DEBUG_CALIBRATION(message) ((void)0)
+#endif
+
 
 // moved here from main in order to use at other places
 #define _ERROR_OUT_                                                                                           \

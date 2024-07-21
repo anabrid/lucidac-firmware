@@ -3,14 +3,16 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include "carrier.h"
-
-carrier::Carrier::Carrier(std::vector<Cluster> clusters) : Entity(""), clusters(std::move(clusters)) {}
+#include "net/settings.h"
+#include "utils/is_number.h"
 
 entities::EntityClass carrier::Carrier::get_entity_class() const { return entities::EntityClass::CARRIER; }
 
-bool carrier::Carrier::init(std::string mac_addr) {
+carrier::Carrier::Carrier(std::vector<Cluster> clusters) : Entity(""), clusters(std::move(clusters)) {}
+
+bool carrier::Carrier::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
-  entity_id = mac_addr;
+  entity_id = net::StartupConfig::get().mac;
   if (entity_id.empty())
     return false;
   for (auto &cluster : clusters) {
@@ -29,10 +31,13 @@ std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
 }
 
 entities::Entity *carrier::Carrier::get_child_entity(const std::string &child_id) {
-  auto cluster_idx = std::stoul(child_id);
-  if (cluster_idx < 0 or clusters.size() < cluster_idx)
-    return nullptr;
-  return &clusters[cluster_idx];
+  if (utils::is_number(child_id.begin(), child_id.end())) {
+    auto cluster_idx = std::stoul(child_id);
+    if (cluster_idx < 0 or clusters.size() < cluster_idx)
+      return nullptr;
+    return &clusters[cluster_idx];
+  }
+  return nullptr;
 }
 
 bool carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
@@ -40,11 +45,16 @@ bool carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
   return true;
 }
 
-void carrier::Carrier::write_to_hardware() {
+bool carrier::Carrier::write_to_hardware() {
   for (auto &cluster : clusters) {
-    cluster.write_to_hardware();
+    if (!cluster.write_to_hardware()) {
+      LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
+      return false;
+    }
   }
+  return true;
 }
+
 
 constexpr int error(int i) { return i; } // just some syntactic suggar
 constexpr int success = 0;
