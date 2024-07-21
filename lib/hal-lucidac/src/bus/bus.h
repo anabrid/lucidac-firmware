@@ -38,7 +38,7 @@ constexpr uint16_t ADDR_MASK_FADDR = 0xFF00;
 
 // Some BADDRs
 constexpr uint8_t CTRL_BLOCK_BADDR = 1;
-constexpr uint8_t BACKPLANE_BADDR = 2;
+constexpr uint8_t BACKPLANE_BADDR = 2; ///< Note this is LUCIDAC FrontPanel (FP entity)
 constexpr uint8_t FRONTPLANE_BADDR = 3;
 constexpr uint8_t T_BLOCK_BADDR = 4;
 constexpr uint8_t CARRIER_BADDR = 5;
