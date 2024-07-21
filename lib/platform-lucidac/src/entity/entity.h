@@ -8,8 +8,8 @@
 #include "base.h"
 
 #include "bus/bus.h"
-#include "metadata/metadata.h"
 #include "logging.h"
+#include "metadata/metadata.h"
 
 namespace entities {
 
@@ -26,7 +26,7 @@ template <class BlockT> BlockT *detect(const bus::addr_t block_address) {
   case EntityClass::CARRIER:
   case EntityClass::CLUSTER:
     return nullptr;
-  case EntityClass::FRONT_PLANE:
+  case EntityClass::FRONT_PANEL:
   case EntityClass::M_BLOCK:
   case EntityClass::U_BLOCK:
   case EntityClass::C_BLOCK:

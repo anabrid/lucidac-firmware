@@ -7,7 +7,7 @@
 
 #include "block/blocks.h"
 #include "carrier/carrier.h"
-#include "front_plane.h"
+#include "front_panel.h"
 
 namespace platform {
 
@@ -74,7 +74,7 @@ public:
 
   [[nodiscard]] bool write_to_hardware() override;
 
-  lucidac::FrontPlane *front_plane;
+  lucidac::FrontPanel *front_panel;
 };
 
 } // namespace platform

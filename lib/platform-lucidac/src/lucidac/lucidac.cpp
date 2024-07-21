@@ -82,39 +82,39 @@ bool LUCIDAC::init() {
   if (!Carrier::init())
     return false;
 
-  LOG(ANABRID_DEBUG_INIT, "Detecting front-plane...");
-  if (!front_plane) {
-    front_plane = entities::detect<lucidac::FrontPlane>(bus::address_from_tuple(2, 0));
-    if (!front_plane) {
-      LOG(ANABRID_DEBUG_INIT, "Warning: Front-plane is missing or unknown.");
+  LOG(ANABRID_DEBUG_INIT, "Detecting front panel...");
+  if (!front_panel) {
+    front_panel = entities::detect<lucidac::FrontPanel>(bus::address_from_tuple(2, 0));
+    if (!front_panel) {
+      LOG(ANABRID_DEBUG_INIT, "Warning: Front panel is missing or unknown.");
     }
   }
 
-  LOG(ANABRID_DEBUG_INIT, "Initialising detected front-plane...");
-  if (front_plane && !front_plane->init())
+  LOG(ANABRID_DEBUG_INIT, "Initialising detected front panel...");
+  if (front_panel && !front_panel->init())
     return false;
-  LOG(ANABRID_DEBUG_INIT, "Front-plane initialized.");
+  LOG(ANABRID_DEBUG_INIT, "Front panel initialized.");
 
   return true;
 }
 
 std::vector<entities::Entity *> LUCIDAC::get_child_entities() {
   auto entities = this->carrier::Carrier::get_child_entities();
-  if (front_plane)
-    entities.push_back(front_plane);
+  if (front_panel)
+    entities.push_back(front_panel);
   return entities;
 }
 
 entities::Entity *LUCIDAC::get_child_entity(const std::string &child_id) {
   if (child_id == "FP")
-    return front_plane;
+    return front_panel;
   return this->carrier::Carrier::get_child_entity(child_id);
 }
 
 bool LUCIDAC::write_to_hardware() {
   if (!this->carrier::Carrier::write_to_hardware())
     return false;
-  if (front_plane)
-    return front_plane->write_to_hardware();
+  if (front_panel)
+    return front_panel->write_to_hardware();
   return true;
 }

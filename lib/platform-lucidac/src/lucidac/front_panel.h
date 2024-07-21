@@ -16,21 +16,21 @@ namespace platform {
 namespace lucidac {
 
 /**
- * The Lucidac Front Plane is represented by this class.
+ * The Lucidac Front Panel is represented by this class.
  *
- * This class provides a interface for all the functions available on the Lucidac Front Plane.
+ * This class provides a interface for all the functions available on the Lucidac Front Panel.
  *
- * A Lucidac can only have a single front plane.
+ * A Lucidac can only have a single front panel.
  * Typical usage happens via the Lucidac class.
  *
  **/
 
-class FrontPlane : public entities::Entity {
+class FrontPanel : public entities::Entity {
 public:
   // Entity hardware identifier information.
-  static constexpr auto CLASS_ = entities::EntityClass::FRONT_PLANE;
+  static constexpr auto CLASS_ = entities::EntityClass::FRONT_PANEL;
 
-  static FrontPlane *from_entity_classifier(entities::EntityClassifier classifier,
+  static FrontPanel *from_entity_classifier(entities::EntityClassifier classifier,
                                             __attribute__((__unused__)) bus::addr_t block_address);
 
   entities::EntityClass get_entity_class() const final { return CLASS_; }
@@ -57,9 +57,9 @@ public:
   static constexpr uint8_t DAC_OUT0_CH = 4;
   static constexpr uint8_t DAC_OUT1_CH = 5;
 
-  FrontPlane();
+  FrontPanel();
 
-  //! Initializes the front plane and puts the frequency generator to sleep.
+  //! Initializes the front panel and puts the frequency generator to sleep.
   bool init();
 
   //! Writes the hardware state of the LEDs and the signal generator

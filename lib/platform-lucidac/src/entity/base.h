@@ -23,7 +23,7 @@ enum class EntityClass : uint8_t {
   C_BLOCK = 5,
   I_BLOCK = 6,
   SH_BLOCK = 7,
-  FRONT_PLANE = 8,
+  FRONT_PANEL = 8,
   CTRL_BLOCK = 9
 };
 
