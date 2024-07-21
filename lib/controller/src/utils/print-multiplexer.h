@@ -1,3 +1,7 @@
+// Copyright (c) 2024 anabrid GmbH
+// Contact: https://www.anabrid.com/licensing/
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
+
 #pragma once
 
 #include <Arduino.h>
@@ -5,7 +9,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "utils/logging.h"
+//#include "utils/logging.h"
 
 namespace utils {
 
@@ -34,15 +38,21 @@ namespace utils {
         std::vector<size_t> ret;
         for(auto& target : targets) if(target) ret.push_back(target->write(b));
         if(!std::all_of(ret.cbegin(), ret.cend(), [](size_t i) { return i == 1; })) {
-           LOG_ALWAYS("PrintMultiplexer: write(byte) failed for at least one target.");
+           // TODO: For circular dependency reasons, cannot use the Logging facilities because
+           //       this is part of it.
+           //LOG_ALWAYS("PrintMultiplexer: write(byte) failed for at least one target.");
         }
         return ret.size()>0 ? ret[0] : /*devnull*/ 1;
     }
-    virtual size_t write(const uint8_t *buffer, size_t size) override {
+    
+    size_t write(const uint8_t *buffer, size_t size) override {
         std::vector<size_t> ret;
         for(auto& target : targets) if(target) ret.push_back(target->write(buffer, size));
         if(!std::all_of(ret.cbegin(), ret.cend(), [size](size_t i) { return i == size; })) {
-            LOG_ALWAYS("PrintMultiplexer: write(buffer,size) failed for at least one target.");
+           // TODO: For circular dependency reasons, cannot use the Logging facilities because
+           //       this is part of it.
+            //LOG_ALWAYS("PrintMultiplexer: write(buffer,size) failed for at least one target.");
+
             //Serial.printf("size=%d\n", size);
             //for(auto & r : ret) { Serial.printf("ret = %d\n", r); }
         }

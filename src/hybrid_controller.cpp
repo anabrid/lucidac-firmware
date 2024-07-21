@@ -21,6 +21,7 @@
 #include "utils/logging.h"
 #include "protocol/registry.h"
 #include "protocol/handler.h"
+#include "protocol/jsonl_logging.h"
 #include "protocol/protocol.h"
 #include "protocol/jsonl_server.h"
 #include "net/auth.h"
@@ -58,6 +59,9 @@ void setup() {
   while (!Serial && millis() < 4000) {
     // Wait for Serial, but not forever
   }
+
+  msg::Log::get().sinks.add(&Serial);
+  msg::Log::get().sinks.add(&msg::StartupLog::get());
 
   LOG_ALWAYS(dist::ident());
   LOGV("Flash image (%d bytes) sha256 sum: %s\n",

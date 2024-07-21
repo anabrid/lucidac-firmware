@@ -4,14 +4,20 @@
 
 #pragma once
 
+// TODO: Move "utils/logging.h" somewhere more appropriate, given the new dependency from the protocol
+#include "protocol/jsonl_logging.h"
+
 // NOTE: Variadic macros and __PRETTY_FUNCTION__ are GNU specific extensions!
 //       If you find __PRETTY_FUNCTION__ to verbose, see probably https://stackoverflow.com/a/64384924
+
+#define LOG_TARGET msg::Log::get() // internal header helper, will be undefined later
 
 // The actual logging call (but see also printf below)
 // The actual logging call
 #ifdef ARDUINO
 #include <Arduino.h>
-#define __LOG(message) { Serial.print("# "); Serial.println(message); }
+#include "StreamUtils.h" // ArduinoSreamUtils
+#define __LOG(message) LOG_TARGET.println(message);
 #else
 #include <iostream>
 #define __LOG(message) std::cerr << message;
@@ -75,19 +81,21 @@
 // a bit more convenient logging
 
 // Format Strings
-#define LOGV(message,...) { Serial.printf("# " message "\n", __VA_ARGS__);  }
-#define LOGMEV(message,...) { Serial.printf("#  %s: " message "\n", __PRETTY_FUNCTION__, __VA_ARGS__);  }
+#define LOGV(message,...) { LOG_TARGET.printf("# " message "\n", __VA_ARGS__);  }
+#define LOGMEV(message,...) { LOG_TARGET.printf("#  %s: " message "\n", __PRETTY_FUNCTION__, __VA_ARGS__);  }
 
 // stream oriented logging for "Printable" classes
-#define LOG2(a, b) { Serial.print("# "); Serial.print(a); Serial.println(b); }
-#define LOG3(a, b,c ) { Serial.print("# "); Serial.print(a); Serial.print(b); Serial.println(c); }
-#define LOG4(a, b, c, d) { Serial.print("# "); Serial.print(a); Serial.print(b); Serial.print(c); Serial.println(d); }
-#define LOG5(a, b, c, d, e) { Serial.print("# "); Serial.print(a); Serial.print(b); Serial.print(c); Serial.print(d); Serial.println(e); }
+#define LOG2(a, b) { LOG_TARGET.print("# "); LOG_TARGET.print(a); LOG_TARGET.println(b); }
+#define LOG3(a, b,c ) { LOG_TARGET.print("# "); LOG_TARGET.print(a); LOG_TARGET.print(b); LOG_TARGET.println(c); }
+#define LOG4(a, b, c, d) { LOG_TARGET.print("# "); LOG_TARGET.print(a); LOG_TARGET.print(b); LOG_TARGET.print(c); LOG_TARGET.println(d); }
+#define LOG5(a, b, c, d, e) { LOG_TARGET.print("# "); LOG_TARGET.print(a); LOG_TARGET.print(b); LOG_TARGET.print(c); LOG_TARGET.print(d); LOG_TARGET.println(e); }
 
 // arbitrary length logging or "Printable" classes
-#define LOG_START(message) { Serial.print("# "); Serial.print(message); }
-#define LOG_ITEM(message) Serial.print(message);
-#define LOG_END(message)  Serial.println(message);
+#define LOG_START(message) { LOG_TARGET.print("# "); LOG_TARGET.print(message); }
+#define LOG_ITEM(message) LOG_TARGET.print(message);
+#define LOG_END(message)  LOG_TARGET.println(message);
 
 // Log something which calls like foo(JsonObject& x) without hazzle, within LOG_START ... LOG_END.
-#define LOG_JSON(functioncall) { StaticJsonDocument<200> tmp; functioncall(tmp.to<JsonObject>()); serializeJson(tmp, Serial); }
+//#define LOG_JSON(functioncall) { StaticJsonDocument<200> tmp; functioncall(tmp.to<JsonObject>()); serializeJson(tmp, Serial); }
+
+//#undef LOG_TARGET // was only an internal helper
