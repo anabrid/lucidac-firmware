@@ -103,14 +103,14 @@ void test_prepare_eeprom() {
     TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
   }
 
-  if(setup_ctrlblock) {
+  if(setup_fp) {
     TEST_ASSERT(bus::BACKPLANE_BADDR == 2);
-    EEPROM25AA02 ctrl_eeprom(bus::address_from_tuple(bus::BACKPLANE_BADDR, 0));
-    TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
+    EEPROM25AA02 fp_eeprom(bus::address_from_tuple(bus::BACKPLANE_BADDR, 0));
+    TEST_ASSERT(fp_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
                                 static_cast<uint8_t>(entities::EntityClass::FRONT_PLANE)));
-    TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1, 1));
-    TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 1));
-    TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
+    TEST_ASSERT(fp_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1, 1));
+    TEST_ASSERT(fp_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 1));
+    TEST_ASSERT(fp_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
   }
 }
 
@@ -132,12 +132,16 @@ void test_detect_block() {
 }
 
 void test_read_euis() {
-  for (auto block_idx: {UBlock::BLOCK_IDX, CBlock::BLOCK_IDX, IBlock::BLOCK_IDX, SHBlock::BLOCK_IDX}) {
+  for (auto block_idx: {UBlock::BLOCK_IDX, CBlock::BLOCK_IDX, IBlock::BLOCK_IDX, /*SHBlock::BLOCK_IDX*/}) {
     MetadataReader reader{bus::idx_to_addr(0, block_idx, 0)};
     TEST_MESSAGE_FORMAT("{}", reader.read_eui());
   }
+  // ctrl block
   MetadataReader reader{bus::address_from_tuple(1, 0)};
   TEST_MESSAGE_FORMAT("{}", reader.read_eui());
+  // fp
+  MetadataReader reader_fp{bus::address_from_tuple(2, 0)};
+  TEST_MESSAGE_FORMAT("{}", reader_fp.read_eui());
 }
 
 void setup() {
@@ -146,7 +150,7 @@ void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_prepare_eeprom);
   RUN_TEST(test_detect_block);
-  //RUN_TEST(test_read_euis);
+  RUN_TEST(test_read_euis);
   UNITY_END();
 }
 
