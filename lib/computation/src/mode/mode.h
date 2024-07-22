@@ -25,9 +25,32 @@ enum class Sync {
   NONE, MASTER, SLAVE
 };
 
+/**
+ * Note that the ManualControl does not work any more once FlexIOControl::init()
+ * was called, even if FlexIOControl::disable() is used. This is because the relevant GPIOs
+ * are in FlexMode and therefore no more directly addressable. In this case, use the FlexIOControl
+ * counterparts for manual control, for instance FlexIOControl::to_ic(), or use the
+ * RealManualControl as wrapper between both.
+ **/
 class ManualControl {
 public:
+  static bool is_initialized;
   static void init();
+  static void to_ic();
+  static void to_op();
+  static void to_halt();
+};
+
+/**
+ * This class can do a manual control even after FlexIOControl has started. It does so
+ * by checking whether FlexIO has been used so far and disabling/enabling FlexIO per need.
+ **/
+class RealManualControl {
+public:
+  static bool is_enabled;
+  static void disable();
+  static void enable();
+
   static void to_ic();
   static void to_op();
   static void to_halt();
@@ -73,11 +96,16 @@ private:
     return FLEXIO_STATE_SHIFTBUF(outputs, next, next, next, next, next, next, next, next);
   }
 
+  // global static bool default to false
+  static bool _is_initialized, _is_enabled;
+
 public:
   static bool init(unsigned int ic_time_ns, unsigned long long op_time_ns, Sync sync = Sync::NONE);
+  static bool is_initialized() { return _is_initialized; }
 
   static void disable();
   static void enable();
+  static bool is_enabled() { return _is_enabled; }
   static void reset();
 
   // QTMR functions
