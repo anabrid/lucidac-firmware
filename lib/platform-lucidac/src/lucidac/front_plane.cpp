@@ -7,7 +7,10 @@
 
 platform::lucidac::FrontPlane::FrontPlane() : entities::Entity("FP") {}
 
-bool platform::lucidac::FrontPlane::init() { return signal_generator.init(); }
+bool platform::lucidac::FrontPlane::init() {
+  leds.reset();
+  return signal_generator.init();
+}
 
 bool platform::lucidac::FrontPlane::write_to_hardware() {
   return leds.write_to_hardware() && signal_generator.write_to_hardware();
