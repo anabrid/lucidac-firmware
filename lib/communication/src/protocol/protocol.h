@@ -43,7 +43,7 @@ public:
      * Note that some out-of-band messages don't run throught this method,
      * for examle @see client::RunStateChangeNotificationHandler::handle().
      **/
-    void handleMessage(net::auth::AuthentificationContext &user_context);
+    void handleMessage(net::auth::AuthentificationContext &user_context, Print& output);
 
     void process_serial_input(net::auth::AuthentificationContext &user_context);
     bool process_tcp_input(net::EthernetClient& stream, net::auth::AuthentificationContext &user_context);

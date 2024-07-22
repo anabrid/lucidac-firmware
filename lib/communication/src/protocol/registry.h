@@ -54,16 +54,4 @@ extern DynamicRegistry Registry;
 
 } // namespace handlers
 
-// TODO: Look for a better place for this functions
-
-/**
-  * Handles a message, according to the registry.
-  * Passes return codes as they appear from the handlers.
-  * 
-  * \todo Could be a method of the Message Registry
-  **/
-int handleMessage(JsonObjectConst envelope_in, JsonObject& envelope_out, net::auth::AuthentificationContext &user_context);
-
-void process_serial_input();
-
 } // namespace msg

@@ -9,13 +9,12 @@
 #include "handlers/carrier.h"
 #include "handlers/daq.h"
 #include "handlers/help.h"
-#include "handlers/ident.h"
 #include "handlers/loader_flasher.h"
 #include "handlers/loader_plugin.h"
 #include "handlers/mode_manual.h"
 #include "handlers/net_settings.h"
 #include "handlers/ping.h"
-#include "handlers/reboot.h"
+#include "handlers/sys.h"
 #include "handlers/run_manager.h"
 #include "handlers/login_lock.h"
 
@@ -54,6 +53,7 @@ void msg::handlers::DynamicRegistry::init(carrier::Carrier& c) {
 
   set("sys_ident",           3400, new GetSystemIdent(), SecurityLevel::RequiresNothing);
   set("sys_reboot",          3500, new RebootHandler(), SecurityLevel::RequiresAdmin);
+  set("sys_log",             3600, new SyslogHandler(), SecurityLevel::RequiresLogin);
 
   set("load_plugin",         4100, new LoadPluginHandler(), SecurityLevel::RequiresAdmin);
   set("unload_plugin",       4200, new UnloadPluginHandler(), SecurityLevel::RequiresAdmin);

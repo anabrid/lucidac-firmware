@@ -3,6 +3,7 @@
 #include "utils/logging.h"
 #include "utils/serial_lines.h"
 #include "utils/durations.h"
+#include "utils/StringPrint.h"
 
 #include "net/auth.h"
 #include "net/settings.h"
@@ -45,7 +46,7 @@ msg::JsonLinesProtocol &msg::JsonLinesProtocol::get() {
   return obj;
 }
 
-void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &user_context) {
+void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &user_context, Print& output) {
   auto envelope_out = this->envelope_out->to<JsonObject>();
   auto envelope_in = this->envelope_in->as<JsonObjectConst>();
 
@@ -69,11 +70,29 @@ void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &u
   } else if(!user_context.can_do(requiredClearance)) {
     return_code = -20;
     msg_out["error"] = "User is not authorized for action";
-  } else if(msg_type == "login") {
-    return_code = ((msg::handlers::LoginHandler*)msg_handler)->
-                           handle(envelope_in["msg"].as<JsonObjectConst>(), msg_out, user_context);
   } else {
-    return_code = msg_handler->handle(envelope_in["msg"].as<JsonObjectConst>(), msg_out);
+    auto msg_in = envelope_in["msg"].as<JsonObjectConst>();
+    return_code = msg_handler->handle(msg_in, msg_out);
+    if(return_code == msg::handlers::MessageHandler::not_implemented) {
+      return_code = msg_handler->handle(msg_in, msg_out, user_context);
+      if(return_code == msg::handlers::MessageHandler::not_implemented) {
+        // we don't use envelope_out but stream instead
+        auto envelope_and_msg_out = utils::StreamingJson(output);
+        envelope_and_msg_out.begin_dict();
+        envelope_and_msg_out.kv("id", msg_id);
+        envelope_and_msg_out.kv("type", msg_type);
+        envelope_and_msg_out.key("msg");
+        // it is now the job of the handler to wrap his content into
+        // begin_dict() / end_dict() or begin_list() / end_list() 
+        return_code = msg_handler->handle(msg_in, envelope_and_msg_out);
+        if(return_code != 0) {
+          LOG_ALWAYS("Error while handling streaming message.")
+        }
+        envelope_and_msg_out.kv("code", return_code);
+        envelope_and_msg_out.end_dict(); // envelope
+        return;
+      }
+    }
   }
 
   if (return_code != 0) {
@@ -84,6 +103,9 @@ void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &u
   }
 
   envelope_out["code"] = return_code;
+
+  serializeJson(envelope_out, output);
+  // notice we don't send a NL here, has to be done by the callee!
 }
 
 utils::SerialLineReader serial_line_reader;
@@ -97,10 +119,9 @@ void msg::JsonLinesProtocol::process_serial_input(net::auth::AuthentificationCon
     // do nothing, just ignore empty input.
   } else if(error) {
     trim(line); // for not-destroying the output
-    Serial.printf("# Serial input malformed: %s. Input was: '%s'\n", error.c_str(), line);
+    Serial.printf("### Malformed input. Expecting JSON-Lines. Error: %s. Input was: '%s'\n", error.c_str(), line);
   } else {
-    handleMessage(user_context);
-    serializeJson(envelope_out->as<JsonObject>(), Serial);
+    handleMessage(user_context, Serial);
     Serial.println();
   }
 }
@@ -113,9 +134,9 @@ bool msg::JsonLinesProtocol::process_tcp_input(net::EthernetClient& connection, 
     Serial.print("Error while parsing JSON: ");
     Serial.println(error.c_str());
   } else {
-    handleMessage(user_context);
-    serializeJson(envelope_out->as<JsonObject>(), Serial);
-    serializeJson(envelope_out->as<JsonObject>(), connection);
+    handleMessage(user_context, connection);
+    //serializeJson(envelope_out->as<JsonObject>(), Serial);
+    //serializeJson(envelope_out->as<JsonObject>(), connection);
     if (!connection.writeFully("\n"))
       return true; // break;
   }
@@ -131,9 +152,11 @@ void msg::JsonLinesProtocol::process_string_input(const std::string &envelope_in
     envelope_out_str += error.c_str();
     envelope_out_str += "'}\n";
   } else {
-    handleMessage(user_context);
-    serializeJson(envelope_out->as<JsonObject>(), Serial);
-    serializeJson(envelope_out->as<JsonObject>(), envelope_out_str);
+    utils::StringPrint s;
+    handleMessage(user_context, s);
+    envelope_out_str = s.str();
+    //serializeJson(envelope_out->as<JsonObject>(), Serial);
+    //serializeJson(envelope_out->as<JsonObject>(), envelope_out_str);
   }
 }
 

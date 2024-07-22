@@ -103,8 +103,7 @@ namespace msg {
     }
 
     // Logs are big so don't use regular ArduinoJSON
-    void stream_to_json(Print& output) {
-        ::utils::StreamingJson s(output);
+    void stream_to_json(utils::StreamingJson& s) {
         s.begin_dict();
         s.kv("is_active", is_active());
         s.kv("max_size", buf.max_size);

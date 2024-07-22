@@ -7,7 +7,8 @@
 #include <ArduinoJson.h>
 
 // Forward declaration to avoid dependency
-namespace user { namespace auth { struct AuthentificationContext; }}
+namespace utils { struct StreamingJson; }
+namespace net { namespace auth { struct AuthentificationContext; }}
 
 namespace msg {
 
@@ -19,6 +20,7 @@ namespace handlers {
  **/
 class MessageHandler {
 public:
+  constexpr static int not_implemented = -99;
   constexpr static int success = 0;
 
   /**
@@ -29,7 +31,6 @@ public:
   int result_prefix = 0;
   constexpr int error(int internal_code) { return internal_code == success ? success : result_prefix + internal_code; }
 
-
   /**
    * The actual handler method gets a message and returns a message next to
    * the status code.
@@ -38,7 +39,25 @@ public:
    *         value means something specific to the handler. Handlers should
    *         define their error values as constants.
    **/
-  virtual int handle(JsonObjectConst msg_in, JsonObject &msg_out) = 0;
+  virtual int handle(JsonObjectConst msg_in, JsonObject &msg_out) {
+    return not_implemented;
+  }
+
+  /**
+   * A handler variant that 
+   **/
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out, net::auth::AuthentificationContext& user_context) {
+    return not_implemented;
+  }
+
+  /**
+   * Handler for streaming responses. Is only called if is_streaming is true.
+   * Otherwise it works as the other handler.
+   **/
+  virtual int handle(JsonObjectConst msg_in, utils::StreamingJson& msg_out) {
+    return not_implemented;
+  }
+
 };
 
 

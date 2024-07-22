@@ -207,9 +207,9 @@ void api(awot::Request& req, awot::Response& res) {
   } else {
     res.status(200);
     static net::auth::AuthentificationContext c;
-    msg::JsonLinesProtocol().get().handleMessage(c);
-    serializeJson(msg::JsonLinesProtocol().get().envelope_out->as<JsonObject>(), Serial);
-    serializeJson(msg::JsonLinesProtocol().get().envelope_out->as<JsonObject>(), res);
+    msg::JsonLinesProtocol().get().handleMessage(c, res);
+    //serializeJson(msg::JsonLinesProtocol().get().envelope_out->as<JsonObject>(), Serial);
+    //serializeJson(msg::JsonLinesProtocol().get().envelope_out->as<JsonObject>(), res);
   }
 }
 

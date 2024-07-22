@@ -55,9 +55,9 @@ namespace utils {
     void needs_comma() { _needs_comma = true; }
 
     void begin_dict() { output.print('{'); _needs_comma = false; }
-    void end_dict()   { output.print('}'); _needs_comma = false; }
+    void end_dict()   { output.print('}'); needs_comma(); }
     void begin_list() { output.print('['); _needs_comma = false; }
-    void end_list()   { output.print(']'); _needs_comma = false; }
+    void end_list()   { output.print(']'); needs_comma(); }
 
     void begin_str(char quote='"') { output.print(quote); }
     void end_str(char quote='"') { output.print(quote); }
@@ -70,6 +70,8 @@ namespace utils {
       output.print(':');
     }
 
+    void key(const std::string& str) { key(str.c_str()); }
+
     // value types
 
     void val(const char* str, char quote='"') {
@@ -79,6 +81,8 @@ namespace utils {
       end_str(quote);
       needs_comma();
     }
+
+    void val(const std::string& str) { val(str.c_str()); }
 
     void val(bool b) {
        check_comma();
