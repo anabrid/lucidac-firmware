@@ -75,6 +75,8 @@ public:
   [[nodiscard]] bool write_to_hardware() override;
 
   lucidac::FrontPlane *front_plane;
+
+  virtual int get_entities(JsonObjectConst msg_in, JsonObject &msg_out) override;
 };
 
 } // namespace platform
