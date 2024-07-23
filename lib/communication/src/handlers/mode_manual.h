@@ -34,6 +34,12 @@ public:
     return 0;
   }
 
+  static void toMinion() {
+    LOG_ALWAYS("Enabling slave mode, setting IC/OP pins to input (floating).");
+    pinMode(mode::PIN_MODE_IC, INPUT);
+    pinMode(mode::PIN_MODE_OP, INPUT);
+  }
+
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
     int res_run_and_mode = can_manual_control();
     if(res_run_and_mode) return error(res_run_and_mode);
@@ -41,6 +47,7 @@ public:
     if(msg_in["to"] == "ic")        mode::RealManualControl::to_ic();
     else if(msg_in["to"] == "op")   mode::RealManualControl::to_op();
     else if(msg_in["to"] == "halt") mode::RealManualControl::to_halt();
+    else if(msg_in["to"] == "minion") toMinion();
     else return error(10); // illegal target state
 
     return success;

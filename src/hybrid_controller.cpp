@@ -34,24 +34,7 @@
 platform::LUCIDAC carrier_;
 auto& netconf = net::StartupConfig::get();
 
-/// @ingroup MessageHandlers
-class HackMessageHandler : public msg::handlers::MessageHandler {
-public:
-  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
-    std::string command = msg_in["command"];
-    if (command.empty())
-      return 1;
 
-    // Slave mode for transferring IC/OP signals
-    if (command == "slave") {
-      LOG_ALWAYS("Enabling slave mode, setting IC/OP pins to input (floating).");
-      pinMode(mode::PIN_MODE_IC, INPUT);
-      pinMode(mode::PIN_MODE_OP, INPUT);
-    }
-
-    return success;
-  }
-};
 
 void setup_remote_log() {
   IPAddress remote{192,168,68,96};
@@ -114,7 +97,6 @@ void setup() {
 
   msg::handlers::Registry.init(carrier_); // registers all commonly known messages
 
-  msg::handlers::Registry.set("hack", new HackMessageHandler(), net::auth::SecurityLevel::RequiresNothing);
   //LOG("msg::handlers::DynamicRegistry set up with handlers")
   //msg::handlers::DynamicRegistry::dump();
 
