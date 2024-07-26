@@ -103,6 +103,22 @@ public:
     return EntityClassifier::DEFAULT_;
   }
 
+  bool is_entity_class(EntityClass class_) {
+    return get_entity_class() == class_;
+  }
+
+  bool is_entity_type(uint8_t type_) {
+    return get_entity_type() == type_;
+  }
+
+  bool is_entity_version(uint8_t version_) {
+    return get_entity_version() == version_;
+  }
+
+  bool is_entity_variant(uint8_t variant_) {
+    return get_entity_variant() == variant_;
+  }
+
   virtual std::vector<Entity *> get_child_entities() = 0;
 
   virtual Entity *get_child_entity(const std::string &child_id) = 0;

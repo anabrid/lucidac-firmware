@@ -38,6 +38,10 @@ public:
 
   static MBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
 
+  bool is_entity_type(TYPES type_) {
+    return entities::Entity::is_entity_type(static_cast<uint8_t>(type_));
+  }
+
 public:
   static constexpr uint8_t M1_IDX = bus::M1_BLOCK_IDX;
   static constexpr uint8_t M2_IDX = bus::M2_BLOCK_IDX;
