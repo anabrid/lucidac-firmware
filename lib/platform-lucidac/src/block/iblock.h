@@ -6,11 +6,13 @@
 #pragma once
 
 #include <array>
+#include <bitset>
 #include <cstdint>
 
 #include "block/base.h"
 #include "bus/bus.h"
 #include "bus/functions.h"
+#include "chips/SR74HCT595.h"
 
 namespace functions {
 
@@ -25,11 +27,11 @@ namespace functions {
  * See chip_cmd_word and IBlock::write_to_hardware for more information and the actual calculation of the
  * bitstream.
  */
-class ICommandRegisterFunction : public DataFunction {
+class ICommandRegisterFunction : public SR74HCT595 {
 public:
   static const SPISettings DEFAULT_SPI_SETTINGS;
 
-  using DataFunction::DataFunction;
+  using SR74HCT595::SR74HCT595;
   explicit ICommandRegisterFunction(bus::addr_t address);
 
   static uint8_t chip_cmd_word(uint8_t chip_input_idx, uint8_t chip_output_idx, bool connect = true);
@@ -58,46 +60,63 @@ public:
   entities::EntityClass get_entity_class() const final { return CLASS_; }
 
   static IBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
-  ;
-
-protected:
-  void reset_outputs();
-
-  bool _connect_from_json(const JsonVariantConst &input_spec, uint8_t output);
-
-  void config_self_to_json(JsonObject &cfg) override;
-
-  bool _is_connected(uint8_t input, uint8_t output);
 
 public:
   static constexpr uint8_t BLOCK_IDX = bus::I_BLOCK_IDX;
-  static constexpr uint8_t IMATRIX_COMMAND_SR_FUNC_IDX = 1;
-  static constexpr uint8_t IMATRIX_RESET_FUNC_IDX = 2;
-  static constexpr uint8_t IMATRIX_COMMAND_SR_RESET_FUNC_IDX = 3;
-  static constexpr uint8_t IMATRIX_SYNC_FUNC_IDX = 4;
 
   static constexpr uint32_t INPUT_BITMASK(uint8_t input_idx) { return static_cast<uint32_t>(1) << input_idx; }
 
   static constexpr uint8_t NUM_INPUTS = 32;
   static constexpr uint8_t NUM_OUTPUTS = 16;
+
+  static constexpr std::array<uint8_t, NUM_INPUTS> INPUT_IDX_RANGE() {
+    return {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
+            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+  };
+
+  static constexpr std::array<uint8_t, NUM_OUTPUTS> OUTPUT_IDX_RANGE() {
+    return {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+  };
+
+protected:
+  bool _connect_from_json(const JsonVariantConst &input_spec, uint8_t output);
+
+  void config_self_to_json(JsonObject &cfg) override;
+
+  bool _is_connected(uint8_t input, uint8_t output) const;
+
   std::array<uint32_t, NUM_OUTPUTS> outputs;
   const functions::ICommandRegisterFunction f_cmd;
   const functions::TriggerFunction f_imatrix_reset;
   const functions::TriggerFunction f_imatrix_sync;
 
+  std::bitset<NUM_INPUTS> scaling_factors = 0;
+  const functions::SR74HCT595 scaling_register;
+  const functions::TriggerFunction scaling_register_sync;
+
+public:
   explicit IBlock(const bus::addr_t block_address)
-      : FunctionBlock("I", block_address), outputs{0}, f_cmd{bus::replace_function_idx(
-                                                           block_address, IMATRIX_COMMAND_SR_FUNC_IDX)},
-        f_imatrix_reset{bus::replace_function_idx(block_address, IMATRIX_RESET_FUNC_IDX)},
-        f_imatrix_sync{bus::replace_function_idx(block_address, IMATRIX_SYNC_FUNC_IDX)} {}
+      : FunctionBlock("I", block_address), outputs{0}, f_cmd{bus::replace_function_idx(block_address, 2)},
+        f_imatrix_reset{bus::replace_function_idx(block_address, 4)}, f_imatrix_sync{bus::replace_function_idx(
+                                                                          block_address, 3)},
+        scaling_register{bus::replace_function_idx(block_address, 5), true},
+        scaling_register_sync{bus::replace_function_idx(block_address, 6)} {}
 
   IBlock() : IBlock(bus::idx_to_addr(0, bus::I_BLOCK_IDX, 0)) {}
 
-  void write_to_hardware() override;
+  [[nodiscard]] bool write_imatrix_to_hardware();
+  [[nodiscard]] bool write_scaling_to_hardware();
+  [[nodiscard]] bool write_to_hardware() override;
 
   bool init() override;
 
+  void reset_outputs();
+
   void reset(bool keep_calibration) override;
+
+  const std::array<uint32_t, NUM_OUTPUTS> &get_outputs() const;
+
+  void set_outputs(const std::array<uint32_t, NUM_OUTPUTS> &outputs_);
 
   /**
    * Connects an input line [0..31] to an output line [0..15]
@@ -118,7 +137,7 @@ public:
   bool connect(uint8_t input, uint8_t output, bool exclusive = false, bool allow_input_splitting = false);
 
   //! Whether an input is connected to an output.
-  bool is_connected(uint8_t input, uint8_t output);
+  bool is_connected(uint8_t input, uint8_t output) const;
 
   //! Disconnect one input from an output. Fails for invalid arguments or if no input is connected.
   bool disconnect(uint8_t input, uint8_t output);
@@ -126,10 +145,24 @@ public:
   //! Disconnect all inputs from an output. Fails for invalid arguments.
   bool disconnect(uint8_t output);
 
-  bool config_self_from_json(JsonObjectConst cfg) override;
+  //! Sets the input scale of the corresponding output. If upscale is false, a factor of 1.0 is applied, if
+  //! upscale is true, a factor of 10.0 will be used.
+  bool set_upscaling(uint8_t output, bool upscale);
 
-  uint8_t _hardware_to_logical_input(uint8_t hardware_input);
-  uint8_t _logical_to_hardware_input(uint8_t logical_input);
+  //! Sets all 32 input scales. If the corresponding bit is false, a factor of 1.0 is applied, if true, a
+  //! factor of 10.0 will be used.
+  void set_upscaling(std::bitset<NUM_INPUTS> scales);
+
+  //! Sets all 32 input scales to the default 1.0.
+  void reset_upscaling();
+
+  //! Returns the input scale of the corresponding output.
+  bool get_upscaling(uint8_t output) const;
+
+  //! Returns all input scales. A low bit indicates a factor of 1.0, a high bit indicates a factor of 10.0.
+  const std::bitset<NUM_INPUTS> &get_upscales() const { return scaling_factors; }
+
+  bool config_self_from_json(JsonObjectConst cfg) override;
 };
 
 } // namespace blocks

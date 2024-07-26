@@ -6,23 +6,23 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#include "io/io.h"
 #include "metadata/74LVC138AD.tpl.hpp"
 
-MetadataMemory74LVC138AD chip{bus::board_function_to_addr(0)};
+MetadataMemory74LVC138AD chip{bus::address_from_tuple(10, 0)};
 
 void setUp() {
-  // set stuff up here
-  bus::init();
+  // This is called before *each* test.
 }
 
 void tearDown() {
-  // clean stuff up here
+  // This is called after *each* test.
 }
 
 void test_read_uuid() {
   std::array<uint8_t, 8> uuid_is{1, 1, 1, 1, 1, 1, 1, 1};
   // For development carrier board I use
-  std::array<uint8_t, 8> uuid_should{0x00, 0x04, 0xA3, 0x0B, 0x00, 0x14, 0x6F, 0xD5};
+  std::array<uint8_t, 8> uuid_should{0x00, 0x04, 0xA3, 0x0B, 0x00, 0x14, 0x90, 0x89};
 
   // Read UUID
   chip.read_from_hardware(offsetof(metadata::MetadataMemoryLayoutV1, uuid),
@@ -33,9 +33,17 @@ void test_read_uuid() {
 }
 
 void setup() {
+  bus::init();
+  io::init();
+
   UNITY_BEGIN();
   RUN_TEST(test_read_uuid);
   UNITY_END();
 }
 
-void loop() {}
+void loop() {
+  // Do an action once the button is pressed
+  io::block_until_button_press();
+  test_read_uuid();
+  delay(500);
+}

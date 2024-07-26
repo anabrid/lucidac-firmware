@@ -19,6 +19,7 @@ void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunD
 
   daq::FlexIODAQ daq_{run, run.daq_config, run_data_handler};
   daq_.reset();
+  mode::FlexIOControl::reset();
   if (!mode::FlexIOControl::init(run.config.ic_time, run.config.op_time) or !daq_.init(0)) {
     LOG_ERROR("Error while initializing state machine or daq for run.")
     auto change = run.to(RunState::ERROR, 0);

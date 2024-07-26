@@ -6,41 +6,45 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "block/iblock.h"
 #include "bus/bus.h"
 #include "bus/functions.h"
+
+#define private public
+#define protected public
+#include "block/iblock.h"
 
 using namespace blocks;
 using namespace bus;
 using namespace functions;
 using namespace fakeit;
 
-::functions::TriggerFunction imatrix_reset{idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_RESET_FUNC_IDX)};
-::functions::TriggerFunction imatrix_cmd_sr_rest{
-    idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_COMMAND_SR_RESET_FUNC_IDX)};
-::functions::TriggerFunction imatrix_sync{idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_SYNC_FUNC_IDX)};
+TriggerFunction imatrix_reset{bus::address_from_tuple(10, 4)};
+TriggerFunction imatrix_sync{bus::address_from_tuple(10, 3)};
 
-functions::ICommandRegisterFunction imatrix_cmd_sr{
-    idx_to_addr(0, IBlock::BLOCK_IDX, IBlock::IMATRIX_COMMAND_SR_FUNC_IDX)};
+ICommandRegisterFunction imatrix_cmd_sr{bus::address_from_tuple(10, 2)};
 
 void setUp() {
-  // set stuff up here
+  // This is called before *each* test.
   ArduinoFakeReset();
 
-  // mock bus::init calls
+  // Mock bus::init calls
   When(Method(ArduinoFake(SPI), begin)).AlwaysReturn();
   When(Method(ArduinoFake(Function), pinMode)).AlwaysReturn();
   When(Method(ArduinoFake(Function), digitalWrite)).AlwaysReturn();
-  bus::init();
 
-  // mock all delay* calls
+  // Mock all delay* calls
   When(Method(ArduinoFake(Function), delay)).AlwaysReturn();
   When(Method(ArduinoFake(Function), delayMicroseconds)).AlwaysReturn();
   When(Method(ArduinoFake(Function), delayNanoseconds)).AlwaysReturn();
+
+  // Mock GPIO calls
+  When(OverloadedMethod(ArduinoFake(Function), pinMode, void(uint8_t, uint8_t))).AlwaysReturn();
+  When(OverloadedMethod(ArduinoFake(Function), digitalWrite, void(uint8_t, uint8_t))).AlwaysReturn();
+  When(Method(ArduinoFake(Function), digitalRead)).AlwaysReturn(0);
 }
 
 void tearDown() {
-  // clean stuff up here
+  // This is called after *each* test.
 }
 
 void test_function_helpers() {
@@ -64,25 +68,6 @@ void test_function_helpers() {
   TEST_ASSERT_EQUAL(0b1'111'0100'1'000'0000'0'011'0001'1'010'1101, command);
 }
 
-// Currently skipped
-void test_function() {
-  // Reset signals arrive at chips
-  imatrix_reset.trigger();
-  delayMicroseconds(1);
-  // imatrix_cmd_sr_rest.trigger();
-  // delayMicroseconds(1);
-
-  // imatrix_cmd_sr.data = 0b10000000'11111111'00000000'00000001;
-  // imatrix_cmd_sr.data = 0b01111111'11111111'11111111'11111110;
-
-  // Set I1 Matrix input 0 to output 0
-  // This should connect BL_OUT.0 to MBL_IN.0
-  imatrix_cmd_sr.transfer32(0b0'000'0000'0'000'0000'0'000'0000'1'000'0000);
-
-  delayMicroseconds(1);
-  imatrix_sync.trigger();
-}
-
 void test_block() {
   IBlock iblock;
   TEST_ASSERT_EACH_EQUAL_UINT32_MESSAGE(0, iblock.outputs.data(), iblock.outputs.size(),
@@ -95,37 +80,37 @@ void test_block() {
   iblock.outputs[3] = IBlock::INPUT_BITMASK(1);
   TEST_ASSERT_EQUAL(0b00000000'00000000'00000000'00000010, iblock.outputs[3]);
 
-  // iblock.outputs[3] = IBlock::INPUT_BITMASK(1) | IBlock::INPUT_BITMASK(7) | IBlock::INPUT_BITMASK(17) |
-  //                     IBlock::INPUT_BITMASK(31);
-  // TEST_ASSERT_EQUAL(0b10000000'00000010'00000000'10000010, iblock.outputs[3]);
-
-  // iblock.outputs[15] = IBlock::INPUT_BITMASK(3) | IBlock::INPUT_BITMASK(20) | IBlock::INPUT_BITMASK(31);
-  // TEST_ASSERT_EQUAL(0b10000000'00010000'00000000'00001000, iblock.outputs[15]);
-
-  // This changes the SPI speed? lol
-  // iblock.outputs[18] = IBlock::INPUT_BITMASK(3) | IBlock::INPUT_BITMASK(17);
-  // TEST_ASSERT_EQUAL(0b00000000'00000010'00000000'00000010, iblock.outputs[18]);
-
-  // mock SPI calls
+  // Mock SPI calls
+  // Ignore transaction handling
   When(Method(ArduinoFake(SPI), beginTransaction)).AlwaysReturn();
-  When(Method(ArduinoFake(SPI), transfer32)).AlwaysReturn(0);
   When(Method(ArduinoFake(SPI), endTransaction)).AlwaysReturn();
-  iblock.write_to_hardware();
+  // Ignore transfer16 calls, which here are used only for setting address and triggering things
+  When(Method(ArduinoFake(SPI), transfer16)).AlwaysReturn();
+  // Sending the data uses 2 x transfer32, and each time a sync is done via a TriggerFunction
+  When(Method(ArduinoFake(SPI), transfer32)).Return(0, 0);
+  // Do it!
+  iblock.write_imatrix_to_hardware();
 
-  // verify SPI call arguments
+  // verify SPI call arguments, which are interlaced by address setting
   Verify(Method(ArduinoFake(SPI), transfer32).Using(ICommandRegisterFunction::chip_cmd_word(0, 0)) +
+         Method(ArduinoFake(SPI), endTransaction) + Method(ArduinoFake(SPI), beginTransaction) +
+         Method(ArduinoFake(SPI), transfer16) + Method(ArduinoFake(SPI), endTransaction) +
+         Method(ArduinoFake(SPI), beginTransaction) + Method(ArduinoFake(SPI), transfer16) +
          Method(ArduinoFake(SPI), endTransaction) + Method(ArduinoFake(SPI), beginTransaction) +
          Method(ArduinoFake(SPI), transfer32).Using(ICommandRegisterFunction::chip_cmd_word(1, 3)));
 }
 
-#ifdef ARDUINO
-void setup() {
-#else
 int main() {
-#endif
+  // Call setUp to set up mocking
+  setUp();
+
+  // Mock SPI configuration calls
+  When(OverloadedMethod(ArduinoFake(SPI), begin, void(void))).AlwaysReturn();
+  When(OverloadedMethod(ArduinoFake(SPI), end, void(void))).AlwaysReturn();
+  bus::init();
+
   UNITY_BEGIN();
-  RUN_TEST(test_function_helpers);
-  // RUN_TEST(test_function);
+  // RUN_TEST(test_function_helpers);
   RUN_TEST(test_block);
   UNITY_END();
 }

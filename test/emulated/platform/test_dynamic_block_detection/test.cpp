@@ -54,7 +54,9 @@ void test_class_properties() {
 }
 
 void test_readout() {
+  // Underlying DataFunction::begin/end_communication does two transfer16
   // read_from_hardware does two 8bit transfers (command, offset) and then reads
+  When(Method(ArduinoFake(SPI), transfer16)).Return(0, 0);
   When(OverloadedMethod(ArduinoFake(SPI), transfer, uint8_t(uint8_t))).Return(0, 0);
   When(OverloadedMethod(ArduinoFake(SPI), transfer, void(const void *, void *, size_t)))
       .Do([](auto mosi, auto miso, size_t count) { memcpy(miso, &fake_data, count); });

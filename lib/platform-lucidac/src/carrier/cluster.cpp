@@ -12,52 +12,48 @@
   if (!(x))                                                                                                   \
     return false;
 
-std::array<blocks::FunctionBlock *, 5> platform::Cluster::get_blocks() const {
-  return {m1block, m2block, ublock, cblock, iblock};
+std::array<blocks::FunctionBlock *, 6> platform::Cluster::get_blocks() const {
+  return {m1block, m2block, ublock, cblock, iblock, shblock};
 }
 
 bool platform::Cluster::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
-  bus::init();
 
   // Dynamically detect installed blocks
   // Check if a block is already set, which may happen with a special constructor in the future
   LOG(ANABRID_DEBUG_INIT, "Detecting installed blocks...");
   if (!m1block) {
-    m1block = blocks::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M1_BLOCK_IDX, 0));
+    m1block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M1_BLOCK_IDX, 0));
     if (!m1block)
       LOG(ANABRID_DEBUG_INIT, "Warning: M0-block is missing or unknown.");
   }
   if (!m2block) {
-    m2block = blocks::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M2_BLOCK_IDX, 0));
+    m2block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M2_BLOCK_IDX, 0));
     if (!m2block)
       LOG(ANABRID_DEBUG_INIT, "Warning: M1-block is missing or unknown.");
   }
-  if (!m1block and !m2block) {
+  if (!m1block and !m2block)
     LOG(ANABRID_DEBUG_INIT, "Error: Both M0 and M1-blocks are missing or unknown.");
-    return false;
-  }
 
   if (!ublock) {
-    ublock = blocks::detect<blocks::UBlock>(bus::idx_to_addr(cluster_idx, bus::U_BLOCK_IDX, 0));
-    if (!ublock) {
+    ublock = entities::detect<blocks::UBlock>(bus::idx_to_addr(cluster_idx, bus::U_BLOCK_IDX, 0));
+    if (!ublock)
       LOG(ANABRID_DEBUG_INIT, "Error: U-block is missing or unknown.");
-      return false;
-    }
   }
   if (!cblock) {
-    cblock = blocks::detect<blocks::CBlock>(bus::idx_to_addr(cluster_idx, bus::C_BLOCK_IDX, 0));
-    if (!cblock) {
+    cblock = entities::detect<blocks::CBlock>(bus::idx_to_addr(cluster_idx, bus::C_BLOCK_IDX, 0));
+    if (!cblock)
       LOG(ANABRID_DEBUG_INIT, "Error: C-block is missing or unknown.");
-      return false;
-    }
   }
   if (!iblock) {
-    iblock = blocks::detect<blocks::IBlock>(bus::idx_to_addr(cluster_idx, bus::I_BLOCK_IDX, 0));
-    if (!iblock) {
+    iblock = entities::detect<blocks::IBlock>(bus::idx_to_addr(cluster_idx, bus::I_BLOCK_IDX, 0));
+    if (!iblock)
       LOG(ANABRID_DEBUG_INIT, "Error: I-block is missing or unknown.");
-      return false;
-    }
+  }
+  if (!shblock) {
+    shblock = entities::detect<blocks::SHBlock>(bus::idx_to_addr(cluster_idx, bus::SH_BLOCK_IDX, 0));
+    if (!shblock)
+      LOG(ANABRID_DEBUG_INIT, "Error: SH-block is missing or unknown.");
   }
 
   LOG(ANABRID_DEBUG_INIT, "Initialising detected blocks...");
@@ -73,45 +69,155 @@ bool platform::Cluster::init() {
 platform::Cluster::Cluster(uint8_t cluster_idx)
     : entities::Entity(std::to_string(cluster_idx)), cluster_idx(cluster_idx) {}
 
+bool platform::Cluster::calibrate_offsets() {
+  LOG_ANABRID_DEBUG_CALIBRATION("Calibrating offsets");
+
+  auto old_transmission_modes = ublock->get_all_transmission_modes();
+
+  ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::GROUND);
+  if (!ublock->write_to_hardware())
+    return false;
+
+  shblock->compensate_hardware_offsets();
+
+  ublock->change_all_transmission_modes(old_transmission_modes);
+  if (!ublock->write_to_hardware())
+    return false;
+
+  return true;
+}
+
 bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
-  RETURN_FALSE_IF_FAILED(calibrate_offsets_ublock_initial(daq));
-  // Return to a non-connected state, but keep calibrated offsets
-  reset(true);
-  write_to_hardware();
+  // Save current U-block transmission modes and set them to zero
+  LOG_ANABRID_DEBUG_CALIBRATION("Starting calibration");
+  auto old_transmission_modes = ublock->get_all_transmission_modes();
+  ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::GROUND);
+  // Save and reset I-block connections
+  // This is necessary as we can not calibrate sums and we want to calibrate lanes individually
+  const auto saved_iblock = *iblock;
+  iblock->reset_outputs();
+  // Actually write to hardware
+  LOG_ANABRID_DEBUG_CALIBRATION("Reset ublock and i block");
+  if (!ublock->write_to_hardware() and iblock->write_to_hardware()) {
+    // TODO: Restore configuration in this and other failure cases
+    return false;
+  }
+
+  // Next, we iterate through all connections on the I-block and calibrate each lane individually.
+  // This is suboptimal, as in principle we could measure 8 gain corrections at the same time.
+  // Iterating over I-block connections is easier than iterating over U-block outputs.
+  for (auto i_out_idx : blocks::IBlock::OUTPUT_IDX_RANGE()) {
+    for (auto i_in_idx : blocks::IBlock::INPUT_IDX_RANGE()) {
+      // Only do something is this lane is used in the original I-block configuration
+      if (!saved_iblock.is_connected(i_in_idx, i_out_idx))
+        continue;
+      // Only do something is this lane is actually receiving a signal
+      if (!ublock->is_output_connected(i_in_idx))
+        continue;
+
+      // Restore this connection
+      if (!iblock->connect(i_in_idx, i_out_idx))
+        return false;
+      // Actually write to hardware
+      if (!iblock->write_to_hardware())
+        return false;
+
+      // Chill for a bit
+      delay(100);
+      LOG_ANABRID_DEBUG_CALIBRATION("Calibrating connection: ");
+      LOG_ANABRID_DEBUG_CALIBRATION(i_in_idx);
+      LOG_ANABRID_DEBUG_CALIBRATION(i_out_idx);
+
+      // First step is always to calibrate offsets
+      calibrate_offsets();
+
+      // Depending on whether upscaling is enabled for this lane, we apply +1 or +0.1 reference
+      // This is done on all lanes (but no other I-block connection exists, so no other current flows)
+      if (!iblock->get_upscaling(i_in_idx))
+        ublock->change_all_transmission_modes(blocks::UBlock::POS_BIG_REF);
+      else
+        ublock->change_all_transmission_modes(blocks::UBlock::POS_SMALL_REF);
+      // Actually write to hardware
+      if (!ublock->write_to_hardware())
+        return false;
+
+      // Change SH-block into gain mode and select correct gain channel group
+      shblock->set_gain.trigger();
+      if (i_out_idx < 8)
+        shblock->set_gain_channels_zero_to_seven.trigger();
+      else
+        shblock->set_gain_channels_eight_to_fifteen.trigger();
+
+      // Chill for a bit
+      delay(100);
+
+      // Measure gain output
+      // TODO: Move ctrlblock_hal.write_adc_bus_muxers(blocks::CTRLBlock::ADCBus::CL0_GAIN) into here
+      auto m_adc = daq->sample_avg(10, 1000)[i_out_idx % 8];
+      LOG_ANABRID_DEBUG_CALIBRATION(m_adc);
+      // Calculate necessary gain correction
+      auto wanted_factor = cblock->get_factor(i_in_idx);
+      auto gain_correction = wanted_factor / m_adc;
+      LOG_ANABRID_DEBUG_CALIBRATION(gain_correction);
+      // Set gain correction on C-block, which will automatically get applied when writing to hardware
+      if (!cblock->set_gain_correction(i_in_idx, gain_correction))
+        return false;
+
+      // Disconnect this lane again
+      iblock->disconnect(i_in_idx, i_out_idx);
+      if (!iblock->write_to_hardware())
+        return false;
+      LOG_ANABRID_DEBUG_CALIBRATION(" ");
+    }
+  }
+
+  // For "safety", set all U-block inputs to zero before restoring I-block connections
+  LOG_ANABRID_DEBUG_CALIBRATION("Setting ublock to ground for safety");
+  ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::GROUND);
+  if (!ublock->write_to_hardware())
+    return false;
+  // Restore I-block connections
+  iblock->set_outputs(saved_iblock.get_outputs());
+  LOG_ANABRID_DEBUG_CALIBRATION("Restoring iblock");
+  if (!iblock->write_to_hardware())
+    return false;
+
+  // Write C-block to hardware to apply gain corrections
+  if (!cblock->write_to_hardware())
+    return false;
+
+  // Calibrate offsets again, since they have been changed by correcting the coefficients
+  if (!calibrate_offsets())
+    return false;
+
+  // Restore original U-block transmission modes
+  ublock->change_all_transmission_modes(old_transmission_modes);
+  // Write them to hardware
+  LOG_ANABRID_DEBUG_CALIBRATION("Restoring ublock");
+  if (!ublock->write_to_hardware())
+    return false;
+
   return true;
 }
 
-bool platform::Cluster::calibrate_offsets_ublock_initial(daq::BaseDAQ *daq) {
-  // Reset
-  ublock->reset(false);
-  // Connect REF signal from UBlock to ADC outputs
-  ublock->use_alt_signals(blocks::UBlock::ALT_SIGNAL_REF_HALF);
-  for (auto out_to_adc : std::array<uint8_t, 8>{0, 1, 2, 3, 4, 5, 6, 7}) {
-    ublock->connect(blocks::UBlock::ALT_SIGNAL_REF_HALF_INPUT, out_to_adc);
-  }
-  ublock->write_to_hardware();
-  // Let the signal settle
-  delayMicroseconds(250);
-
-  auto data_avg = daq->sample_avg(10, 10000);
-  for (size_t i = 0; i < data_avg.size(); i++) {
-    RETURN_FALSE_IF_FAILED(ublock->change_offset(i, data_avg[i] + 1.0f));
-  }
-  ublock->write_to_hardware();
-  delayMicroseconds(100);
-
-  return true;
-  // TODO: Finish calibration sequence
-}
-
-void platform::Cluster::write_to_hardware() {
+bool platform::Cluster::write_to_hardware() {
   for (auto block : get_blocks()) {
     if (block)
-      block->write_to_hardware();
+      if (!block->write_to_hardware()) {
+        LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
+        return false;
+      }
   }
+  return true;
 }
 
 bool platform::Cluster::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out) {
+  if (fabs(c_factor) > 1.0f) {
+    c_factor = c_factor * 0.1f;
+    iblock->set_upscaling(u_out, true);
+  } else
+    iblock->set_upscaling(u_out, false);
+
   if (!ublock->connect(u_in, u_out))
     return false;
   if (!cblock->set_factor(u_out, c_factor))
@@ -121,8 +227,15 @@ bool platform::Cluster::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8
   return true;
 }
 
-bool platform::Cluster::route_alt_signal(uint16_t alt_signal, uint8_t u_out, float c_factor, uint8_t i_out) {
-  if (!ublock->connect_alt_signal(alt_signal, u_out))
+bool platform::Cluster::add_constant(blocks::UBlock::Transmission_Mode signal_type, uint8_t u_out,
+                                     float c_factor, uint8_t i_out) {
+  if (fabs(c_factor) > 1.0f) {
+    c_factor = c_factor * 0.1f;
+    iblock->set_upscaling(u_out, true);
+  } else
+    iblock->set_upscaling(u_out, false);
+
+  if (!ublock->connect_alternative(signal_type, u_out))
     return false;
   if (!cblock->set_factor(u_out, c_factor))
     return false;
@@ -149,6 +262,8 @@ entities::Entity *platform::Cluster::get_child_entity(const std::string &child_i
     return cblock;
   else if (child_id == "I")
     return iblock;
+  else if (child_id == "SH")
+    return shblock;
   return nullptr;
 }
 
@@ -165,5 +280,5 @@ std::vector<entities::Entity *> platform::Cluster::get_child_entities() {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  return {m1block, m2block, ublock, cblock, iblock};
+  return {m1block, m2block, ublock, cblock, iblock, shblock};
 }

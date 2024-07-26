@@ -13,6 +13,10 @@
 #include "chips/AD5452.h"
 #include "chips/SR74HCT595.h"
 
+namespace platform {
+class Calibration;
+}
+
 namespace blocks {
 
 // ██████   █████  ███████ ███████      ██████ ██       █████  ███████ ███████
@@ -47,32 +51,30 @@ public:
   static constexpr uint8_t BLOCK_IDX = bus::C_BLOCK_IDX;
 
   static constexpr uint8_t COEFF_BASE_FUNC_IDX = 1;
-  static constexpr uint8_t SCALE_SWITCHER = 33;
-  static constexpr uint8_t SCALE_SWITCHER_SYNC = 34;
-  static constexpr uint8_t SCALE_SWITCHER_CLEAR = 35;
 
   static constexpr uint8_t NUM_COEFF = 32;
-  static constexpr float MAX_REAL_FACTOR = 2.0f;
-  static constexpr float MIN_REAL_FACTOR = -2.0f;
-  // TODO: Upscaling is not *exactly* 10
-  static constexpr float UPSCALING = 10.055f;
-  static constexpr float MAX_FACTOR = MAX_REAL_FACTOR * UPSCALING;
-  static constexpr float MIN_FACTOR = MIN_REAL_FACTOR * UPSCALING;
+
+  static constexpr std::array<uint8_t, NUM_COEFF> INPUT_IDX_RANGE() {
+    return {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
+            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+  };
+
+  static constexpr std::array<uint8_t, NUM_COEFF> OUTPUT_IDX_RANGE() {
+    return {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
+            16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+  };
 
 protected:
   std::array<const functions::AD5452, NUM_COEFF> f_coeffs;
-  const functions::SR74HCT595 f_upscaling;
-  const functions::TriggerFunction f_upscaling_sync;
-  const functions::TriggerFunction f_upscaling_clear;
 
   std::array<uint16_t, NUM_COEFF> factors_{{0}};
-  uint32_t upscaling_{0};
+  std::array<float, NUM_COEFF> gain_corrections_{
+      {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+       1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
 
-  void set_upscaling(uint8_t idx, bool enable);
-  bool is_upscaled(uint8_t idx);
+  [[nodiscard]] bool write_factors_to_hardware();
 
-  void write_factors_to_hardware();
-  void write_upscaling_to_hardware();
+  CBlock(bus::addr_t block_address, std::array<const functions::AD5452, NUM_COEFF> fCoeffs);
 
   CBlock(bus::addr_t block_address, std::array<const functions::AD5452, NUM_COEFF> fCoeffs,
          functions::SR74HCT595 fUpscaling, functions::TriggerFunction fUpscalingSync,
@@ -100,16 +102,26 @@ public:
    *
    * @returns false in case of invalid input, true else.
    **/
-  bool set_factor(uint8_t idx, float factor);
+  [[nodiscard]] bool set_factor(uint8_t idx, float factor);
   float get_factor(uint8_t idx);
 
-  void write_to_hardware() override;
+  const std::array<float, NUM_COEFF> &get_gain_corrections() const;
+
+  void set_gain_corrections(const std::array<float, NUM_COEFF> &corrections);
+
+  void reset_gain_corrections();
+
+  bool set_gain_correction(uint8_t coeff_idx, const float correction);
+
+  [[nodiscard]] bool write_to_hardware() override;
   void reset(bool keep_calibration) override;
 
   bool config_self_from_json(JsonObjectConst cfg) override;
 
 protected:
   void config_self_to_json(JsonObject &cfg) override;
+
+  friend class ::platform::Calibration;
 };
 
 //  ██    ██  █████  ██████  ██  █████  ███    ██ ████████ ███████
@@ -155,10 +167,7 @@ public:
                    functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 29),
                    functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 30),
                    functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31),
-               },
-               functions::SR74HCT595{bus::replace_function_idx(block_address, SCALE_SWITCHER)},
-               functions::TriggerFunction{bus::replace_function_idx(block_address, SCALE_SWITCHER_SYNC)},
-               functions::TriggerFunction{bus::replace_function_idx(block_address, SCALE_SWITCHER_CLEAR)}) {}
+               }) {}
 
   CBlock_SequentialAddresses() : CBlock_SequentialAddresses(bus::idx_to_addr(0, BLOCK_IDX, 0)) {}
 
@@ -202,11 +211,7 @@ public:
                 functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 13),
                 functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 14),
                 functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 15),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 16)},
-               // TODO: Dynamic hardware detection is implemented for both REV0 as well as REV1,
-               //       but functions for scale switching have been removed in REV1.
-               functions::SR74HCT595(bus::NULL_ADDRESS), functions::TriggerFunction(bus::NULL_ADDRESS),
-               functions::TriggerFunction(bus::NULL_ADDRESS)) {}
+                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 16)}) {}
 
   CBlock_MixedAddresses() : CBlock_MixedAddresses(bus::idx_to_addr(0, BLOCK_IDX, 0)) {}
 

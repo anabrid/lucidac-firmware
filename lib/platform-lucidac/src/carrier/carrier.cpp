@@ -5,9 +5,9 @@
 
 #include "carrier.h"
 
-carrier::Carrier::Carrier(std::vector<Cluster> clusters) : Entity(""), clusters(std::move(clusters)) {}
-
 entities::EntityClass carrier::Carrier::get_entity_class() const { return entities::EntityClass::CARRIER; }
+
+carrier::Carrier::Carrier(std::vector<Cluster> clusters) : Entity(""), clusters(std::move(clusters)) {}
 
 bool carrier::Carrier::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
@@ -31,10 +31,13 @@ std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
 }
 
 entities::Entity *carrier::Carrier::get_child_entity(const std::string &child_id) {
-  auto cluster_idx = std::stoul(child_id);
-  if (cluster_idx < 0 or clusters.size() < cluster_idx)
-    return nullptr;
-  return &clusters[cluster_idx];
+  if (is_number(child_id.begin(), child_id.end())) {
+    auto cluster_idx = std::stoul(child_id);
+    if (cluster_idx < 0 or clusters.size() < cluster_idx)
+      return nullptr;
+    return &clusters[cluster_idx];
+  }
+  return nullptr;
 }
 
 bool carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
@@ -42,8 +45,12 @@ bool carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
   return true;
 }
 
-void carrier::Carrier::write_to_hardware() {
+bool carrier::Carrier::write_to_hardware() {
   for (auto &cluster : clusters) {
-    cluster.write_to_hardware();
+    if (!cluster.write_to_hardware()) {
+      LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
+      return false;
+    }
   }
+  return true;
 }

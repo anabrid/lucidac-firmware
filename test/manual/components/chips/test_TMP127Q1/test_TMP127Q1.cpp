@@ -8,18 +8,22 @@
 
 #include "bus/bus.h"
 #include "chips/TMP127Q1.h"
+#include "io/io.h"
 
 using namespace functions;
 
-TMP127Q1 chip{bus::idx_to_addr(0, bus::C_BLOCK_IDX, 33)};
+// New REV1 addresses
+// This one is on C-Block
+// TMP127Q1 chip{bus::address_from_tuple(9, 33)};
+// This one is on carrier board
+TMP127Q1 chip{bus::address_from_tuple(5, 1)};
 
 void setUp() {
-  // set stuff up here
-  bus::init();
+  // This is called before *each* test.
 }
 
 void tearDown() {
-  // clean stuff up here
+  // This is called after *each* test.
 }
 
 void test_raw_conversion() {
@@ -31,10 +35,19 @@ void test_raw_conversion() {
 void test_chip_function() { TEST_ASSERT_FLOAT_WITHIN(10, 30, chip.read_temperature()); }
 
 void setup() {
+  bus::init();
+  io::init();
+
   UNITY_BEGIN();
   RUN_TEST(test_raw_conversion);
   RUN_TEST(test_chip_function);
   UNITY_END();
 }
 
-void loop() {}
+void loop() {
+  // Do an action once the button is pressed
+  while (!io::get_button()) {
+  }
+  test_chip_function();
+  delay(500);
+}

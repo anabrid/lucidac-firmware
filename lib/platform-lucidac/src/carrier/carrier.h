@@ -9,8 +9,10 @@
 #include <ArduinoJson.h>
 #include <array>
 
+#include "chips/TMP127Q1.h"
 #include "cluster.h"
 #include "entity/entity.h"
+#include "is_number.h"
 #include "mac_utils.h"
 
 using namespace platform;
@@ -33,7 +35,13 @@ public:
 
   bool config_self_from_json(JsonObjectConst cfg) override;
 
-  void write_to_hardware();
+  [[nodiscard]] virtual bool write_to_hardware();
+
+  // REV1 specific things
+  // TODO: These are partly LUCIDAC specific things, which should be rebased on `56-refactor-...` branch.
+public:
+  // Module addresses
+  static constexpr uint8_t CARRIER_MADDR = 5;
 };
 
 } // namespace carrier

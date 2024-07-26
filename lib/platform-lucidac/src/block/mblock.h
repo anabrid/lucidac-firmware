@@ -126,7 +126,7 @@ private:
   std::array<uint16_t, 8> ic_raw;
   std::array<unsigned int, 8> time_factors;
 
-  void write_time_factors_to_hardware();
+  bool write_time_factors_to_hardware();
 
 public:
   explicit MIntBlock(bus::addr_t block_address);
@@ -142,7 +142,7 @@ public:
 
   bool set_time_factor(uint8_t int_idx, unsigned int k);
 
-  void write_to_hardware() override;
+  [[nodiscard]] bool write_to_hardware() override;
 
   bool config_self_from_json(JsonObjectConst cfg) override;
 
@@ -171,7 +171,7 @@ public:
 
   uint8_t get_entity_type() const final { return static_cast<uint8_t>(MBlock::TYPES::M_MUL4_BLOCK); }
 
-  void write_to_hardware() override;
+  [[nodiscard]] bool write_to_hardware() override;
 
 protected:
   bool config_self_from_json(JsonObjectConst cfg) override;

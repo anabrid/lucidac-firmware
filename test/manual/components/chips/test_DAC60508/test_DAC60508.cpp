@@ -7,6 +7,7 @@
 #include <unity.h>
 
 #define protected public
+#define private public
 #include "bus/functions.h"
 #include "chips/DAC60508.h"
 
@@ -27,8 +28,7 @@ void tearDown() {
 }
 
 void test_float_to_raw() {
-  TEST_ASSERT_EQUAL(DAC60508::RAW_PLUS_ONE, DAC60508::float_to_raw(+1.0f));
-  TEST_ASSERT_EQUAL(DAC60508::RAW_MINUS_ONE, DAC60508::float_to_raw(-1.0f));
+  TEST_ASSERT_EQUAL(DAC60508::RAW_TWO_FIVE, DAC60508::float_to_raw(+2.5f));
 }
 
 void test_raw_read() {
@@ -83,7 +83,7 @@ void test_set_dac_outputs() {
 }
 
 void test_set_dac_outputs_raw() {
-  dac.set_channel(0, DAC60508::RAW_MINUS_ONE);
+  dac.set_channel(0, DAC60508::RAW_TWO_FIVE);
   // dac.set_channel(0, DAC60508::RAW_PLUS_ONE);
 }
 

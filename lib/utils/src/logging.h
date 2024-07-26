@@ -8,10 +8,15 @@
 // The actual logging call
 #ifdef ARDUINO
 #include <Arduino.h>
-#define __LOG(message) Serial.println(message);
+#define __LOG(message)                                                                                        \
+  {                                                                                                           \
+    Serial.println(message);                                                                                  \
+    Serial.flush();                                                                                           \
+  }
 #else
 #include <iostream>
-#define __LOG(message) std::cerr << message;
+#define __LOG(message)                                                                                        \
+  { std::cerr << message; }
 #endif
 
 // A logging macro, which accepts an optional LOG_FLAG (e.g. ANABRID_DEBUG_INIT) and a message.
@@ -45,4 +50,16 @@
 #define LOG_ANABRID_DEBUG_DAQ(message) __LOG(message)
 #else
 #define LOG_ANABRID_DEBUG_DAQ(message) ((void)0)
+#endif
+
+#ifdef ANABRID_PEDANTIC
+#define LOG_ANABRID_PEDANTIC(message) __LOG(message)
+#else
+#define LOG_ANABRID_PEDANTIC(message) ((void)0)
+#endif
+
+#ifdef ANABRID_DEBUG_CALIBRATION
+#define LOG_ANABRID_DEBUG_CALIBRATION(message) __LOG(message)
+#else
+#define LOG_ANABRID_DEBUG_CALIBRATION(message) ((void)0)
 #endif
