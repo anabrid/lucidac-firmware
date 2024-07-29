@@ -122,6 +122,7 @@ bool LUCIDAC::write_to_hardware() {
 int LUCIDAC::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
   auto carrier_res = this->carrier::Carrier::get_entities(msg_in, msg_out);
   if(carrier_res != 0) return carrier_res;
-  msg_out["entities"]["/FP"] = front_plane->get_entity_classifier();
+  if(front_plane)
+    msg_out["entities"]["/FP"] = front_plane->get_entity_classifier();
   return 0;
 }
