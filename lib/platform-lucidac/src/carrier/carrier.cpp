@@ -15,6 +15,12 @@ bool carrier::Carrier::init() {
   LOG(ANABRID_DEBUG_INIT, entity_id.c_str());
   if (entity_id.empty())
     return false;
+
+  // Detect CTRL-block
+  ctrl_block = entities::detect<blocks::CTRLBlock>(bus::address_from_tuple(1,0));
+  if (!ctrl_block)
+    return false;
+
   for (auto &cluster : clusters) {
     if (!cluster.init())
       return false;
@@ -52,5 +58,19 @@ bool carrier::Carrier::write_to_hardware() {
       return false;
     }
   }
+  return true;
+}
+
+bool carrier::Carrier::calibrate(daq::BaseDAQ *daq_) {
+  for (auto & cluster: clusters) {
+    ctrl_block->set_adc_bus_to_cluster_gain(cluster.get_cluster_idx());
+    if (!ctrl_block->write_to_hardware())
+      return false;
+    if (!cluster.calibrate(daq_))
+      return false;
+  }
+  ctrl_block->reset_adc_bus();
+  if (!ctrl_block->write_to_hardware())
+    return false;
   return true;
 }

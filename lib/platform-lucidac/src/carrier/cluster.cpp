@@ -282,3 +282,5 @@ std::vector<entities::Entity *> platform::Cluster::get_child_entities() {
 #endif
   return {m1block, m2block, ublock, cblock, iblock, shblock};
 }
+
+uint8_t platform::Cluster::get_cluster_idx() const { return cluster_idx; }

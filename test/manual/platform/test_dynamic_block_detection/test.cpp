@@ -88,6 +88,7 @@ void test_detect_block() {
   TEST_ASSERT(entities::detect<CBlock>(bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0)));
   TEST_ASSERT(entities::detect<IBlock>(bus::idx_to_addr(0, IBlock::BLOCK_IDX, 0)));
   TEST_ASSERT(entities::detect<SHBlock>(bus::idx_to_addr(0, SHBlock::BLOCK_IDX, 0)));
+  TEST_ASSERT(entities::detect<CTRLBlock>(bus::address_from_tuple(bus::CTRL_BLOCK_BADDR, 0)));
 }
 
 void test_read_euis() {

@@ -17,7 +17,6 @@ using namespace blocks;
 
 // TODO: Make this independent on underlying hardware by dynamically detecting carrier board
 LUCIDAC carrier_;
-blocks::CTRLBlockHAL_V_1_0_1 ctrlblock_hal;
 daq::OneshotDAQ DAQ;
 
 void setUp() {
@@ -38,22 +37,23 @@ void test_init_and_blocks() {
     TEST_ASSERT_NOT_NULL(cluster.iblock);
     TEST_ASSERT_NOT_NULL(cluster.shblock);
   }
+  TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
 }
 
 void test_calibration() {
-  // Connect ADC_BUS on CTRL-Block
-  ctrlblock_hal.write_adc_bus_muxers(blocks::CTRLBlock::ADCBus::CL0_GAIN);
-  // io::block_until_button_press();
-
+  // The calibration process will only calibrate lanes that are actually in use.
+  // That's why we need to set some connections for testing.
   for (auto &cluster : carrier_.clusters) {
     TEST_ASSERT(cluster.route(2, 0, 0.3f, 1));
     TEST_ASSERT(cluster.route(1, 1, -0.2f, 2));
     TEST_ASSERT(cluster.add_constant(UBlock::POS_BIG_REF, 3, 0.114f, 1));
 
     TEST_ASSERT(cluster.write_to_hardware());
+  }
 
-    TEST_ASSERT(cluster.calibrate(&DAQ));
+  TEST_ASSERT(carrier_.calibrate(&DAQ));
 
+  for (auto &cluster: carrier_.clusters) {
     // Check whether all gain corrections are in a reasonable range
     TEST_MESSAGE_FORMAT("Gain corrections are {}.", cluster.cblock->get_gain_corrections());
     for (auto gain_correction: cluster.cblock->get_gain_corrections())

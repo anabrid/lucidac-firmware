@@ -14,7 +14,7 @@
 
 using namespace blocks;
 
-CTRLBlockHAL_V_1_0_1 hal;
+CTRLBlockHAL_V_1_0_2 hal;
 
 void setUp() {
   // This is called before *each* test.

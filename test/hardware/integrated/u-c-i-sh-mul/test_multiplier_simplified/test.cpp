@@ -19,7 +19,7 @@ using namespace blocks;
 
 LUCIDAC carrier_;
 auto &cluster_ = carrier_.clusters[0];
-blocks::CTRLBlockHAL_V_1_0_1 ctrlblock_hal;
+blocks::CTRLBlockHAL_V_1_0_2 ctrlblock_hal;
 daq::OneshotDAQ DAQ;
 
 void setUp() {
