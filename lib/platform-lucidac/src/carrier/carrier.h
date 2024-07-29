@@ -9,8 +9,10 @@
 #include <ArduinoJson.h>
 #include <array>
 
+#include "block/ctrlblock.h"
 #include "chips/TMP127Q1.h"
 #include "cluster.h"
+#include "daq/daq.h"
 #include "entity/entity.h"
 #include "is_number.h"
 #include "mac_utils.h"
@@ -22,12 +24,15 @@ namespace carrier {
 class Carrier : public entities::Entity {
 public:
   std::vector<Cluster> clusters;
+  blocks::CTRLBlock* ctrl_block = nullptr;
 
   explicit Carrier(std::vector<Cluster> clusters);
 
   entities::EntityClass get_entity_class() const final;
 
   virtual bool init();
+
+  virtual bool calibrate(daq::BaseDAQ* daq_);
 
   std::vector<Entity *> get_child_entities() override;
 

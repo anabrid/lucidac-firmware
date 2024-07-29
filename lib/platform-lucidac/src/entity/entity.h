@@ -32,6 +32,7 @@ template <class BlockT> BlockT *detect(const bus::addr_t block_address) {
   case EntityClass::C_BLOCK:
   case EntityClass::I_BLOCK:
   case EntityClass::SH_BLOCK:
+  case EntityClass::CTRL_BLOCK:
     return BlockT::from_entity_classifier(classifier, block_address);
   }
   return nullptr;

@@ -43,6 +43,8 @@ public:
 
   [[nodiscard]] bool write_to_hardware();
 
+  uint8_t get_cluster_idx() const;
+
   /**
    * Register a route throught the cluster.
    *
