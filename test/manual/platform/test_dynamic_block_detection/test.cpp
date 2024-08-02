@@ -75,7 +75,7 @@ void test_prepare_eeprom() {
 
   EEPROM25AA02 ctrl_eeprom(bus::address_from_tuple(1, 0));
   TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
-                               static_cast<uint8_t>(entities::EntityClass::CTRL_BLOCK)));
+                                 static_cast<uint8_t>(entities::EntityClass::CTRL_BLOCK)));
   TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1, 1));
   TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 1));
   TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
@@ -92,7 +92,8 @@ void test_detect_block() {
 }
 
 void test_read_euis() {
-  for (auto block_idx: {UBlock::BLOCK_IDX, CBlock::BLOCK_IDX, IBlock::BLOCK_IDX, SHBlock::BLOCK_IDX}) {
+  for (auto block_idx : {bus::M1_BLOCK_IDX, bus::M2_BLOCK_IDX, UBlock::BLOCK_IDX, CBlock::BLOCK_IDX,
+                         IBlock::BLOCK_IDX, SHBlock::BLOCK_IDX}) {
     MetadataReader reader{bus::idx_to_addr(0, block_idx, 0)};
     TEST_MESSAGE_FORMAT("{}", reader.read_eui());
   }

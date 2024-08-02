@@ -32,6 +32,7 @@ void tearDown() {
 void init() {
   ctrl_block = entities::detect<blocks::CTRLBlock>(bus::address_from_tuple(bus::CTRL_BLOCK_BADDR, 0));
   TEST_ASSERT_NOT_NULL(ctrl_block);
+  TEST_ASSERT(ctrl_block->init());
 }
 
 void test_adc_mux() {

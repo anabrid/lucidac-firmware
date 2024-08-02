@@ -18,7 +18,7 @@ bool blocks::CTRLBlockHAL_V_1_0_2::write_adc_bus_muxers(ADCBus adc_bus) {
   return true;
 }
 
-float blocks::CTRLBlockHAL_V_1_0_2::read_temperature() { return 0; }
+// float blocks::CTRLBlockHAL_V_1_0_2::read_temperature() { return 0; }
 
 bool blocks::CTRLBlockHAL_V_1_0_2::write_sync_id(uint8_t id) {
   // The very naive encoding proposed in
@@ -61,13 +61,16 @@ blocks::CTRLBlock::ADCBus blocks::CTRLBlock::get_adc_bus() const { return adc_bu
 
 void blocks::CTRLBlock::set_adc_bus(blocks::CTRLBlock::ADCBus adc_bus_) { adc_bus = adc_bus_; }
 
-void blocks::CTRLBlock::reset_adc_bus() {
-  adc_bus = ADCBus::ADC;
-}
+void blocks::CTRLBlock::reset_adc_bus() { adc_bus = ADCBus::ADC; }
 
 bool blocks::CTRLBlock::set_adc_bus_to_cluster_gain(uint8_t cluster_idx) {
   if (cluster_idx >= 3)
     return false;
   set_adc_bus(static_cast<ADCBus>(cluster_idx));
   return true;
+}
+
+void blocks::CTRLBlock::reset(bool keep_calibration) {
+  FunctionBlock::reset(keep_calibration);
+  reset_adc_bus();
 }
