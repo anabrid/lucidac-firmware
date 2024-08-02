@@ -24,12 +24,8 @@ const SPISettings functions::UMatrixFunction::DEFAULT_SPI_SETTINGS{4'000'000, MS
 functions::UMatrixFunction::UMatrixFunction(bus::addr_t address)
     : functions::DataFunction(address, DEFAULT_SPI_SETTINGS) {}
 
-blocks::UBlock::UBlock(bus::addr_t block_address)
-    : FunctionBlock("U", block_address), f_umatrix(bus::replace_function_idx(block_address, UMATRIX_FUNC_IDX)),
-      f_umatrix_sync(bus::replace_function_idx(block_address, UMATRIX_SYNC_FUNC_IDX)),
-      f_umatrix_reset(bus::replace_function_idx(block_address, UMATRIX_RESET_FUNC_IDX)), output_input_map{},
-      transmission_mode_register(bus::replace_function_idx(block_address, TRANSMISSION_MODE_FUNC_IDX), true),
-      transmission_mode_sync(bus::replace_function_idx(block_address, TRANSMISSION_MODE_SYNC_FUNC_IDX)) {
+blocks::UBlock::UBlock(bus::addr_t block_address, UBlockHAL *hardware)
+    : FunctionBlock("U", block_address), hardware(hardware), output_input_map{} {
   reset_connections();
 }
 
@@ -53,18 +49,20 @@ bool blocks::UBlock::connect(const uint8_t input, const uint8_t output, bool for
 
   // Check if the transmission mode makes the specified connection impossible and if the mode can or should be
   // chnged
-  if (a_side_mode != ANALOG_INPUT && ((output < 16 && input != 15) || (output >= 16 && input != 14))) {
+  if (a_side_mode != Transmission_Mode::ANALOG_INPUT &&
+      ((output < 16 && input != 15) || (output >= 16 && input != 14))) {
     if (!force)
       if (is_input_connected(input))
         return false;
-    change_a_side_transmission_mode(ANALOG_INPUT);
+    change_a_side_transmission_mode(Transmission_Mode::ANALOG_INPUT);
   }
 
-  if (b_side_mode != ANALOG_INPUT && ((output < 16 && input == 15) || (output >= 16 && input == 14))) {
+  if (b_side_mode != Transmission_Mode::ANALOG_INPUT &&
+      ((output < 16 && input == 15) || (output >= 16 && input == 14))) {
     if (!force)
       if (is_input_connected(input))
         return false;
-    change_b_side_transmission_mode(ANALOG_INPUT);
+    change_b_side_transmission_mode(Transmission_Mode::ANALOG_INPUT);
   }
 
   _connect(input, output);
@@ -174,38 +172,19 @@ bool blocks::UBlock::is_input_connected(const uint8_t input) const {
   return _is_input_connected(input);
 }
 
-constexpr uint8_t UBLOCK_TRANSMISSION_REGULAR_MASK = 0b0000'0111;
-constexpr uint8_t UBLOCK_TRANSMISSION_ALTERNATIVE_MASK = 0b0001'1001;
-constexpr uint8_t UBLOCK_TRANSMISSION_SIGNLESS_MASK = 0b0000'0110;
+void blocks::UBlock::change_a_side_transmission_mode(const Transmission_Mode mode) { a_side_mode = mode; }
 
-uint8_t blocks::UBlock::change_a_side_transmission_mode(const Transmission_Mode mode) {
-  a_side_mode = mode;
+void blocks::UBlock::change_b_side_transmission_mode(const Transmission_Mode mode) { b_side_mode = mode; }
 
-  transmission_mode_byte &= ~UBLOCK_TRANSMISSION_REGULAR_MASK;
-  transmission_mode_byte |= mode;
-  return transmission_mode_byte;
-}
-
-uint8_t blocks::UBlock::change_b_side_transmission_mode(const Transmission_Mode mode) {
-  b_side_mode = mode;
-
-  bool sign = mode & 1;
-  uint8_t rest = transmission_mode_byte;
-
-  transmission_mode_byte &= ~UBLOCK_TRANSMISSION_ALTERNATIVE_MASK;
-  transmission_mode_byte |= (mode & UBLOCK_TRANSMISSION_SIGNLESS_MASK) << 2 | sign;
-  return transmission_mode_byte;
-}
-
-uint8_t blocks::UBlock::change_all_transmission_modes(const Transmission_Mode mode) {
+void blocks::UBlock::change_all_transmission_modes(const Transmission_Mode mode) {
   change_a_side_transmission_mode(mode);
-  return change_b_side_transmission_mode(mode);
+  change_b_side_transmission_mode(mode);
 }
 
-uint8_t
-blocks::UBlock::change_all_transmission_modes(const std::pair<Transmission_Mode, Transmission_Mode> modes) {
+void blocks::UBlock::change_all_transmission_modes(
+    const std::pair<Transmission_Mode, Transmission_Mode> modes) {
   change_a_side_transmission_mode(modes.first);
-  return change_b_side_transmission_mode(modes.second);
+  change_b_side_transmission_mode(modes.second);
 }
 
 std::pair<blocks::UBlock::Transmission_Mode, blocks::UBlock::Transmission_Mode>
@@ -213,22 +192,15 @@ blocks::UBlock::get_all_transmission_modes() const {
   return std::make_pair(a_side_mode, b_side_mode);
 }
 
-bool blocks::UBlock::write_matrix_to_hardware() const {
-  if (!f_umatrix.transfer(output_input_map))
-    return false;
-  f_umatrix_sync.trigger();
-  return true;
-}
+blocks::UBlock::Reference_Magnitude blocks::UBlock::get_reference_magnitude() { return ref_magnitude; }
 
-bool blocks::UBlock::write_transmission_mode_to_hardware() const {
-  if (!transmission_mode_register.transfer8(transmission_mode_byte))
-    return false;
-  transmission_mode_sync.trigger();
-  return true;
+void blocks::UBlock::change_reference_magnitude(blocks::UBlock::Reference_Magnitude ref) {
+  ref_magnitude = ref;
 }
 
 bool blocks::UBlock::write_to_hardware() {
-  if (!write_matrix_to_hardware() or !write_transmission_mode_to_hardware()) {
+  if (!hardware->write_outputs(output_input_map) or
+      !hardware->write_transmission_modes_and_ref({a_side_mode, b_side_mode}, ref_magnitude)) {
     LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
     return false;
   }
@@ -310,14 +282,62 @@ void blocks::UBlock::config_self_to_json(JsonObject &cfg) {
 
 blocks::UBlock *blocks::UBlock::from_entity_classifier(entities::EntityClassifier classifier,
                                                        bus::addr_t block_address) {
-  if (!classifier or classifier.class_enum != CLASS_)
+  if (!classifier or classifier.class_enum != CLASS_ or classifier.type != TYPE)
     return nullptr;
 
-  // Currently, there are no different variants or versions
-  if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
-      classifier.version != entities::EntityClassifier::DEFAULT_)
-    return nullptr;
-
-  // Return default implementation
-  return new UBlock(block_address);
+  // Return v1.2.0 by default
+  // TODO: Older development versions had significantly different structure and should be rejected.
+  //       This can be done once the entity classifier has been refactored to (major, minor, patch) version.
+  return new UBlock(block_address, new UBlockHAL_V_1_2_0(block_address));
 }
+
+// blocks::UBlock_SwappedSR::UBlock_SwappedSR(bus::addr_t block_address)
+//     : FunctionBlock("U", block_address), output_input_map{} {}
+
+bool blocks::UBlockHAL_Dummy::write_outputs(std::array<int8_t, 32> outputs) { return true; }
+
+bool blocks::UBlockHAL_Dummy::write_transmission_modes_and_ref(
+    std::pair<Transmission_Mode, Transmission_Mode> modes, blocks::UBlockHAL::Reference_Magnitude ref) {
+  return true;
+}
+
+void blocks::UBlockHAL_Dummy::reset_transmission_modes_and_ref() {}
+
+
+blocks::UBlockHAL_Common::UBlockHAL_Common(bus::addr_t block_address, const uint8_t f_umatrix_cs,
+                                           const uint8_t f_umatrix_sync_cs,
+                                           const uint8_t f_transmission_mode_register_cs,
+                                           const uint8_t f_transmission_mode_sync_cs,
+                                           const uint8_t f_transmission_mode_reset_cs)
+    : f_umatrix(bus::replace_function_idx(block_address, f_umatrix_cs)),
+      f_umatrix_sync(bus::replace_function_idx(block_address, f_umatrix_sync_cs)),
+      f_transmission_mode_register(bus::replace_function_idx(block_address, f_transmission_mode_register_cs),
+                                   true),
+      f_transmission_mode_sync(bus::replace_function_idx(block_address, f_transmission_mode_sync_cs)),
+      f_transmission_mode_reset(bus::replace_function_idx(block_address, f_transmission_mode_reset_cs)) {}
+
+bool blocks::UBlockHAL_Common::write_outputs(std::array<int8_t, 32> outputs) {
+  if (!f_umatrix.transfer(outputs))
+    return false;
+  f_umatrix_sync.trigger();
+  return true;
+}
+
+bool blocks::UBlockHAL_Common::write_transmission_modes_and_ref(
+    std::pair<Transmission_Mode, Transmission_Mode> modes, Reference_Magnitude ref) {
+  // Reference magnitude is defined by lowest bit
+  // Group "A" mode is defined by the next two bits
+  // Group "B" mode is defined by the next two bits
+  // Remaining bits are not used
+  uint8_t data = 0b000'00'00'0;
+  data |= static_cast<uint8_t>(ref);
+  data |= (static_cast<uint8_t>(modes.first) << 1);
+  data |= (static_cast<uint8_t>(modes.second) << 3);
+
+  if (!f_transmission_mode_register.transfer8(data))
+    return false;
+  f_transmission_mode_sync.trigger();
+  return true;
+}
+
+void blocks::UBlockHAL_Common::reset_transmission_modes_and_ref() { f_transmission_mode_reset.trigger(); }

@@ -93,6 +93,7 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
   // Save current U-block transmission modes and set them to zero
   LOG_ANABRID_DEBUG_CALIBRATION("Starting calibration");
   auto old_transmission_modes = ublock->get_all_transmission_modes();
+  auto old_reference_magnitude = ublock->get_reference_magnitude();
   ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::GROUND);
   // Save and reset I-block connections
   // This is necessary as we can not calibrate sums and we want to calibrate lanes individually
@@ -135,10 +136,11 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
 
       // Depending on whether upscaling is enabled for this lane, we apply +1 or +0.1 reference
       // This is done on all lanes (but no other I-block connection exists, so no other current flows)
+      ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::POS_REF);
       if (!iblock->get_upscaling(i_in_idx))
-        ublock->change_all_transmission_modes(blocks::UBlock::POS_BIG_REF);
+        ublock->change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE);
       else
-        ublock->change_all_transmission_modes(blocks::UBlock::POS_SMALL_REF);
+        ublock->change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE_TENTH);
       // Actually write to hardware
       if (!ublock->write_to_hardware())
         return false;
@@ -191,8 +193,9 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
   if (!calibrate_offsets())
     return false;
 
-  // Restore original U-block transmission modes
+  // Restore original U-block transmission modes and reference
   ublock->change_all_transmission_modes(old_transmission_modes);
+  ublock->change_reference_magnitude(old_reference_magnitude);
   // Write them to hardware
   LOG_ANABRID_DEBUG_CALIBRATION("Restoring ublock");
   if (!ublock->write_to_hardware())
