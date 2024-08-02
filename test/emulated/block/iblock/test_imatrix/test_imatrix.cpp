@@ -6,6 +6,10 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#ifdef ANABRID_PEDANTIC
+#error "Emulated test cases expect pedantic mode to be disabled."
+#endif
+
 #include "bus/bus.h"
 #include "bus/functions.h"
 
