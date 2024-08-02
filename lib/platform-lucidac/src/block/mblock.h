@@ -107,6 +107,18 @@ public:
   uint8_t slot_to_global_io_index(uint8_t local) const;
 };
 
+
+class EmptyMBlock: public MBlock {
+public:
+  bool write_to_hardware() override;
+  uint8_t get_entity_type() const override;
+
+  using MBlock::MBlock;
+
+protected:
+  bool config_self_from_json(JsonObjectConst cfg) override;
+};
+
 // ██ ███    ██ ████████  █████       ██████ ██       █████  ███████ ███████
 // ██ ████   ██    ██    ██   ██     ██      ██      ██   ██ ██      ██
 // ██ ██ ██  ██    ██     █████      ██      ██      ███████ ███████ ███████

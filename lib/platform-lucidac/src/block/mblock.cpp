@@ -265,3 +265,9 @@ bool blocks::MMulBlockHAL_V_1_0_1::write_calibration_output_offset(uint8_t idx, 
   // See write_calibration_input_offsets for some explanations.
   return f_calibration_dac_1.set_channel(idx, (offset_z - 0.1f) * -12.5f);
 }
+
+bool blocks::EmptyMBlock::write_to_hardware() { return true; }
+
+bool blocks::EmptyMBlock::config_self_from_json(JsonObjectConst cfg) { return true; }
+
+uint8_t blocks::EmptyMBlock::get_entity_type() const { return static_cast<uint8_t>(MBlock::TYPES::UNKNOWN); }
