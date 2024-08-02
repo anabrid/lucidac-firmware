@@ -74,3 +74,10 @@ bool carrier::Carrier::calibrate(daq::BaseDAQ *daq_) {
     return false;
   return true;
 }
+
+void carrier::Carrier::reset(bool keep_calibration) {
+  for (auto& cluster: clusters) {
+    cluster.reset(keep_calibration);
+  }
+  ctrl_block->reset(keep_calibration);
+}

@@ -35,7 +35,12 @@ public:
 
   bool set_channel_raw(uint8_t idx, uint16_t value) const;
   bool set_channel(uint8_t idx, float value) const;
+
   bool init() const;
+
+  bool set_external_reference(bool set = true) const;
+  bool set_double_gain(uint8_t idx, bool set = true) const;
+  bool set_double_gain(bool set = true) const;
 
 private:
   uint16_t read_register(uint8_t address) const;

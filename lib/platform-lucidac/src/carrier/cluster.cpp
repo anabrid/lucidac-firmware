@@ -88,6 +88,8 @@ bool platform::Cluster::calibrate_offsets() {
 }
 
 bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
+  // CARE: This function assumes that certain preparations have been made, see Carrier::calibrate.
+
   // Save current U-block transmission modes and set them to zero
   LOG_ANABRID_DEBUG_CALIBRATION("Starting calibration");
   auto old_transmission_modes = ublock->get_all_transmission_modes();
@@ -152,7 +154,6 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
       delay(100);
 
       // Measure gain output
-      // TODO: Move ctrlblock_hal.write_adc_bus_muxers(blocks::CTRLBlock::ADCBus::CL0_GAIN) into here
       auto m_adc = daq->sample_avg(10, 1000)[i_out_idx % 8];
       LOG_ANABRID_DEBUG_CALIBRATION(m_adc);
       // Calculate necessary gain correction

@@ -48,8 +48,8 @@ public:
 
   bool write_sync_id(uint8_t id) override;
 
-private:
-  float read_temperature() override;
+//private:
+//  float read_temperature() override;
 };
 
 class CTRLBlock : public FunctionBlock {
@@ -72,6 +72,8 @@ public:
   [[nodiscard]] entities::EntityClass get_entity_class() const final;
 
   bool init() override;
+
+  void reset(bool keep_calibration) override;
 
   [[nodiscard]] bool write_to_hardware() override;
 

@@ -11,7 +11,9 @@
 namespace blocks {
 
 class FunctionBlockHAL {
-  virtual float read_temperature() = 0;
+  // virtual float read_temperature() = 0;
+public:
+  virtual bool init() { return true; }
 };
 
 /**
