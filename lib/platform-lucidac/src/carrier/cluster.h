@@ -6,7 +6,7 @@
 #pragma once
 
 #include "block/blocks.h"
-#include "daq/daq.h"
+#include "daq/base.h"
 #include "entity/entity.h"
 
 namespace platform {

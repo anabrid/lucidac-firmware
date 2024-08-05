@@ -12,7 +12,7 @@
 #include "block/ctrlblock.h"
 #include "chips/TMP127Q1.h"
 #include "cluster.h"
-#include "daq/daq.h"
+#include "daq/base.h"
 #include "entity/entity.h"
 #include "is_number.h"
 #include "mac_utils.h"
