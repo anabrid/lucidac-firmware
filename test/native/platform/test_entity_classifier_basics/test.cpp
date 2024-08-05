@@ -22,37 +22,35 @@ void tearDown() {
 }
 
 void test_cblock_v1_variants() {
-  CBlock_SequentialAddresses cblock_seq(bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0));
+  CBlockHAL_V_1_0_0_SequentialCoeffsCS cblock_seq(bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0));
   TEST_ASSERT_EQUAL(cblock_seq.f_coeffs[0].address, bus::idx_to_addr(0, CBlock::BLOCK_IDX, 1));
   TEST_ASSERT_EQUAL(cblock_seq.f_coeffs[15].address, bus::idx_to_addr(0, CBlock::BLOCK_IDX, 16));
   TEST_ASSERT_EQUAL(cblock_seq.f_coeffs[16].address, bus::idx_to_addr(0, CBlock::BLOCK_IDX, 17));
   TEST_ASSERT_EQUAL(cblock_seq.f_coeffs[31].address, bus::idx_to_addr(0, CBlock::BLOCK_IDX, 32));
 
-  CBlock_MixedAddresses cblock_mixed(bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0));
+  CBlockHAL_V_1_0_0_MixedCoeffsCS cblock_mixed(bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0));
   TEST_ASSERT_EQUAL(cblock_mixed.f_coeffs[0].address, bus::idx_to_addr(0, CBlock::BLOCK_IDX, 1));
   TEST_ASSERT_EQUAL(cblock_mixed.f_coeffs[15].address, bus::idx_to_addr(0, CBlock::BLOCK_IDX, 32));
   TEST_ASSERT_EQUAL(cblock_mixed.f_coeffs[16].address, bus::idx_to_addr(0, CBlock::BLOCK_IDX, 33));
-  TEST_ASSERT_EQUAL(cblock_mixed.f_coeffs[31].address, bus::idx_to_addr(0, CBlock::BLOCK_IDX, 17));
+  TEST_ASSERT_EQUAL(cblock_mixed.f_coeffs[31].address, bus::idx_to_addr(0, CBlock::BLOCK_IDX, 16));
 }
 
 void test_cblock_from_entity_classifier() {
   auto cblock_unknown = CBlock::from_entity_classifier(EntityClassifier{CBlock::CLASS_, CBlock::TYPE, 0, 0},
                                                        bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0));
   TEST_ASSERT_EQUAL(nullptr, cblock_unknown);
-  TEST_ASSERT_FALSE(dynamic_cast<CBlock_SequentialAddresses *>(cblock_unknown));
-  TEST_ASSERT_FALSE(dynamic_cast<CBlock_MixedAddresses *>(cblock_unknown));
 
   auto cblock_seq = CBlock::from_entity_classifier(EntityClassifier{CBlock::CLASS_, CBlock::TYPE, 1, 1},
                                                    bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0));
   TEST_ASSERT_NOT_EQUAL(nullptr, cblock_seq);
-  TEST_ASSERT_TRUE(dynamic_cast<CBlock_SequentialAddresses *>(cblock_seq));
-  TEST_ASSERT_FALSE(dynamic_cast<CBlock_MixedAddresses *>(cblock_seq));
+  TEST_ASSERT_TRUE(dynamic_cast<CBlockHAL_V_1_0_0_SequentialCoeffsCS *>(cblock_seq->hardware));
+  TEST_ASSERT_FALSE(dynamic_cast<CBlockHAL_V_1_0_0_MixedCoeffsCS *>(cblock_seq->hardware));
 
   auto cblock_mixed = CBlock::from_entity_classifier(EntityClassifier{CBlock::CLASS_, CBlock::TYPE, 2, 1},
                                                      bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0));
   TEST_ASSERT_NOT_EQUAL(nullptr, cblock_mixed);
-  TEST_ASSERT_FALSE(dynamic_cast<CBlock_SequentialAddresses *>(cblock_mixed));
-  TEST_ASSERT_TRUE(dynamic_cast<CBlock_MixedAddresses *>(cblock_mixed));
+  TEST_ASSERT_FALSE(dynamic_cast<CBlockHAL_V_1_0_0_SequentialCoeffsCS *>(cblock_mixed->hardware));
+  TEST_ASSERT_TRUE(dynamic_cast<CBlockHAL_V_1_0_0_MixedCoeffsCS *>(cblock_mixed->hardware));
 }
 
 void test_mblock_from_entity_classifier() {
