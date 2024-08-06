@@ -46,7 +46,7 @@ void test_calibration() {
   for (auto &cluster : carrier_.clusters) {
     TEST_ASSERT(cluster.route(2, 0, 0.3f, 1));
     TEST_ASSERT(cluster.route(1, 1, -0.2f, 2));
-    TEST_ASSERT(cluster.add_constant(UBlock::POS_BIG_REF, 3, 0.114f, 1));
+    TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, 3, 0.114f, 1));
 
     TEST_ASSERT(cluster.write_to_hardware());
   }

@@ -74,6 +74,15 @@ bool blocks::UBlock::connect_alternative(Transmission_Mode signal_mode, const ui
   if (!_o_sanity_check(output))
     return false;
 
+  // Do not consider Transmission_Mode::ANALOG_INPUT a valid mode
+  if (signal_mode == Transmission_Mode::ANALOG_INPUT)
+    return false;
+
+  // When we want to connect a reference signal, we expect the reference magnitude to be one
+  if ((signal_mode == Transmission_Mode::POS_REF or signal_mode == Transmission_Mode::NEG_REF) and
+      ref_magnitude != Reference_Magnitude::ONE and !force)
+    return false;
+
   // Check for other connections on the same output, unless we don't care if we overwrite them
   if (!force and _is_output_connected(output))
     return false;
@@ -212,6 +221,7 @@ void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), en
 void blocks::UBlock::reset(const bool keep_offsets) {
   FunctionBlock::reset(keep_offsets);
   reset_connections();
+  reset_reference_magnitude();
 }
 
 bool blocks::UBlock::config_self_from_json(JsonObjectConst cfg) {
@@ -291,6 +301,10 @@ blocks::UBlock *blocks::UBlock::from_entity_classifier(entities::EntityClassifie
   return new UBlock(block_address, new UBlockHAL_V_1_2_0(block_address));
 }
 
+void blocks::UBlock::reset_reference_magnitude() {
+  ref_magnitude = Reference_Magnitude::ONE;
+}
+
 // blocks::UBlock_SwappedSR::UBlock_SwappedSR(bus::addr_t block_address)
 //     : FunctionBlock("U", block_address), output_input_map{} {}
 
@@ -302,7 +316,6 @@ bool blocks::UBlockHAL_Dummy::write_transmission_modes_and_ref(
 }
 
 void blocks::UBlockHAL_Dummy::reset_transmission_modes_and_ref() {}
-
 
 blocks::UBlockHAL_Common::UBlockHAL_Common(bus::addr_t block_address, const uint8_t f_umatrix_cs,
                                            const uint8_t f_umatrix_sync_cs,

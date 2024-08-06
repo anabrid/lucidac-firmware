@@ -170,6 +170,8 @@ protected:
 
   void change_reference_magnitude(Reference_Magnitude ref);
 
+  void reset_reference_magnitude();
+
   std::pair<Transmission_Mode, Transmission_Mode> get_all_transmission_modes() const;
   //! Check whether an input is connected to an output, without sanity checks.
   bool _is_connected(const uint8_t input, const uint8_t output) const;
