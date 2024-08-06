@@ -6,7 +6,9 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#define ANABRID_PEDANTIC
+#ifndef ANABRID_PEDANTIC
+#error "This test requires pedantic mode."
+#endif
 
 #include "daq/daq.h"
 #include "io/io.h"
@@ -17,7 +19,6 @@
 
 using namespace blocks;
 
-// TODO: Make this independent on underlying hardware by dynamically detecting carrier board
 blocks::IBlock *iblock;
 
 void setUp() {
@@ -39,22 +40,30 @@ void test_scaling_register() {
 
   factors.set();
   iblock->set_upscaling(factors);
-
-  TEST_ASSERT(iblock->write_scaling_to_hardware());
+  TEST_ASSERT(iblock->hardware->write_upscaling(iblock->get_upscales()));
 
   delay(10);
-
   factors.reset();
   iblock->set_upscaling(factors);
-
-  TEST_ASSERT(iblock->write_scaling_to_hardware());
+  TEST_ASSERT(iblock->hardware->write_upscaling(iblock->get_upscales()));
 
   delay(10);
-
   factors = 0xCAFE;
   iblock->set_upscaling(factors);
+  TEST_ASSERT(iblock->hardware->write_upscaling(iblock->get_upscales()));
 
-  TEST_ASSERT(iblock->write_scaling_to_hardware());
+  delay(10);
+  iblock->set_upscaling(31, true);
+  iblock->set_upscaling(30, true);
+  TEST_ASSERT(iblock->hardware->write_upscaling(iblock->get_upscales()));
+}
+
+void test_matrix() {
+  for (auto output_idx : IBlock::OUTPUT_IDX_RANGE()) {
+    TEST_ASSERT(iblock->connect(2 * output_idx, output_idx));
+    TEST_ASSERT(iblock->connect(2 * output_idx + 1, output_idx));
+  }
+  TEST_ASSERT(iblock->hardware->write_outputs(iblock->get_outputs()));
 }
 
 void setup() {
@@ -64,6 +73,7 @@ void setup() {
   UNITY_BEGIN();
   RUN_TEST(init);
   RUN_TEST(test_scaling_register);
+  RUN_TEST(test_matrix);
   UNITY_END();
 }
 

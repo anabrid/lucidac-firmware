@@ -19,86 +19,9 @@ uint8_t functions::ICommandRegisterFunction::chip_cmd_word(uint8_t chip_input_id
   return (connect ? 0b1'000'0000 : 0b0'000'0000) | ((chip_output_idx & 0x7) << 4) | (chip_input_idx & 0xF);
 }
 
-bool blocks::IBlock::write_imatrix_to_hardware() {
-  f_imatrix_reset.trigger();
-  delayNanoseconds(420);
-
-  // TODO: This can be further improved by not naively iterating over the output indizes.
-  // For each output, send the corresponding 32bit commands.
-  // For output_idx < 7, the first two MT8816 chips are used, for >8 the later two.
-  // This means, we can set two outputs simultaneously.
-  // When setting later outputs, we need to *not* overwrite previous outputs on the other chips
-  // Thus we remember what we send them and just send them the same thing again
-  uint32_t remembered_command = 0;
-  for (decltype(outputs.size()) output_idx = 0; output_idx < outputs.size() / 2; output_idx++) {
-    uint32_t command = 0;
-    const auto oidx_one_two = output_idx;
-    const auto oidx_three_four = output_idx + outputs.size() / 2;
-    if (!outputs[oidx_one_two] && !outputs[oidx_three_four])
-      continue;
-
-    // We can always set one output in range (0,15) and one in (16,31) in for each output
-    for (uint8_t input_idx = 0; input_idx < NUM_INPUTS / 2; input_idx++) {
-
-      command = 0;
-
-      const auto iidx_one_three = input_idx;
-      const auto iidx_two_four = input_idx + NUM_INPUTS / 2;
-      bool actual_data = false;
-      // First chip combines oidx_one_two and iidx_one_three
-      if (outputs[oidx_one_two] & INPUT_BITMASK(iidx_one_three)) {
-        command |= functions::ICommandRegisterFunction::chip_cmd_word(iidx_one_three, oidx_one_two);
-        actual_data = true;
-      } else {
-        command |= (remembered_command & 0xFF);
-      }
-      // Similar combination for second chip
-      if (outputs[oidx_one_two] & INPUT_BITMASK(iidx_two_four)) {
-        command |= functions::ICommandRegisterFunction::chip_cmd_word(iidx_two_four, oidx_one_two) << 8;
-        actual_data = true;
-      } else {
-        command |= (remembered_command & 0xFF00);
-      }
-      // Third chip
-      if (outputs[oidx_three_four] & INPUT_BITMASK(iidx_one_three)) {
-        command |= functions::ICommandRegisterFunction::chip_cmd_word(iidx_one_three, oidx_three_four) << 16;
-        actual_data = true;
-      } else {
-        command |= (remembered_command & 0xFF0000);
-      }
-      // Fourth chip
-      if (outputs[oidx_three_four] & INPUT_BITMASK(iidx_two_four)) {
-        command |= functions::ICommandRegisterFunction::chip_cmd_word(iidx_two_four, oidx_three_four) << 24;
-        actual_data = true;
-      } else {
-        command |= (remembered_command & 0xFF000000);
-      }
-
-      if (actual_data) {
-        remembered_command = command;
-        // Send out data
-        if (!f_cmd.transfer32(command)) {
-          LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
-          return false;
-        }
-        // Apply command
-        f_imatrix_sync.trigger();
-      }
-    }
-  }
-  return true;
+bool blocks::IBlock::write_to_hardware() {
+  return hardware->write_upscaling(scaling_factors) and hardware->write_outputs(outputs);
 }
-
-bool blocks::IBlock::write_scaling_to_hardware() {
-  if (!scaling_register.transfer32(scaling_factors.to_ulong())) {
-    LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
-    return false;
-  }
-  scaling_register_sync.trigger();
-  return true;
-}
-
-bool blocks::IBlock::write_to_hardware() { return write_scaling_to_hardware() && write_imatrix_to_hardware(); }
 
 bool blocks::IBlock::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
@@ -106,7 +29,8 @@ bool blocks::IBlock::init() {
     return false;
   };
   // I-Block matrix is not reset on power-cycle, apparently.
-  write_to_hardware();
+  if (!write_to_hardware())
+    return false;
   return true;
 }
 
@@ -251,10 +175,10 @@ bool blocks::IBlock::disconnect(uint8_t output) {
   return true;
 }
 
-bool blocks::IBlock::set_upscaling(uint8_t output, bool upscale) {
-  if (output > 32)
+bool blocks::IBlock::set_upscaling(uint8_t input, bool upscale) {
+  if (input >= NUM_INPUTS)
     return false;
-  scaling_factors[output] = upscale;
+  scaling_factors[input] = upscale;
   return true;
 }
 
@@ -304,7 +228,8 @@ blocks::IBlock *blocks::IBlock::from_entity_classifier(entities::EntityClassifie
     return nullptr;
 
   // Return default implementation
-  return new IBlock(block_address);
+  // TODO: Reject other/older versions
+  return new IBlock(block_address, new IBlockHAL_V_1_2_0(block_address));
 }
 
 const std::array<uint32_t, blocks::IBlock::NUM_OUTPUTS> &blocks::IBlock::get_outputs() const {
@@ -312,3 +237,87 @@ const std::array<uint32_t, blocks::IBlock::NUM_OUTPUTS> &blocks::IBlock::get_out
 }
 
 void blocks::IBlock::set_outputs(const std::array<uint32_t, NUM_OUTPUTS> &outputs_) { outputs = outputs_; }
+
+blocks::IBlockHAL_V_1_2_0::IBlockHAL_V_1_2_0(bus::addr_t block_address)
+    : f_cmd{bus::replace_function_idx(block_address, 2)},
+      f_imatrix_reset{bus::replace_function_idx(block_address, 4)}, f_imatrix_sync{bus::replace_function_idx(
+                                                                        block_address, 3)},
+      scaling_register{bus::replace_function_idx(block_address, 5), true},
+      scaling_register_sync{bus::replace_function_idx(block_address, 6)} {}
+
+bool blocks::IBlockHAL_V_1_2_0::write_outputs(const std::array<uint32_t, 16> &outputs) {
+  f_imatrix_reset.trigger();
+  delayNanoseconds(420);
+
+  // TODO: This can be further improved by not naively iterating over the output indizes.
+  // For each output, send the corresponding 32bit commands.
+  // For output_idx < 7, the first two MT8816 chips are used, for >8 the later two.
+  // This means, we can set two outputs simultaneously.
+  // When setting later outputs, we need to *not* overwrite previous outputs on the other chips
+  // Thus we remember what we send them and just send them the same thing again
+  uint32_t remembered_command = 0;
+  for (decltype(outputs.size()) output_idx = 0; output_idx < outputs.size() / 2; output_idx++) {
+    uint32_t command = 0;
+    const auto oidx_one_two = output_idx;
+    const auto oidx_three_four = output_idx + outputs.size() / 2;
+    if (!outputs[oidx_one_two] && !outputs[oidx_three_four])
+      continue;
+
+    // We can always set one output in range (0,15) and one in (16,31) in for each output
+    for (uint8_t input_idx = 0; input_idx < NUM_INPUTS / 2; input_idx++) {
+
+      command = 0;
+
+      const auto iidx_one_three = input_idx;
+      const auto iidx_two_four = input_idx + NUM_INPUTS / 2;
+      bool actual_data = false;
+      // First chip combines oidx_one_two and iidx_one_three
+      if (outputs[oidx_one_two] & INPUT_BITMASK(iidx_one_three)) {
+        command |= functions::ICommandRegisterFunction::chip_cmd_word(iidx_one_three, oidx_one_two);
+        actual_data = true;
+      } else {
+        command |= (remembered_command & 0xFF);
+      }
+      // Similar combination for second chip
+      if (outputs[oidx_one_two] & INPUT_BITMASK(iidx_two_four)) {
+        command |= functions::ICommandRegisterFunction::chip_cmd_word(iidx_two_four, oidx_one_two) << 8;
+        actual_data = true;
+      } else {
+        command |= (remembered_command & 0xFF00);
+      }
+      // Third chip
+      if (outputs[oidx_three_four] & INPUT_BITMASK(iidx_one_three)) {
+        command |= functions::ICommandRegisterFunction::chip_cmd_word(iidx_one_three, oidx_three_four) << 16;
+        actual_data = true;
+      } else {
+        command |= (remembered_command & 0xFF0000);
+      }
+      // Fourth chip
+      if (outputs[oidx_three_four] & INPUT_BITMASK(iidx_two_four)) {
+        command |= functions::ICommandRegisterFunction::chip_cmd_word(iidx_two_four, oidx_three_four) << 24;
+        actual_data = true;
+      } else {
+        command |= (remembered_command & 0xFF000000);
+      }
+
+      if (actual_data) {
+        remembered_command = command;
+        // Send out data
+        if (!f_cmd.transfer32(command)) {
+          LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
+          return false;
+        }
+        // Apply command
+        f_imatrix_sync.trigger();
+      }
+    }
+  }
+  return true;
+}
+
+bool blocks::IBlockHAL_V_1_2_0::write_upscaling(std::bitset<32> upscaling) {
+  if (!scaling_register.transfer32(upscaling.to_ulong()))
+    return false;
+  scaling_register_sync.trigger();
+  return true;
+}
