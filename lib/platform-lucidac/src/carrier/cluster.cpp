@@ -13,7 +13,7 @@
     return false;
 
 std::array<blocks::FunctionBlock *, 6> platform::Cluster::get_blocks() const {
-  return {m1block, m2block, ublock, cblock, iblock, shblock};
+  return {m0block, m1block, ublock, cblock, iblock, shblock};
 }
 
 bool platform::Cluster::init() {
@@ -22,17 +22,17 @@ bool platform::Cluster::init() {
   // Dynamically detect installed blocks
   // Check if a block is already set, which may happen with a special constructor in the future
   LOG(ANABRID_DEBUG_INIT, "Detecting installed blocks...");
-  if (!m1block) {
-    m1block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M1_BLOCK_IDX, 0));
-    if (!m1block)
+  if (!m0block) {
+    m0block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M1_BLOCK_IDX, 0));
+    if (!m0block)
       LOG(ANABRID_DEBUG_INIT, "Warning: M0-block is missing or unknown.");
   }
-  if (!m2block) {
-    m2block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M2_BLOCK_IDX, 0));
-    if (!m2block)
+  if (!m1block) {
+    m1block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M2_BLOCK_IDX, 0));
+    if (!m1block)
       LOG(ANABRID_DEBUG_INIT, "Warning: M1-block is missing or unknown.");
   }
-  if (!m1block and !m2block)
+  if (!m0block and !m1block)
     LOG(ANABRID_DEBUG_INIT, "Error: Both M0 and M1-blocks are missing or unknown.");
 
   if (!ublock) {
@@ -257,9 +257,9 @@ void platform::Cluster::reset(bool keep_calibration) {
 
 entities::Entity *platform::Cluster::get_child_entity(const std::string &child_id) {
   if (child_id == "M0")
-    return m1block;
+    return m0block;
   else if (child_id == "M1")
-    return m2block;
+    return m1block;
   else if (child_id == "U")
     return ublock;
   else if (child_id == "C")
@@ -284,7 +284,7 @@ std::vector<entities::Entity *> platform::Cluster::get_child_entities() {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  return {m1block, m2block, ublock, cblock, iblock, shblock};
+  return {m0block, m1block, ublock, cblock, iblock, shblock};
 }
 
 uint8_t platform::Cluster::get_cluster_idx() const { return cluster_idx; }

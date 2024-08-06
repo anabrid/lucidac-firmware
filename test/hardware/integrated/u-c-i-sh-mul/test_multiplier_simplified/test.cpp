@@ -40,7 +40,7 @@ void test_init_and_blocks() {
   TEST_ASSERT_NOT_NULL(cluster_.shblock);
   // Require multiplier in second M-block slot
   // TODO: Multiplier actually needs EEPROM data
-  // TEST_ASSERT_NOT_NULL(cluster_.m2block);
+  // TEST_ASSERT_NOT_NULL(cluster_.m1block);
 }
 
 void test_calibration() {

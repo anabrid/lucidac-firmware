@@ -20,8 +20,8 @@ private:
   uint8_t cluster_idx;
 
 public:
+  blocks::MBlock *m0block = nullptr;
   blocks::MBlock *m1block = nullptr;
-  blocks::MBlock *m2block = nullptr;
   blocks::UBlock *ublock = nullptr;
   blocks::CBlock *cblock = nullptr;
   blocks::IBlock *iblock = nullptr;

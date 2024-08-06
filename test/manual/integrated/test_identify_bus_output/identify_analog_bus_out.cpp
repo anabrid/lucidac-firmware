@@ -36,7 +36,7 @@ void test_init() {
   TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.ublock, "U-Block not inserted");
   TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.cblock, "C-Block not inserted");
   TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.iblock, "I-Block not inserted");
-  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.m1block, "M1-Block not inserted");
+  // TEST_ASSERT_NOT_EQUAL_MESSAGE(nullptr, cluster.m0block, "M0-Block not inserted");
 
   // Calibrate
   TEST_ASSERT(daq_.init(0));
@@ -46,7 +46,7 @@ void test_init() {
 }
 
 void test_function() {
-  auto *intblock = (MIntBlock *)(cluster.m1block);
+  auto *intblock = (MIntBlock *)(cluster.m0block);
 
   // Connect a sinusoidal solution
   for (int i = 0; i < 8; i++) {
