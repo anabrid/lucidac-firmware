@@ -163,8 +163,10 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
       auto gain_correction = wanted_factor / m_adc;
       LOG_ANABRID_DEBUG_CALIBRATION(gain_correction);
       // Set gain correction on C-block, which will automatically get applied when writing to hardware
-      if (!cblock->set_gain_correction(i_in_idx, gain_correction))
+      if (!cblock->set_gain_correction(i_in_idx, gain_correction)) {
+        LOG_ANABRID_DEBUG_CALIBRATION("Gain correction could not be set, possibly out of range.");
         return false;
+      }
 
       // Disconnect this lane again
       iblock->disconnect(i_in_idx, i_out_idx);

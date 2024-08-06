@@ -68,6 +68,9 @@ void blocks::CBlock::set_gain_corrections(const std::array<float, NUM_COEFF> &co
 bool blocks::CBlock::set_gain_correction(const uint8_t coeff_idx, const float correction) {
   if (coeff_idx > NUM_COEFF)
     return false;
+  // Gain correction must be positive and close to 1
+  if (signbit(correction) or fabs(1.0f - correction) > MAX_GAIN_CORRECTION_ABS)
+    return false;
   gain_corrections_[coeff_idx] = correction;
   return true;
 };

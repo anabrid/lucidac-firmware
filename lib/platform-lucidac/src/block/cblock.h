@@ -105,6 +105,7 @@ public:
 
   static constexpr float MIN_FACTOR = -1.01f;
   static constexpr float MAX_FACTOR = +1.01f;
+  static constexpr float MAX_GAIN_CORRECTION_ABS = 0.1f;
 
 protected:
   CBlockHAL* hardware;
