@@ -7,7 +7,7 @@
 #include <unity.h>
 
 #ifndef ANABRID_PEDANTIC
-#error This test requires pedantic mode.
+#error "This test requires pedantic mode."
 #endif
 
 #include "daq/daq.h"
