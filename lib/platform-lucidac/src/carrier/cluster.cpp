@@ -23,12 +23,12 @@ bool platform::Cluster::init() {
   // Check if a block is already set, which may happen with a special constructor in the future
   LOG(ANABRID_DEBUG_INIT, "Detecting installed blocks...");
   if (!m0block) {
-    m0block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M1_BLOCK_IDX, 0));
+    m0block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M0_BLOCK_IDX, 0));
     if (!m0block)
       LOG(ANABRID_DEBUG_INIT, "Warning: M0-block is missing or unknown.");
   }
   if (!m1block) {
-    m1block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M2_BLOCK_IDX, 0));
+    m1block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M1_BLOCK_IDX, 0));
     if (!m1block)
       LOG(ANABRID_DEBUG_INIT, "Warning: M1-block is missing or unknown.");
   }

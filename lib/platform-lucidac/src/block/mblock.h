@@ -41,8 +41,8 @@ public:
   bool is_entity_type(TYPES type_) { return entities::Entity::is_entity_type(static_cast<uint8_t>(type_)); }
 
 public:
-  static constexpr uint8_t M1_IDX = bus::M1_BLOCK_IDX;
-  static constexpr uint8_t M2_IDX = bus::M2_BLOCK_IDX;
+  static constexpr uint8_t M1_IDX = bus::M0_BLOCK_IDX;
+  static constexpr uint8_t M2_IDX = bus::M1_BLOCK_IDX;
 
   enum class SLOT : uint8_t { M0 = 0, M1 = 1 };
 
@@ -97,7 +97,7 @@ public:
   explicit MBlock(bus::addr_t block_address);
 
   explicit MBlock(SLOT slot)
-      : MBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M1_BLOCK_IDX : bus::M2_BLOCK_IDX, 0)) {}
+      : MBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M0_BLOCK_IDX : bus::M1_BLOCK_IDX, 0)) {}
 
   entities::EntityClass get_entity_class() const final { return entities::EntityClass::M_BLOCK; }
 
@@ -156,7 +156,7 @@ public:
   explicit MIntBlock(bus::addr_t block_address);
 
   explicit MIntBlock(SLOT slot)
-      : MIntBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M1_BLOCK_IDX : bus::M2_BLOCK_IDX, 0)) {}
+      : MIntBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M0_BLOCK_IDX : bus::M1_BLOCK_IDX, 0)) {}
 
   uint8_t get_entity_type() const final { return static_cast<uint8_t>(TYPE); }
 
