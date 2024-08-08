@@ -10,7 +10,7 @@
 #define private public
 #include "lucidac/front_panel.h"
 
-platform::lucidac::FrontPanel fp;
+platform::LUCIDACFrontPanel fp;
 
 void setUp() {
   // This is called before *each* test.

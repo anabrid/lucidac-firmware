@@ -13,7 +13,6 @@
 #include "chips/SR74HCT595.h"
 
 namespace platform {
-namespace lucidac {
 
 /**
  * The Lucidac Front Panel is represented by this class.
@@ -24,13 +23,12 @@ namespace lucidac {
  * Typical usage happens via the Lucidac class.
  *
  **/
-
-class FrontPanel : public entities::Entity {
+class LUCIDACFrontPanel : public entities::Entity {
 public:
   // Entity hardware identifier information.
   static constexpr auto CLASS_ = entities::EntityClass::FRONT_PANEL;
 
-  static FrontPanel *from_entity_classifier(entities::EntityClassifier classifier,
+  static LUCIDACFrontPanel *from_entity_classifier(entities::EntityClassifier classifier,
                                             __attribute__((__unused__)) bus::addr_t block_address);
 
   entities::EntityClass get_entity_class() const final { return CLASS_; }
@@ -57,7 +55,7 @@ public:
   static constexpr uint8_t DAC_OUT0_CH = 4;
   static constexpr uint8_t DAC_OUT1_CH = 5;
 
-  FrontPanel();
+  LUCIDACFrontPanel();
 
   //! Initializes the front panel and puts the frequency generator to sleep.
   bool init();
@@ -174,6 +172,4 @@ public:
 
   } signal_generator;
 };
-
-} // namespace lucidac
 } // namespace platform

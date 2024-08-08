@@ -84,7 +84,7 @@ bool LUCIDAC::init() {
 
   LOG(ANABRID_DEBUG_INIT, "Detecting front panel...");
   if (!front_panel) {
-    front_panel = entities::detect<lucidac::FrontPanel>(bus::address_from_tuple(2, 0));
+    front_panel = entities::detect<LUCIDACFrontPanel>(bus::address_from_tuple(2, 0));
     if (!front_panel) {
       LOG(ANABRID_DEBUG_INIT, "Warning: Front panel is missing or unknown.");
     }

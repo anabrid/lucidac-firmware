@@ -64,6 +64,8 @@ protected:
   LUCIDAC_HAL *hardware{};
 
 public:
+  LUCIDACFrontPanel *front_panel;
+
   LUCIDAC();
 
   bool init() override;
@@ -74,7 +76,6 @@ public:
 
   [[nodiscard]] bool write_to_hardware() override;
 
-  lucidac::FrontPanel *front_panel;
 };
 
 } // namespace platform

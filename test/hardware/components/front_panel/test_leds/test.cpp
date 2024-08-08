@@ -9,9 +9,8 @@
 #include "lucidac/front_panel.h"
 
 using namespace platform;
-using namespace lucidac;
 
-FrontPanel front;
+LUCIDACFrontPanel front;
 
 void setUp() {
   // This is called before *each* test.
