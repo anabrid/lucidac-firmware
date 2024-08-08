@@ -227,6 +227,8 @@ public:
   //! Check whether an chip input is connected to any output.
   bool is_input_connected(const uint8_t input) const;
 
+  bool is_anything_connected() const;
+
   [[nodiscard]] bool write_to_hardware() override;
 
   bool config_self_from_json(JsonObjectConst cfg) override;

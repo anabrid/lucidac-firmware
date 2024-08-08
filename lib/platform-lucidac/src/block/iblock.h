@@ -121,6 +121,7 @@ protected:
   void config_self_to_json(JsonObject &cfg) override;
 
   bool _is_connected(uint8_t input, uint8_t output) const;
+  bool _is_output_connected(uint8_t output) const;
 
   IBlockHAL *hardware;
 
@@ -164,6 +165,8 @@ public:
 
   //! Whether an input is connected to an output.
   bool is_connected(uint8_t input, uint8_t output) const;
+
+  bool is_anything_connected() const;
 
   //! Disconnect one input from an output. Fails for invalid arguments or if no input is connected.
   bool disconnect(uint8_t input, uint8_t output);
