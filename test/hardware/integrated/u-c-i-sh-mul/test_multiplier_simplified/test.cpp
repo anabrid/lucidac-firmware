@@ -19,7 +19,7 @@ using namespace blocks;
 
 LUCIDAC carrier_;
 auto &cluster_ = carrier_.clusters[0];
-blocks::CTRLBlockHAL_V_1_0_1 ctrlblock_hal;
+blocks::CTRLBlockHAL_V_1_0_2 ctrlblock_hal;
 daq::OneshotDAQ DAQ;
 
 void setUp() {
@@ -40,7 +40,7 @@ void test_init_and_blocks() {
   TEST_ASSERT_NOT_NULL(cluster_.shblock);
   // Require multiplier in second M-block slot
   // TODO: Multiplier actually needs EEPROM data
-  // TEST_ASSERT_NOT_NULL(cluster_.m2block);
+  // TEST_ASSERT_NOT_NULL(cluster_.m1block);
 }
 
 void test_calibration() {

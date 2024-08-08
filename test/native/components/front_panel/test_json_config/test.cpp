@@ -8,9 +8,9 @@
 #include <unity.h>
 
 #define private public
-#include "lucidac/front_plane.h"
+#include "lucidac/front_panel.h"
 
-platform::lucidac::FrontPlane fp;
+platform::LUCIDACFrontPanel fp;
 
 void setUp() {
   // This is called before *each* test.

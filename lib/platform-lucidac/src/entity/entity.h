@@ -25,12 +25,13 @@ template <class BlockT> BlockT *detect(const bus::addr_t block_address) {
   case EntityClass::CARRIER:
   case EntityClass::CLUSTER:
     return nullptr;
-  case EntityClass::FRONT_PLANE:
+  case EntityClass::FRONT_PANEL:
   case EntityClass::M_BLOCK:
   case EntityClass::U_BLOCK:
   case EntityClass::C_BLOCK:
   case EntityClass::I_BLOCK:
   case EntityClass::SH_BLOCK:
+  case EntityClass::CTRL_BLOCK:
     return BlockT::from_entity_classifier(classifier, block_address);
   }
   return nullptr;

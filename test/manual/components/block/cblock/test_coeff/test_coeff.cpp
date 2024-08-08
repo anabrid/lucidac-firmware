@@ -66,17 +66,10 @@ void test_function() {
   }
 }
 
-void test_via_chip_function() {
-  // The f_coeff.set_scale function directly writes to hardware
-  cblock.f_coeffs[0].set_scale(static_cast<uint16_t>(0));
-  cblock.f_coeffs[1].set_scale(static_cast<uint16_t>(2047 << 2));
-  cblock.f_coeffs[2].set_scale(static_cast<uint16_t>(4095 << 2));
-}
-
 void test_via_block() {
   TEST_ASSERT(cblock.set_factor(0, 0.5));
   // TEST_ASSERT(cblock.set_factor(0, 5));
-  cblock.write_to_hardware();
+  TEST_ASSERT(cblock.write_to_hardware());
 }
 
 void setup() {
@@ -84,7 +77,6 @@ void setup() {
   RUN_TEST(test_init);
   RUN_TEST(test_address);
   RUN_TEST(test_function);
-  RUN_TEST(test_via_chip_function);
   RUN_TEST(test_via_block);
   UNITY_END();
 }

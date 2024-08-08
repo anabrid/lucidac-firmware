@@ -11,7 +11,7 @@
 #define private public
 #include "block/iblock.h"
 
-blocks::IBlock iblock(0);
+blocks::IBlock iblock;
 
 void setUp() {
   // This is called before *each* test.

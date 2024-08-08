@@ -13,7 +13,7 @@
 
 #include "metadata/74LVC138AD.tpl.hpp"
 
-MetadataMemory74LVC138AD chip{bus::idx_to_addr(0, bus::M2_BLOCK_IDX, 0)};
+MetadataMemory74LVC138AD chip{bus::idx_to_addr(0, bus::M1_BLOCK_IDX, 0)};
 
 void setUp() {
   // set stuff up here

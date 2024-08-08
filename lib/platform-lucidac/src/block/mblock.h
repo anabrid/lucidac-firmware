@@ -37,11 +37,21 @@ public:
 
   static MBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
 
+  bool is_entity_type(TYPES type_) { return entities::Entity::is_entity_type(static_cast<uint8_t>(type_)); }
+
 public:
+  static constexpr uint8_t M0_IDX = bus::M0_BLOCK_IDX;
   static constexpr uint8_t M1_IDX = bus::M1_BLOCK_IDX;
-  static constexpr uint8_t M2_IDX = bus::M2_BLOCK_IDX;
 
   enum class SLOT : uint8_t { M0 = 0, M1 = 1 };
+
+  static constexpr std::array<uint8_t, 8> SLOT_INPUT_IDX_RANGE() {
+    return {0, 1, 2, 3, 4, 5, 6, 7};
+  };
+
+  static constexpr std::array<uint8_t, 8> SLOT_OUTPUT_IDX_RANGE() {
+    return {0,  1,  2,  3,  4,  5,  6,  7};
+    };
 
   //! M1 input signal specifier for hard-coded usage, like MBlock::M1_INPUT<3>().
   template <int n> static constexpr uint8_t M1_INPUT() {
@@ -79,19 +89,33 @@ public:
   //! M2 output signal specifier for dynamic usage, like MBlock::M2_OUTPUT(variable).
   static constexpr uint8_t M2_OUTPUT(uint8_t idx) { return idx; }
 
-protected:
-  uint8_t slot_idx;
+public:
+  const SLOT slot;
 
 public:
   explicit MBlock(bus::addr_t block_address);
 
   explicit MBlock(SLOT slot)
-      : MBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M1_BLOCK_IDX : bus::M2_BLOCK_IDX, 0)) {}
+      : MBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M0_BLOCK_IDX : bus::M1_BLOCK_IDX, 0)) {}
 
   entities::EntityClass get_entity_class() const final { return entities::EntityClass::M_BLOCK; }
 
   // Types exist, force them to differentiate themselves
   uint8_t get_entity_type() const override = 0;
+
+  uint8_t slot_to_global_io_index(uint8_t local) const;
+};
+
+
+class EmptyMBlock: public MBlock {
+public:
+  bool write_to_hardware() override;
+  uint8_t get_entity_type() const override;
+
+  using MBlock::MBlock;
+
+protected:
+  bool config_self_from_json(JsonObjectConst cfg) override;
 };
 
 // ██ ███    ██ ████████  █████       ██████ ██       █████  ███████ ███████
@@ -131,9 +155,9 @@ public:
   explicit MIntBlock(bus::addr_t block_address);
 
   explicit MIntBlock(SLOT slot)
-      : MIntBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M1_BLOCK_IDX : bus::M2_BLOCK_IDX, 0)) {}
+      : MIntBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M0_BLOCK_IDX : bus::M1_BLOCK_IDX, 0)) {}
 
-  uint8_t get_entity_type() const final { return static_cast<uint8_t>(MBlock::TYPES::M_INT8_BLOCK); }
+  uint8_t get_entity_type() const final { return static_cast<uint8_t>(TYPE); }
 
   bool init() override;
 
@@ -155,6 +179,27 @@ protected:
 // ██  ██  ██ ██    ██ ██      ██   ██     ██      ██      ██   ██      ██      ██
 // ██      ██  ██████  ███████  █████       ██████ ███████ ██   ██ ███████ ███████
 
+class MMulBlockHAL : public FunctionBlockHAL {
+public:
+  virtual bool write_calibration_input_offsets(uint8_t idx, float offset_x, float offset_y) = 0;
+  virtual bool write_calibration_output_offset(uint8_t idx, float offset_z) = 0;
+};
+
+class MMulBlockHAL_V_1_0_1 : public MMulBlockHAL {
+protected:
+  const functions::DAC60508 f_calibration_dac_0;
+  const functions::DAC60508 f_calibration_dac_1;
+
+public:
+  MMulBlockHAL_V_1_0_1(bus::addr_t block_address);
+
+  bool init() override;
+
+public:
+  bool write_calibration_input_offsets(uint8_t idx, float offset_x, float offset_y) override;
+  bool write_calibration_output_offset(uint8_t idx, float offset_z) override;
+};
+
 class MMulBlock : public MBlock {
 public:
   // Entity hardware identifier information.
@@ -165,10 +210,16 @@ public:
 public:
   static constexpr uint8_t NUM_MULTIPLIERS = 4;
 
+protected:
+  MMulBlockHAL* hardware;
+
 public:
   using MBlock::MBlock;
+  MMulBlock(bus::addr_t block_address, MMulBlockHAL* hardware);
 
-  uint8_t get_entity_type() const final { return static_cast<uint8_t>(MBlock::TYPES::M_MUL4_BLOCK); }
+  uint8_t get_entity_type() const final { return static_cast<uint8_t>(TYPE); }
+
+  bool init() override;
 
   [[nodiscard]] bool write_to_hardware() override;
 

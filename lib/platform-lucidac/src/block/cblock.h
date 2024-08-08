@@ -18,6 +18,45 @@ class Calibration;
 
 namespace blocks {
 
+// ██   ██  █████  ██
+// ██   ██ ██   ██ ██
+// ███████ ███████ ██
+// ██   ██ ██   ██ ██
+// ██   ██ ██   ██ ███████
+
+class CBlockHAL : public FunctionBlockHAL {
+public:
+  virtual bool write_factor(uint8_t idx, float value) = 0;
+};
+
+class CBlockHALDummy : public CBlockHAL {
+public:
+  bool write_factor(uint8_t idx, float value) override { return true; }
+};
+
+class CBlockHAL_Common : public CBlockHAL {
+protected:
+  std::array<const functions::AD5452, 32> f_coeffs;
+
+public:
+  static std::array<const functions::AD5452, 32> make_f_coeffs(bus::addr_t block_address,
+                                                               std::array<const uint8_t, 32> f_coeffs_cs);
+
+  CBlockHAL_Common(bus::addr_t block_address, std::array<const uint8_t, 32> f_coeffs_cs);
+
+  bool write_factor(uint8_t idx, float value) override;
+};
+
+class CBlockHAL_V_1_0_0_SequentialCoeffsCS : public CBlockHAL_Common {
+public:
+  explicit CBlockHAL_V_1_0_0_SequentialCoeffsCS(bus::addr_t block_address);
+};
+
+class CBlockHAL_V_1_0_0_MixedCoeffsCS : public CBlockHAL_Common {
+public:
+  explicit CBlockHAL_V_1_0_0_MixedCoeffsCS(bus::addr_t block_address);
+};
+
 // ██████   █████  ███████ ███████      ██████ ██       █████  ███████ ███████
 // ██   ██ ██   ██ ██      ██          ██      ██      ██   ██ ██      ██
 // ██████  ███████ ███████ █████       ██      ██      ███████ ███████ ███████
@@ -63,30 +102,31 @@ public:
             16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
   };
 
-protected:
-  std::array<const functions::AD5452, NUM_COEFF> f_coeffs;
+  static constexpr float MIN_FACTOR = -1.01f;
+  static constexpr float MAX_FACTOR = +1.01f;
+  static constexpr float MAX_GAIN_CORRECTION_ABS = 0.1f;
 
-  std::array<uint16_t, NUM_COEFF> factors_{{0}};
+protected:
+  CBlockHAL* hardware;
+
+  std::array<float, NUM_COEFF> factors_{{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+                                         1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+                                         1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
   std::array<float, NUM_COEFF> gain_corrections_{
       {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
        1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
 
   [[nodiscard]] bool write_factors_to_hardware();
 
-  CBlock(bus::addr_t block_address, std::array<const functions::AD5452, NUM_COEFF> fCoeffs);
-
-  CBlock(bus::addr_t block_address, std::array<const functions::AD5452, NUM_COEFF> fCoeffs,
-         functions::SR74HCT595 fUpscaling, functions::TriggerFunction fUpscalingSync,
-         functions::TriggerFunction fUpscalingClear);
-
 public:
-  explicit CBlock(bus::addr_t block_address);
+  CBlock(bus::addr_t block_address, CBlockHAL* hardware);
   CBlock();
 
   entities::EntityClass get_entity_class() const final { return entities::EntityClass::C_BLOCK; }
 
   // Variants exist, force them to differentiate themselves
-  uint8_t get_entity_variant() const override = 0;
+  // TODO: This is now handled via sub classes of CBlockHAL
+  //uint8_t get_entity_variant() const override = 0;
 
   /**
    * Set a particular digital potentiometer.
@@ -121,100 +161,6 @@ protected:
   void config_self_to_json(JsonObject &cfg) override;
 
   friend class ::platform::Calibration;
-};
-
-//  ██    ██  █████  ██████  ██  █████  ███    ██ ████████ ███████
-//  ██    ██ ██   ██ ██   ██ ██ ██   ██ ████   ██    ██    ██
-//  ██    ██ ███████ ██████  ██ ███████ ██ ██  ██    ██    ███████
-//   ██  ██  ██   ██ ██   ██ ██ ██   ██ ██  ██ ██    ██         ██
-//    ████   ██   ██ ██   ██ ██ ██   ██ ██   ████    ██    ███████
-
-class CBlock_SequentialAddresses : public CBlock {
-public:
-  explicit CBlock_SequentialAddresses(bus::addr_t block_address)
-      : CBlock(block_address,
-               {
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 0),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 1),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 2),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 3),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 4),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 5),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 6),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 7),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 8),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 9),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 10),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 11),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 12),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 13),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 14),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 15),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 16),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 17),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 18),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 19),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 20),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 21),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 22),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 23),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 24),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 25),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 26),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 27),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 28),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 29),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 30),
-                   functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31),
-               }) {}
-
-  CBlock_SequentialAddresses() : CBlock_SequentialAddresses(bus::idx_to_addr(0, BLOCK_IDX, 0)) {}
-
-  uint8_t get_entity_variant() const final {
-    return static_cast<uint8_t>(CBlock::VARIANTS::SEQUENTIAL_ADDRESSES);
-  }
-};
-
-class CBlock_MixedAddresses : public CBlock {
-public:
-  explicit CBlock_MixedAddresses(const bus::addr_t block_address)
-      : CBlock(block_address,
-               {functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 0),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 1),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 2),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 3),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 4),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 5),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 6),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 7),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 8),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 9),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 10),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 11),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 12),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 13),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 14),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 0),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 1),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 2),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 3),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 4),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 5),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 6),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 7),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 8),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 9),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 10),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 11),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 12),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 13),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 14),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 31 + 15),
-                functions::AD5452(bus::replace_function_idx(block_address, COEFF_BASE_FUNC_IDX), 16)}) {}
-
-  CBlock_MixedAddresses() : CBlock_MixedAddresses(bus::idx_to_addr(0, BLOCK_IDX, 0)) {}
-
-  uint8_t get_entity_variant() const final { return static_cast<uint8_t>(CBlock::VARIANTS::MIXED_ADDRESSES); }
 };
 
 } // namespace blocks

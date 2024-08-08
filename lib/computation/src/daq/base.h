@@ -19,7 +19,6 @@ constexpr uint8_t PIN_GATE = 32;
 constexpr std::array<uint8_t, NUM_CHANNELS> PINS_MISO = {34, 35, 36, 37, 11, 10, 9, 8};
 constexpr unsigned int DEFAULT_SAMPLE_RATE = 400'000;
 
-
 typedef std::array<float, NUM_CHANNELS> data_vec_t;
 
 class DAQConfig {
@@ -39,11 +38,27 @@ public:
 
   bool is_valid() const;
 
-  explicit operator bool() const {
-      return num_channels and (sample_op or sample_op_end);
-  };
+  explicit operator bool() const { return num_channels and (sample_op or sample_op_end); };
 
-  static DAQConfig from_json(JsonObjectConst&& json);
+  static DAQConfig from_json(JsonObjectConst &&json);
 };
 
-}
+class BaseDAQ {
+protected:
+  static constexpr uint16_t RAW_MINUS_ONE_POINT_TWO_FIVE = 0;
+  static constexpr uint16_t RAW_PLUS_ONE_POINT_TWO_FIVE = 16383;
+
+public:
+  virtual bool init(unsigned int sample_rate) = 0;
+
+  static float raw_to_float(uint16_t raw);
+  static size_t raw_to_normalized(uint16_t raw);
+  static const char *raw_to_str(uint16_t raw);
+
+  virtual std::array<uint16_t, NUM_CHANNELS> sample_raw() = 0;
+  virtual std::array<float, NUM_CHANNELS> sample() = 0;
+  virtual float sample(uint8_t index) = 0;
+  std::array<float, NUM_CHANNELS> sample_avg(size_t samples, unsigned int delay_us);
+};
+
+} // namespace daq

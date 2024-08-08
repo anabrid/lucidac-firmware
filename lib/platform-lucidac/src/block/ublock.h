@@ -41,6 +41,62 @@ public:
 
 namespace blocks {
 
+class UBlockHAL : public FunctionBlockHAL {
+public:
+  enum class Reference_Magnitude : uint8_t { ONE = 0, ONE_TENTH = 1 };
+  enum class Transmission_Mode : uint8_t {
+    ANALOG_INPUT = 0b00,
+    POS_REF = 0b01,
+    NEG_REF = 0b10,
+    GROUND = 0b11
+  };
+
+  virtual bool write_outputs(std::array<int8_t, 32> outputs) = 0;
+  virtual bool write_transmission_modes_and_ref(std::pair<Transmission_Mode, Transmission_Mode> modes,
+                                                Reference_Magnitude ref) = 0;
+  virtual void reset_transmission_modes_and_ref() = 0;
+};
+
+class UBlockHAL_Dummy: public UBlockHAL {
+public:
+  bool write_outputs(std::array<int8_t, 32> outputs) override;
+  bool write_transmission_modes_and_ref(std::pair<Transmission_Mode, Transmission_Mode> modes,
+                                        Reference_Magnitude ref) override;
+  void reset_transmission_modes_and_ref() override;
+};
+
+class UBlockHAL_Common : public UBlockHAL {
+protected:
+  const functions::UMatrixFunction f_umatrix;
+  const functions::TriggerFunction f_umatrix_sync;
+  // Reset disables all output, but rest of logic is unchanged according to datasheet.
+  // But I don't really know what that means. Data is still shifted out after a reset
+  // and the enable-bits in the data are still set.
+  // The datasheet calls the RESET pin OUTPUT ENABLE, so it probably is simply that.
+  // Meaning it is completely useless.
+  // const functions::TriggerFunction f_umatrix_reset;
+
+  const functions::SR74HCT595 f_transmission_mode_register;
+  const functions::TriggerFunction f_transmission_mode_sync;
+  const functions::TriggerFunction f_transmission_mode_reset;
+
+public:
+  explicit UBlockHAL_Common(bus::addr_t block_address, uint8_t f_umatrix_cs, uint8_t f_umatrix_sync_cs,
+                            uint8_t f_transmission_mode_register_cs, uint8_t f_transmission_mode_sync_cs,
+                            uint8_t f_transmission_mode_reset_cs);
+
+  bool write_outputs(std::array<int8_t, 32> outputs) override;
+  bool write_transmission_modes_and_ref(std::pair<Transmission_Mode, Transmission_Mode> modes,
+                                        Reference_Magnitude ref) override;
+  void reset_transmission_modes_and_ref() override;
+};
+
+class UBlockHAL_V_1_2_0 : public UBlockHAL_Common {
+public:
+  explicit UBlockHAL_V_1_2_0(const bus::addr_t block_address)
+      : UBlockHAL_Common(block_address, 5, 6, 2, 3, 4){};
+};
+
 /**
  * The Lucidac U-Block (U for Voltage) is represented by this class.
  *
@@ -54,14 +110,14 @@ namespace blocks {
  *        cf. https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller/-/issues/8
  *
  **/
-
 class UBlock : public FunctionBlock {
 public:
   // Entity hardware identifier information.
   static constexpr auto CLASS_ = entities::EntityClass::U_BLOCK;
+  static constexpr uint8_t TYPE = 1;
+  enum class VARIANTS : uint8_t { UNKNOWN = 0, REGULAR = 1, SWAPPED_SR = 2 };
 
   static UBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
-  ;
 
 public:
   static constexpr uint8_t BLOCK_IDX = bus::U_BLOCK_IDX;
@@ -78,40 +134,16 @@ public:
             16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
   };
 
-  static constexpr uint8_t TRANSMISSION_MODE_FUNC_IDX = 2;
-  static constexpr uint8_t TRANSMISSION_MODE_SYNC_FUNC_IDX = 4;
-
-  static constexpr uint8_t UMATRIX_FUNC_IDX = 5;
-  static constexpr uint8_t UMATRIX_SYNC_FUNC_IDX = 6;
-  static constexpr uint8_t UMATRIX_RESET_FUNC_IDX = 7;
-
-  enum Transmission_Mode : uint8_t {
-    ANALOG_INPUT = 0b000,
-    POS_BIG_REF = 0b010,
-    POS_SMALL_REF = 0b100,
-    NEG_BIG_REF = 0b011,
-    NEG_SMALL_REF = 0b101,
-    GROUND = 0b110
-  };
+  using Transmission_Mode = UBlockHAL::Transmission_Mode;
+  using Reference_Magnitude = UBlockHAL::Reference_Magnitude;
 
 protected:
-  const functions::UMatrixFunction f_umatrix;
-  const functions::TriggerFunction f_umatrix_sync;
-  // Reset disables all output, but rest of logic is unchanged according to datasheet.
-  // But I don't really know what that means. Data is still shifted out after a reset
-  // and the enable-bits in the data are still set.
-  // The datasheet calls the RESET pin OUTPUT ENABLE, so it probably is simply that.
-  // Meaning it is completely useless.
-  const functions::TriggerFunction f_umatrix_reset;
+  UBlockHAL *hardware;
 
   std::array<int8_t, NUM_OF_OUTPUTS> output_input_map;
-
-  const functions::SR74HCT595 transmission_mode_register;
-  const functions::TriggerFunction transmission_mode_sync;
-
-  uint8_t transmission_mode_byte = 0;
-  Transmission_Mode a_side_mode = ANALOG_INPUT;
-  Transmission_Mode b_side_mode = ANALOG_INPUT;
+  Reference_Magnitude ref_magnitude = Reference_Magnitude::ONE;
+  Transmission_Mode a_side_mode = Transmission_Mode::ANALOG_INPUT;
+  Transmission_Mode b_side_mode = Transmission_Mode::ANALOG_INPUT;
 
   // Default sanity checks for input and output indizes
   static bool _i_sanity_check(const uint8_t input);
@@ -120,20 +152,24 @@ protected:
 
   //! Changes the transmission mode of the regular ublock switches. Returns the shift register value for
   //! debugging purposes
-  uint8_t change_a_side_transmission_mode(const Transmission_Mode mode);
+  void change_a_side_transmission_mode(const Transmission_Mode mode);
   //! Changes the transmission mode of the alternative ublock switches. Returns the shift register value for
   //! debugging purposes
-  uint8_t change_b_side_transmission_mode(const Transmission_Mode mode);
+  void change_b_side_transmission_mode(const Transmission_Mode mode);
   //! Changes the transmission mode for all ublock switches. Returns the shift register value for debugging
   //! purposes
-  uint8_t change_all_transmission_modes(const Transmission_Mode mode);
+  void change_all_transmission_modes(const Transmission_Mode mode);
   //! Changes the transmission mode for all ublock switches. Returns the shift register value for debugging
   //! purposes
-  uint8_t change_all_transmission_modes(const std::pair<Transmission_Mode, Transmission_Mode> modes);
+  void change_all_transmission_modes(const std::pair<Transmission_Mode, Transmission_Mode> modes);
+
+  Reference_Magnitude get_reference_magnitude();
+
+  void change_reference_magnitude(Reference_Magnitude ref);
+
+  void reset_reference_magnitude();
 
   std::pair<Transmission_Mode, Transmission_Mode> get_all_transmission_modes() const;
-
-private:
   //! Check whether an input is connected to an output, without sanity checks.
   bool _is_connected(const uint8_t input, const uint8_t output) const;
 
@@ -149,9 +185,8 @@ private:
   bool _is_input_connected(const uint8_t input) const;
 
 public:
-  explicit UBlock(bus::addr_t block_address);
-
-  UBlock() : UBlock(bus::idx_to_addr(0, bus::U_BLOCK_IDX, 0)) {}
+  UBlock(bus::addr_t block_address, UBlockHAL *hardware);
+  UBlock() : UBlock(0, new UBlockHAL_Dummy()) {};
 
   entities::EntityClass get_entity_class() const final { return entities::EntityClass::U_BLOCK; }
 
@@ -189,8 +224,6 @@ public:
   //! Check whether an chip input is connected to any output.
   bool is_input_connected(const uint8_t input) const;
 
-  [[nodiscard]] bool write_matrix_to_hardware() const;
-  [[nodiscard]] bool write_transmission_mode_to_hardware() const;
   [[nodiscard]] bool write_to_hardware() override;
 
   bool config_self_from_json(JsonObjectConst cfg) override;

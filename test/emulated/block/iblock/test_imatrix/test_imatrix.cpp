@@ -5,6 +5,10 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#ifdef ANABRID_PEDANTIC
+#error "Emulated test cases expect pedantic mode to be disabled."
+#endif
+
 #include "bus/bus.h"
 #include "bus/functions.h"
 
@@ -68,7 +72,7 @@ void test_function_helpers() {
 }
 
 void test_block() {
-  IBlock iblock;
+  IBlock iblock(bus::NULL_ADDRESS, new IBlockHAL_V_1_2_0(bus::NULL_ADDRESS));
   TEST_ASSERT_EACH_EQUAL_UINT32_MESSAGE(0, iblock.outputs.data(), iblock.outputs.size(),
                                         "IBlock outputs not initialized to zero.");
 
@@ -88,7 +92,7 @@ void test_block() {
   // Sending the data uses 2 x transfer32, and each time a sync is done via a TriggerFunction
   When(Method(ArduinoFake(SPI), transfer32)).Return(0, 0);
   // Do it!
-  iblock.write_imatrix_to_hardware();
+  iblock.hardware->write_outputs(iblock.get_outputs());
 
   // verify SPI call arguments, which are interlaced by address setting
   Verify(Method(ArduinoFake(SPI), transfer32).Using(ICommandRegisterFunction::chip_cmd_word(0, 0)) +

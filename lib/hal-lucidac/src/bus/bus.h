@@ -49,8 +49,8 @@ constexpr uint8_t BLOCK_BADDR(uint8_t cluster_idx, uint8_t rel_block_idx) {
 
 constexpr uint8_t C_BLOCK_IDX = 1;
 constexpr uint8_t I_BLOCK_IDX = 2;
-constexpr uint8_t M1_BLOCK_IDX = 4;
-constexpr uint8_t M2_BLOCK_IDX = 5;
+constexpr uint8_t M0_BLOCK_IDX = 4;
+constexpr uint8_t M1_BLOCK_IDX = 5;
 constexpr uint8_t SH_BLOCK_IDX = 3;
 constexpr uint8_t U_BLOCK_IDX = 0;
 
@@ -58,9 +58,9 @@ constexpr uint8_t C_BLOCK_BADDR(uint8_t cluster_idx) { return BLOCK_BADDR(cluste
 
 constexpr uint8_t I_BLOCK_BADDR(uint8_t cluster_idx) { return BLOCK_BADDR(cluster_idx, I_BLOCK_IDX); };
 
-constexpr uint8_t M1_BLOCK_BADDR(uint8_t cluster_idx) { return BLOCK_BADDR(cluster_idx, M1_BLOCK_IDX); };
+constexpr uint8_t M0_BLOCK_BADDR(uint8_t cluster_idx) { return BLOCK_BADDR(cluster_idx, M0_BLOCK_IDX); };
 
-constexpr uint8_t M2_BLOCK_BADDR(uint8_t cluster_idx) { return BLOCK_BADDR(cluster_idx, M2_BLOCK_IDX); };
+constexpr uint8_t M1_BLOCK_BADDR(uint8_t cluster_idx) { return BLOCK_BADDR(cluster_idx, M1_BLOCK_IDX); };
 
 constexpr uint8_t SH_BLOCK_BADDR(uint8_t cluster_idx) { return BLOCK_BADDR(cluster_idx, SH_BLOCK_IDX); };
 

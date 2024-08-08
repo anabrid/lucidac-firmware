@@ -40,6 +40,43 @@ public:
 
 namespace blocks {
 
+class IBlockHAL : public FunctionBlockHAL {
+public:
+  static constexpr uint8_t NUM_INPUTS = 32;
+  static constexpr uint8_t NUM_OUTPUTS = 16;
+
+  static constexpr uint32_t INPUT_BITMASK(uint8_t input_idx) { return static_cast<uint32_t>(1) << input_idx; }
+
+  virtual bool write_outputs(const std::array<uint32_t, 16> &outputs) = 0;
+  virtual bool write_upscaling(std::bitset<32> upscaling) = 0;
+};
+
+class IBlockHALDummy : public IBlockHAL {
+public:
+  bool write_outputs(const std::array<uint32_t, 16> &outputs) override { return true; }
+
+  bool write_upscaling(std::bitset<32> upscaling) override { return true; }
+
+  explicit IBlockHALDummy(bus::addr_t) {}
+};
+
+class IBlockHAL_V_1_2_0 : public IBlockHAL {
+protected:
+  const functions::ICommandRegisterFunction f_cmd;
+  const functions::TriggerFunction f_imatrix_reset;
+  const functions::TriggerFunction f_imatrix_sync;
+
+  const functions::SR74HCT595 scaling_register;
+  const functions::TriggerFunction scaling_register_sync;
+
+public:
+  explicit IBlockHAL_V_1_2_0(bus::addr_t block_address);
+
+  bool write_outputs(const std::array<uint32_t, 16> &outputs) override;
+
+  bool write_upscaling(std::bitset<32> upscaling) override;
+};
+
 /**
  * The Lucidac I-Block (I for Current; the Implicit Summing Block) is
  * represented by this class.
@@ -63,10 +100,10 @@ public:
 public:
   static constexpr uint8_t BLOCK_IDX = bus::I_BLOCK_IDX;
 
-  static constexpr uint32_t INPUT_BITMASK(uint8_t input_idx) { return static_cast<uint32_t>(1) << input_idx; }
+  static constexpr uint32_t INPUT_BITMASK(uint8_t input_idx) { return IBlockHAL::INPUT_BITMASK(input_idx); }
 
-  static constexpr uint8_t NUM_INPUTS = 32;
-  static constexpr uint8_t NUM_OUTPUTS = 16;
+  static constexpr uint8_t NUM_INPUTS = IBlockHAL::NUM_INPUTS;
+  static constexpr uint8_t NUM_OUTPUTS = IBlockHAL::NUM_OUTPUTS;
 
   static constexpr std::array<uint8_t, NUM_INPUTS> INPUT_IDX_RANGE() {
     return {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
@@ -84,27 +121,16 @@ protected:
 
   bool _is_connected(uint8_t input, uint8_t output) const;
 
-  std::array<uint32_t, NUM_OUTPUTS> outputs;
-  const functions::ICommandRegisterFunction f_cmd;
-  const functions::TriggerFunction f_imatrix_reset;
-  const functions::TriggerFunction f_imatrix_sync;
+  IBlockHAL *hardware;
 
+  std::array<uint32_t, NUM_OUTPUTS> outputs;
   std::bitset<NUM_INPUTS> scaling_factors = 0;
-  const functions::SR74HCT595 scaling_register;
-  const functions::TriggerFunction scaling_register_sync;
 
 public:
-  explicit IBlock(const bus::addr_t block_address)
-      : FunctionBlock("I", block_address), outputs{0}, f_cmd{bus::replace_function_idx(block_address, 2)},
-        f_imatrix_reset{bus::replace_function_idx(block_address, 4)}, f_imatrix_sync{bus::replace_function_idx(
-                                                                          block_address, 3)},
-        scaling_register{bus::replace_function_idx(block_address, 5), true},
-        scaling_register_sync{bus::replace_function_idx(block_address, 6)} {}
+  explicit IBlock(const bus::addr_t block_address, IBlockHAL* hardware) : FunctionBlock("I", block_address), hardware(hardware), outputs{0} {}
 
-  IBlock() : IBlock(bus::idx_to_addr(0, bus::I_BLOCK_IDX, 0)) {}
+  IBlock() : IBlock(bus::NULL_ADDRESS, new IBlockHALDummy(bus::NULL_ADDRESS)) {}
 
-  [[nodiscard]] bool write_imatrix_to_hardware();
-  [[nodiscard]] bool write_scaling_to_hardware();
   [[nodiscard]] bool write_to_hardware() override;
 
   bool init() override;
@@ -146,7 +172,7 @@ public:
 
   //! Sets the input scale of the corresponding output. If upscale is false, a factor of 1.0 is applied, if
   //! upscale is true, a factor of 10.0 will be used.
-  bool set_upscaling(uint8_t output, bool upscale);
+  bool set_upscaling(uint8_t input, bool upscale);
 
   //! Sets all 32 input scales. If the corresponding bit is false, a factor of 1.0 is applied, if true, a
   //! factor of 10.0 will be used.

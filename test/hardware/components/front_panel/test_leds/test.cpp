@@ -6,12 +6,11 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "lucidac/front_plane.h"
+#include "lucidac/front_panel.h"
 
 using namespace platform;
-using namespace lucidac;
 
-FrontPlane front;
+LUCIDACFrontPanel front;
 
 void setUp() {
   // This is called before *each* test.

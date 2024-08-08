@@ -23,7 +23,7 @@ enum class EntityClass : uint8_t {
   C_BLOCK = 5,
   I_BLOCK = 6,
   SH_BLOCK = 7,
-  FRONT_PLANE = 8,
+  FRONT_PANEL = 8,
   CTRL_BLOCK = 9
 };
 
@@ -101,6 +101,22 @@ public:
   virtual uint8_t get_entity_variant() const {
     // For many entities, there will only be one default variation.
     return EntityClassifier::DEFAULT_;
+  }
+
+  bool is_entity_class(EntityClass class_) {
+    return get_entity_class() == class_;
+  }
+
+  bool is_entity_type(uint8_t type_) {
+    return get_entity_type() == type_;
+  }
+
+  bool is_entity_version(uint8_t version_) {
+    return get_entity_version() == version_;
+  }
+
+  bool is_entity_variant(uint8_t variant_) {
+    return get_entity_variant() == variant_;
   }
 
   virtual std::vector<Entity *> get_child_entities() = 0;

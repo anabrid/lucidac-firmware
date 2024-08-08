@@ -10,7 +10,19 @@ blocks::MBlock::MBlock(bus::addr_t block_address)
                                                    // Addresses 12, 20, 28 are M0
                                                    // Addresses 13, 21, 29 are M1
                                                    block_address % 8 == 4 ? "0" : "1"),
-                            block_address} {}
+                            block_address},
+      slot(block_address % 8 == 4 ? SLOT::M0 : SLOT::M1) {}
+
+uint8_t blocks::MBlock::slot_to_global_io_index(uint8_t local) const {
+  switch(slot) {
+  case SLOT::M0:
+    return local;
+  case SLOT::M1:
+    return local + 8;
+  }
+  // This should never be reached
+  return local;
+}
 
 blocks::MIntBlock::MIntBlock(const bus::addr_t block_address)
     : blocks::MBlock{block_address}, f_ic_dac(bus::replace_function_idx(block_address, IC_FUNC_IDX)),
@@ -36,7 +48,7 @@ bool blocks::MIntBlock::set_ic(uint8_t idx, float value) {
 bool blocks::MIntBlock::write_to_hardware() {
   for (decltype(ic_raw.size()) i = 0; i < ic_raw.size(); i++) {
     if (!f_ic_dac.set_channel(i, ic_raw[i])) {
-      LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__ );
+      LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
       return false;
     }
   }
@@ -189,7 +201,9 @@ blocks::MBlock *blocks::MBlock::from_entity_classifier(entities::EntityClassifie
 
 blocks::MIntBlock *blocks::MIntBlock::from_entity_classifier(entities::EntityClassifier classifier,
                                                              const bus::addr_t block_address) {
-  // Assume classifier has already been sanity checked
+  if (!classifier or classifier.class_enum != CLASS_ or classifier.type != static_cast<uint8_t>(TYPE))
+    return nullptr;
+
   // Currently, there are no different variants or versions
   if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
       classifier.version != entities::EntityClassifier::DEFAULT_)
@@ -201,12 +215,58 @@ blocks::MIntBlock *blocks::MIntBlock::from_entity_classifier(entities::EntityCla
 
 blocks::MMulBlock *blocks::MMulBlock::from_entity_classifier(entities::EntityClassifier classifier,
                                                              const bus::addr_t block_address) {
-  // Assume classifier has already been sanity checked
+  if (!classifier or classifier.class_enum != CLASS_ or classifier.type != static_cast<uint8_t>(TYPE))
+    return nullptr;
+
   // Currently, there are no different variants or versions
   if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
       classifier.version != entities::EntityClassifier::DEFAULT_)
     return nullptr;
 
   // Return default implementation
-  return new MMulBlock(block_address);
+  return new MMulBlock(block_address, new MMulBlockHAL_V_1_0_1(block_address));
 }
+
+blocks::MMulBlock::MMulBlock(bus::addr_t block_address, MMulBlockHAL *hardware)
+    : MBlock(block_address), hardware(hardware) {}
+
+bool blocks::MMulBlock::init() {
+  // TODO: Remove once hardware pointer is part of FunctionBlock base class
+  return FunctionBlock::init() and hardware->init();
+}
+
+bool blocks::MMulBlockHAL_V_1_0_1::init() {
+  return f_calibration_dac_0.init() and f_calibration_dac_0.set_external_reference() and
+         f_calibration_dac_0.set_double_gain() and f_calibration_dac_1.init() and
+         f_calibration_dac_1.set_external_reference() and f_calibration_dac_1.set_double_gain();
+}
+
+blocks::MMulBlockHAL_V_1_0_1::MMulBlockHAL_V_1_0_1(bus::addr_t block_address)
+    : f_calibration_dac_0(bus::address_from_tuple(block_address, 4)),
+      f_calibration_dac_1(bus::address_from_tuple(block_address, 5)) {}
+
+bool blocks::MMulBlockHAL_V_1_0_1::write_calibration_input_offsets(uint8_t idx, float offset_x,
+                                                                   float offset_y) {
+  // Supported offset range is [-0.1V, +0.1V], which corresponds to [-0.1, 0.1] machine units,
+  // since the multiplier's working range is [-1V, +1V].
+  if (fabs(offset_x) > 0.1f or fabs(offset_y) > 0.1f)
+    return false;
+  // Note: Mapping of index to channel is surprising
+  // Note: Mapping of offset values to DAC values is surprising, since
+  //       the current DAC implementation assumes a 2.5V reference, but we have a 2V reference here.
+  //       With gain=2, passing 2.5 gives 4V output, which is scaled and level shifted to -0.1V.
+  //       Passing 0 gives 0V output, which is scaled and shifted to +0.1V
+  return f_calibration_dac_0.set_channel(idx * 2 + 1, (offset_x - 0.1f) * -12.5f) and
+         f_calibration_dac_0.set_channel(idx * 2, (offset_y - 0.1f) * -12.5f);
+}
+
+bool blocks::MMulBlockHAL_V_1_0_1::write_calibration_output_offset(uint8_t idx, float offset_z) {
+  // See write_calibration_input_offsets for some explanations.
+  return f_calibration_dac_1.set_channel(idx, (offset_z - 0.1f) * -12.5f);
+}
+
+bool blocks::EmptyMBlock::write_to_hardware() { return true; }
+
+bool blocks::EmptyMBlock::config_self_from_json(JsonObjectConst cfg) { return true; }
+
+uint8_t blocks::EmptyMBlock::get_entity_type() const { return static_cast<uint8_t>(MBlock::TYPES::UNKNOWN); }

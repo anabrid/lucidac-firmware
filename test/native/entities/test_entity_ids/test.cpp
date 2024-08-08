@@ -17,7 +17,7 @@ using namespace blocks;
 MIntBlock intblock1{MBlock::SLOT::M0};
 MIntBlock intblock2{MBlock::SLOT::M1};
 UBlock ublock;
-CBlock_SequentialAddresses cblock;
+CBlock cblock;
 IBlock iblock;
 
 void setUp() {

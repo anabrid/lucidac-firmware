@@ -7,7 +7,7 @@
 
 #include "block/blocks.h"
 #include "carrier/carrier.h"
-#include "lucidac/front_plane.h"
+#include "lucidac/front_panel.h"
 
 namespace platform {
 
@@ -60,23 +60,45 @@ public:
 };
 
 class LUCIDAC : public carrier::Carrier {
+public:
+  using ACL = LUCIDAC_HAL::ACL;
+  static constexpr int8_t ADC_CHANNEL_DISABLED = -1;
+
 protected:
   LUCIDAC_HAL *hardware{};
 
+  std::array<ACL, 8> acl_select{ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_,
+                                ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_};
+  std::array<int8_t, 8> adc_channels{ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED,
+                                     ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED,
+                                     ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED};
+
 public:
+  LUCIDACFrontPanel *front_panel;
+
   LUCIDAC();
 
   bool init() override;
+
+  void reset(bool keep_calibration) override;
 
   std::vector<Entity *> get_child_entities() override;
 
   Entity *get_child_entity(const std::string &child_id) override;
 
+  int get_entities(JsonObjectConst msg_in, JsonObject &msg_out) override;
+
   [[nodiscard]] bool write_to_hardware() override;
 
-  lucidac::FrontPlane *front_plane;
+  [[nodiscard]] const std::array<ACL, 8> &get_acl_select() const;
+  void set_acl_select(const std::array<ACL, 8> &acl_select_);
+  [[nodiscard]] bool set_acl_select(uint8_t idx, ACL acl);
+  void reset_acl_select();
 
-  virtual int get_entities(JsonObjectConst msg_in, JsonObject &msg_out) override;
+  [[nodiscard]] const std::array<int8_t, 8> &get_adc_channels() const;
+  [[nodiscard]] bool set_adc_channels(const std::array<int8_t, 8> &channels);
+  [[nodiscard]] bool set_adc_channel(uint8_t idx, int8_t adc_channel);
+  void reset_adc_channels();
 };
 
 } // namespace platform

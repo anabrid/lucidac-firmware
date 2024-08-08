@@ -12,7 +12,7 @@
 
 using namespace functions;
 
-auto addr = bus::idx_to_addr(0, bus::M2_BLOCK_IDX, 1);
+auto addr = bus::idx_to_addr(0, bus::M1_BLOCK_IDX, 1);
 
 DataFunction f{addr, functions::DAC60508::DEFAULT_SPI_SETTINGS};
 functions::DAC60508 dac{addr};

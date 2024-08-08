@@ -5,7 +5,7 @@
 #pragma once
 
 #include "block/blocks.h"
-#include "daq/daq.h"
+#include "daq/base.h"
 #include "entity/entity.h"
 
 namespace platform {
@@ -22,8 +22,8 @@ private:
   uint8_t cluster_idx;
 
 public:
+  blocks::MBlock *m0block = nullptr;
   blocks::MBlock *m1block = nullptr;
-  blocks::MBlock *m2block = nullptr;
   blocks::UBlock *ublock = nullptr;
   blocks::CBlock *cblock = nullptr;
   blocks::IBlock *iblock = nullptr;
@@ -44,6 +44,8 @@ public:
   bool calibrate_offsets();
 
   [[nodiscard]] bool write_to_hardware();
+
+  uint8_t get_cluster_idx() const;
 
   /**
    * Register a route throught the cluster.

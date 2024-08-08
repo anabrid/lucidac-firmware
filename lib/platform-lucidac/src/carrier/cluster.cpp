@@ -17,33 +17,36 @@
     return false;
 
 std::array<blocks::FunctionBlock *, 6> platform::Cluster::get_blocks() const {
-  return {m1block, m2block, ublock, cblock, iblock, shblock};
+  return {m0block, m1block, ublock, cblock, iblock, shblock};
 }
 
 bool platform::Cluster::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
 
-  m1block = new blocks::MIntBlock{cluster_idx};
-  m2block = new blocks::MMulBlock{cluster_idx};
+  // Manually register blocks, avoiding autodetection
+  /*
+  m0block = new blocks::MIntBlock{cluster_idx};
+  m1block = new blocks::MMulBlock{cluster_idx};
   ublock  = new blocks::UBlock{cluster_idx};
   cblock  = new blocks::CBlock_SequentialAddresses{cluster_idx};
   iblock  = new blocks::IBlock{cluster_idx};
   shblock = new blocks::SHBlock{cluster_idx};
+  */
 
   // Dynamically detect installed blocks
   // Check if a block is already set, which may happen with a special constructor in the future
   LOG(ANABRID_DEBUG_INIT, "Detecting installed blocks...");
+  if (!m0block) {
+    m0block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M0_BLOCK_IDX, 0));
+    if (!m0block)
+      LOG(ANABRID_DEBUG_INIT, "Warning: M0-block is missing or unknown.");
+  }
   if (!m1block) {
     m1block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M1_BLOCK_IDX, 0));
     if (!m1block)
-      LOG(ANABRID_DEBUG_INIT, "Warning: M0-block is missing or unknown.");
-  }
-  if (!m2block) {
-    m2block = entities::detect<blocks::MBlock>(bus::idx_to_addr(cluster_idx, bus::M2_BLOCK_IDX, 0));
-    if (!m2block)
       LOG(ANABRID_DEBUG_INIT, "Warning: M1-block is missing or unknown.");
   }
-  if (!m1block and !m2block)
+  if (!m0block and !m1block)
     LOG(ANABRID_DEBUG_INIT, "Error: Both M0 and M1-blocks are missing or unknown.");
 
   if (!ublock) {
@@ -99,9 +102,12 @@ bool platform::Cluster::calibrate_offsets() {
 }
 
 bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
+  // CARE: This function assumes that certain preparations have been made, see Carrier::calibrate.
+
   // Save current U-block transmission modes and set them to zero
   LOG_ANABRID_DEBUG_CALIBRATION("Starting calibration");
   auto old_transmission_modes = ublock->get_all_transmission_modes();
+  auto old_reference_magnitude = ublock->get_reference_magnitude();
   ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::GROUND);
   // Save and reset I-block connections
   // This is necessary as we can not calibrate sums and we want to calibrate lanes individually
@@ -144,10 +150,11 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
 
       // Depending on whether upscaling is enabled for this lane, we apply +1 or +0.1 reference
       // This is done on all lanes (but no other I-block connection exists, so no other current flows)
+      ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::POS_REF);
       if (!iblock->get_upscaling(i_in_idx))
-        ublock->change_all_transmission_modes(blocks::UBlock::POS_BIG_REF);
+        ublock->change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE);
       else
-        ublock->change_all_transmission_modes(blocks::UBlock::POS_SMALL_REF);
+        ublock->change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE_TENTH);
       // Actually write to hardware
       if (!ublock->write_to_hardware())
         return false;
@@ -163,7 +170,6 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
       delay(100);
 
       // Measure gain output
-      // TODO: Move ctrlblock_hal.write_adc_bus_muxers(blocks::CTRLBlock::ADCBus::CL0_GAIN) into here
       auto m_adc = daq->sample_avg(10, 1000)[i_out_idx % 8];
       LOG_ANABRID_DEBUG_CALIBRATION(m_adc);
       // Calculate necessary gain correction
@@ -171,8 +177,10 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
       auto gain_correction = wanted_factor / m_adc;
       LOG_ANABRID_DEBUG_CALIBRATION(gain_correction);
       // Set gain correction on C-block, which will automatically get applied when writing to hardware
-      if (!cblock->set_gain_correction(i_in_idx, gain_correction))
+      if (!cblock->set_gain_correction(i_in_idx, gain_correction)) {
+        LOG_ANABRID_DEBUG_CALIBRATION("Gain correction could not be set, possibly out of range.");
         return false;
+      }
 
       // Disconnect this lane again
       iblock->disconnect(i_in_idx, i_out_idx);
@@ -201,8 +209,9 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
   if (!calibrate_offsets())
     return false;
 
-  // Restore original U-block transmission modes
+  // Restore original U-block transmission modes and reference
   ublock->change_all_transmission_modes(old_transmission_modes);
+  ublock->change_reference_magnitude(old_reference_magnitude);
   // Write them to hardware
   LOG_ANABRID_DEBUG_CALIBRATION("Restoring ublock");
   if (!ublock->write_to_hardware())
@@ -264,9 +273,9 @@ void platform::Cluster::reset(bool keep_calibration) {
 
 entities::Entity *platform::Cluster::get_child_entity(const std::string &child_id) {
   if (child_id == "M0")
-    return m1block;
+    return m0block;
   else if (child_id == "M1")
-    return m2block;
+    return m1block;
   else if (child_id == "U")
     return ublock;
   else if (child_id == "C")
@@ -291,5 +300,7 @@ std::vector<entities::Entity *> platform::Cluster::get_child_entities() {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  return {m1block, m2block, ublock, cblock, iblock, shblock};
+  return {m0block, m1block, ublock, cblock, iblock, shblock};
 }
+
+uint8_t platform::Cluster::get_cluster_idx() const { return cluster_idx; }
