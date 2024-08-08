@@ -17,7 +17,7 @@ bool carrier::Carrier::init() {
     return false;
 
   // Detect CTRL-block
-  ctrl_block = entities::detect<blocks::CTRLBlock>(bus::address_from_tuple(1,0));
+  ctrl_block = entities::detect<blocks::CTRLBlock>(bus::address_from_tuple(1, 0));
   if (!ctrl_block)
     return false;
 
@@ -62,7 +62,7 @@ bool carrier::Carrier::write_to_hardware() {
 }
 
 bool carrier::Carrier::calibrate(daq::BaseDAQ *daq_) {
-  for (auto & cluster: clusters) {
+  for (auto &cluster : clusters) {
     ctrl_block->set_adc_bus_to_cluster_gain(cluster.get_cluster_idx());
     if (!ctrl_block->write_to_hardware())
       return false;
@@ -76,8 +76,9 @@ bool carrier::Carrier::calibrate(daq::BaseDAQ *daq_) {
 }
 
 void carrier::Carrier::reset(bool keep_calibration) {
-  for (auto& cluster: clusters) {
+  for (auto &cluster : clusters) {
     cluster.reset(keep_calibration);
   }
-  ctrl_block->reset(keep_calibration);
+  if (ctrl_block)
+    ctrl_block->reset(keep_calibration);
 }
