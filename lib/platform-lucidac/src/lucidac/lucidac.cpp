@@ -4,7 +4,6 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include "lucidac.h"
-#include "entity/entity.h"
 
 const SPISettings platform::LUCIDAC_HAL::F_ADC_SWITCHER_PRG_SPI_SETTINGS{
     4'000'000, MSBFIRST, SPI_MODE2 /* chip expects SPI MODE0, but CLK is inverted on the way */};
@@ -43,23 +42,6 @@ void LUCIDAC_HAL::reset_acl() {
 }
 
 bool LUCIDAC_HAL::write_adc_bus_mux(std::array<int8_t, 8> channels) {
-  // Check that all inputs are < 15
-  for (auto channel : channels) {
-    if (channel > 15)
-      return false;
-  }
-  // Check that all inputs are different
-  for (auto &channel : channels) {
-    if (channel < 0)
-      continue;
-    for (auto &other_channel : channels) {
-      if (std::addressof(channel) == std::addressof(other_channel))
-        continue;
-      if (channel == other_channel)
-        return false;
-    }
-  }
-
   // Reset previous connections
   // It's easier to do a full reset then to remember all previous connections
   reset_adc_bus_mux();
@@ -98,6 +80,12 @@ bool LUCIDAC::init() {
   return true;
 }
 
+void LUCIDAC::reset(bool keep_calibration) {
+  Carrier::reset(keep_calibration);
+  reset_acl_select();
+  reset_adc_channels();
+}
+
 std::vector<entities::Entity *> LUCIDAC::get_child_entities() {
   auto entities = this->carrier::Carrier::get_child_entities();
   if (front_panel)
@@ -114,7 +102,66 @@ entities::Entity *LUCIDAC::get_child_entity(const std::string &child_id) {
 bool LUCIDAC::write_to_hardware() {
   if (!this->carrier::Carrier::write_to_hardware())
     return false;
-  if (front_panel)
-    return front_panel->write_to_hardware();
+  if (front_panel and !front_panel->write_to_hardware())
+    return false;
+  return hardware->write_acl(acl_select) and hardware->write_adc_bus_mux(adc_channels);
+}
+
+const std::array<LUCIDAC::ACL, 8> &LUCIDAC::get_acl_select() const { return acl_select; }
+
+void LUCIDAC::set_acl_select(const std::array<ACL, 8> &acl_select_) { acl_select = acl_select_; }
+
+bool LUCIDAC::set_acl_select(uint8_t idx, LUCIDAC::ACL acl) {
+  if (idx >= acl_select.size())
+    return false;
+  acl_select[idx] = acl;
   return true;
+}
+
+void LUCIDAC::reset_acl_select() { std::fill(acl_select.begin(), acl_select.end(), ACL::INTERNAL_); }
+
+const std::array<int8_t, 8> &LUCIDAC::get_adc_channels() const { return adc_channels; }
+
+bool LUCIDAC::set_adc_channels(const std::array<int8_t, 8> &channels) {
+  // Check that all inputs are < 15
+  for (auto channel : channels) {
+    if (channel > 15)
+      return false;
+  }
+  // Check that all inputs are different
+  // This is actually not necessary, in principle one could split one signal to multiple ADC.
+  // But for now we prohibit this, as it's more likely an error than an actual use-case.
+  for (auto &channel : channels) {
+    if (channel < 0)
+      continue;
+    for (auto &other_channel : channels) {
+      if (std::addressof(channel) == std::addressof(other_channel))
+        continue;
+      if (channel == other_channel)
+        return false;
+    }
+  }
+  adc_channels = channels;
+  return true;
+}
+
+bool LUCIDAC::set_adc_channel(uint8_t idx, int8_t adc_channel) {
+  if (idx >= adc_channels.size())
+    return false;
+  if (adc_channel < 0)
+    adc_channel = ADC_CHANNEL_DISABLED;
+
+  // Check if channel is already routed to an ADC
+  // This is not really necessary, but probably a good idea (see set_adc_channels)
+  if (adc_channel != ADC_CHANNEL_DISABLED)
+    for (auto other_idx = 0u; other_idx < adc_channels.size(); other_idx++)
+      if (idx != other_idx and adc_channels[other_idx] == adc_channel)
+        return false;
+
+  adc_channels[idx] = adc_channel;
+  return true;
+}
+
+void LUCIDAC::reset_adc_channels() {
+  std::fill(adc_channels.begin(), adc_channels.end(), ADC_CHANNEL_DISABLED);
 }

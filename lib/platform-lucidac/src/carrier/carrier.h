@@ -34,7 +34,7 @@ public:
 
   virtual bool calibrate(daq::BaseDAQ* daq_);
 
-  void reset(bool keep_calibration);
+  virtual void reset(bool keep_calibration);
 
   std::vector<Entity *> get_child_entities() override;
 
