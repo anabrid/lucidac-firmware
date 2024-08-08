@@ -173,3 +173,47 @@ int LUCIDAC::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
     msg_out["entities"]["/FP"] = front_panel->get_entity_classifier();
   return 0;
 }
+
+bool platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
+  auto carrier_res = this->carrier::Carrier::config_self_from_json(cfg);
+  if(carrier_res != 0) return carrier_res;
+
+  // TODO: This code is very quick and dirty. Use JSON custom converters to make nicer.
+
+  if(cfg.containsKey("adc_channels")) {
+    auto cfg_adc_channels = cfg["adc_channels"].as<JsonArrayConst>();
+    /*if(cfg_adc_channels.size() != adc_channels.size()) {
+      LOG_ALWAYS("platform::LUCIDAC::config_self_from_json: Error, given adc_channels has wrong size");
+      return false;
+    }*/
+    for(int i=0; i<cfg_adc_channels.size() && i<adc_channels.size(); i++) {
+      adc_channels[i] = cfg_adc_channels[i];
+    }
+  }
+
+  if(cfg.containsKey("acl_select")) {
+    auto cfg_acl_select = cfg["acl_select"].as<JsonArrayConst>();
+    for(int i=0; i<cfg_acl_select.size() && i<acl_select.size(); i++) {
+      if(cfg_acl_select == "internal")
+        acl_select[i] = platform::LUCIDAC_HAL::ACL::INTERNAL_;
+      else if(cfg_acl_select == "external")
+        acl_select[i] = platform::LUCIDAC_HAL::ACL::EXTERNAL_;
+      else {
+        LOG_ALWAYS("platform::LUCIDAC::config_self_from_json: Expected acl_select[i] to be either 'internal' or 'external' string")
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+void platform::LUCIDAC::config_self_to_json(JsonObject &cfg) {
+  // TODO: This code is very quick and dirty. Use JSON custom converters to make nicer.
+
+  for(int i=0; i<adc_channels.size(); i++)
+    cfg["acl_channels"][i] = adc_channels[i];
+
+  for(int i=0; i<acl_select.size(); i++)
+    cfg["acl_select"][i] = (acl_select[i] == platform::LUCIDAC_HAL::ACL::INTERNAL_ ? "internal" : "external" );
+}

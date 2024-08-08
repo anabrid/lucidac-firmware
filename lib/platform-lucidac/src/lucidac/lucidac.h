@@ -88,6 +88,9 @@ public:
 
   int get_entities(JsonObjectConst msg_in, JsonObject &msg_out) override;
 
+  bool config_self_from_json(JsonObjectConst cfg) override;
+  void config_self_to_json(JsonObject &cfg) override;
+
   [[nodiscard]] bool write_to_hardware() override;
 
   [[nodiscard]] const std::array<ACL, 8> &get_acl_select() const;
