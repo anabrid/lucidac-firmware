@@ -33,7 +33,7 @@ void test_prepare_eeprom() {
   // Can be run only once and it should persist.
 
   /*
-  EEPROM25AA02 m0_eeprom(bus::idx_to_addr(0, MBlock::M1_IDX, 0));
+  EEPROM25AA02 m0_eeprom(bus::idx_to_addr(0, MBlock::M0_IDX, 0));
   TEST_ASSERT(m0_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
                                static_cast<uint8_t>(MBlock::CLASS_)));
   TEST_ASSERT(m0_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1,
@@ -42,7 +42,7 @@ void test_prepare_eeprom() {
   TEST_ASSERT(m0_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
   */
 
-  EEPROM25AA02 m1_eeprom(bus::idx_to_addr(0, MBlock::M2_IDX, 0));
+  EEPROM25AA02 m1_eeprom(bus::idx_to_addr(0, MBlock::M1_IDX, 0));
   TEST_ASSERT(m1_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
                                static_cast<uint8_t>(MBlock::CLASS_)));
   TEST_ASSERT(m1_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1,
@@ -88,8 +88,8 @@ void test_prepare_eeprom() {
 }
 
 void test_detect_block() {
+  TEST_ASSERT(entities::detect<MBlock>(bus::idx_to_addr(0, MBlock::M0_IDX, 0)));
   TEST_ASSERT(entities::detect<MBlock>(bus::idx_to_addr(0, MBlock::M1_IDX, 0)));
-  TEST_ASSERT(entities::detect<MBlock>(bus::idx_to_addr(0, MBlock::M2_IDX, 0)));
   TEST_ASSERT(entities::detect<UBlock>(bus::idx_to_addr(0, UBlock::BLOCK_IDX, 0)));
   TEST_ASSERT(entities::detect<CBlock>(bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0)));
   TEST_ASSERT(entities::detect<IBlock>(bus::idx_to_addr(0, IBlock::BLOCK_IDX, 0)));

@@ -41,8 +41,8 @@ public:
   bool is_entity_type(TYPES type_) { return entities::Entity::is_entity_type(static_cast<uint8_t>(type_)); }
 
 public:
-  static constexpr uint8_t M1_IDX = bus::M0_BLOCK_IDX;
-  static constexpr uint8_t M2_IDX = bus::M1_BLOCK_IDX;
+  static constexpr uint8_t M0_IDX = bus::M0_BLOCK_IDX;
+  static constexpr uint8_t M1_IDX = bus::M1_BLOCK_IDX;
 
   enum class SLOT : uint8_t { M0 = 0, M1 = 1 };
 

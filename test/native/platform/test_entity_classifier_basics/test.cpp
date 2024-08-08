@@ -56,14 +56,14 @@ void test_cblock_from_entity_classifier() {
 void test_mblock_from_entity_classifier() {
   auto unknown_mblock = MBlock::from_entity_classifier(
       EntityClassifier{EntityClass::M_BLOCK, static_cast<const uint8_t>(MBlock::TYPES::UNKNOWN), 0, 0},
-      bus::idx_to_addr(0, MBlock::M1_IDX, 0));
+      bus::idx_to_addr(0, MBlock::M0_IDX, 0));
   TEST_ASSERT_EQUAL(nullptr, unknown_mblock);
   TEST_ASSERT_FALSE(dynamic_cast<MIntBlock *>(unknown_mblock));
   TEST_ASSERT_FALSE(dynamic_cast<MMulBlock *>(unknown_mblock));
 
   auto m_int8_block = MBlock::from_entity_classifier(
       EntityClassifier{EntityClass::M_BLOCK, static_cast<const uint8_t>(MBlock::TYPES::M_INT8_BLOCK), 1, 1},
-      bus::idx_to_addr(0, MBlock::M1_IDX, 0));
+      bus::idx_to_addr(0, MBlock::M0_IDX, 0));
   TEST_ASSERT_NOT_EQUAL(nullptr, m_int8_block);
   TEST_ASSERT_TRUE(dynamic_cast<MIntBlock *>(m_int8_block));
   TEST_ASSERT_FALSE(dynamic_cast<MMulBlock *>(m_int8_block));
