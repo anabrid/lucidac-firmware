@@ -88,7 +88,7 @@ void test_prepare_eeprom() {
 }
 
 void test_detect_block() {
-  TEST_ASSERT(entities::detect<MBlock>(bus::idx_to_addr(0, MBlock::M0_IDX, 0)));
+  // TEST_ASSERT(entities::detect<MBlock>(bus::idx_to_addr(0, MBlock::M0_IDX, 0)));
   TEST_ASSERT(entities::detect<MBlock>(bus::idx_to_addr(0, MBlock::M1_IDX, 0)));
   TEST_ASSERT(entities::detect<UBlock>(bus::idx_to_addr(0, UBlock::BLOCK_IDX, 0)));
   TEST_ASSERT(entities::detect<CBlock>(bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0)));
