@@ -6,6 +6,10 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#ifndef ANABRID_PEDANTIC
+#error "This test case requires PEDANTIC mode."
+#endif
+
 #include "block/blocks.h"
 #include "chips/EEPROM25AA02.h"
 #include "entity/entity.h"
