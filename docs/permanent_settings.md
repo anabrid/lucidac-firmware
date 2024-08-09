@@ -1,4 +1,4 @@
-# Permanent Settings                                        {#permanent_settings}
+\page nvmconf Permanent Settings
 
 The Teensy supports persistent, permanent settings which are stored on an virtualized
 EEPROM realized on the Flash memory. In the LUCIDAC, this is used to store primarily
@@ -10,8 +10,8 @@ As a design decision, a change in permanent settings normally requires a reboot 
 order to take change. This makes sense for network-related settings which are typically
 only made use of at startup.
 
-In the code, the settings is implemented by \link nvmconfig::PersistentSettingsWriter.
-In particular, there is a small registry at \link net::register_settings which collects
+In the code, the settings is implemented by nvmconfig::PersistentSettingsWriter.
+In particular, there is a small registry at net::register_settings which collects
 all subsystems which store permanent settings.
 
 Following the general idiom of the JSON-based LUCIDAC communication, also the

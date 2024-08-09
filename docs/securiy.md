@@ -1,4 +1,4 @@
-# IT Security aspects
+\page security IT Security aspects
 
 Please extend and say on:
 

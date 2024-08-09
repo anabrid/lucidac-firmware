@@ -1,4 +1,6 @@
-# Style Guide for the REDAC HybridController Firmware
+\page style-guide Style Guide
+
+This page is a code style guide for the HybridController Firmware.
 
 ## Entrypoints and Seperations
 * `src/hybrid-controller.cpp` is the main entry point for regular usage.

@@ -31,6 +31,8 @@ _deps
 
 # Doxygen output
 docs/html
+docs/latex
+docs/xml
 
 # Any kind of local patches
 *.elf

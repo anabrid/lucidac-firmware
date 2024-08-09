@@ -1,38 +1,11 @@
-# Getting started                                              {#getting-started}
+\page users Flashing and PIO
 
-This section is intended for users of the LUCIDAC, who want to use it *as is*. Typical user
-needs are
+This section is intended for users of the LUCIDAC, who want to use it *as is*.
 
-* given a "ready to use" Teensy microcontroller, how to connect and use the device
-* how to upgrade to a given newer firmware release.
+If your need is to make use of a given microcontroller, inspect a suitable client documentation
+instead.
 
-These needs are described in the following
-
-## Find the hybrid controller in the network
-
-By default, the hybrid controller configures its IPv4 network address via DHCP.
-You need to know it's assigned IP address in order to connect to it. You can also
-[disable DHCP or change the configuration](networking.md) if you need to do so.
-
-By default, the device listens on TCP port `5732`.
-
-The hybrid controller will send debug information, including its IP address,
-via the USB-serial connection.
-After a restart, use `cat /dev/ttyACM0` or similar to access the debug output.
-Please note that debug output is not buffered and may not be visible if you are too slow.
-
-You can also find the IP address by asking your system administrator
-or watching your DHCP logs. You can also perform a network scan such as 
-`nmap -v -A -p 5732 192.168.1.1-255` to search for computers in your (exemplaric)
-`192.168.1.1/24` network listening on port `5732`.
-
-## Using your LUCIDAC
-
-Use the `pyanabrid-redac` python package to interact with your LUCIDAC. It currently lives
-at https://lab.analogparadigm.com/redac/software/pyanabrid-redac/
-as well as https://lab.analogparadigm.com/pyanabrid/. 
-
-##  Flashing the latest firmware
+## How to flash the latest firmware
 
 If necessary, you can download the latest stable firmware from the releases page
 or the latest development version from the build artifacts.
@@ -53,7 +26,11 @@ and press the small flash button on the teensy board.
 
 Execute `teensy_loader_cli --mcu=TEENSY41 firmware.hex` to flash your hybrid controller.
 
-## Developing with platformio
+Alternatively, you can use the [graphical Teensy Loader Application](https://www.pjrc.com/teensy/loader.html)
+or consider alternative tools such as https://koromix.dev/tytools. Note that the firmware also provides
+mechanisms for self-updates without USB cable.
+
+## How to get started with platformio
 
 In order to develop on the firmware, you have to install *platformio*. We recommend not to install
 the version from your package repository (such as `apt install platformio`) but instead install the

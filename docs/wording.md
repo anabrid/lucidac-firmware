@@ -1,4 +1,4 @@
-# Wording
+\page wording Wording
 
 This page should clear a bit about the wording used in this project.
 

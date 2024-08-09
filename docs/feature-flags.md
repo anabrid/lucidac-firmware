@@ -1,5 +1,4 @@
-Use build flags to turn on/off features
-=======================================
+\page feature-flags Build/Feature flags
 
 The following keywords can be used in a `platform.ini` as in the following example line:
 

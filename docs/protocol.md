@@ -1,4 +1,4 @@
-# REDAC communication protocol                                       {#protocol}
+\page protocol REDAC communication protocol
 
 The firmware uses a [JSON Lines](https://jsonlines.org/) plain text protocol for communication.
 It *mostly* follows a client/server idiom where the microcontroller is the server

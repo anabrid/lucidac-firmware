@@ -1,4 +1,4 @@
-# Getting started as a Developer
+\page getting-started-dev Getting started as Developer
 
 This section is intended for developers of the LUCIDAC, who are looking to adapt and build the firmware themselves.
 
@@ -56,5 +56,32 @@ You should get some output like this one:
 {"id":"null","type":"get_config","msg":{"entity":["04-E9-E5-0D-CB-93"],"config":{"/0":{"/M0":{"elements":[{"ic":-1,"k":10000},{"ic":-1,"k":10000},{"ic":-1,"k":10000},{"ic":-1,"k":10000},{"ic":-1,"k":10000},{"ic":-1,"k":10000},{"ic":-1,"k":10000},{"ic":-1,"k":10000}]},"/M1":{},"/U":{"outputs":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]},"/C":{"elements":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},"/I":{"outputs":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]}}}}}
 ```
 
-\sa
-  #style-guide
+## Debugging
+
+### Debugging with PlatformIO  (TODO: Move me)
+Because of the ArduinoFake implementation it is possible to use the full PlatformIO debugging capabilities. 
+
+### Debugging on MacOS with VSCode (using lldb)
+To properly use the debug mode provided by VSCode, you need to modify the `launch.json` file, that configures the debug process. 
+To access the file, first open the `Run and Debug` menu in VSCode. Then click on the small gear labeled `Open 'launch.json'` (probably on the top of the window).
+Then amend the `configurations` tag by this code: 
+```
+{
+    "name": "LUCIDAC Debug",
+    "type": "cppdbg",
+    "request": "launch",
+    "program": "${workspaceFolder}/.pio/build/native/program",
+    "args": [],
+    "stopAtEntry": false,
+    "cwd": "${fileDirname}",
+    "environment": [],
+    "externalConsole": false,
+    "MIMode": "lldb",
+    "preLaunchTask": {
+        "type": "PlatformIO",
+        "task": "Pre-Debug"
+    }
+}
+```
+
+Now you should see a new debugging target called `LUCIDAC Debug` in the respective dropdown menu (probably next to the small gear icon). After selecting this target, you can start the debugging process.
