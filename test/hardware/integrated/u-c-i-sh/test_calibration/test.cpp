@@ -51,7 +51,7 @@ void test_calibration() {
     TEST_ASSERT(cluster.write_to_hardware());
   }
 
-  TEST_ASSERT(carrier_.calibrate(&DAQ));
+  TEST_ASSERT(carrier_.calibrate_routes(&DAQ));
 
   for (auto &cluster: carrier_.clusters) {
     // Check whether all gain corrections are in a reasonable range
