@@ -11,7 +11,7 @@
 
 namespace platform {
 
-class LUCIDAC_HAL {
+class LUCIDAC_HAL : public carrier::Carrier_HAL {
 public:
   // Module addresses
   static constexpr uint8_t CARRIER_MADDR = 5;
@@ -54,28 +54,25 @@ public:
 
   //! Write channel selection to ADC bus muxer.
   //! Each element in channels selects the input index for the n-th ADC bus output (-1 disables).
-  bool write_adc_bus_mux(std::array<int8_t, 8> channels);
+  bool write_adc_bus_mux(std::array<int8_t, 8> channels) override;
 
-  void reset_adc_bus_mux();
+  void reset_adc_bus_mux() override;
 };
 
 class LUCIDAC : public carrier::Carrier {
 public:
   using ACL = LUCIDAC_HAL::ACL;
-  static constexpr int8_t ADC_CHANNEL_DISABLED = -1;
 
 protected:
   LUCIDAC_HAL *hardware{};
 
   std::array<ACL, 8> acl_select{ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_,
                                 ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_};
-  std::array<int8_t, 8> adc_channels{ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED,
-                                     ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED,
-                                     ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED};
 
 public:
   LUCIDACFrontPanel *front_panel = nullptr;
 
+  explicit LUCIDAC(LUCIDAC_HAL* hardware);
   LUCIDAC();
 
   bool init() override;
@@ -93,10 +90,6 @@ public:
   [[nodiscard]] bool set_acl_select(uint8_t idx, ACL acl);
   void reset_acl_select();
 
-  [[nodiscard]] const std::array<int8_t, 8> &get_adc_channels() const;
-  [[nodiscard]] bool set_adc_channels(const std::array<int8_t, 8> &channels);
-  [[nodiscard]] bool set_adc_channel(uint8_t idx, int8_t adc_channel);
-  void reset_adc_channels();
 };
 
 } // namespace platform

@@ -8,9 +8,9 @@
 const SPISettings platform::LUCIDAC_HAL::F_ADC_SWITCHER_PRG_SPI_SETTINGS{
     4'000'000, MSBFIRST, SPI_MODE2 /* chip expects SPI MODE0, but CLK is inverted on the way */};
 
-LUCIDAC::LUCIDAC() : Carrier({Cluster(0)}), hardware(new LUCIDAC_HAL()) {
-  // Other constructor stuff
-}
+LUCIDAC::LUCIDAC(LUCIDAC_HAL *hardware) : Carrier({Cluster(0)}, hardware), hardware(hardware) {}
+
+LUCIDAC::LUCIDAC() : LUCIDAC(new LUCIDAC_HAL()) {}
 
 LUCIDAC_HAL::LUCIDAC_HAL()
     : f_acl_prg(bus::address_from_tuple(CARRIER_MADDR, ACL_PRG_FADDR), true),
@@ -83,7 +83,6 @@ bool LUCIDAC::init() {
 void LUCIDAC::reset(bool keep_calibration) {
   Carrier::reset(keep_calibration);
   reset_acl_select();
-  reset_adc_channels();
 }
 
 std::vector<entities::Entity *> LUCIDAC::get_child_entities() {
@@ -100,11 +99,13 @@ entities::Entity *LUCIDAC::get_child_entity(const std::string &child_id) {
 }
 
 bool LUCIDAC::write_to_hardware() {
-  if (!this->carrier::Carrier::write_to_hardware())
+  if (!Carrier::write_to_hardware())
     return false;
   if (front_panel and !front_panel->write_to_hardware())
     return false;
-  return hardware->write_acl(acl_select) and hardware->write_adc_bus_mux(adc_channels);
+  if (!hardware->write_acl(acl_select))
+    return false;
+  return true;
 }
 
 const std::array<LUCIDAC::ACL, 8> &LUCIDAC::get_acl_select() const { return acl_select; }
@@ -119,49 +120,3 @@ bool LUCIDAC::set_acl_select(uint8_t idx, LUCIDAC::ACL acl) {
 }
 
 void LUCIDAC::reset_acl_select() { std::fill(acl_select.begin(), acl_select.end(), ACL::INTERNAL_); }
-
-const std::array<int8_t, 8> &LUCIDAC::get_adc_channels() const { return adc_channels; }
-
-bool LUCIDAC::set_adc_channels(const std::array<int8_t, 8> &channels) {
-  // Check that all inputs are < 15
-  for (auto channel : channels) {
-    if (channel > 15)
-      return false;
-  }
-  // Check that all inputs are different
-  // This is actually not necessary, in principle one could split one signal to multiple ADC.
-  // But for now we prohibit this, as it's more likely an error than an actual use-case.
-  for (auto &channel : channels) {
-    if (channel < 0)
-      continue;
-    for (auto &other_channel : channels) {
-      if (std::addressof(channel) == std::addressof(other_channel))
-        continue;
-      if (channel == other_channel)
-        return false;
-    }
-  }
-  adc_channels = channels;
-  return true;
-}
-
-bool LUCIDAC::set_adc_channel(uint8_t idx, int8_t adc_channel) {
-  if (idx >= adc_channels.size())
-    return false;
-  if (adc_channel < 0)
-    adc_channel = ADC_CHANNEL_DISABLED;
-
-  // Check if channel is already routed to an ADC
-  // This is not really necessary, but probably a good idea (see set_adc_channels)
-  if (adc_channel != ADC_CHANNEL_DISABLED)
-    for (auto other_idx = 0u; other_idx < adc_channels.size(); other_idx++)
-      if (idx != other_idx and adc_channels[other_idx] == adc_channel)
-        return false;
-
-  adc_channels[idx] = adc_channel;
-  return true;
-}
-
-void LUCIDAC::reset_adc_channels() {
-  std::fill(adc_channels.begin(), adc_channels.end(), ADC_CHANNEL_DISABLED);
-}

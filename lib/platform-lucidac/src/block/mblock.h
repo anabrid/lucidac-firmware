@@ -11,6 +11,15 @@
 #include "bus/bus.h"
 #include "chips/DAC60508.h"
 #include "chips/SR74HCT595.h"
+#include "daq/base.h"
+
+namespace platform {
+class Cluster;
+}
+
+namespace carrier {
+class Carrier;
+}
 
 namespace blocks {
 
@@ -46,13 +55,9 @@ public:
 
   enum class SLOT : uint8_t { M0 = 0, M1 = 1 };
 
-  static constexpr std::array<uint8_t, 8> SLOT_INPUT_IDX_RANGE() {
-    return {0, 1, 2, 3, 4, 5, 6, 7};
-  };
+  static constexpr std::array<uint8_t, 8> SLOT_INPUT_IDX_RANGE() { return {0, 1, 2, 3, 4, 5, 6, 7}; };
 
-  static constexpr std::array<uint8_t, 8> SLOT_OUTPUT_IDX_RANGE() {
-    return {0,  1,  2,  3,  4,  5,  6,  7};
-    };
+  static constexpr std::array<uint8_t, 8> SLOT_OUTPUT_IDX_RANGE() { return {0, 1, 2, 3, 4, 5, 6, 7}; };
 
   //! M1 input signal specifier for hard-coded usage, like MBlock::M1_INPUT<3>().
   template <int n> static constexpr uint8_t M1_INPUT() {
@@ -105,10 +110,13 @@ public:
   uint8_t get_entity_type() const override = 0;
 
   uint8_t slot_to_global_io_index(uint8_t local) const;
+
+  virtual bool calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster) {
+    return true;
+  }
 };
 
-
-class EmptyMBlock: public MBlock {
+class EmptyMBlock : public MBlock {
 public:
   bool write_to_hardware() override;
   uint8_t get_entity_type() const override;
@@ -183,7 +191,12 @@ protected:
 class MMulBlockHAL : public FunctionBlockHAL {
 public:
   virtual bool write_calibration_input_offsets(uint8_t idx, float offset_x, float offset_y) = 0;
+  virtual bool reset_calibration_input_offsets() = 0;
+
   virtual bool write_calibration_output_offset(uint8_t idx, float offset_z) = 0;
+  virtual bool reset_calibration_output_offsets() = 0;
+
+  bool init() override;
 };
 
 class MMulBlockHAL_V_1_0_1 : public MMulBlockHAL {
@@ -198,8 +211,15 @@ public:
 
 public:
   bool write_calibration_input_offsets(uint8_t idx, float offset_x, float offset_y) override;
+  bool reset_calibration_input_offsets() override;
+
   bool write_calibration_output_offset(uint8_t idx, float offset_z) override;
+  bool reset_calibration_output_offsets() override;
 };
+
+typedef struct MultiplierCalibration {
+  float offset_x = 0.0f, offset_y = 0.0f, offset_z = 0.0f;
+} MultiplierCalibration;
 
 class MMulBlock : public MBlock {
 public:
@@ -212,17 +232,24 @@ public:
   static constexpr uint8_t NUM_MULTIPLIERS = 4;
 
 protected:
-  MMulBlockHAL* hardware;
+  MMulBlockHAL *hardware;
+
+  std::array<MultiplierCalibration, NUM_MULTIPLIERS> calibration{};
 
 public:
   using MBlock::MBlock;
-  MMulBlock(bus::addr_t block_address, MMulBlockHAL* hardware);
+  MMulBlock(bus::addr_t block_address, MMulBlockHAL *hardware);
 
   uint8_t get_entity_type() const final { return static_cast<uint8_t>(TYPE); }
 
   bool init() override;
 
   [[nodiscard]] bool write_to_hardware() override;
+
+  bool calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster) override;
+
+  [[nodiscard]] const std::array<MultiplierCalibration, NUM_MULTIPLIERS> &get_calibration() const;
+  [[nodiscard]] blocks::MultiplierCalibration get_calibration(uint8_t mul_idx) const;
 
 protected:
   bool config_self_from_json(JsonObjectConst cfg) override;

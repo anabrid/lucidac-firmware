@@ -44,6 +44,8 @@ public:
 
 namespace blocks {
 
+class MBlock;
+
 class UBlockHAL : public FunctionBlockHAL {
 public:
   enum class Reference_Magnitude : uint8_t { ONE = 0, ONE_TENTH = 1 };
@@ -237,6 +239,7 @@ protected:
   void config_self_to_json(JsonObject &cfg) override;
 
   friend class ::platform::Cluster;
+  friend class ::blocks::MBlock;
 };
 
 } // namespace blocks
