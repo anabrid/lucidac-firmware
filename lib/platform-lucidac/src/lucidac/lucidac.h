@@ -74,7 +74,7 @@ protected:
                                      ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED};
 
 public:
-  LUCIDACFrontPanel *front_panel;
+  LUCIDACFrontPanel *front_panel = nullptr;
 
   LUCIDAC();
 
