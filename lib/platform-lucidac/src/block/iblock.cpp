@@ -87,8 +87,12 @@ bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
     if (cfg["outputs"].is<JsonObjectConst>()) {
       for (JsonPairConst keyval : cfg["outputs"].as<JsonObjectConst>()) {
         // Key defines output
-        // TODO: Check conversion from string to number
-        auto output = std::stoul(keyval.key().c_str());
+
+        // Hint: replaced stdoul with atoi because the firmware cannot catch
+        //       exceptions. however, atoi returns 0 in case of error which
+        //       is also not good (becaue 0 is a valid value)
+        auto output = std::atoi(keyval.key().c_str());
+
         // Disconnect also sanity checks output index for us
         if (!disconnect(output))
           return false;
