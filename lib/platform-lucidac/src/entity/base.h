@@ -148,6 +148,10 @@ public:
 
   Entity *resolve_child_entity(JsonArrayConst path) { return resolve_child_entity(path.begin(), path.end()); }
 
+  /**
+   * Deserialize a new configuration for this entity and all its children from a JsonObject.
+   * @returns true in case of success, else false
+   **/
   bool config_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
     Serial.println(__PRETTY_FUNCTION__);
@@ -161,6 +165,10 @@ public:
     return true;
   }
 
+  /**
+   * Serialize the configuration for this entity to a JsonObject.
+   * @arg recursive If given, includes self configuration and all children.
+   **/
   void config_to_json(JsonObject &cfg, bool recursive = true) {
     config_self_to_json(cfg);
     if (recursive)
@@ -168,8 +176,19 @@ public:
   }
 
 protected:
+
+  /**
+   * Deserialize a new configuration for this entity from a JsonObject.
+   * Implementations shall not traverse to children, @see config_children_from_json() instead.
+   * @returns true in case of success, else false
+   **/
   virtual bool config_self_from_json(JsonObjectConst cfg) = 0;
 
+  /**
+   * Deserialize a new configuration for all child entities from a JsonObject.
+   * Does not include own configuration, @see config_self_from_json() instead.
+   * @returns true in case of success, else false
+   **/
   bool config_children_from_json(JsonObjectConst &cfg) {
     for (JsonPairConst keyval : cfg) {
       if (keyval.key().c_str()[0] == '/' and keyval.key().size() > 1) {
@@ -184,16 +203,26 @@ protected:
     return true;
   }
 
+  /**
+   * Serialize the configuration of this entity to a JsonObject.
+   * Implementations shall not traverse to children, @see config_children_to_json() instead.
+   **/
   virtual void config_self_to_json(JsonObject &cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
     Serial.println(__PRETTY_FUNCTION__);
 #endif
   }
 
+  /**
+   * Serialize the configuration of the child entities of this entity to a JsonObject.
+   * Does not include own configuration, @see config_self_to_json() instead.
+   **/
   void config_children_to_json(JsonObject &cfg) {
     for (auto child : get_child_entities()) {
-      auto child_cfg = cfg.createNestedObject(std::string("/") + child->get_entity_id());
-      child->config_to_json(child_cfg, true);
+      if(child) {
+        auto child_cfg = cfg.createNestedObject(std::string("/") + child->get_entity_id());
+        child->config_to_json(child_cfg, true);
+      }
     }
   }
 };
