@@ -175,8 +175,8 @@ int LUCIDAC::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
 }
 
 bool platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
-  auto carrier_res = this->carrier::Carrier::config_self_from_json(cfg);
-  if(carrier_res != 0) return carrier_res;
+  bool carrier_res = this->carrier::Carrier::config_self_from_json(cfg);
+  if(!carrier_res) return false;
 
   // TODO: This code is very quick and dirty. Use JSON custom converters to make nicer.
 
@@ -187,22 +187,28 @@ bool platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
       return false;
     }*/
     for(int i=0; i<cfg_adc_channels.size() && i<adc_channels.size(); i++) {
+      Serial.printf("platform::LUCIDAC::config_self_from_json adc_channels[%d] = %d\n", i, cfg_adc_channels[i]);
       adc_channels[i] = cfg_adc_channels[i];
     }
+    bool written = hardware->write_adc_bus_mux(adc_channels);
+    if(!written) return written;
   }
 
   if(cfg.containsKey("acl_select")) {
     auto cfg_acl_select = cfg["acl_select"].as<JsonArrayConst>();
     for(int i=0; i<cfg_acl_select.size() && i<acl_select.size(); i++) {
-      if(cfg_acl_select == "internal")
+      Serial.printf("platform::LUCIDAC::config_self_from_json acl_select[%d] = %s\n", i, cfg_acl_select[i].as<const char*>());
+      if(cfg_acl_select[i] == "internal") {
         acl_select[i] = platform::LUCIDAC_HAL::ACL::INTERNAL_;
-      else if(cfg_acl_select == "external")
+      } else if(cfg_acl_select[i] == "external") {
         acl_select[i] = platform::LUCIDAC_HAL::ACL::EXTERNAL_;
-      else {
+      } else {
         LOG_ALWAYS("platform::LUCIDAC::config_self_from_json: Expected acl_select[i] to be either 'internal' or 'external' string")
         return false;
       }
     }
+    bool written = hardware->write_acl(acl_select);
+    if(!written) return written;
   }
 
   return true;
@@ -211,9 +217,12 @@ bool platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
 void platform::LUCIDAC::config_self_to_json(JsonObject &cfg) {
   // TODO: This code is very quick and dirty. Use JSON custom converters to make nicer.
 
+  auto cfg_acl_channels = cfg.createNestedArray("acl_channels");
+  auto cfg_acl_select   = cfg.createNestedArray("acl_select");
+
   for(int i=0; i<adc_channels.size(); i++)
-    cfg["acl_channels"][i] = adc_channels[i];
+    cfg_acl_channels.add(adc_channels[i]);
 
   for(int i=0; i<acl_select.size(); i++)
-    cfg["acl_select"][i] = (acl_select[i] == platform::LUCIDAC_HAL::ACL::INTERNAL_ ? "internal" : "external" );
+    cfg_acl_select.add(acl_select[i] == platform::LUCIDAC_HAL::ACL::INTERNAL_ ? "internal" : "external" );
 }
