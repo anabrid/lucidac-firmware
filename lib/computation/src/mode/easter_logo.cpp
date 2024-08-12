@@ -16,6 +16,9 @@ using namespace mode;
 
 namespace easter_egg {
 
+// Comment in again when the code is working without warnings...
+#ifdef COMPILE_THE_EASTER_EGG
+
 struct DrawAnabridLogo {
   Cluster &cluster;
   MIntBlock *mBlock;
@@ -261,5 +264,7 @@ struct DrawAnabridLogo {
 }; // end of class
 
 void draw_anabrid_logo(carrier::Carrier &c) { DrawAnabridLogo(c).draw_logo(); }
+
+#endif
 
 } // namespace easter_egg

@@ -17,7 +17,7 @@
 
 
 void trim(char *str) {
-  int start = 0, end = strlen(str) - 1;
+  unsigned int start = 0, end = strlen(str) - 1;
 
   // Remove leading whitespace
   while (isspace(str[start])) {

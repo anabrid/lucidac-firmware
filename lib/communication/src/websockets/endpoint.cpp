@@ -127,7 +127,7 @@ namespace internals {
     }
 
     uint32_t readUntilSuccessfullOrError(network::TcpClient& socket, uint8_t* buffer, const uint32_t len) {
-        auto numRead = socket.read(buffer, len);
+        uint32_t numRead = socket.read(buffer, len);
         while(numRead == static_cast<uint32_t>(-1) && socket.available()) {
             numRead = socket.read(buffer, len);
         }
@@ -183,7 +183,7 @@ namespace internals {
 
             done_reading += numReceived;
         }
-        return std::move(data);
+        return (data);
     }
 
     void remaskData(std::string& data, const uint8_t* const maskingKey, uint64_t payloadLength) {
@@ -234,14 +234,14 @@ namespace internals {
         frame.opcode = header.opcode;
         frame.payload_length = payloadLength;
 
-        return std::move(frame);
+        return (frame);
     }
 
     WebsocketsMessage WebsocketsEndpoint::handleFrameInStreamingMode(WebsocketsFrame& frame) {
         if(frame.isControlFrame()) {
-            auto msg = WebsocketsMessage::CreateFromFrame(std::move(frame));
+            auto msg = WebsocketsMessage::CreateFromFrame((frame));
             this->handleMessageInternally(msg);
-            return std::move(msg);
+            return (msg);
         }
         else if(frame.isBeginningOfFragmentsStream()) {
             this->_recvMode = RecvMode_Streaming;
@@ -294,7 +294,7 @@ namespace internals {
         if(frame.isNormalUnfragmentedMessage() || frame.isControlFrame()) {
             auto msg = WebsocketsMessage::CreateFromFrame(std::move(frame));
             this->handleMessageInternally(msg);
-            return std::move(msg);
+            return (msg);
         } 
         else if(frame.isBeginningOfFragmentsStream()) {
             return handleFrameInStreamingMode(frame);
@@ -396,7 +396,7 @@ namespace internals {
           remaskData(message_data, maskingKey, data_start, len);
         }
 
-        this->_client->send(reinterpret_cast<const uint8_t*>(message_data.c_str()), message_data.size());
+        this->_client->send(message_data);
         return true; // TODO dont assume success
     }
 

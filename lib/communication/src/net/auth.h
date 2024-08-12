@@ -118,7 +118,7 @@ struct DeviceLock {
  *       this stragey there.
  **/
 class FailToBan {
-  int max_known_stations = 20;
+  uint8_t max_known_stations = 20;
   constexpr static utils::time_ms max_waiting_time = 10*1000; // 10sec
   struct EndpointInformation {
     IPAddress ip;

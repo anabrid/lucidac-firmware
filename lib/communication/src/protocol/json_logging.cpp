@@ -2,8 +2,6 @@
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#pragma once
-
 #include "protocol/jsonl_logging.h"
 
 size_t msg::StreamLogger::write(uint8_t b) {

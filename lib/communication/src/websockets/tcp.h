@@ -12,8 +12,8 @@ namespace websockets { namespace network {
   using web::LucidacWebsocketsClient;
 
   struct TcpClient {
-    EthernetClient* client;
     LucidacWebsocketsClient* context;
+    EthernetClient* client;
 
     // Formerly, this was a kind-of-socket
     // TcpClient(EthernetClient* client) : client(client) {}
@@ -22,11 +22,11 @@ namespace websockets { namespace network {
     TcpClient() {}
 
     bool connect(std::string host, int port) {
-      return client->connect(host.c_str(), port);
+      return client && client->connect(host.c_str(), port);
     }
 
     bool poll() {
-      return client->available() > 0; // Returns the amount of data available, whether the connection is closed or not.
+      return client && client->available() > 0; // Returns the amount of data available, whether the connection is closed or not.
     }
 
     bool available()  {
@@ -34,11 +34,11 @@ namespace websockets { namespace network {
     }
 
     void send(std::string data)  {
-      client->writeFully(reinterpret_cast<uint8_t*>(const_cast<char*>(data.c_str())), data.size());
+      client && client->writeFully(reinterpret_cast<uint8_t*>(const_cast<char*>(data.c_str())), data.size());
     }
 
     void send(uint8_t* data, uint32_t len)  {
-      client->writeFully(data, len);
+      client && client->writeFully(data, len);
     }
     
     std::string readLine()  {
@@ -58,7 +58,7 @@ namespace websockets { namespace network {
     }
 
     void close()  {
-      client->stop();
+      if(client) client->stop();
     }
 
     ~TcpClient() {

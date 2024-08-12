@@ -21,7 +21,7 @@
 
 */
 std::string web::websocketsHandshakeEncodeKey(const char* key) {
-    if(!key) return;
+    if(!key) return "";
 
     std::string input(key);
     input += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";

@@ -103,4 +103,5 @@ int net::auth::Gatekeeper::lock_release(JsonObjectConst msg_in, JsonObject &msg_
     lock.force_unlock();
     return 0;
   }
+  return 1;
 }

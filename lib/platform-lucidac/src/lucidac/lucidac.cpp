@@ -186,7 +186,7 @@ bool platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
       LOG_ALWAYS("platform::LUCIDAC::config_self_from_json: Error, given adc_channels has wrong size");
       return false;
     }*/
-    for(int i=0; i<cfg_adc_channels.size() && i<adc_channels.size(); i++) {
+    for(size_t i=0; i<cfg_adc_channels.size() && i<adc_channels.size(); i++) {
       Serial.printf("platform::LUCIDAC::config_self_from_json adc_channels[%d] = %d\n", i, cfg_adc_channels[i]);
       adc_channels[i] = cfg_adc_channels[i];
     }
@@ -196,7 +196,7 @@ bool platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
 
   if(cfg.containsKey("acl_select")) {
     auto cfg_acl_select = cfg["acl_select"].as<JsonArrayConst>();
-    for(int i=0; i<cfg_acl_select.size() && i<acl_select.size(); i++) {
+    for(size_t i=0; i<cfg_acl_select.size() && i<acl_select.size(); i++) {
       Serial.printf("platform::LUCIDAC::config_self_from_json acl_select[%d] = %s\n", i, cfg_acl_select[i].as<const char*>());
       if(cfg_acl_select[i] == "internal") {
         acl_select[i] = platform::LUCIDAC_HAL::ACL::INTERNAL_;
@@ -220,9 +220,9 @@ void platform::LUCIDAC::config_self_to_json(JsonObject &cfg) {
   auto cfg_acl_channels = cfg.createNestedArray("acl_channels");
   auto cfg_acl_select   = cfg.createNestedArray("acl_select");
 
-  for(int i=0; i<adc_channels.size(); i++)
+  for(size_t i=0; i<adc_channels.size(); i++)
     cfg_acl_channels.add(adc_channels[i]);
 
-  for(int i=0; i<acl_select.size(); i++)
+  for(size_t i=0; i<acl_select.size(); i++)
     cfg_acl_select.add(acl_select[i] == platform::LUCIDAC_HAL::ACL::INTERNAL_ ? "internal" : "external" );
 }

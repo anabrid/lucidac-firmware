@@ -262,7 +262,7 @@ typedef struct {
 
 static void dcp_reverse_and_copy(uint8_t *src, uint8_t *dest, size_t src_len)
 {
-  for (int i = 0; i < src_len; i++)
+  for (unsigned int i = 0; i < src_len; i++)
   {
     dest[i] = src[src_len - 1 - i];
   }
@@ -511,7 +511,7 @@ void DCP_HASH_Init(dcp_handle_t *handle, dcp_hash_ctx_t *ctx, dcp_hash_algo_t al
   ctxInternal = (dcp_hash_ctx_internal_t *)ctx;
   ctxInternal->algo = algo;
   ctxInternal->blksz = 0u;
-  for (int i = 0; i < sizeof(ctxInternal->blk.w) / sizeof(ctxInternal->blk.w[0]); i++)
+  for (unsigned int i = 0; i < sizeof(ctxInternal->blk.w) / sizeof(ctxInternal->blk.w[0]); i++)
   {
     ctxInternal->blk.w[i] = 0u;  // bug was 0
   }
@@ -606,7 +606,7 @@ void DCP_HASH_Finish(dcp_hash_ctx_t *ctx, uint8_t *output)
 }
 
 void dcp_init() {
-  volatile uint32_t *p;
+  //volatile uint32_t *p;
   CCM_CCGR0 |= CCM_CCGR0_DCP(CCM_CCGR_ON);  // DCP on
 
   DCP->CTRL = 0xF0800000u; /* reset value */
