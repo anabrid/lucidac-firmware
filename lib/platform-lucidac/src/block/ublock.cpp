@@ -219,6 +219,7 @@ void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), en
 
 void blocks::UBlock::reset(const bool keep_offsets) {
   FunctionBlock::reset(keep_offsets);
+  change_all_transmission_modes(blocks::UBlock::Transmission_Mode::ANALOG_INPUT);
   reset_connections();
   reset_reference_magnitude();
 }
