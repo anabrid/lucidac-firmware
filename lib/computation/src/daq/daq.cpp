@@ -188,7 +188,7 @@ bool daq::FlexIODAQ::init(unsigned int) {
   for (auto _pin_miso : PINS_MISO) {
     flexio->setIOPinToFlexMode(_pin_miso);
   }
-  for (auto _pin_miso_idx = 0; _pin_miso_idx < _flexio_pins_miso.size(); _pin_miso_idx++) {
+  for (auto _pin_miso_idx = 0u; _pin_miso_idx < _flexio_pins_miso.size(); _pin_miso_idx++) {
     // Trigger all shifters from CLK
     flexio->port().SHIFTCTL[_pin_miso_idx] = FLEXIO_SHIFTCTL_TIMSEL(_clk_timer_idx) | FLEXIO_SHIFTCTL_TIMPOL |
                                              FLEXIO_SHIFTCTL_PINSEL(_flexio_pins_miso[_pin_miso_idx]) |
