@@ -6,6 +6,7 @@
 #include "run_manager.h"
 
 #include <Arduino.h>
+
 #include "daq/daq.h"
 #include "logging.h"
 
@@ -20,7 +21,11 @@ void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunD
   daq::FlexIODAQ daq_{run, run.daq_config, run_data_handler};
   daq_.reset();
   mode::FlexIOControl::reset();
-  if (!mode::FlexIOControl::init(run.config.ic_time, run.config.op_time) or !daq_.init(0)) {
+  if (!mode::FlexIOControl::init(run.config.ic_time, run.config.op_time,
+                                 run.config.halt_on_overload ? mode::OnOverload::HALT
+                                                             : mode::OnOverload::IGNORE,
+                                 mode::OnExtHalt::IGNORE) or
+      !daq_.init(0)) {
     LOG_ERROR("Error while initializing state machine or daq for run.")
     auto change = run.to(RunState::ERROR, 0);
     state_change_handler->handle(change, run);

@@ -45,7 +45,8 @@ void do_run(RunConfig run_config, DAQConfig daq_config) {
   std::string run_id{"550e8400-e29b-11d4-a716-446655440000"};
   Run run_{run_id, run_config, daq_config};
 
-  TEST_ASSERT(FlexIOControl::init(run_config.ic_time, run_config.op_time));
+  TEST_ASSERT(FlexIOControl::init(run_config.ic_time, run_config.op_time, mode::OnOverload::HALT,
+                                  mode::OnExtHalt::IGNORE));
   FlexIODAQ daq_{run_, daq_config, &dummy_run_data_handler};
   dummy_run_data_handler.num_of_data_vectors_streamed = 0;
   daq_.reset();

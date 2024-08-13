@@ -86,7 +86,8 @@ void setup() {
 
   // Initialize things related to runs
   // ... Nothing yet :)
-  if (!mode::FlexIOControl::init(mode::DEFAULT_IC_TIME, mode::DEFAULT_OP_TIME)) {
+  if (!mode::FlexIOControl::init(mode::DEFAULT_IC_TIME, mode::DEFAULT_OP_TIME, mode::OnOverload::HALT,
+                                 mode::OnExtHalt::IGNORE)) {
     LOG_ERROR("Error initializing FlexIO mode control.");
     _ERROR_OUT_
   }
