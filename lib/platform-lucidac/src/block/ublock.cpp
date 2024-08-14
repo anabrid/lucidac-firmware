@@ -280,6 +280,22 @@ bool blocks::UBlock::config_self_from_json(JsonObjectConst cfg) {
     }
   }
 
+  if (cfg.containsKey("constant")) {
+    if(cfg["constant"] == false || cfg["constant"].isNull()) {
+      change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::ANALOG_INPUT);
+      reset_reference_magnitude();
+    } else if(cfg["constant"] == 0.1) {
+      change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::POS_REF);
+      change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE_TENTH);
+    } else if(cfg["constant"] == 1.0 || cfg["constant"] == true) {
+      change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::POS_REF);
+      change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE);
+    } else {
+      LOG_ALWAYS("UBlock::config_self_from_json: Cannot understand value 'constant'");
+      return false;
+    }
+  }
+
   // The combination of checks above must not ignore any valid config dictionary
   return true;
 }
