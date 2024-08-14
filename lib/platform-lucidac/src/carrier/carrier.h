@@ -19,6 +19,12 @@ using namespace platform;
 
 namespace carrier {
 
+class Carrier_HAL {
+public:
+  virtual bool write_adc_bus_mux(std::array<int8_t, 8> channels) = 0;
+  virtual void reset_adc_bus_mux() = 0;
+};
+
 /**
  * \brief Top-level hierarchy controlled by a single microcontroller
  * 
@@ -30,16 +36,28 @@ namespace carrier {
  **/
 class Carrier : public entities::Entity {
 public:
+  static constexpr int8_t ADC_CHANNEL_DISABLED = -1;
+
+protected:
+  Carrier_HAL* hardware;
+
+  std::array<int8_t, 8> adc_channels{ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED,
+                                     ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED,
+                                     ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED};
+
+public:
   std::vector<Cluster> clusters;
   blocks::CTRLBlock* ctrl_block = nullptr;
 
-  explicit Carrier(std::vector<Cluster> clusters);
+  explicit Carrier(std::vector<Cluster> clusters, Carrier_HAL* hardware);
 
   entities::EntityClass get_entity_class() const final;
 
   virtual bool init();
 
-  virtual bool calibrate(daq::BaseDAQ* daq_);
+  virtual bool calibrate_routes_in_cluster(Cluster& cluster, daq::BaseDAQ* daq_);
+  virtual bool calibrate_routes(daq::BaseDAQ* daq_);
+  virtual bool calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock, daq::BaseDAQ *daq_);
 
   virtual void reset(bool keep_calibration);
 
@@ -51,8 +69,11 @@ public:
 
   [[nodiscard]] virtual bool write_to_hardware();
 
-  // REV1 specific things
-  // TODO: These are partly LUCIDAC specific things, which should be rebased on `56-refactor-...` branch.
+  [[nodiscard]] const std::array<int8_t, 8> &get_adc_channels() const;
+  [[nodiscard]] bool set_adc_channels(const std::array<int8_t, 8> &channels);
+  [[nodiscard]] bool set_adc_channel(uint8_t idx, int8_t adc_channel);
+  void reset_adc_channels();
+
 public:
   // Module addresses
   static constexpr uint8_t CARRIER_MADDR = 5;

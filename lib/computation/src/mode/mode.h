@@ -21,9 +21,19 @@ constexpr uint8_t PIN_QTMR_OP_GATE = 12;  // QTimer11
 constexpr unsigned int DEFAULT_IC_TIME = 100'000;
 constexpr unsigned long long DEFAULT_OP_TIME = 1'000'000;
 
-enum class Sync {
-  NONE, MASTER, SLAVE
+enum class OnOverload {
+  // In the future, we might want to pause, go to debug, ...?
+  IGNORE,
+  HALT
 };
+
+enum class OnExtHalt {
+  // In the future, we might want to do different things
+  IGNORE,
+  PAUSE_THEN_RESTART
+};
+
+enum class Sync { NONE, MASTER, SLAVE };
 
 /**
  * Note that the ManualControl does not work any more once FlexIOControl::init()
@@ -59,7 +69,8 @@ public:
 class FlexIOControl {
 private:
   static constexpr uint8_t CLK_SEL = 3, CLK_PRED = 0, CLK_PODF = 0;
-  static constexpr uint8_t s_idle = 0, s_ic = 1, s_op = 2, s_exthalt = 3, s_end = 4, s_overload = 5, z_sync_match = 7;
+  static constexpr uint8_t s_idle = 0, s_ic = 1, s_op = 2, s_exthalt = 3, s_end = 4, s_overload = 5,
+                           z_sync_match = 7;
 
   static constexpr std::array<uint8_t, 6> get_states() {
     return {s_idle, s_ic, s_op, s_exthalt, s_end, s_overload};
@@ -100,7 +111,10 @@ private:
   static bool _is_initialized, _is_enabled;
 
 public:
-  static bool init(unsigned int ic_time_ns, unsigned long long op_time_ns, Sync sync = Sync::NONE);
+  static bool init(unsigned int ic_time_ns, unsigned long long op_time_ns,
+                   mode::OnOverload on_overload = mode::OnOverload::HALT,
+                   mode::OnExtHalt on_ext_halt = mode::OnExtHalt::IGNORE,
+                   mode::Sync sync = mode::Sync::NONE);
   static bool is_initialized() { return _is_initialized; }
 
   static void disable();

@@ -180,6 +180,13 @@ bool blocks::UBlock::is_input_connected(const uint8_t input) const {
   return _is_input_connected(input);
 }
 
+bool blocks::UBlock::is_anything_connected() const {
+  for (auto output: OUTPUT_IDX_RANGE())
+    if (_is_output_connected(output))
+      return true;
+  return false;
+}
+
 void blocks::UBlock::change_a_side_transmission_mode(const Transmission_Mode mode) { a_side_mode = mode; }
 
 void blocks::UBlock::change_b_side_transmission_mode(const Transmission_Mode mode) { b_side_mode = mode; }

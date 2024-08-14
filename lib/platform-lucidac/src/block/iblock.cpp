@@ -37,10 +37,19 @@ bool blocks::IBlock::_is_connected(uint8_t input, uint8_t output) const {
   return outputs[output] & INPUT_BITMASK(input);
 }
 
+bool blocks::IBlock::_is_output_connected(uint8_t output) const { return outputs[output]; }
+
 bool blocks::IBlock::is_connected(uint8_t input, uint8_t output) const {
   if (output >= NUM_OUTPUTS or input >= NUM_INPUTS)
     return false;
   return _is_connected(input, output);
+}
+
+bool blocks::IBlock::is_anything_connected() const {
+  for (auto &output : outputs)
+    if (_is_output_connected(output))
+      return true;
+  return false;
 }
 
 bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool allow_input_splitting) {

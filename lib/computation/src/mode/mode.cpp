@@ -81,7 +81,8 @@ void mode::RealManualControl::to_halt() {
 bool mode::FlexIOControl::_is_initialized = false;
 bool mode::FlexIOControl::_is_enabled = false;
 
-bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_time_ns, mode::Sync sync) {
+bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_time_ns,
+                               mode::OnOverload on_overload, mode::OnExtHalt on_ext_halt, mode::Sync sync) {
   // Initialize and reset QTMR
   _init_qtmr_op();
   _reset_qtmr_op();
@@ -125,8 +126,8 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
     return false;
   // Configure the shifter into continuous match mode, monitoring SYNC_CLK_ID
   flexio->port().SHIFTCTL[z_sync_match] = FLEXIO_SHIFTCTL_TIMSEL(t_sync_clk) |
-                                      FLEXIO_SHIFTCTL_PINSEL(_flexio_pin_data_in) |
-                                      FLEXIO_SHIFTCTL_SMOD(0b101);
+                                          FLEXIO_SHIFTCTL_PINSEL(_flexio_pin_data_in) |
+                                          FLEXIO_SHIFTCTL_SMOD(0b101);
   flexio->port().SHIFTCFG[z_sync_match] = 0;
   // Set compare value in SHIFTBUF[31:16] and mask in SHIFTBUF[15:0] (1=mask, 0=no mask)
   flexio->port().SHIFTBUF[z_sync_match] = 0b01010101'00001111'00000000'00000000;
@@ -151,7 +152,8 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
     flexio->port().SHIFTBUF[s_idle] = FLEXIO_STATE_SHIFTBUF(0b11111111, s_idle);
   case Sync::MASTER:
   case Sync::SLAVE:
-    flexio->port().SHIFTCTL[s_idle] = FLEXIO_SHIFTCTL_TIMSEL(t_sync_trigger) | FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_SMOD_STATE;
+    flexio->port().SHIFTCTL[s_idle] =
+        FLEXIO_SHIFTCTL_TIMSEL(t_sync_trigger) | FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_SMOD_STATE;
     flexio->port().SHIFTBUF[s_idle] = FLEXIO_STATE_SHIFTBUF(0b11111111, s_ic);
   }
   flexio->port().SHIFTCFG[s_idle] = 0;
@@ -270,15 +272,34 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   // Next state after OP depends on FlexIO inputs 10 (0 if overload), 11 (0 if exthalt), 12 (1 if op time over)
   // Check with priority op-time-over > overload > ext halt
   // Comments are t/T whether op-time-over, o/O whether overload active, e/E wether ext halt is true
-  flexio->port().SHIFTBUF[s_op] = FLEXIO_STATE_SHIFTBUF(0b11011111, // Inputs [11-10-9]
-                                                        s_overload, // [0-0-0] = [t-E-O]
-                                                        s_exthalt,  // [0-0-1] = [t-E-o]
-                                                        s_overload, // [0-1-0] = [t-e-O]
-                                                        s_op,       // [0-1-1] = [t-e-o]
-                                                        s_end,      // [1-0-0] = [T-E-O]
-                                                        s_end,      // [1-0-1] = [T-E-o]
-                                                        s_end,      // [1-1-0] = [T-e-O]
-                                                        s_end       // [1-1-1] = [T-e-o]
+  uint8_t next_if_overload_and_exthalt = s_op, next_if_overload = s_op, next_if_exthalt = s_op;
+  switch (on_ext_halt) {
+  case OnExtHalt::IGNORE:
+    next_if_exthalt = s_op;
+    break;
+  case OnExtHalt::PAUSE_THEN_RESTART:
+    next_if_exthalt = s_exthalt;
+    break;
+  }
+  switch (on_overload) {
+  case OnOverload::IGNORE:
+    next_if_overload = s_op;
+    next_if_overload_and_exthalt = next_if_exthalt;
+    break;
+  case OnOverload::HALT:
+    next_if_overload = s_overload;
+    next_if_overload_and_exthalt = s_overload;
+    break;
+  }
+  flexio->port().SHIFTBUF[s_op] = FLEXIO_STATE_SHIFTBUF(0b11011111,                   // Inputs [11-10-9]
+                                                        next_if_overload_and_exthalt, // [0-0-0] = [t-E-O]
+                                                        next_if_exthalt,              // [0-0-1] = [t-E-o]
+                                                        next_if_overload,             // [0-1-0] = [t-e-O]
+                                                        s_op,                         // [0-1-1] = [t-e-o]
+                                                        s_end,                        // [1-0-0] = [T-E-O]
+                                                        s_end,                        // [1-0-1] = [T-E-o]
+                                                        s_end,                        // [1-1-0] = [T-e-O]
+                                                        s_end                         // [1-1-1] = [T-e-o]
   );
 
   //

@@ -5,6 +5,10 @@
 #include "block/mblock.h"
 #include "utils/logging.h"
 
+#include "carrier/cluster.h"
+
+#include "io/io.h" // Just for testing TODO REMOVE
+
 blocks::MBlock::MBlock(bus::addr_t block_address)
     : blocks::FunctionBlock{std::string("M") + std::string(
                                                    // Addresses 12, 20, 28 are M0
@@ -14,7 +18,7 @@ blocks::MBlock::MBlock(bus::addr_t block_address)
       slot(block_address % 8 == 4 ? SLOT::M0 : SLOT::M1) {}
 
 uint8_t blocks::MBlock::slot_to_global_io_index(uint8_t local) const {
-  switch(slot) {
+  switch (slot) {
   case SLOT::M0:
     return local;
   case SLOT::M1:
@@ -235,10 +239,119 @@ bool blocks::MMulBlock::init() {
   return FunctionBlock::init() and hardware->init();
 }
 
+bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster) {
+  LOG(ANABRID_DEBUG_CALIBRATION, __PRETTY_FUNCTION__);
+  if (!MBlock::calibrate(daq_, carrier_, cluster))
+    return false;
+
+  // TODO: Potentially reset current calibration
+
+  // Our first simple calibration process has been developed empirically and goes
+  // 1. Set all inputs to zero
+  //    - The input offsets are rather small, so inputs are 0+-epsilon
+  //    - The output is then roughly 0 + epsilon^2 - offset_z ~= -offset_z
+  // 2. Measure output and use it as a first estimate of offset_z
+  // 3. Set inputs to 0 and 1 and change the first one's offset to get an output close to zero
+  // 4. Repeat (3), switching inputs
+
+  // TODO: Somehow this must be interleaved with the cluster calibration,
+  //       or rather we might want to call this with a certain default routing set up?
+
+  // Connect zeros to all our inputs
+  LOG(ANABRID_DEBUG_CALIBRATION, "Calibrating output offsets...");
+  for (auto idx : SLOT_INPUT_IDX_RANGE())
+    if (!cluster.cblock->set_factor(slot_to_global_io_index(idx), 0.0f))
+      return false;
+  if (!cluster.cblock->write_to_hardware())
+    return false;
+  // When changing a factor, we always have to calibrate offset
+  cluster.calibrate_offsets();
+
+  // Measure offset_z and set it
+  auto offset_zs = daq_->sample();
+  for (auto idx = 0u; idx < NUM_MULTIPLIERS; idx++) {
+    if (!hardware->write_calibration_output_offset(idx, -offset_zs[idx]))
+      return false;
+    calibration[idx].offset_z = -offset_zs[idx];
+  }
+
+  // Set some inputs to one
+  LOG(ANABRID_DEBUG_CALIBRATION, "Calibrating input x offsets...");
+  for (auto idx = 0u; idx < NUM_MULTIPLIERS; idx++)
+    if (!cluster.cblock->set_factor(slot_to_global_io_index(idx * 2), 1.0f))
+      return false;
+  if (!cluster.cblock->write_to_hardware())
+    return false;
+  // When changing a factor, we always have to calibrate offset
+  cluster.calibrate_offsets();
+  delay(100);
+
+  // Start with a negative input offset and increase until we hit/cross zero
+  for (auto mul_idx = 0u; mul_idx < NUM_MULTIPLIERS; mul_idx++) {
+    if (!hardware->write_calibration_input_offsets(mul_idx, -0.1f, 0.0f))
+      return false;
+    calibration[mul_idx].offset_x = -0.1f;
+    while (daq_->sample(mul_idx) < 0.0f) {
+      if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x, 0.0f))
+        return false;
+      calibration[mul_idx].offset_x += 0.01f;
+      delay(300);
+    }
+  }
+
+  // Set other inputs to one
+  LOG(ANABRID_DEBUG_CALIBRATION, "Calibrating input y offsets...");
+  for (auto idx = 0u; idx < NUM_MULTIPLIERS; idx++) {
+    if (!cluster.cblock->set_factor(slot_to_global_io_index(idx * 2), 0.0f))
+      return false;
+    if (!cluster.cblock->set_factor(slot_to_global_io_index(idx * 2 + 1), 1.0f))
+      return false;
+  }
+  if (!cluster.cblock->write_to_hardware())
+    return false;
+  // When changing a factor, we always have to calibrate offset
+  cluster.calibrate_offsets();
+  delay(100);
+
+  // Start with a negative input offset and increase until we hit/cross zero
+  for (auto mul_idx = 0u; mul_idx < NUM_MULTIPLIERS; mul_idx++) {
+    if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x, -0.1f))
+      return false;
+    calibration[mul_idx].offset_y = -0.1f;
+    while (daq_->sample(mul_idx) < 0.0f) {
+      if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x,
+                                                     calibration[mul_idx].offset_y))
+        return false;
+      calibration[mul_idx].offset_y += 0.01f;
+      delay(300);
+    }
+  }
+
+  return true;
+}
+
+const std::array<blocks::MultiplierCalibration, blocks::MMulBlock::NUM_MULTIPLIERS> &
+blocks::MMulBlock::get_calibration() const {
+  return calibration;
+}
+
+blocks::MultiplierCalibration blocks::MMulBlock::get_calibration(uint8_t mul_idx) const {
+  if (mul_idx >= NUM_MULTIPLIERS)
+    return {};
+  return calibration[mul_idx];
+}
+
+bool blocks::MMulBlockHAL::init() {
+  if (!FunctionBlockHAL::init())
+    return false;
+  return reset_calibration_input_offsets() and reset_calibration_output_offsets();
+}
+
 bool blocks::MMulBlockHAL_V_1_0_1::init() {
   return f_calibration_dac_0.init() and f_calibration_dac_0.set_external_reference() and
          f_calibration_dac_0.set_double_gain() and f_calibration_dac_1.init() and
-         f_calibration_dac_1.set_external_reference() and f_calibration_dac_1.set_double_gain();
+         f_calibration_dac_1.set_external_reference() and f_calibration_dac_1.set_double_gain() and
+         MMulBlockHAL::init();
 }
 
 blocks::MMulBlockHAL_V_1_0_1::MMulBlockHAL_V_1_0_1(bus::addr_t block_address)
@@ -256,12 +369,29 @@ bool blocks::MMulBlockHAL_V_1_0_1::write_calibration_input_offsets(uint8_t idx, 
   //       the current DAC implementation assumes a 2.5V reference, but we have a 2V reference here.
   //       With gain=2, passing 2.5 gives 4V output, which is scaled and level shifted to -0.1V.
   //       Passing 0 gives 0V output, which is scaled and shifted to +0.1V
+  //       It turns out the I/U-converters invert BL_IN, so we want to invert here as well.
   return f_calibration_dac_0.set_channel(idx * 2 + 1, (offset_x - 0.1f) * -12.5f) and
          f_calibration_dac_0.set_channel(idx * 2, (offset_y - 0.1f) * -12.5f);
 }
 
+bool blocks::MMulBlockHAL_V_1_0_1::reset_calibration_input_offsets() {
+  for (auto idx = 0u; idx < MMulBlock::NUM_MULTIPLIERS; idx++)
+    if (!write_calibration_input_offsets(idx, 0, 0))
+      return false;
+  return true;
+}
+
+bool blocks::MMulBlockHAL_V_1_0_1::reset_calibration_output_offsets() {
+  for (auto idx = 0u; idx < MMulBlock::NUM_MULTIPLIERS; idx++)
+    if (!write_calibration_output_offset(idx, 0))
+      return false;
+  return true;
+}
+
 bool blocks::MMulBlockHAL_V_1_0_1::write_calibration_output_offset(uint8_t idx, float offset_z) {
   // See write_calibration_input_offsets for some explanations.
+  if (fabs(offset_z) > 0.1f)
+    return false;
   return f_calibration_dac_1.set_channel(idx, (offset_z - 0.1f) * -12.5f);
 }
 

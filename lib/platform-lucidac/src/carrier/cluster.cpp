@@ -140,7 +140,7 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
         return false;
 
       // Chill for a bit
-      delay(100);
+      delay(20);
       LOG_ANABRID_DEBUG_CALIBRATION("Calibrating connection: ");
       LOG_ANABRID_DEBUG_CALIBRATION(i_in_idx);
       LOG_ANABRID_DEBUG_CALIBRATION(i_out_idx);
@@ -167,7 +167,7 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
         shblock->set_gain_channels_eight_to_fifteen.trigger();
 
       // Chill for a bit
-      delay(100);
+      delay(20);
 
       // Measure gain output
       auto m_adc = daq->sample_avg(10, 1000)[i_out_idx % 8];

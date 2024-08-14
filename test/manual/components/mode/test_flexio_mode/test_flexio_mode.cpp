@@ -45,15 +45,20 @@ void tearDown() {
 
 void test_limits() {
   // Too short
-  TEST_ASSERT_FALSE(FlexIOControl::init(99, mode::DEFAULT_OP_TIME));
-  TEST_ASSERT_FALSE(FlexIOControl::init(mode::DEFAULT_IC_TIME, 99));
+  TEST_ASSERT_FALSE(
+      FlexIOControl::init(99, mode::DEFAULT_OP_TIME, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE));
+  TEST_ASSERT_FALSE(
+      FlexIOControl::init(mode::DEFAULT_IC_TIME, 99, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE));
   // Too long
-  TEST_ASSERT_FALSE(FlexIOControl::init(275'000, mode::DEFAULT_OP_TIME));
-  TEST_ASSERT_FALSE(FlexIOControl::init(mode::DEFAULT_IC_TIME, 9'000'000'000));
+  TEST_ASSERT_FALSE(
+      FlexIOControl::init(275'000, mode::DEFAULT_OP_TIME, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE));
+  TEST_ASSERT_FALSE(FlexIOControl::init(mode::DEFAULT_IC_TIME, 9'000'000'000, mode::OnOverload::HALT,
+                                        mode::OnExtHalt::IGNORE));
 }
 
 void test_simple_run() {
-  TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000));
+  TEST_ASSERT(
+      FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE));
   FlexIOControl::force_start();
   while (!FlexIOControl::is_done()) {
   }
@@ -61,7 +66,8 @@ void test_simple_run() {
 }
 
 void test_overload() {
-  TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000));
+  TEST_ASSERT(
+      FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE));
   FlexIOControl::force_start();
 
   // Trigger a fake overload after some time in OP
@@ -77,7 +83,8 @@ void test_overload() {
 }
 
 void test_exthalt() {
-  TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000));
+  TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000, mode::OnOverload::HALT,
+                                  mode::OnExtHalt::PAUSE_THEN_RESTART));
   FlexIOControl::force_start();
 
   // Trigger an external halt after some time in OP.
@@ -106,7 +113,8 @@ void test_approximate_run_time() {
         70'000ull,    60'000ull,  50'000ull,  40'000ull,  30'000ull,  20'000ull,  10'000ull, 9'000ull,
         8'000ull,     7'000ull,   6'000ull,   5'000ull,   4'000ull,   3'000ull,   2'000ull,  1'000ull}) {
     FlexIOControl::reset();
-    TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, op_time_ns));
+    TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, op_time_ns, mode::OnOverload::HALT,
+                                    mode::OnExtHalt::IGNORE, Sync::MASTER));
     delayMicroseconds(1);
 
     auto t_start = micros();
@@ -128,7 +136,8 @@ void test_sync_master() {
   SPI1.begin();
   SPI1.beginTransaction(SPISettings(4'000'000, MSBFIRST, SPI_MODE0));
 
-  TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000, mode::Sync::MASTER));
+  TEST_ASSERT(
+      FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE));
 
   TEST_MESSAGE("Press button to trigger state machine.");
   io::block_until_button_press();
@@ -151,7 +160,8 @@ void test_sync_master() {
 }
 
 void test_sync_slave() {
-  TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000, mode::Sync::SLAVE));
+  TEST_ASSERT(
+      FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE));
 }
 
 void setup() {
@@ -171,8 +181,8 @@ void setup() {
   RUN_TEST(test_approximate_run_time);
   RUN_TEST(test_exthalt);
   RUN_TEST(test_overload);
-  RUN_TEST(test_sync_master);
-  //RUN_TEST(test_sync_slave);
+  // RUN_TEST(test_sync_master);
+  // RUN_TEST(test_sync_slave);
   UNITY_END();
 }
 
