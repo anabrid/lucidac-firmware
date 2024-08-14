@@ -4,18 +4,15 @@
 
 #include <Arduino.h>
 #include <unity.h>
-#include "test_fmtlib.h"
+#include <iostream>
 
 #define protected public
+#include "lucidac/lucidac.h"
 #include "daq/daq.h"
 
 using namespace daq;
 OneshotDAQ DAQ{};
-
-void setUp() {
-  // set stuff up here
-  DAQ.init(0);
-}
+LUCIDAC lucidac;
 
 void tearDown() {
   // clean stuff up here
@@ -51,12 +48,24 @@ void test_sample_raw() {
   // TODO: After ADCs are fixed, add correct values.
   decltype(data) expected{8192, 8192, 8192, 8192, 8192, 8192, 8192, 8192};
   decltype(data)::value_type acceptable_delta = 1000;
-  TEST_MESSAGE_FORMAT("Values are {}", data);
+  std::cout << "DAQ.sample_raw() = ";
+  for(auto& d : data) std::cout << d << ", ";
+  std::cout << std::endl;
   TEST_ASSERT_UINT16_ARRAY_WITHIN(acceptable_delta, expected.data(), data.data(), data.size());
 }
 
 void setup() {
   UNITY_BEGIN();
+  
+  bus::init();
+  TEST_ASSERT(lucidac.init());
+  TEST_ASSERT(DAQ.init(0));
+
+  // important, because sets Carrier::reset_adc_channels and CtrlBlock::reset_adc_bus,
+  // thus we read from ADCBus not Gain and we read from the *empty* MT8816 adc_channel matrix
+  lucidac.reset(false);
+
+  RUN_TEST(setUp);
   // RUN_TEST(test_sample);
   RUN_TEST(test_sample_raw);
   // RUN_TEST(test_raw_to_float);
