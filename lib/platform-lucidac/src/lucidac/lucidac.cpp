@@ -83,6 +83,11 @@ bool LUCIDAC::init() {
 void LUCIDAC::reset(bool keep_calibration) {
   Carrier::reset(keep_calibration);
   reset_acl_select();
+
+  // TODO: Shouldn't this reset() call also reset everything in the LUCIDAC_HAL
+  //       class?
+  hardware->reset_acl();
+  hardware->reset_adc_bus_mux();
 }
 
 std::vector<entities::Entity *> LUCIDAC::get_child_entities() {
@@ -142,8 +147,8 @@ bool platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
       return false;
     }*/
     for(size_t i=0; i<cfg_adc_channels.size() && i<adc_channels.size(); i++) {
-      Serial.printf("platform::LUCIDAC::config_self_from_json adc_channels[%d] = %d\n", i, cfg_adc_channels[i]);
       adc_channels[i] = cfg_adc_channels[i];
+      Serial.printf("platform::LUCIDAC::config_self_from_json adc_channels[%d] = %i\n", i, adc_channels[i]);
     }
     bool written = hardware->write_adc_bus_mux(adc_channels);
     if(!written) return written;

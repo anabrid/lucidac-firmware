@@ -59,6 +59,8 @@ bool carrier::Carrier::write_to_hardware() {
       return false;
     }
   }
+  if (ctrl_block && !ctrl_block->write_to_hardware())
+    return false;
   if (!hardware->write_adc_bus_mux(adc_channels))
     return false;
   return true;
