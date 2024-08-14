@@ -45,6 +45,7 @@ bool LUCIDAC_HAL::write_adc_bus_mux(std::array<int8_t, 8> channels) {
   // Reset previous connections
   // It's easier to do a full reset then to remember all previous connections
   reset_adc_bus_mux();
+  delayNanoseconds(420);
 
   // Write data to chip
   for (uint8_t output_idx = 0; output_idx < channels.size(); output_idx++) {
@@ -103,13 +104,14 @@ entities::Entity *LUCIDAC::get_child_entity(const std::string &child_id) {
   return this->carrier::Carrier::get_child_entity(child_id);
 }
 
-bool LUCIDAC::write_to_hardware() {
-  if (!Carrier::write_to_hardware())
-    return false;
+int LUCIDAC::write_to_hardware() {
+  int carrier_return = Carrier::write_to_hardware();
+  if (carrier_return != 1)
+    return carrier_return;
   if (front_panel and !front_panel->write_to_hardware())
-    return false;
+    return -4;
   if (!hardware->write_acl(acl_select))
-    return false;
+    return -5;
   return true;
 }
 
@@ -128,47 +130,53 @@ void LUCIDAC::reset_acl_select() { std::fill(acl_select.begin(), acl_select.end(
 
 int LUCIDAC::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
   auto carrier_res = this->carrier::Carrier::get_entities(msg_in, msg_out);
-  if(carrier_res != 0) return carrier_res;
-  if(front_panel)
+  if (carrier_res != 0)
+    return carrier_res;
+  if (front_panel)
     msg_out["entities"]["/FP"] = front_panel->get_entity_classifier();
   return 0;
 }
 
 bool platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
   bool carrier_res = this->carrier::Carrier::config_self_from_json(cfg);
-  if(!carrier_res) return false;
+  if (!carrier_res)
+    return false;
 
   // TODO: This code is very quick and dirty. Use JSON custom converters to make nicer.
 
-  if(cfg.containsKey("adc_channels")) {
+  if (cfg.containsKey("adc_channels")) {
     auto cfg_adc_channels = cfg["adc_channels"].as<JsonArrayConst>();
     /*if(cfg_adc_channels.size() != adc_channels.size()) {
       LOG_ALWAYS("platform::LUCIDAC::config_self_from_json: Error, given adc_channels has wrong size");
       return false;
     }*/
-    for(size_t i=0; i<cfg_adc_channels.size() && i<adc_channels.size(); i++) {
+    for (size_t i = 0; i < cfg_adc_channels.size() && i < adc_channels.size(); i++) {
       adc_channels[i] = cfg_adc_channels[i];
       Serial.printf("platform::LUCIDAC::config_self_from_json adc_channels[%d] = %i\n", i, adc_channels[i]);
     }
     bool written = hardware->write_adc_bus_mux(adc_channels);
-    if(!written) return written;
+    if (!written)
+      return written;
   }
 
-  if(cfg.containsKey("acl_select")) {
+  if (cfg.containsKey("acl_select")) {
     auto cfg_acl_select = cfg["acl_select"].as<JsonArrayConst>();
-    for(size_t i=0; i<cfg_acl_select.size() && i<acl_select.size(); i++) {
-      Serial.printf("platform::LUCIDAC::config_self_from_json acl_select[%d] = %s\n", i, cfg_acl_select[i].as<const char*>());
-      if(cfg_acl_select[i] == "internal") {
+    for (size_t i = 0; i < cfg_acl_select.size() && i < acl_select.size(); i++) {
+      Serial.printf("platform::LUCIDAC::config_self_from_json acl_select[%d] = %s\n", i,
+                    cfg_acl_select[i].as<const char *>());
+      if (cfg_acl_select[i] == "internal") {
         acl_select[i] = platform::LUCIDAC_HAL::ACL::INTERNAL_;
-      } else if(cfg_acl_select[i] == "external") {
+      } else if (cfg_acl_select[i] == "external") {
         acl_select[i] = platform::LUCIDAC_HAL::ACL::EXTERNAL_;
       } else {
-        LOG_ALWAYS("platform::LUCIDAC::config_self_from_json: Expected acl_select[i] to be either 'internal' or 'external' string")
+        LOG_ALWAYS("platform::LUCIDAC::config_self_from_json: Expected acl_select[i] to be either 'internal' "
+                   "or 'external' string")
         return false;
       }
     }
     bool written = hardware->write_acl(acl_select);
-    if(!written) return written;
+    if (!written)
+      return written;
   }
 
   return true;
@@ -178,11 +186,11 @@ void platform::LUCIDAC::config_self_to_json(JsonObject &cfg) {
   // TODO: This code is very quick and dirty. Use JSON custom converters to make nicer.
 
   auto cfg_acl_channels = cfg.createNestedArray("acl_channels");
-  auto cfg_acl_select   = cfg.createNestedArray("acl_select");
+  auto cfg_acl_select = cfg.createNestedArray("acl_select");
 
-  for(size_t i=0; i<adc_channels.size(); i++)
+  for (size_t i = 0; i < adc_channels.size(); i++)
     cfg_acl_channels.add(adc_channels[i]);
 
-  for(size_t i=0; i<acl_select.size(); i++)
-    cfg_acl_select.add(acl_select[i] == platform::LUCIDAC_HAL::ACL::INTERNAL_ ? "internal" : "external" );
+  for (size_t i = 0; i < acl_select.size(); i++)
+    cfg_acl_select.add(acl_select[i] == platform::LUCIDAC_HAL::ACL::INTERNAL_ ? "internal" : "external");
 }

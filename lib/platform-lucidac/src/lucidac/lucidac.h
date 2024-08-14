@@ -72,7 +72,7 @@ protected:
 public:
   LUCIDACFrontPanel *front_panel = nullptr;
 
-  explicit LUCIDAC(LUCIDAC_HAL* hardware);
+  explicit LUCIDAC(LUCIDAC_HAL *hardware);
   LUCIDAC();
 
   bool init() override;
@@ -88,13 +88,18 @@ public:
   bool config_self_from_json(JsonObjectConst cfg) override;
   void config_self_to_json(JsonObject &cfg) override;
 
-  [[nodiscard]] bool write_to_hardware() override;
+  // Error codes:
+  // -1 Cluster write failed
+  // -2 CTRL Block write failed
+  // -3 ADC Bus write failed
+  // -4 Front Panel write failed
+  // -5 Write ACL failed
+  [[nodiscard]] int write_to_hardware() override;
 
   [[nodiscard]] const std::array<ACL, 8> &get_acl_select() const;
   void set_acl_select(const std::array<ACL, 8> &acl_select_);
   [[nodiscard]] bool set_acl_select(uint8_t idx, ACL acl);
   void reset_acl_select();
-
 };
 
 } // namespace platform

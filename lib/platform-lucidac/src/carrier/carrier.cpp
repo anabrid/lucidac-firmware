@@ -52,17 +52,17 @@ bool carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
   return true;
 }
 
-bool carrier::Carrier::write_to_hardware() {
+int carrier::Carrier::write_to_hardware() {
   for (auto &cluster : clusters) {
     if (!cluster.write_to_hardware()) {
       LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
-      return false;
+      return -1;
     }
   }
   if (ctrl_block && !ctrl_block->write_to_hardware())
-    return false;
+    return -2;
   if (!hardware->write_adc_bus_mux(adc_channels))
-    return false;
+    return -3;
   return true;
 }
 
@@ -192,8 +192,8 @@ void carrier::Carrier::reset_adc_channels() {
   std::fill(adc_channels.begin(), adc_channels.end(), ADC_CHANNEL_DISABLED);
 }
 
-
 constexpr int error(int i) { return i; } // just some syntactic suggar
+
 constexpr int success = 0;
 
 int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
