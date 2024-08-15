@@ -100,10 +100,10 @@ void test_detect_block() {
 void test_read_euis() {
   for (auto block_idx : {bus::M0_BLOCK_IDX, bus::M1_BLOCK_IDX, UBlock::BLOCK_IDX, CBlock::BLOCK_IDX,
                          IBlock::BLOCK_IDX, SHBlock::BLOCK_IDX}) {
-    MetadataReader reader{bus::idx_to_addr(0, block_idx, 0)};
+    MetadataEditor reader{bus::idx_to_addr(0, block_idx, 0)};
     TEST_MESSAGE_FORMAT("{}", reader.read_eui());
   }
-  MetadataReader reader{bus::address_from_tuple(1, 0)};
+  MetadataEditor reader{bus::address_from_tuple(1, 0)};
   TEST_MESSAGE_FORMAT("{}", reader.read_eui());
 }
 

@@ -231,14 +231,15 @@ blocks::IBlock *blocks::IBlock::from_entity_classifier(entities::EntityClassifie
   if (!classifier or classifier.class_enum != CLASS_)
     return nullptr;
 
-  // Currently, there are no different variants or versions
-  if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
-      classifier.version != entities::EntityClassifier::DEFAULT_)
+  // Currently, there are no different variants
+  if (classifier.variant != entities::EntityClassifier::DEFAULT_)
     return nullptr;
 
-  // Return default implementation
-  // TODO: Reject other/older versions
-  return new IBlock(block_address, new IBlockHAL_V_1_2_0(block_address));
+  if (classifier.version < entities::Version(1, 2))
+    return nullptr;
+  if (classifier.version < entities::Version(1, 3))
+    return new IBlock(block_address, new IBlockHAL_V_1_2_X(block_address));
+  return nullptr;
 }
 
 const std::array<uint32_t, blocks::IBlock::NUM_OUTPUTS> &blocks::IBlock::get_outputs() const {
@@ -247,14 +248,14 @@ const std::array<uint32_t, blocks::IBlock::NUM_OUTPUTS> &blocks::IBlock::get_out
 
 void blocks::IBlock::set_outputs(const std::array<uint32_t, NUM_OUTPUTS> &outputs_) { outputs = outputs_; }
 
-blocks::IBlockHAL_V_1_2_0::IBlockHAL_V_1_2_0(bus::addr_t block_address)
+blocks::IBlockHAL_V_1_2_X::IBlockHAL_V_1_2_X(bus::addr_t block_address)
     : f_cmd{bus::replace_function_idx(block_address, 2)},
       f_imatrix_reset{bus::replace_function_idx(block_address, 4)}, f_imatrix_sync{bus::replace_function_idx(
                                                                         block_address, 3)},
       scaling_register{bus::replace_function_idx(block_address, 5), true},
       scaling_register_sync{bus::replace_function_idx(block_address, 6)} {}
 
-bool blocks::IBlockHAL_V_1_2_0::write_outputs(const std::array<uint32_t, 16> &outputs) {
+bool blocks::IBlockHAL_V_1_2_X::write_outputs(const std::array<uint32_t, 16> &outputs) {
   f_imatrix_reset.trigger();
   delayNanoseconds(420);
 
@@ -324,7 +325,7 @@ bool blocks::IBlockHAL_V_1_2_0::write_outputs(const std::array<uint32_t, 16> &ou
   return true;
 }
 
-bool blocks::IBlockHAL_V_1_2_0::write_upscaling(std::bitset<32> upscaling) {
+bool blocks::IBlockHAL_V_1_2_X::write_upscaling(std::bitset<32> upscaling) {
   if (!scaling_register.transfer32(upscaling.to_ulong()))
     return false;
   scaling_register_sync.trigger();

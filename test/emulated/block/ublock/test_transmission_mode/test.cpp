@@ -17,7 +17,7 @@
 using namespace blocks;
 using namespace fakeit;
 
-UBlock ublock(0, new UBlockHAL_V_1_2_0(0));
+UBlock ublock(0, new UBlockHAL_V_1_2_X(0));
 
 void setUp() {
   // This is called before *each* test.
@@ -60,8 +60,8 @@ void test() {
                                                     Reference_Magnitude::ONE_TENTH);
   Verify(OverloadedMethod(ArduinoFake(SPI), transfer, uint8_t(uint8_t)).Using(0b000'10'01'1));
 
-  ublock.hardware->write_transmission_modes_and_ref({Transmission_Mode::ANALOG_INPUT, Transmission_Mode::ANALOG_INPUT},
-                                                    Reference_Magnitude::ONE);
+  ublock.hardware->write_transmission_modes_and_ref(
+      {Transmission_Mode::ANALOG_INPUT, Transmission_Mode::ANALOG_INPUT}, Reference_Magnitude::ONE);
   Unverified.Verify(OverloadedMethod(ArduinoFake(SPI), transfer, uint8_t(uint8_t)).Using(0b000'00'00'0));
 
   ublock.hardware->write_transmission_modes_and_ref({Transmission_Mode::POS_REF, Transmission_Mode::GROUND},

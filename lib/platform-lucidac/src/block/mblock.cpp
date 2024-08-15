@@ -243,28 +243,30 @@ blocks::MIntBlock *blocks::MIntBlock::from_entity_classifier(entities::EntityCla
   if (!classifier or classifier.class_enum != CLASS_ or classifier.type != static_cast<uint8_t>(TYPE))
     return nullptr;
 
-  // Currently, there are no different variants or versions
-  if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
-      classifier.version != entities::EntityClassifier::DEFAULT_)
+  // Currently, there are no different variants
+  if (classifier.variant != entities::EntityClassifier::DEFAULT_)
     return nullptr;
 
-  // Return default implementation
-  return new MIntBlock(block_address, new MIntBlockHAL_V_1_0_0(block_address));
+  if (classifier.version < entities::Version(1))
+    return nullptr;
+  if (classifier.version < entities::Version(1, 1))
+    return new MIntBlock(block_address, new MIntBlockHAL_V_1_0_X(block_address));
+  return nullptr;
 }
 
-blocks::MIntBlockHAL_V_1_0_0::MIntBlockHAL_V_1_0_0(bus::addr_t block_address)
+blocks::MIntBlockHAL_V_1_0_X::MIntBlockHAL_V_1_0_X(bus::addr_t block_address)
     : f_ic_dac(bus::replace_function_idx(block_address, 4)),
       f_time_factor(bus::replace_function_idx(block_address, 5), true),
       f_time_factor_sync(bus::replace_function_idx(block_address, 6)),
       f_time_factor_reset(bus::replace_function_idx(block_address, 7)) {}
 
-bool blocks::MIntBlockHAL_V_1_0_0::init() {
+bool blocks::MIntBlockHAL_V_1_0_X::init() {
   if (!MIntBlockHAL::init())
     return false;
   return f_ic_dac.init() and f_ic_dac.set_external_reference(true) and f_ic_dac.set_double_gain(true);
 }
 
-bool blocks::MIntBlockHAL_V_1_0_0::write_ic(uint8_t idx, float ic) {
+bool blocks::MIntBlockHAL_V_1_0_X::write_ic(uint8_t idx, float ic) {
   if (idx >= MIntBlock::NUM_INTEGRATORS)
     return false;
   // Note: The DAC60508 implementation converts values assuming a 2.5V reference,
@@ -276,7 +278,7 @@ bool blocks::MIntBlockHAL_V_1_0_0::write_ic(uint8_t idx, float ic) {
   return f_ic_dac.set_channel(idx, (ic - 1.0f) * -1.25f);
 }
 
-bool blocks::MIntBlockHAL_V_1_0_0::write_time_factor_switches(std::bitset<8> switches) {
+bool blocks::MIntBlockHAL_V_1_0_X::write_time_factor_switches(std::bitset<8> switches) {
   if (!f_time_factor.transfer8(static_cast<uint8_t>(switches.to_ulong())))
     return false;
   f_time_factor_sync.trigger();
@@ -288,13 +290,16 @@ blocks::MMulBlock *blocks::MMulBlock::from_entity_classifier(entities::EntityCla
   if (!classifier or classifier.class_enum != CLASS_ or classifier.type != static_cast<uint8_t>(TYPE))
     return nullptr;
 
-  // Currently, there are no different variants or versions
-  if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
-      classifier.version != entities::EntityClassifier::DEFAULT_)
+  // Currently, there are no different variants
+  if (classifier.variant != entities::EntityClassifier::DEFAULT_)
     return nullptr;
 
   // Return default implementation
-  return new MMulBlock(block_address, new MMulBlockHAL_V_1_0_1(block_address));
+  if (classifier.version < entities::Version(1))
+    return nullptr;
+  if (classifier.version < entities::Version(1, 1))
+    return new MMulBlock(block_address, new MMulBlockHAL_V_1_0_X(block_address));
+  return nullptr;
 }
 
 blocks::MMulBlock::MMulBlock(bus::addr_t block_address, MMulBlockHAL *hardware)
@@ -413,18 +418,18 @@ bool blocks::MMulBlockHAL::init() {
   return reset_calibration_input_offsets() and reset_calibration_output_offsets();
 }
 
-bool blocks::MMulBlockHAL_V_1_0_1::init() {
+bool blocks::MMulBlockHAL_V_1_0_X::init() {
   return f_calibration_dac_0.init() and f_calibration_dac_0.set_external_reference() and
          f_calibration_dac_0.set_double_gain() and f_calibration_dac_1.init() and
          f_calibration_dac_1.set_external_reference() and f_calibration_dac_1.set_double_gain() and
          MMulBlockHAL::init();
 }
 
-blocks::MMulBlockHAL_V_1_0_1::MMulBlockHAL_V_1_0_1(bus::addr_t block_address)
+blocks::MMulBlockHAL_V_1_0_X::MMulBlockHAL_V_1_0_X(bus::addr_t block_address)
     : f_calibration_dac_0(bus::address_from_tuple(block_address, 4)),
       f_calibration_dac_1(bus::address_from_tuple(block_address, 5)) {}
 
-bool blocks::MMulBlockHAL_V_1_0_1::write_calibration_input_offsets(uint8_t idx, float offset_x,
+bool blocks::MMulBlockHAL_V_1_0_X::write_calibration_input_offsets(uint8_t idx, float offset_x,
                                                                    float offset_y) {
   // Supported offset range is [-0.1V, +0.1V], which corresponds to [-0.1, 0.1] machine units,
   // since the multiplier's working range is [-1V, +1V].
@@ -440,21 +445,21 @@ bool blocks::MMulBlockHAL_V_1_0_1::write_calibration_input_offsets(uint8_t idx, 
          f_calibration_dac_0.set_channel(idx * 2, (offset_y - 0.1f) * -12.5f);
 }
 
-bool blocks::MMulBlockHAL_V_1_0_1::reset_calibration_input_offsets() {
+bool blocks::MMulBlockHAL_V_1_0_X::reset_calibration_input_offsets() {
   for (auto idx = 0u; idx < MMulBlock::NUM_MULTIPLIERS; idx++)
     if (!write_calibration_input_offsets(idx, 0, 0))
       return false;
   return true;
 }
 
-bool blocks::MMulBlockHAL_V_1_0_1::reset_calibration_output_offsets() {
+bool blocks::MMulBlockHAL_V_1_0_X::reset_calibration_output_offsets() {
   for (auto idx = 0u; idx < MMulBlock::NUM_MULTIPLIERS; idx++)
     if (!write_calibration_output_offset(idx, 0))
       return false;
   return true;
 }
 
-bool blocks::MMulBlockHAL_V_1_0_1::write_calibration_output_offset(uint8_t idx, float offset_z) {
+bool blocks::MMulBlockHAL_V_1_0_X::write_calibration_output_offset(uint8_t idx, float offset_z) {
   // See write_calibration_input_offsets for some explanations.
   if (fabs(offset_z) > 0.1f)
     return false;

@@ -182,7 +182,7 @@ bool blocks::UBlock::is_input_connected(const uint8_t input) const {
 }
 
 bool blocks::UBlock::is_anything_connected() const {
-  for (auto output: OUTPUT_IDX_RANGE())
+  for (auto output : OUTPUT_IDX_RANGE())
     if (_is_output_connected(output))
       return true;
   return false;
@@ -302,15 +302,14 @@ blocks::UBlock *blocks::UBlock::from_entity_classifier(entities::EntityClassifie
   if (!classifier or classifier.class_enum != CLASS_ or classifier.type != TYPE)
     return nullptr;
 
-  // Return v1.2.0 by default
-  // TODO: Older development versions had significantly different structure and should be rejected.
-  //       This can be done once the entity classifier has been refactored to (major, minor, patch) version.
-  return new UBlock(block_address, new UBlockHAL_V_1_2_0(block_address));
+  if (classifier.version < entities::Version(1, 2))
+    return nullptr;
+  if (classifier.version < entities::Version(1, 3))
+    return new UBlock(block_address, new UBlockHAL_V_1_2_X(block_address));
+  return nullptr;
 }
 
-void blocks::UBlock::reset_reference_magnitude() {
-  ref_magnitude = Reference_Magnitude::ONE;
-}
+void blocks::UBlock::reset_reference_magnitude() { ref_magnitude = Reference_Magnitude::ONE; }
 
 // blocks::UBlock_SwappedSR::UBlock_SwappedSR(bus::addr_t block_address)
 //     : FunctionBlock("U", block_address), output_input_map{} {}

@@ -24,7 +24,7 @@ MetadataMemory74LVC138AD meta_memory{bus::NULL_ADDRESS};
 
 MetadataMemoryLayoutV1 fake_data{.version = LayoutVersion::V1,
                                  .size = 256,
-                                 .classifier{EntityClass::UNKNOWN, 0, 0, 0},
+                                 .classifier{EntityClass::UNKNOWN, 0, Version(0), 0},
                                  .uuid{0, 1, 2, 3, 4, 5, 6, 7}};
 
 void setUp() {
@@ -53,7 +53,7 @@ void tearDown() {
 }
 
 void test_class_properties() {
-  TEST_ASSERT_EQUAL(4, sizeof(EntityClassifier));
+  TEST_ASSERT_EQUAL(6, sizeof(EntityClassifier));
   TEST_ASSERT_EQUAL(256, sizeof(MetadataMemoryLayoutV1));
 }
 

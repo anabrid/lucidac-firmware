@@ -164,17 +164,19 @@ bool platform::LUCIDACFrontPanel::SignalGenerator::write_to_hardware() {
 
 platform::LUCIDACFrontPanel *
 platform::LUCIDACFrontPanel::from_entity_classifier(entities::EntityClassifier classifier,
-                                                      __attribute__((__unused__)) bus::addr_t block_address) {
+                                                    __attribute__((__unused__)) bus::addr_t block_address) {
   if (!classifier or classifier.class_enum != CLASS_)
     return nullptr;
 
-  // Currently, there are no different variants or versions
-  if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
-      classifier.version != entities::EntityClassifier::DEFAULT_)
+  // Currently, there are no different variants
+  if (classifier.variant != entities::EntityClassifier::DEFAULT_)
     return nullptr;
 
-  // Return default implementation
-  return new LUCIDACFrontPanel;
+  if (classifier.version < entities::Version(1, 2))
+    return nullptr;
+  if (classifier.version < entities::Version(1, 3))
+    return new LUCIDACFrontPanel;
+  return nullptr;
 }
 
 bool platform::LUCIDACFrontPanel::config_self_from_json(JsonObjectConst cfg) {

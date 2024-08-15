@@ -9,6 +9,7 @@
 #define private public
 #define protected public
 #include "chips/EEPROM25AA02.h"
+#include "entity/entity.h"
 #include "metadata/metadata.h"
 
 using namespace functions;

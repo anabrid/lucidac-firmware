@@ -62,7 +62,7 @@ public:
   virtual void reset_transmission_modes_and_ref() = 0;
 };
 
-class UBlockHAL_Dummy: public UBlockHAL {
+class UBlockHAL_Dummy : public UBlockHAL {
 public:
   bool write_outputs(std::array<int8_t, 32> outputs) override;
   bool write_transmission_modes_and_ref(std::pair<Transmission_Mode, Transmission_Mode> modes,
@@ -96,9 +96,9 @@ public:
   void reset_transmission_modes_and_ref() override;
 };
 
-class UBlockHAL_V_1_2_0 : public UBlockHAL_Common {
+class UBlockHAL_V_1_2_X : public UBlockHAL_Common {
 public:
-  explicit UBlockHAL_V_1_2_0(const bus::addr_t block_address)
+  explicit UBlockHAL_V_1_2_X(const bus::addr_t block_address)
       : UBlockHAL_Common(block_address, 5, 6, 2, 3, 4){};
 };
 
@@ -120,7 +120,6 @@ public:
   // Entity hardware identifier information.
   static constexpr auto CLASS_ = entities::EntityClass::U_BLOCK;
   static constexpr uint8_t TYPE = 1;
-  enum class VARIANTS : uint8_t { UNKNOWN = 0, REGULAR = 1, SWAPPED_SR = 2 };
 
   static UBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
 
@@ -191,7 +190,7 @@ protected:
 
 public:
   UBlock(bus::addr_t block_address, UBlockHAL *hardware);
-  UBlock() : UBlock(0, new UBlockHAL_Dummy()) {};
+  UBlock() : UBlock(0, new UBlockHAL_Dummy()){};
 
   entities::EntityClass get_entity_class() const final { return entities::EntityClass::U_BLOCK; }
 

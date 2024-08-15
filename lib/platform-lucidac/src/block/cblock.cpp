@@ -132,19 +132,14 @@ blocks::CBlock *blocks::CBlock::from_entity_classifier(entities::EntityClassifie
   if (!classifier or classifier.class_enum != CLASS_ or classifier.type != TYPE)
     return nullptr;
 
-  auto variant = classifier.variant_as<VARIANTS>();
-  switch (variant) {
-  case VARIANTS::UNKNOWN:
+  if (classifier.version < entities::Version(1, 0))
     return nullptr;
-  case VARIANTS::SEQUENTIAL_ADDRESSES:
-    // There are no different versions of this variant currently
-    return new CBlock(block_address, new CBlockHAL_V_1_0_0_SequentialCoeffsCS(block_address));
-  case VARIANTS::MIXED_ADDRESSES:
-    // There are no different versions of this variant currently
-    return new CBlock(block_address, new CBlockHAL_V_1_0_0_MixedCoeffsCS(block_address));
-  }
-  // Any unknown value results in a nullptr here.
-  // Adding default case to switch suppresses warnings about missing cases.
+  if (classifier.version < entities::Version(1, 1))
+    return new CBlock(block_address, new CBlockHAL_V_1_0_X(block_address));
+  if (classifier.version < entities::Version(1, 2))
+    return new CBlock(block_address, new CBlockHAL_V_1_1_X(block_address));
+
+  // Any unknown versuin results in a nullptr here.
   return nullptr;
 }
 
@@ -196,11 +191,11 @@ bool blocks::CBlockHAL_Common::write_factor(uint8_t idx, float value) {
   return true;
 }
 
-blocks::CBlockHAL_V_1_0_0_SequentialCoeffsCS::CBlockHAL_V_1_0_0_SequentialCoeffsCS(bus::addr_t block_address)
+blocks::CBlockHAL_V_1_1_X::CBlockHAL_V_1_1_X(bus::addr_t block_address)
     : CBlockHAL_Common(block_address, {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16,
                                        17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}) {}
 
-blocks::CBlockHAL_V_1_0_0_MixedCoeffsCS::CBlockHAL_V_1_0_0_MixedCoeffsCS(bus::addr_t block_address)
+blocks::CBlockHAL_V_1_0_X::CBlockHAL_V_1_0_X(bus::addr_t block_address)
     : CBlockHAL_Common(block_address, {1,      2,       3,       4,       5,       6,       7,       8,
                                        9,      10,      11,      12,      13,      14,      15,      32 + 0,
                                        32 + 1, 32 + 2,  32 + 3,  32 + 4,  32 + 5,  32 + 6,  32 + 7,  32 + 8,

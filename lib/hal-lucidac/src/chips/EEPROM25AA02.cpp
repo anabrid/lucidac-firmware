@@ -53,7 +53,7 @@ bool functions::EEPROM25AA02::read32(size_t address, uint32_t *data_out) const {
   return read(address, 4, (uint8_t *)data_out) == 4;
 }
 
-size_t functions::EEPROM25AA02::write(size_t address, size_t length, uint8_t *buffer) const {
+size_t functions::EEPROM25AA02::write(size_t address, size_t length, const uint8_t *buffer) const {
   set_write_enable();
 
 #ifdef ANABRID_PEDANTIC
