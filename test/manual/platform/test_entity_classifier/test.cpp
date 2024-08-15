@@ -38,7 +38,7 @@ Version sh_version(0, 1, 0);
 Version m0_version(1, 0, 0);
 Version m1_version(1, 0, 0);
 Version ctrl_version(1, 0, 2);
-Version fp_version(1, 0, 0);
+Version fp_version(1, 1, 2);
 
 void write_eeproms() {
   test_write_classifier(EntityClassifier(EntityClass::U_BLOCK, EntityClassifier::DEFAULT_, u_version),

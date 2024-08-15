@@ -172,9 +172,9 @@ platform::LUCIDACFrontPanel::from_entity_classifier(entities::EntityClassifier c
   if (classifier.variant != entities::EntityClassifier::DEFAULT_)
     return nullptr;
 
-  if (classifier.version < entities::Version(1, 2))
+  if (classifier.version < entities::Version(1, 1))
     return nullptr;
-  if (classifier.version < entities::Version(1, 3))
+  if (classifier.version < entities::Version(1, 2))
     return new LUCIDACFrontPanel;
   return nullptr;
 }
