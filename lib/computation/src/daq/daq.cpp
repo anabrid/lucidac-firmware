@@ -11,6 +11,93 @@
 #include "logging.h"
 #include "running_avg.h"
 
+bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate_unused) {
+  pinMode(PIN_CNVST, OUTPUT);
+  digitalWriteFast(PIN_CNVST, LOW);
+  pinMode(PIN_CLK, OUTPUT);
+  digitalWriteFast(PIN_CLK, LOW);
+
+  for (auto pin : PINS_MISO) {
+    // Pull-up is on hardware
+    pinMode(pin, INPUT);
+  }
+  return true;
+}
+
+float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
+  return ((static_cast<float>(raw) - RAW_MINUS_ONE_POINT_TWO_FIVE) /
+          (RAW_PLUS_ONE_POINT_TWO_FIVE - RAW_MINUS_ONE_POINT_TWO_FIVE)) *
+             -2.5f +
+         1.25f;
+}
+
+const char *daq::BaseDAQ::raw_to_str(uint16_t raw) {
+  return helpers::normalized_to_float_str_arr[raw_to_normalized(raw)];
+}
+
+std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, unsigned int delay_us) {
+  utils::RunningAverageVec<NUM_CHANNELS> avg;
+  for (size_t i = 0; i < samples; i++) {
+    avg.add(sample());
+    delayMicroseconds(delay_us);
+  }
+  return avg.get_average();
+}
+
+size_t daq::BaseDAQ::raw_to_normalized(uint16_t raw) {
+  // exact conversion is 0.152658243301, but we only care about so much precision
+  return (static_cast<size_t>(raw) * 1527) / 1000;
+}
+
+std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {
+  // Trigger CNVST
+  digitalWriteFast(PIN_CNVST, HIGH);
+  delayNanoseconds(1500);
+  digitalWriteFast(PIN_CNVST, LOW);
+
+  delayNanoseconds(1000);
+
+  decltype(sample_raw()) data{0};
+  for (auto clk_i = 0; clk_i < 14; clk_i++) {
+    digitalWriteFast(PIN_CLK, HIGH);
+    delayNanoseconds(100);
+    // Sample data after rising edge, but only first 14 bits
+    if (clk_i < 14) {
+      for (unsigned int pin_i = 0; pin_i < data.size(); pin_i++) {
+        data[pin_i] |= digitalReadFast(PINS_MISO[pin_i]) ? (1 << (13 - clk_i)) : 0;
+      }
+    }
+    delayNanoseconds(100);
+    digitalWriteFast(PIN_CLK, LOW);
+    delayNanoseconds(350);
+  }
+
+  return data;
+}
+
+std::array<float, daq::NUM_CHANNELS> daq::OneshotDAQ::sample() {
+  auto data_raw = sample_raw();
+  std::array<float, daq::NUM_CHANNELS> data{};
+  std::transform(std::begin(data_raw), std::end(data_raw), std::begin(data), raw_to_float);
+  return data;
+}
+
+float daq::OneshotDAQ::sample(uint8_t index) { return sample()[index]; }
+
+uint16_t daq::OneshotDAQ::sample_raw(uint8_t index) { return sample_raw()[index]; }
+
+std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_avg_raw(size_t samples,
+                                                                        unsigned int delay_us) {
+  utils::RunningAverageNew<std::array<uint16_t, daq::NUM_CHANNELS>> avg;
+  for (size_t i = 0; i < samples; i++) {
+    avg.add(sample_raw());
+    delayMicroseconds(delay_us);
+  }
+  return avg.get_average();
+}
+
+#ifdef ARDUINO
+
 namespace daq {
 
 namespace dma {
@@ -360,87 +447,4 @@ bool daq::FlexIODAQ::finalize() {
   return true;
 }
 
-bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate_unused) {
-  pinMode(PIN_CNVST, OUTPUT);
-  digitalWriteFast(PIN_CNVST, LOW);
-  pinMode(PIN_CLK, OUTPUT);
-  digitalWriteFast(PIN_CLK, LOW);
-
-  for (auto pin : PINS_MISO) {
-    // Pull-up is on hardware
-    pinMode(pin, INPUT);
-  }
-  return true;
-}
-
-float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
-  return ((static_cast<float>(raw) - RAW_MINUS_ONE_POINT_TWO_FIVE) /
-          (RAW_PLUS_ONE_POINT_TWO_FIVE - RAW_MINUS_ONE_POINT_TWO_FIVE)) *
-             -2.5f +
-         1.25f;
-}
-
-const char *daq::BaseDAQ::raw_to_str(uint16_t raw) {
-  return helpers::normalized_to_float_str_arr[raw_to_normalized(raw)];
-}
-
-std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, unsigned int delay_us) {
-  utils::RunningAverageVec<NUM_CHANNELS> avg;
-  for (size_t i = 0; i < samples; i++) {
-    avg.add(sample());
-    delayMicroseconds(delay_us);
-  }
-  return avg.get_average();
-}
-
-size_t daq::BaseDAQ::raw_to_normalized(uint16_t raw) {
-  // exact conversion is 0.152658243301, but we only care about so much precision
-  return (static_cast<size_t>(raw) * 1527) / 1000;
-}
-
-std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {
-  // Trigger CNVST
-  digitalWriteFast(PIN_CNVST, HIGH);
-  delayNanoseconds(1500);
-  digitalWriteFast(PIN_CNVST, LOW);
-
-  delayNanoseconds(1000);
-
-  decltype(sample_raw()) data{0};
-  for (auto clk_i = 0; clk_i < 14; clk_i++) {
-    digitalWriteFast(PIN_CLK, HIGH);
-    delayNanoseconds(100);
-    // Sample data after rising edge, but only first 14 bits
-    if (clk_i < 14) {
-      for (unsigned int pin_i = 0; pin_i < data.size(); pin_i++) {
-        data[pin_i] |= digitalReadFast(PINS_MISO[pin_i]) ? (1 << (13 - clk_i)) : 0;
-      }
-    }
-    delayNanoseconds(100);
-    digitalWriteFast(PIN_CLK, LOW);
-    delayNanoseconds(350);
-  }
-
-  return data;
-}
-
-std::array<float, daq::NUM_CHANNELS> daq::OneshotDAQ::sample() {
-  auto data_raw = sample_raw();
-  std::array<float, daq::NUM_CHANNELS> data{};
-  std::transform(std::begin(data_raw), std::end(data_raw), std::begin(data), raw_to_float);
-  return data;
-}
-
-float daq::OneshotDAQ::sample(uint8_t index) { return sample()[index]; }
-
-uint16_t daq::OneshotDAQ::sample_raw(uint8_t index) { return sample_raw()[index]; }
-
-std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_avg_raw(size_t samples,
-                                                                        unsigned int delay_us) {
-  utils::RunningAverageNew<std::array<uint16_t, daq::NUM_CHANNELS>> avg;
-  for (size_t i = 0; i < samples; i++) {
-    avg.add(sample_raw());
-    delayMicroseconds(delay_us);
-  }
-  return avg.get_average();
-}
+#endif

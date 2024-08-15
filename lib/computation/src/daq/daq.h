@@ -8,8 +8,11 @@
 #include <array>
 
 #include <ArduinoJson.h>
+
+#ifdef ARDUINO
 #include <DMAChannel.h>
 #include <FlexIO_t4.h>
+#endif
 
 #include "base.h"
 #include "run/run.h"
