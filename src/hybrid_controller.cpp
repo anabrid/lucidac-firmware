@@ -34,7 +34,22 @@
 platform::LUCIDAC carrier_;
 auto& netconf = net::StartupConfig::get();
 
+void leds(uint8_t val) {
+  if(carrier_.front_panel) {
+    carrier_.front_panel->leds.set_all(val);
+    carrier_.front_panel->write_to_hardware();
+  }
+}
 
+void indicate_led_error() {
+  size_t num_blinks = 10;
+  for(size_t i=0; i<num_blinks; i++) {
+    leds(0x55);
+    delay(100);
+    leds(0xaa);
+    delay(100);
+  }
+}
 
 void setup_remote_log() {
   IPAddress remote{192,168,68,96};
@@ -54,6 +69,7 @@ void setup() {
   msg::Log::get().sinks.add(&msg::StartupLog::get());
 
   bus::init();
+  net::register_settings();
 
   LOG_ALWAYS(dist::ident());
   LOGV("Flash image (%d bytes) sha256 sum: %s\n",
@@ -61,8 +77,19 @@ void setup() {
       loader::flashimage::sha256sum().to_string().c_str()
   );
 
+  // Initialize carrier board
+  // TODO, _ERROR_OUT_ shall not be used, see #116
+  LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
+  if (!carrier_.init()) {
+    LOG_ERROR("Error initializing carrier board.");
+    indicate_led_error();
+  }
+
+  // all LEDs on: Both visual self-test and showing that now ethernet search takes place.
+  leds(0xFF);
+
   LOG(ANABRID_DEBUG_INIT, "Starting up Ethernet...");
-  netconf.begin();
+  netconf.begin_ip();
   if(netconf.enable_mdns)
     netconf.begin_mdns();
   if(netconf.enable_jsonl)
@@ -73,26 +100,11 @@ void setup() {
   setup_remote_log();
   LOG_ALWAYS("Have set up remote log");
 
-  // Initialize carrier board
-  // TODO, _ERROR_OUT_ shall not be used, see #116
-  LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
-  if (!carrier_.init()) {
-    LOG_ERROR("Error initializing carrier board.");
-    //_ERROR_OUT_
-  }
-
-/*
-  for(;;) {
-     Serial.println("Logging worked");
-     msg::StartupLog::get().stream_to_json(Serial);
-  }
-*/
-
   // Initialize things related to runs
   // TODO, _ERROR_OUT_ shall not be used, see #116
   if (!mode::FlexIOControl::init(mode::DEFAULT_IC_TIME, mode::DEFAULT_OP_TIME)) {
     LOG_ERROR("Error initializing FlexIO mode control.");
-    //_ERROR_OUT_
+    indicate_led_error();
   }
 
   msg::handlers::Registry.init(carrier_); // registers all commonly known messages
@@ -104,6 +116,12 @@ void setup() {
 
   // Done.
   LOG(ANABRID_DEBUG_INIT, "Initialization done.");
+
+  // visual effect to show that booting has been done
+  int val = 0xFF;
+  for(uint8_t i=0; i<8; i++) {
+    val /= 2; leds(val); delay(100);
+  }
 }
 
 void loop() {
