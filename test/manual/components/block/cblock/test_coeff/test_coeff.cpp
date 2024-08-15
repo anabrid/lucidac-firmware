@@ -13,24 +13,19 @@
 
 auto base_addr = bus::idx_to_addr(0, bus::C_BLOCK_IDX, blocks::CBlock::COEFF_BASE_FUNC_IDX);
 
-blocks::CBlock_SequentialAddresses cblock;
+blocks::CBlock cblock;
 
 std::array<functions::AD5452, 32> coeffs{
-    functions::AD5452{base_addr, 0},  functions::AD5452{base_addr, 1},
-    functions::AD5452{base_addr, 2},  functions::AD5452{base_addr, 3},
-    functions::AD5452{base_addr, 4},  functions::AD5452{base_addr, 5},
-    functions::AD5452{base_addr, 6},  functions::AD5452{base_addr, 7},
-    functions::AD5452{base_addr, 8},  functions::AD5452{base_addr, 9},
-    functions::AD5452{base_addr, 10}, functions::AD5452{base_addr, 11},
-    functions::AD5452{base_addr, 12}, functions::AD5452{base_addr, 13},
-    functions::AD5452{base_addr, 14}, functions::AD5452{base_addr, 15},
-    functions::AD5452{base_addr, 16}, functions::AD5452{base_addr, 17},
-    functions::AD5452{base_addr, 18}, functions::AD5452{base_addr, 19},
-    functions::AD5452{base_addr, 20}, functions::AD5452{base_addr, 21},
-    functions::AD5452{base_addr, 22}, functions::AD5452{base_addr, 23},
-    functions::AD5452{base_addr, 24}, functions::AD5452{base_addr, 25},
-    functions::AD5452{base_addr, 26}, functions::AD5452{base_addr, 27},
-    functions::AD5452{base_addr, 28}, functions::AD5452{base_addr, 29},
+    functions::AD5452{base_addr, 0},  functions::AD5452{base_addr, 1},  functions::AD5452{base_addr, 2},
+    functions::AD5452{base_addr, 3},  functions::AD5452{base_addr, 4},  functions::AD5452{base_addr, 5},
+    functions::AD5452{base_addr, 6},  functions::AD5452{base_addr, 7},  functions::AD5452{base_addr, 8},
+    functions::AD5452{base_addr, 9},  functions::AD5452{base_addr, 10}, functions::AD5452{base_addr, 11},
+    functions::AD5452{base_addr, 12}, functions::AD5452{base_addr, 13}, functions::AD5452{base_addr, 14},
+    functions::AD5452{base_addr, 15}, functions::AD5452{base_addr, 16}, functions::AD5452{base_addr, 17},
+    functions::AD5452{base_addr, 18}, functions::AD5452{base_addr, 19}, functions::AD5452{base_addr, 20},
+    functions::AD5452{base_addr, 21}, functions::AD5452{base_addr, 22}, functions::AD5452{base_addr, 23},
+    functions::AD5452{base_addr, 24}, functions::AD5452{base_addr, 25}, functions::AD5452{base_addr, 26},
+    functions::AD5452{base_addr, 27}, functions::AD5452{base_addr, 28}, functions::AD5452{base_addr, 29},
     functions::AD5452{base_addr, 30}, functions::AD5452{base_addr, 31}};
 
 void setUp() {
