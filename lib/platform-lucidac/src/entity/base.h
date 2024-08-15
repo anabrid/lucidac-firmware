@@ -72,9 +72,9 @@ struct __attribute__((packed)) EntityClassifier {
   template <class Version_> Version_ version_as() const { return static_cast<Version_>(version); }
 
   std::string to_string() const {
-    return "(" + std::to_string(class_) + ", " + std::to_string(type) + ", " + std::to_string(variant) + ", " +
-           std::to_string(version.major) + "." + std::to_string(version.minor) + "." +
-           std::to_string(version.patch) + ")";
+    return "(" + std::to_string(class_) + ", " + std::to_string(type) + ", " + std::to_string(version.major) +
+           "." + std::to_string(version.minor) + "." + std::to_string(version.patch) + ", " +
+           std::to_string(variant) + ")";
   }
 
   explicit operator bool() const {
