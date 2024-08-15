@@ -12,6 +12,8 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
+#include "versions.h"
+
 namespace entities {
 
 enum class EntityClass : uint8_t {
@@ -27,25 +29,39 @@ enum class EntityClass : uint8_t {
   CTRL_BLOCK = 9
 };
 
-typedef struct __attribute__((packed)) EntityClassifier {
+struct __attribute__((packed)) EntityClassifier {
   union {
     const uint8_t class_;
     const EntityClass class_enum;
   };
 
   const uint8_t type;
+  const Version version;
   const uint8_t variant;
-  const uint8_t version;
 
   static constexpr uint8_t UNKNOWN = 0;
   static constexpr uint8_t DEFAULT_ = 1;
+  static constexpr Version DEFAULT_VERSION_{1, 0, 0};
 
-  EntityClassifier(const EntityClass class_, const uint8_t type_, const uint8_t variant_,
-                   const uint8_t version_)
-      : class_enum(class_), type(type_), variant(variant_), version(version_) {}
+  EntityClassifier(const EntityClass class_, const uint8_t type_, const Version version_,
+                   const uint8_t variant_ = DEFAULT_)
+      : class_enum(class_), type(type_), version(version_), variant(variant_) {}
 
-  EntityClassifier(const uint8_t class_, const uint8_t type_, const uint8_t variant_, const uint8_t version_)
-      : class_(class_), type(type_), variant(variant_), version(version_) {}
+  EntityClassifier(const uint8_t class_, const uint8_t type_, const Version version_,
+                   const uint8_t variant_ = DEFAULT_)
+      : class_(class_), type(type_), version(version_), variant(variant_) {}
+
+  EntityClassifier(const EntityClass class_, const uint8_t type_, const uint8_t version_major_,
+                   const uint8_t version_minor_, const uint8_t version_patch_,
+                   const uint8_t variant_ = DEFAULT_)
+      : class_enum(class_), type(type_), version(version_major_, version_minor_, version_patch_),
+        variant(variant_) {}
+
+  EntityClassifier(const uint8_t class_, const uint8_t type_, const uint8_t version_major_,
+                   const uint8_t version_minor_, const uint8_t version_patch_,
+                   const uint8_t variant_ = DEFAULT_)
+      : class_(class_), type(type_), version(version_major_, version_minor_, version_patch_),
+        variant(variant_) {}
 
   template <class EntityType_> EntityType_ type_as() const { return static_cast<EntityType_>(type); }
 
@@ -53,23 +69,21 @@ typedef struct __attribute__((packed)) EntityClassifier {
     return static_cast<EntityVariant_>(variant);
   }
 
-  template <class EntityVersion_> EntityVersion_ version_as() const {
-    return static_cast<EntityVersion_>(version);
-  }
+  template <class Version_> Version_ version_as() const { return static_cast<Version_>(version); }
 
   std::string to_string() const {
     return "(" + std::to_string(class_) + ", " + std::to_string(type) + ", " + std::to_string(variant) + ", " +
-           std::to_string(version) + ")";
+           std::to_string(version.major) + "." + std::to_string(version.minor) + "." +
+           std::to_string(version.patch) + ")";
   }
 
   explicit operator bool() const {
     // All fields of a valid EntityClassifier must not be zero.
     return class_ and type and version and variant;
   }
+};
 
-} EntityClassifier;
-
-static_assert(sizeof(EntityClassifier) == 4, "EntityClassifier has unexpected number of bytes.");
+static_assert(sizeof(EntityClassifier) == 6, "EntityClassifier has unexpected number of bytes.");
 
 class Entity {
 protected:
@@ -83,7 +97,7 @@ public:
   const std::string &get_entity_id() const { return entity_id; }
 
   virtual EntityClassifier get_entity_classifier() const {
-    return {get_entity_class(), get_entity_type(), get_entity_variant(), get_entity_version()};
+    return {get_entity_class(), get_entity_type(), get_entity_version(), get_entity_variant()};
   }
 
   virtual EntityClass get_entity_class() const = 0;
@@ -93,9 +107,9 @@ public:
     return EntityClassifier::DEFAULT_;
   }
 
-  virtual uint8_t get_entity_version() const {
-    // For many entities, there will only be one default version.
-    return EntityClassifier::DEFAULT_;
+  virtual Version get_entity_version() const {
+    // TODO: Make this pure virtual and read this from the HAL instances.
+    return EntityClassifier::DEFAULT_VERSION_;
   }
 
   virtual uint8_t get_entity_variant() const {
@@ -103,21 +117,13 @@ public:
     return EntityClassifier::DEFAULT_;
   }
 
-  bool is_entity_class(EntityClass class_) {
-    return get_entity_class() == class_;
-  }
+  bool is_entity_class(EntityClass class_) { return get_entity_class() == class_; }
 
-  bool is_entity_type(uint8_t type_) {
-    return get_entity_type() == type_;
-  }
+  bool is_entity_type(uint8_t type_) { return get_entity_type() == type_; }
 
-  bool is_entity_version(uint8_t version_) {
-    return get_entity_version() == version_;
-  }
+  bool is_entity_version(Version version_) { return get_entity_version() == version_; }
 
-  bool is_entity_variant(uint8_t variant_) {
-    return get_entity_variant() == variant_;
-  }
+  bool is_entity_variant(uint8_t variant_) { return get_entity_variant() == variant_; }
 
   virtual std::vector<Entity *> get_child_entities() = 0;
 
@@ -207,17 +213,22 @@ template <> struct Converter<entities::EntityClassifier> {
     dst["class"] = src.class_;
     dst["type"] = src.type;
     dst["variant"] = src.variant;
-    dst["version"] = src.version;
+
+    auto versions_arr = dst.createNestedArray("version");
+    versions_arr.add(src.version.major);
+    versions_arr.add(src.version.minor);
+    versions_arr.add(src.version.patch);
     return true;
   }
 
   static entities::EntityClassifier fromJson(JsonVariantConst src) {
-    return {src["class"].as<uint8_t>(), src["type"], src["variant"], src["version"]};
+    return {src["class"].as<uint8_t>(), src["type"],       src["version"][0],
+            src["version"][1],          src["version"][2], src["variant"]};
   }
 
   static bool checkJson(JsonVariantConst src) {
     return src["class"].is<uint8_t>() and src["type"].is<uint8_t>() and src["variant"].is<uint8_t>() and
-           src["version"].is<uint8_t>();
+           src["version"].is<JsonArrayConst>() and src["version"].as<JsonArrayConst>().size() == 3;
   }
 };
 

@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <cstdint>
 #include <bitset>
+#include <cstdint>
 
 #include "block/base.h"
 #include "bus/bus.h"
@@ -149,7 +149,7 @@ public:
   explicit MIntBlockHAL_Dummy(bus::addr_t) {}
 };
 
-class MIntBlockHAL_V_1_0_0 : public MIntBlockHAL {
+class MIntBlockHAL_V_1_0_X : public MIntBlockHAL {
 protected:
   const functions::DAC60508 f_ic_dac;
   const functions::SR74HCT595 f_time_factor;
@@ -157,7 +157,7 @@ protected:
   const functions::TriggerFunction f_time_factor_reset;
 
 public:
-  explicit MIntBlockHAL_V_1_0_0(bus::addr_t block_address);
+  explicit MIntBlockHAL_V_1_0_X(bus::addr_t block_address);
 
   bool init() override;
 
@@ -241,13 +241,13 @@ public:
   bool init() override;
 };
 
-class MMulBlockHAL_V_1_0_1 : public MMulBlockHAL {
+class MMulBlockHAL_V_1_0_X : public MMulBlockHAL {
 protected:
   const functions::DAC60508 f_calibration_dac_0;
   const functions::DAC60508 f_calibration_dac_1;
 
 public:
-  MMulBlockHAL_V_1_0_1(bus::addr_t block_address);
+  MMulBlockHAL_V_1_0_X(bus::addr_t block_address);
 
   bool init() override;
 

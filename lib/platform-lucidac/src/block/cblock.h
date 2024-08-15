@@ -48,14 +48,14 @@ public:
   bool write_factor(uint8_t idx, float value) override;
 };
 
-class CBlockHAL_V_1_0_0_SequentialCoeffsCS : public CBlockHAL_Common {
+class CBlockHAL_V_1_1_X : public CBlockHAL_Common {
 public:
-  explicit CBlockHAL_V_1_0_0_SequentialCoeffsCS(bus::addr_t block_address);
+  explicit CBlockHAL_V_1_1_X(bus::addr_t block_address);
 };
 
-class CBlockHAL_V_1_0_0_MixedCoeffsCS : public CBlockHAL_Common {
+class CBlockHAL_V_1_0_X : public CBlockHAL_Common {
 public:
-  explicit CBlockHAL_V_1_0_0_MixedCoeffsCS(bus::addr_t block_address);
+  explicit CBlockHAL_V_1_0_X(bus::addr_t block_address);
 };
 
 // ██████   █████  ███████ ███████      ██████ ██       █████  ███████ ███████
@@ -82,7 +82,6 @@ public:
   // For CBlocks, there is only one entity type possible currently.
   static constexpr auto CLASS_ = entities::EntityClass::C_BLOCK;
   static constexpr uint8_t TYPE = 1;
-  enum class VARIANTS : uint8_t { UNKNOWN = 0, SEQUENTIAL_ADDRESSES = 1, MIXED_ADDRESSES = 2 };
 
   static CBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
 
@@ -108,7 +107,7 @@ public:
   static constexpr float MAX_GAIN_CORRECTION_ABS = 0.1f;
 
 protected:
-  CBlockHAL* hardware;
+  CBlockHAL *hardware;
 
   std::array<float, NUM_COEFF> factors_{{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
                                          1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
@@ -120,14 +119,14 @@ protected:
   [[nodiscard]] bool write_factors_to_hardware();
 
 public:
-  CBlock(bus::addr_t block_address, CBlockHAL* hardware);
+  CBlock(bus::addr_t block_address, CBlockHAL *hardware);
   CBlock();
 
   entities::EntityClass get_entity_class() const final { return entities::EntityClass::C_BLOCK; }
 
   // Variants exist, force them to differentiate themselves
   // TODO: This is now handled via sub classes of CBlockHAL
-  //uint8_t get_entity_variant() const override = 0;
+  // uint8_t get_entity_variant() const override = 0;
 
   /**
    * Set a particular digital potentiometer.

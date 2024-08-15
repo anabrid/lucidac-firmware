@@ -88,7 +88,7 @@ public:
 
   //! Writes the specified number of bytes starting at address into the specified buffer. Returns number of
   //! written bytes on success, 0 on failure.
-  size_t write(size_t address, size_t length, uint8_t *buffer) const;
+  size_t write(size_t address, size_t length, const uint8_t *buffer) const;
   //! Writes one byte at the specified address Returns 0 on failure.
   bool write8(size_t address, uint8_t data) const;
   //! Writes two bytes starting at the specified address Returns 0 on failure.

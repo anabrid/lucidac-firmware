@@ -61,7 +61,7 @@ public:
   explicit IBlockHALDummy(bus::addr_t) {}
 };
 
-class IBlockHAL_V_1_2_0 : public IBlockHAL {
+class IBlockHAL_V_1_2_X : public IBlockHAL {
 protected:
   const functions::ICommandRegisterFunction f_cmd;
   const functions::TriggerFunction f_imatrix_reset;
@@ -71,7 +71,7 @@ protected:
   const functions::TriggerFunction scaling_register_sync;
 
 public:
-  explicit IBlockHAL_V_1_2_0(bus::addr_t block_address);
+  explicit IBlockHAL_V_1_2_X(bus::addr_t block_address);
 
   bool write_outputs(const std::array<uint32_t, 16> &outputs) override;
 
@@ -129,7 +129,8 @@ protected:
   std::bitset<NUM_INPUTS> scaling_factors = 0;
 
 public:
-  explicit IBlock(const bus::addr_t block_address, IBlockHAL* hardware) : FunctionBlock("I", block_address), hardware(hardware), outputs{0} {}
+  explicit IBlock(const bus::addr_t block_address, IBlockHAL *hardware)
+      : FunctionBlock("I", block_address), hardware(hardware), outputs{0} {}
 
   IBlock() : IBlock(bus::NULL_ADDRESS, new IBlockHALDummy(bus::NULL_ADDRESS)) {}
 

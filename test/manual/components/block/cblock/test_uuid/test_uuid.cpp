@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#include "entity/entity.h"
 #include "metadata/74LVC138AD.tpl.hpp"
 #include "test_fmtlib.h"
 

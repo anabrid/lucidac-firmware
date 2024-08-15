@@ -18,13 +18,15 @@ blocks::SHBlock *blocks::SHBlock::from_entity_classifier(entities::EntityClassif
   if (!classifier or classifier.class_enum != CLASS_)
     return nullptr;
 
-  // Currently, there are no different variants or versions
-  if (classifier.variant != entities::EntityClassifier::DEFAULT_ or
-      classifier.version != entities::EntityClassifier::DEFAULT_)
+  // Currently, there are no different variants
+  if (classifier.variant != entities::EntityClassifier::DEFAULT_)
     return nullptr;
 
-  // Return default implementation
-  return new SHBlock(block_address);
+  if (classifier.version < entities::Version(0, 1))
+    return nullptr;
+  if (classifier.version < entities::Version(0, 2))
+    return new SHBlock(block_address);
+  return nullptr;
 }
 
 void blocks::SHBlock::compensate_hardware_offsets() {
