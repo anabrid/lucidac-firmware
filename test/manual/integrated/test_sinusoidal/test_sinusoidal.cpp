@@ -56,8 +56,8 @@ void test_function() {
   // uint8_t i0 = 6, i1 = 7;
 
   // IC for an oscillator should be a pair like {0,1} or {0,a} with some a.
-  TEST_ASSERT(intblock->set_ic(i0, 0.5));
-  TEST_ASSERT(intblock->set_ic(i1, 0));
+  TEST_ASSERT(intblock->set_ic_value(i0, 0.5));
+  TEST_ASSERT(intblock->set_ic_value(i1, 0));
 
   // For testing the different U-lanes:
   // Choose which U-lane to use (column in U-C-I blocks)
@@ -77,28 +77,28 @@ void test_function() {
 */
 
   // this combination of lanes (0 and 1) is known to work perfectly. Always.
-  TEST_ASSERT(cluster.route(MBlock::M1_OUTPUT(i0), 0, +1.0f, MBlock::M1_INPUT(i1)));
-  TEST_ASSERT(cluster.route(MBlock::M1_OUTPUT(i1), 1, -1.0f, MBlock::M1_INPUT(i0)));
+  TEST_ASSERT(cluster.route(MBlock::M0_OUTPUT(i0), 0, +1.0f, MBlock::M0_INPUT(i1)));
+  TEST_ASSERT(cluster.route(MBlock::M0_OUTPUT(i1), 1, -1.0f, MBlock::M0_INPUT(i0)));
 
   // Enable this line for a damped oscillation
-  // TEST_ASSERT(cluster.route(MBlock::M1_OUTPUT(i1), 2, -0.1f, MBlock::M1_INPUT(i1))); // damping
+  // TEST_ASSERT(cluster.route(MBlock::M0_OUTPUT(i1), 2, -0.1f, MBlock::M0_INPUT(i1))); // damping
 
   /*
   // for testing the route additionally throught some multiplier, test these lines:
   // choose which multiplier to use, between 0 and 3
   uint8_t m0 = 3;
-  TEST_ASSERT(cluster.route(MBlock::M1_OUTPUT(i0), 2, +1.0f, MBlock::M2_INPUT(2*m0)));
-  TEST_ASSERT(cluster.route(MBlock::M1_OUTPUT(i0), 3, +1.0f, MBlock::M2_INPUT(2*m0 + 1)));
+  TEST_ASSERT(cluster.route(MBlock::M0_OUTPUT(i0), 2, +1.0f, MBlock::M1_INPUT(2*m0)));
+  TEST_ASSERT(cluster.route(MBlock::M0_OUTPUT(i0), 3, +1.0f, MBlock::M1_INPUT(2*m0 + 1)));
   */
 
   /*
   if(ustart_lane != 8) {
-    cluster.ublock->connect(MBlock::M1_OUTPUT(i0), 8); // OUT0
+    cluster.ublock->connect(MBlock::M0_OUTPUT(i0), 8); // OUT0
   }
   */
 
-  cluster.ublock->connect(MBlock::M1_OUTPUT(i0), 8); // ACL_OUT0
-  cluster.ublock->connect(MBlock::M1_OUTPUT(i1), 9); // ACL_OUT1
+  cluster.ublock->connect(MBlock::M0_OUTPUT(i0), 8); // ACL_OUT0
+  cluster.ublock->connect(MBlock::M0_OUTPUT(i1), 9); // ACL_OUT1
 
   cluster.write_to_hardware();
   delayMicroseconds(100);

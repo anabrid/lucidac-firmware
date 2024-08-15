@@ -6,6 +6,7 @@
 #include <unity.h>
 
 #define private public
+#define protected public
 #include "block/mblock.h"
 
 using namespace blocks;
@@ -28,12 +29,6 @@ void test_init() {
                                 intblock.time_factors.size());
 }
 
-void test_function() {
-  TEST_ASSERT(intblock.f_time_factor.transfer8(0b01011011));
-  intblock.f_time_factor_sync.trigger();
-  TEST_ASSERT(true);
-}
-
 void test_block() {
   // Invalid k
   TEST_ASSERT_FALSE(intblock.set_time_factor(0, 1));
@@ -51,13 +46,12 @@ void test_block() {
   TEST_ASSERT_EQUAL(10000, intblock.time_factors[1]);
 
   // Write to hardware
-  TEST_ASSERT(intblock.write_time_factors_to_hardware());
+  TEST_ASSERT(intblock.write_to_hardware());
 }
 
 void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_init);
-  // RUN_TEST(test_function);
   RUN_TEST(test_block);
   UNITY_END();
 }

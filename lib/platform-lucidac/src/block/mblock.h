@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <bitset>
 
 #include "chips/DAC60508.h"
 #include "chips/SR74HCT595.h"
@@ -57,41 +58,41 @@ public:
 
   static constexpr std::array<uint8_t, 8> SLOT_OUTPUT_IDX_RANGE() { return {0, 1, 2, 3, 4, 5, 6, 7}; };
 
-  //! M1 input signal specifier for hard-coded usage, like MBlock::M1_INPUT<3>().
-  template <int n> static constexpr uint8_t M1_INPUT() {
+  //! M0 input signal specifier for hard-coded usage, like MBlock::M0_INPUT<3>().
+  template <int n> static constexpr uint8_t M0_INPUT() {
     static_assert(n < 8, "MBlock input must be less than 8.");
     return n + 8;
   }
 
+  //! M0 input signal specifier for dynamic usage, like MBlock::M0_INPUT(variable).
+  static constexpr uint8_t M0_INPUT(uint8_t idx) { return idx + 8; }
+
+  //! M0 output signal specifier for hard-coded usage, like MBlock::M0_OUTPUT<3>().
+  template <int n> static constexpr uint8_t M0_OUTPUT() {
+    static_assert(n < 8, "MBlock output must be less than 8.");
+    return n + 8;
+  }
+
+  //! M0 output signal specifier for dynamic usage, like MBlock::M0_OUTPUT(variable).
+  static constexpr uint8_t M0_OUTPUT(uint8_t idx) { return idx + 8; }
+
+  //! M1 input signal specifier for hard-coded usage, like MBlock::M1_INPUT<3>().
+  template <int n> static constexpr uint8_t M1_INPUT() {
+    static_assert(n < 8, "MBlock input must be less than 8.");
+    return n;
+  }
+
   //! M1 input signal specifier for dynamic usage, like MBlock::M1_INPUT(variable).
-  static constexpr uint8_t M1_INPUT(uint8_t idx) { return idx + 8; }
+  static constexpr uint8_t M1_INPUT(uint8_t idx) { return idx; }
 
   //! M1 output signal specifier for hard-coded usage, like MBlock::M1_OUTPUT<3>().
   template <int n> static constexpr uint8_t M1_OUTPUT() {
     static_assert(n < 8, "MBlock output must be less than 8.");
-    return n + 8;
+    return n;
   }
 
   //! M1 output signal specifier for dynamic usage, like MBlock::M1_OUTPUT(variable).
-  static constexpr uint8_t M1_OUTPUT(uint8_t idx) { return idx + 8; }
-
-  //! M2 input signal specifier for hard-coded usage, like MBlock::M2_INPUT<3>().
-  template <int n> static constexpr uint8_t M2_INPUT() {
-    static_assert(n < 8, "MBlock input must be less than 8.");
-    return n;
-  }
-
-  //! M2 input signal specifier for dynamic usage, like MBlock::M2_INPUT(variable).
-  static constexpr uint8_t M2_INPUT(uint8_t idx) { return idx; }
-
-  //! M2 output signal specifier for hard-coded usage, like MBlock::M2_OUTPUT<3>().
-  template <int n> static constexpr uint8_t M2_OUTPUT() {
-    static_assert(n < 8, "MBlock output must be less than 8.");
-    return n;
-  }
-
-  //! M2 output signal specifier for dynamic usage, like MBlock::M2_OUTPUT(variable).
-  static constexpr uint8_t M2_OUTPUT(uint8_t idx) { return idx; }
+  static constexpr uint8_t M1_OUTPUT(uint8_t idx) { return idx; }
 
 public:
   const SLOT slot;
@@ -131,6 +132,37 @@ protected:
 // ██ ██  ██ ██    ██    ██   ██     ██      ██      ██   ██      ██      ██
 // ██ ██   ████    ██     █████       ██████ ███████ ██   ██ ███████ ███████
 
+class MIntBlockHAL : public FunctionBlockHAL {
+public:
+  virtual bool write_ic(uint8_t idx, float ic) = 0;
+  virtual bool write_time_factor_switches(std::bitset<8> switches) = 0;
+};
+
+class MIntBlockHAL_Dummy : public MIntBlockHAL {
+public:
+  bool write_ic(uint8_t idx, float ic) override { return true; }
+
+  bool write_time_factor_switches(std::bitset<8> switches) override { return true; }
+
+  explicit MIntBlockHAL_Dummy(bus::addr_t) {}
+};
+
+class MIntBlockHAL_V_1_0_0 : public MIntBlockHAL {
+protected:
+  const functions::DAC60508 f_ic_dac;
+  const functions::SR74HCT595 f_time_factor;
+  const functions::TriggerFunction f_time_factor_sync;
+  const functions::TriggerFunction f_time_factor_reset;
+
+public:
+  explicit MIntBlockHAL_V_1_0_0(bus::addr_t block_address);
+
+  bool init() override;
+
+  bool write_ic(uint8_t idx, float ic) override;
+  bool write_time_factor_switches(std::bitset<8> switches) override;
+};
+
 // HINT: Consider renaming this MBlockInt
 //       in particular if we get some MBlockMult (MMultBlock reads weird)
 class MIntBlock : public MBlock {
@@ -141,36 +173,46 @@ public:
   static MIntBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
 
 public:
-  static constexpr uint8_t IC_FUNC_IDX = 1;
-  static constexpr uint8_t TIME_FACTOR_FUNC_IDX = 3;
-  static constexpr uint8_t TIME_FACTOR_SYNC_FUNC_IDX = 4;
-  static constexpr uint8_t TIME_FACTOR_RESET_FUNC_IDX = 5;
-
   static constexpr uint8_t NUM_INTEGRATORS = 8;
   static constexpr unsigned int DEFAULT_TIME_FACTOR = 10000;
 
-private:
-  const functions::DAC60508 f_ic_dac;
-  const functions::SR74HCT595 f_time_factor;
-  const functions::TriggerFunction f_time_factor_sync;
-  std::array<uint16_t, 8> ic_raw;
-  std::array<unsigned int, 8> time_factors;
+  static constexpr std::array<uint8_t, NUM_INTEGRATORS> INTEGRATORS_IDX_RANGE() {
+    return {0, 1, 2, 3, 4, 5, 6, 7};
+  };
 
-  bool write_time_factors_to_hardware();
+protected:
+  MIntBlockHAL *hardware;
+
+  std::array<float, NUM_INTEGRATORS> ic_values;
+  std::array<unsigned int, NUM_INTEGRATORS> time_factors;
 
 public:
-  explicit MIntBlock(bus::addr_t block_address);
+  explicit MIntBlock(bus::addr_t block_address, MIntBlockHAL *hardware);
+
+  explicit MIntBlock(SLOT slot, MIntBlockHAL *hardware)
+      : MIntBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M0_BLOCK_IDX : bus::M1_BLOCK_IDX, 0), hardware) {
+  }
 
   explicit MIntBlock(SLOT slot)
-      : MIntBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M0_BLOCK_IDX : bus::M1_BLOCK_IDX, 0)) {}
+      : MIntBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M0_BLOCK_IDX : bus::M1_BLOCK_IDX, 0),
+                  new MIntBlockHAL_Dummy(bus::NULL_ADDRESS)) {}
 
   uint8_t get_entity_type() const final { return static_cast<uint8_t>(TYPE); }
 
   bool init() override;
+  void reset(bool keep_calibration) override;
 
-  bool set_ic(uint8_t idx, float value);
+  [[nodiscard]] const std::array<float, 8> &get_ic_values() const;
+  [[nodiscard]] float get_ic_value(uint8_t idx) const;
+  bool set_ic_values(const std::array<float, 8> &ic_values_);
+  bool set_ic_value(uint8_t idx, float value);
+  void reset_ic_values();
 
+  [[nodiscard]] const std::array<unsigned int, 8> &get_time_factors() const;
+  unsigned int get_time_factor(uint8_t idx) const;
+  bool set_time_factors(const std::array<unsigned int, 8> &time_factors_);
   bool set_time_factor(uint8_t int_idx, unsigned int k);
+  void reset_time_factors();
 
   [[nodiscard]] bool write_to_hardware() override;
 

@@ -36,7 +36,7 @@ void test_init() {
 
 void test_function() {
   ManualControl::to_ic();
-  intblock.set_ic(0, +1.0f);
+  intblock.set_ic_value(0, +1.0f);
   TEST_ASSERT(intblock.write_to_hardware());
 }
 

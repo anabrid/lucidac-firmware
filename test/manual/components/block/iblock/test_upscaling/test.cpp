@@ -34,7 +34,7 @@ void test() {
   cluster.shblock->set_inject.trigger();
 
   for (int i = 0; i < 32; i++) {
-    TEST_ASSERT(cluster.ublock->connect_alternative(UBlock::Transmission_Mode::POS_SMALL_REF, i));
+    TEST_ASSERT(cluster.ublock->connect_alternative(UBlock::Transmission_Mode::POS_REF, i));
   }
 
   for (int i = 0; i < 32; i++)

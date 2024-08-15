@@ -1,1 +1,0 @@
-CBlock can not be automatically tested by itself, since the hardware does not allow any error detection.

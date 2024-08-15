@@ -35,7 +35,7 @@ void init() {
 
   cluster.shblock->set_gain.trigger();
 
-  TEST_ASSERT(cluster.ublock->connect_alternative(UBlock::POS_BIG_REF, 0));
+  TEST_ASSERT(cluster.ublock->connect_alternative(UBlock::Transmission_Mode::POS_REF, 0));
   TEST_ASSERT(cluster.cblock->set_factor(0, 0.0f));
   TEST_ASSERT(cluster.iblock->connect(0, 0));
   TEST_ASSERT(cluster.write_to_hardware());
