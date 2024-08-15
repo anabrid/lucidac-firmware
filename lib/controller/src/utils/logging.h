@@ -10,7 +10,12 @@
 // NOTE: Variadic macros and __PRETTY_FUNCTION__ are GNU specific extensions!
 //       If you find __PRETTY_FUNCTION__ to verbose, see probably https://stackoverflow.com/a/64384924
 
-#define LOG_TARGET msg::Log::get() // internal header helper, will be undefined later
+#ifdef UNIT_TEST
+#define LOG_TARGET Serial
+#else
+#define LOG_TARGET msg::Log::get()
+#endif
+
 
 // The actual logging call (but see also printf below)
 // The actual logging call
