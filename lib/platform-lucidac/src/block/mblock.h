@@ -178,7 +178,11 @@ public:
   static constexpr uint8_t NUM_INTEGRATORS = 8;
   static constexpr unsigned int DEFAULT_TIME_FACTOR = 10000;
 
-  static constexpr std::array<uint8_t, NUM_INTEGRATORS> INTEGRATORS_IDX_RANGE() {
+  static constexpr std::array<uint8_t, NUM_INTEGRATORS> INTEGRATORS_INPUT_RANGE() {
+    return {0, 1, 2, 3, 4, 5, 6, 7};
+  };
+
+  static constexpr std::array<uint8_t, NUM_INTEGRATORS> INTEGRATORS_OUTPUT_RANGE() {
     return {0, 1, 2, 3, 4, 5, 6, 7};
   };
 
@@ -272,6 +276,14 @@ public:
 
 public:
   static constexpr uint8_t NUM_MULTIPLIERS = 4;
+
+  static constexpr std::array<uint8_t, NUM_MULTIPLIERS*2> MULTIPLIERS_INPUT_RANGE() {
+    return {0, 1, 2, 3, 4, 5, 6, 7};
+  };
+
+  static constexpr std::array<uint8_t, NUM_MULTIPLIERS> MULTIPLIERS_OUTPUT_RANGE() {
+    return {0, 1, 2, 3};
+    };
 
 protected:
   MMulBlockHAL *hardware;
