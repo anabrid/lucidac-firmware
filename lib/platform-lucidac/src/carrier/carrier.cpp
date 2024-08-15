@@ -64,6 +64,13 @@ bool carrier::Carrier::write_to_hardware() {
   return true;
 }
 
+bool carrier::Carrier::calibrate_offset() {
+  for (auto &cluster : clusters)
+    if (!cluster.calibrate_offsets())
+      return false;
+  return true;
+}
+
 bool carrier::Carrier::calibrate_routes_in_cluster(Cluster &cluster, daq::BaseDAQ *daq_) {
   ctrl_block->set_adc_bus_to_cluster_gain(cluster.get_cluster_idx());
   if (!ctrl_block->write_to_hardware())

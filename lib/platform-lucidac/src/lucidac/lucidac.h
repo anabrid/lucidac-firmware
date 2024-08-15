@@ -89,7 +89,6 @@ public:
   void set_acl_select(const std::array<ACL, 8> &acl_select_);
   [[nodiscard]] bool set_acl_select(uint8_t idx, ACL acl);
   void reset_acl_select();
-
 };
 
 } // namespace platform
