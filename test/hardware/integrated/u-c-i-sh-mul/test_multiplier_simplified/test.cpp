@@ -49,14 +49,14 @@ void test_calibration() {
   ctrlblock_hal.write_adc_bus_muxers(blocks::CTRLBlock::ADCBus::CL0_GAIN);
 
   // Route a set of constants to the multiplier
-  TEST_ASSERT(cluster_.add_constant(UBlock::POS_BIG_REF, 0, 0.1, 8 + 0));
-  TEST_ASSERT(cluster_.add_constant(UBlock::POS_BIG_REF, 1, 0.2, 8 + 1));
-  TEST_ASSERT(cluster_.add_constant(UBlock::POS_BIG_REF, 2, 0.3, 8 + 2));
-  TEST_ASSERT(cluster_.add_constant(UBlock::POS_BIG_REF, 3, 0.4, 8 + 3));
-  TEST_ASSERT(cluster_.add_constant(UBlock::POS_BIG_REF, 4, 0.5, 8 + 4));
-  TEST_ASSERT(cluster_.add_constant(UBlock::POS_BIG_REF, 5, 0.6, 8 + 5));
-  TEST_ASSERT(cluster_.add_constant(UBlock::POS_BIG_REF, 6, 0.7, 8 + 6));
-  TEST_ASSERT(cluster_.add_constant(UBlock::POS_BIG_REF, 7, 0.8, 8 + 7));
+  TEST_ASSERT(cluster_.add_constant(UBlock::Transmission_Mode::POS_REF, 0, 0.1, 8 + 0));
+  TEST_ASSERT(cluster_.add_constant(UBlock::Transmission_Mode::POS_REF, 1, 0.2, 8 + 1));
+  TEST_ASSERT(cluster_.add_constant(UBlock::Transmission_Mode::POS_REF, 2, 0.3, 8 + 2));
+  TEST_ASSERT(cluster_.add_constant(UBlock::Transmission_Mode::POS_REF, 3, 0.4, 8 + 3));
+  TEST_ASSERT(cluster_.add_constant(UBlock::Transmission_Mode::POS_REF, 4, 0.5, 8 + 4));
+  TEST_ASSERT(cluster_.add_constant(UBlock::Transmission_Mode::POS_REF, 5, 0.6, 8 + 5));
+  TEST_ASSERT(cluster_.add_constant(UBlock::Transmission_Mode::POS_REF, 6, 0.7, 8 + 6));
+  TEST_ASSERT(cluster_.add_constant(UBlock::Transmission_Mode::POS_REF, 7, 0.8, 8 + 7));
   // Actually write configuration to hardware
   TEST_ASSERT(cluster_.write_to_hardware());
 

@@ -49,7 +49,7 @@ void test_calibration() {
   // otherwise it does not do anything (it skips unconnected lanes).
   TEST_ASSERT(cluster_.route(2, 0, 0.3f, 1));
   TEST_ASSERT(cluster_.route(1, 1, -0.2f, 2));
-  TEST_ASSERT(cluster_.add_constant(UBlock::POS_BIG_REF, 3, 0.114f, 1));
+  TEST_ASSERT(cluster_.add_constant(UBlock::Transmission_Mode::POS_REF, 3, 0.114f, 1));
 
   // Actually write configuration to hardware
   TEST_ASSERT(cluster_.write_to_hardware());

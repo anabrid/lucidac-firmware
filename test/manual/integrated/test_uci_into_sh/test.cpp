@@ -25,7 +25,7 @@ const unsigned long longPressTime = 5000;
 UBlock ublock;
 // All tests must select the exact version of the blocks used
 // Or in future use blocks::detect()
-CBlock_SequentialAddresses cblock;
+CBlock cblock;
 IBlock iblock;
 SHBlock shblock;
 
@@ -41,7 +41,7 @@ void configure_ublock() {
   // SET UBLOCK OUTPUT TO +0.2V
 
   for (auto output : UBlock::OUTPUT_IDX_RANGE()) {
-    TEST_ASSERT(ublock.connect_alternative(UBlock::Transmission_Mode::POS_SMALL_REF, output));
+    TEST_ASSERT(ublock.connect_alternative(UBlock::Transmission_Mode::POS_REF, output));
   }
   TEST_ASSERT(ublock.write_to_hardware());
 }

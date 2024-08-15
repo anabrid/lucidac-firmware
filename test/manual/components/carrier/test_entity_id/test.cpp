@@ -8,11 +8,11 @@
 
 #define private public
 #define protected public
-#include "carrier/carrier.h"
+#include "lucidac/lucidac.h"
 
 using namespace carrier;
 
-Carrier _carrier_board({});
+platform::LUCIDAC luci;
 
 void setUp() {
   // This is called before *each* test.
@@ -22,9 +22,9 @@ void tearDown() {
   // This is called after *each* test.
 }
 
-void test_init() { TEST_ASSERT(_carrier_board.init()); }
+void test_init() { TEST_ASSERT(luci.init()); }
 
-void test_entity_id() { TEST_ASSERT_EQUAL_STRING("04-E9-E5-14-74-BF", _carrier_board.entity_id.c_str()); }
+void test_entity_id() { TEST_ASSERT_EQUAL_STRING("04-E9-E5-14-74-BF", luci.entity_id.c_str()); }
 
 void setup() {
   UNITY_BEGIN();
