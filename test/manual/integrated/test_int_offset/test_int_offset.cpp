@@ -58,9 +58,9 @@ void test_function() {
   TEST_ASSERT(intblock->set_ic(i0, ic));
 
   // this combination of lanes (0 and 1) is known to work perfectly. Always.
-  //TEST_ASSERT(cluster.route(one, ulane, +1.0f, MBlock::M1_INPUT(i0)));
-  cluster.ublock->connect(MBlock::M1_OUTPUT(i0), 8); // ACL_OUT0
-  cluster.ublock->connect(MBlock::M1_OUTPUT(i0), 7); // DAQ0
+  //TEST_ASSERT(cluster.route(one, ulane, +1.0f, MBlock::M0_INPUT(i0)));
+  cluster.ublock->connect(MBlock::M0_OUTPUT(i0), 8); // ACL_OUT0
+  cluster.ublock->connect(MBlock::M0_OUTPUT(i0), 7); // DAQ0
 
 
   cluster.write_to_hardware();
@@ -80,11 +80,11 @@ void test_function() {
   float ic = -1;
   TEST_ASSERT(intblock->set_ic(i0, ic));
   TEST_ASSERT(intblock->set_time_factor(i0, 100));
-  // get the 0.5 refrence signal from an unused Output of the M2 Mult Block
-  uint8_t one = MBlock::M2_OUTPUT(5);
-  TEST_ASSERT(cluster.route(one, 16, +1.0f, MBlock::M1_INPUT(i0)));
-  cluster.ublock->connect(MBlock::M1_OUTPUT(i0), 8); // ACL_OUT0
-  cluster.ublock->connect(MBlock::M1_OUTPUT(i0), 0); // ADC0
+  // get the 0.5 refrence signal from an unused Output of the M1 Mult Block
+  uint8_t one = MBlock::M1_OUTPUT(5);
+  TEST_ASSERT(cluster.route(one, 16, +1.0f, MBlock::M0_INPUT(i0)));
+  cluster.ublock->connect(MBlock::M0_OUTPUT(i0), 8); // ACL_OUT0
+  cluster.ublock->connect(MBlock::M0_OUTPUT(i0), 0); // ADC0
 
   cluster.write_to_hardware();
   delayMicroseconds(100);
@@ -127,11 +127,11 @@ void test_function() {
     msg = "";
     for (uint8_t i0 = 0; i0 < 8; i0++) {
       float ic = -1;
-      uint8_t one = MBlock::M2_OUTPUT(5);
+      uint8_t one = MBlock::M1_OUTPUT(5);
       cluster.reset(true); // keep calibration
-      TEST_ASSERT(cluster.route(one, 16, +1.0f, MBlock::M1_INPUT(i0)));
-      TEST_ASSERT(cluster.ublock->connect(MBlock::M1_OUTPUT(i0), 8)); // ACL_OUT0
-      TEST_ASSERT(cluster.ublock->connect(MBlock::M1_OUTPUT(i0), 0)); // ADC0
+      TEST_ASSERT(cluster.route(one, 16, +1.0f, MBlock::M0_INPUT(i0)));
+      TEST_ASSERT(cluster.ublock->connect(MBlock::M0_OUTPUT(i0), 8)); // ACL_OUT0
+      TEST_ASSERT(cluster.ublock->connect(MBlock::M0_OUTPUT(i0), 0)); // ADC0
       TEST_ASSERT(intblock->set_time_factor(i0, k0));
 
       float current, last;
@@ -140,7 +140,7 @@ void test_function() {
 
       for (int i = 0; i < num; i++) {
         last = current;
-        TEST_ASSERT(intblock->set_ic(i0, ic));
+        TEST_ASSERT(intblock->set_ic_value(i0, ic));
         cluster.write_to_hardware();
         delayMicroseconds(100);
         mode::ManualControl::to_ic();

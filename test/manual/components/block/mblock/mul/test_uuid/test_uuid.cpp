@@ -5,7 +5,7 @@
 
 /*
  * ASSUMPTIONS
- *  - MUL block is inserted into M2 slot
+ *  - MUL block is inserted into M1 slot
  */
 
 #include <Arduino.h>
@@ -25,7 +25,7 @@ void tearDown() {
 }
 
 void test_uuid_address() {
-  // M2_BLOCk_IDX is 4, but block idx start at 1, so address is 5.
+  // M1_BLOCk_IDX is 4, but block idx start at 1, so address is 5.
   TEST_ASSERT_EQUAL(0b000000'0101, chip.address);
 }
 
