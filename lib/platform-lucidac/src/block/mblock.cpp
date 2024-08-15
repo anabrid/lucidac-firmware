@@ -29,40 +29,58 @@ uint8_t blocks::MBlock::slot_to_global_io_index(uint8_t local) const {
   return local;
 }
 
-blocks::MIntBlock::MIntBlock(const bus::addr_t block_address)
-    : blocks::MBlock{block_address}, f_ic_dac(bus::replace_function_idx(block_address, IC_FUNC_IDX)),
-      f_time_factor(bus::replace_function_idx(block_address, TIME_FACTOR_FUNC_IDX), true),
-      f_time_factor_sync(bus::replace_function_idx(block_address, TIME_FACTOR_SYNC_FUNC_IDX)), ic_raw{0} {
-  // Copying solves a strange linker issue "relocation against ... in read-only section `.text'"
-  // TODO: Investigate problem further, replace by non-ugly solution
-  auto default_ = DEFAULT_TIME_FACTOR;
-  std::fill(std::begin(time_factors), std::end(time_factors), default_);
-}
-
-bool blocks::MIntBlock::set_ic(uint8_t idx, float value) {
-  if (idx >= ic_raw.size())
-    return false;
-  if (value > 1.0f)
-    value = 1.0f;
-  if (value < -1.0f)
-    value = -1.0f;
-  ic_raw[idx] = decltype(f_ic_dac)::float_to_raw(value);
-  return true;
-}
-
-bool blocks::MIntBlock::write_to_hardware() {
-  for (decltype(ic_raw.size()) i = 0; i < ic_raw.size(); i++) {
-    if (!f_ic_dac.set_channel(i, ic_raw[i])) {
-      LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
-      return false;
-    }
-  }
-  return write_time_factors_to_hardware();
+blocks::MIntBlock::MIntBlock(bus::addr_t block_address, MIntBlockHAL *hardware)
+    : blocks::MBlock{block_address}, hardware(hardware), ic_values{}, time_factors{} {
+  reset_ic_values();
+  reset_time_factors();
 }
 
 bool blocks::MIntBlock::init() {
-  LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
-  f_ic_dac.init();
+  if (!FunctionBlock::init())
+    return false;
+  if (!hardware->init())
+    return false;
+  return true;
+}
+
+const std::array<float, 8> &blocks::MIntBlock::get_ic_values() const { return ic_values; }
+
+float blocks::MIntBlock::get_ic_value(uint8_t idx) const {
+  if (idx >= ic_values.size())
+    return 0.0f;
+  return ic_values[idx];
+}
+
+bool blocks::MIntBlock::set_ic_values(const std::array<float, 8> &ic_values_) {
+  for (auto idx = 0u; idx < ic_values_.size(); idx++)
+    if (!set_ic_value(idx, ic_values_[idx]))
+      return false;
+  return true;
+}
+
+bool blocks::MIntBlock::set_ic_value(uint8_t idx, float value) {
+  if (idx >= ic_values.size())
+    return false;
+  if (value > 1.0f or value < -1.0f)
+    return false;
+  ic_values[idx] = value;
+  return true;
+}
+
+void blocks::MIntBlock::reset_ic_values() { std::fill(ic_values.begin(), ic_values.end(), 0.0f); }
+
+const std::array<unsigned int, 8> &blocks::MIntBlock::get_time_factors() const { return time_factors; }
+
+unsigned int blocks::MIntBlock::get_time_factor(uint8_t idx) const {
+  if (idx >= time_factors.size())
+    return 0;
+  return time_factors[idx];
+}
+
+bool blocks::MIntBlock::set_time_factors(const std::array<unsigned int, 8> &time_factors_) {
+  for (auto idx = 0u; idx < time_factors_.size(); idx++)
+    if (!set_time_factor(idx, time_factors_[idx]))
+      return false;
   return true;
 }
 
@@ -75,18 +93,34 @@ bool blocks::MIntBlock::set_time_factor(uint8_t int_idx, unsigned int k) {
   return true;
 }
 
-bool blocks::MIntBlock::write_time_factors_to_hardware() {
-  uint8_t switches = 0;
-  for (size_t index = 0; index < time_factors.size(); index++) {
-    if (time_factors[index] != DEFAULT_TIME_FACTOR) {
-      switches |= 1 << index;
+void blocks::MIntBlock::reset_time_factors() {
+  // Copying solves a strange linker issue "relocation against ... in read-only section `.text'"
+  auto default_ = DEFAULT_TIME_FACTOR;
+  std::fill(std::begin(time_factors), std::end(time_factors), default_);
+}
+
+bool blocks::MIntBlock::write_to_hardware() {
+  // Write IC values one channel at a time
+  for (decltype(ic_values.size()) i = 0; i < ic_values.size(); i++) {
+    if (!hardware->write_ic(i, ic_values[i])) {
+      LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
+      return false;
     }
   }
-  if (!f_time_factor.transfer8(switches))
+  // Write time factor switches by converting to bitset
+  std::bitset<NUM_INTEGRATORS> time_factor_switches{};
+  for (auto idx = 0u; idx < time_factors.size(); idx++)
+    if (time_factors[idx] != DEFAULT_TIME_FACTOR)
+      time_factor_switches.set(idx);
+  if (!hardware->write_time_factor_switches(time_factor_switches))
     return false;
-
-  f_time_factor_sync.trigger();
   return true;
+}
+
+void blocks::MIntBlock::reset(bool keep_calibration) {
+  FunctionBlock::reset(keep_calibration);
+  reset_ic_values();
+  reset_time_factors();
 }
 
 bool blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
@@ -103,7 +137,7 @@ bool blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
       for (size_t i = 0; i < ints_cfg.size(); i++) {
         if (!ints_cfg[i].containsKey("ic") or !ints_cfg[i]["ic"].is<float>())
           return false;
-        if (!set_ic(i, ints_cfg[i]["ic"]))
+        if (!set_ic_value(i, ints_cfg[i]["ic"]))
           return false;
         if (ints_cfg[i].containsKey("k")) {
           if (!ints_cfg[i]["k"].is<unsigned int>())
@@ -125,7 +159,7 @@ bool blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
         if (int_cfg.containsKey("ic")) {
           if (!int_cfg["ic"].is<float>())
             return false;
-          if (!set_ic(int_idx, int_cfg["ic"]))
+          if (!set_ic_value(int_idx, int_cfg["ic"]))
             return false;
         }
         if (int_cfg.containsKey("k")) {
@@ -147,7 +181,7 @@ void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
   auto ints_cfg = cfg.createNestedArray("elements");
   for (size_t i = 0; i < NUM_INTEGRATORS; i++) {
     auto int_cfg = ints_cfg.createNestedObject();
-    int_cfg["ic"] = decltype(f_ic_dac)::raw_to_float(ic_raw[i]);
+    int_cfg["ic"] = ic_values[i];
     int_cfg["k"] = time_factors[i];
   }
 }
@@ -215,7 +249,38 @@ blocks::MIntBlock *blocks::MIntBlock::from_entity_classifier(entities::EntityCla
     return nullptr;
 
   // Return default implementation
-  return new MIntBlock(block_address);
+  return new MIntBlock(block_address, new MIntBlockHAL_V_1_0_0(block_address));
+}
+
+blocks::MIntBlockHAL_V_1_0_0::MIntBlockHAL_V_1_0_0(bus::addr_t block_address)
+    : f_ic_dac(bus::replace_function_idx(block_address, 4)),
+      f_time_factor(bus::replace_function_idx(block_address, 5), true),
+      f_time_factor_sync(bus::replace_function_idx(block_address, 6)),
+      f_time_factor_reset(bus::replace_function_idx(block_address, 7)) {}
+
+bool blocks::MIntBlockHAL_V_1_0_0::init() {
+  if (!MIntBlockHAL::init())
+    return false;
+  return f_ic_dac.init() and f_ic_dac.set_external_reference(true) and f_ic_dac.set_double_gain(true);
+}
+
+bool blocks::MIntBlockHAL_V_1_0_0::write_ic(uint8_t idx, float ic) {
+  if (idx >= MIntBlock::NUM_INTEGRATORS)
+    return false;
+  // Note: The DAC60508 implementation converts values assuming a 2.5V reference,
+  //       but we use a 2V external reference here (resulting in the 1.25 factor).
+  //       The output is also level-shifted, such that IC = 2V - output.
+  //       And 2V equals a 1, since the output is halved after the integrators.
+  //       Since we enabled gain=2, we don't need to halve/double here.
+  //       Resulting in a shift of -1 and the inversion.
+  return f_ic_dac.set_channel(idx, (ic - 1.0f) * -1.25f);
+}
+
+bool blocks::MIntBlockHAL_V_1_0_0::write_time_factor_switches(std::bitset<8> switches) {
+  if (!f_time_factor.transfer8(static_cast<uint8_t>(switches.to_ulong())))
+    return false;
+  f_time_factor_sync.trigger();
+  return true;
 }
 
 blocks::MMulBlock *blocks::MMulBlock::from_entity_classifier(entities::EntityClassifier classifier,

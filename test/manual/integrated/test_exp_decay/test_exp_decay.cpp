@@ -54,7 +54,7 @@ void test_exp_decay() {
   // Now it works again. Very fishy. I'll just commit everything and this DOES WORK, but only sometimes :)
   // Spoiler: Was a problem with the hardware,
 
-  intblock.set_ic(0, +1.0f);
+  intblock.set_ic_value(0, +1.0f);
   intblock.write_to_hardware();
   // Signal does arrive at UBlock BL_IN0
 
