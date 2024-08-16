@@ -29,7 +29,7 @@ public:
   static constexpr auto CLASS_ = entities::EntityClass::FRONT_PANEL;
 
   static LUCIDACFrontPanel *from_entity_classifier(entities::EntityClassifier classifier,
-                                            __attribute__((__unused__)) bus::addr_t block_address);
+                                                   __attribute__((__unused__)) bus::addr_t block_address);
 
   entities::EntityClass get_entity_class() const final { return CLASS_; }
 
@@ -61,7 +61,15 @@ public:
   bool init();
 
   //! Writes the hardware state of the LEDs and the signal generator
-  bool write_to_hardware();
+  // Error codes:
+  // 0 LED register failed in pedantic mode
+  // -1 Signal generator amplitude chanel
+  // -2 Signal generator square low chanel
+  // -3 Signal generator square high chanel
+  // -4 Signal generator offset chanel
+  // -5 Signal generator dac0 chanel
+  // -6 Signal generator dac1 chanel
+  int write_to_hardware();
 
   class LEDs {
   public:
@@ -147,7 +155,7 @@ public:
     //! Writes the DACout1 constant voltage output. Possible values are: [-2V, 2V].
     bool set_dac_out1(float value);
 
-    bool write_to_hardware();
+    int write_to_hardware();
 
   private:
     const functions::DAC60508 digital_analog_converter;

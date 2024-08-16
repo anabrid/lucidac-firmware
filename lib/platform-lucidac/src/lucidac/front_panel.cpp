@@ -9,8 +9,10 @@ platform::LUCIDACFrontPanel::LUCIDACFrontPanel() : entities::Entity("FP") {}
 
 bool platform::LUCIDACFrontPanel::init() { return signal_generator.init(); }
 
-bool platform::LUCIDACFrontPanel::write_to_hardware() {
-  return leds.write_to_hardware() && signal_generator.write_to_hardware();
+int platform::LUCIDACFrontPanel::write_to_hardware() {
+  if (!leds.write_to_hardware())
+    return -1;
+  return signal_generator.write_to_hardware();
 }
 
 platform::LUCIDACFrontPanel::LEDs::LEDs()
@@ -144,7 +146,7 @@ bool platform::LUCIDACFrontPanel::SignalGenerator::set_dac_out1(float value) {
 }
 
 // TODO: Implement smart write to hardware for signal generator
-bool platform::LUCIDACFrontPanel::SignalGenerator::write_to_hardware() {
+int platform::LUCIDACFrontPanel::SignalGenerator::write_to_hardware() {
   if (_sleep)
     function_generator.sleep();
   else
@@ -154,12 +156,19 @@ bool platform::LUCIDACFrontPanel::SignalGenerator::write_to_hardware() {
   function_generator.write_phase(_phase);
   function_generator.write_wave_form(_wave_form);
 
-  return digital_analog_converter.set_channel(DAC_AMPLITUDE_CH, _amplitude) &&
-         digital_analog_converter.set_channel(DAC_SQUARE_LOW_CH, _map_dac_levelshift(_square_low_voltage)) &&
-         digital_analog_converter.set_channel(DAC_SQUARE_HIGH_CH, _map_dac_levelshift(_square_high_voltage)) &&
-         digital_analog_converter.set_channel(DAC_OFFSET_CH, _map_dac_levelshift(_offset)) &&
-         digital_analog_converter.set_channel(DAC_OUT0_CH, _map_dac_levelshift(_dac_out0)) &&
-         digital_analog_converter.set_channel(DAC_OUT1_CH, _map_dac_levelshift(_dac_out1));
+  if (!digital_analog_converter.set_channel(DAC_AMPLITUDE_CH, _amplitude))
+    return -1;
+  if (!digital_analog_converter.set_channel(DAC_SQUARE_LOW_CH, _map_dac_levelshift(_square_low_voltage)))
+    return -2;
+  if (!digital_analog_converter.set_channel(DAC_SQUARE_HIGH_CH, _map_dac_levelshift(_square_high_voltage)))
+    return -3;
+  if (!digital_analog_converter.set_channel(DAC_OFFSET_CH, _map_dac_levelshift(_offset)))
+    return -4;
+  if (!digital_analog_converter.set_channel(DAC_OUT0_CH, _map_dac_levelshift(_dac_out0)))
+    return -5;
+  if (!digital_analog_converter.set_channel(DAC_OUT1_CH, _map_dac_levelshift(_dac_out1)))
+    return -6;
+  return true;
 }
 
 platform::LUCIDACFrontPanel *
