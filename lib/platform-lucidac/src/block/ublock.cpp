@@ -289,9 +289,8 @@ void blocks::UBlock::config_self_to_json(JsonObject &cfg) {
   // Save outputs into cfg
   auto outputs_cfg = cfg.createNestedArray("outputs");
   for (const auto &output : output_input_map) {
-    if (output)
-      outputs_cfg.add(output - 1);
-    // TODO: This -1 may have to be removed due to the changes on the output matrix
+    if (output >= 0)
+      outputs_cfg.add(output);
     else
       outputs_cfg.add(nullptr);
   }
