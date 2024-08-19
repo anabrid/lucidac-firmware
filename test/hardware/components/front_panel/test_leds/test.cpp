@@ -6,6 +6,10 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#ifndef ANABRID_PEDANTIC
+#error "This test requires pedantic mode."
+#endif
+
 #include "lucidac/front_panel.h"
 
 using namespace platform;
@@ -20,7 +24,7 @@ void tearDown() {
   // This is called after *each* test.
 }
 
-void all_on() {
+void test_all_on() {
   front.leds.set_all(0xff);
   TEST_ASSERT(front.leds.write_to_hardware());
 
@@ -32,14 +36,9 @@ void all_on() {
 
 void setup() {
   bus::init();
-  pinMode(29, INPUT_PULLUP);
-
-  Serial.begin(9600);
 
   UNITY_BEGIN();
-
-  RUN_TEST(all_on);
-
+  RUN_TEST(test_all_on);
   UNITY_END();
 }
 

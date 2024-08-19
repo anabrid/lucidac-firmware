@@ -108,7 +108,7 @@ void test_function(float x, float y) {
 
       auto data = DAQ.sample();
       for (auto mul_idx : MMulBlock::MULTIPLIERS_OUTPUT_RANGE()) {
-        if (fabs(data[mul_idx] - x * y) > 0.1 * x * y) {
+        if (fabs(data[mul_idx] - x * y) > fabs(0.1 * x * y)) {
           error = true;
           TEST_MESSAGE_FORMAT("ERROR cluster={} mblock-slot={} mul_idx={} output={} outside acceptable range!",
                               cluster.cluster_idx, static_cast<uint8_t>(mblock->slot), mul_idx, data[mul_idx]);
@@ -130,6 +130,14 @@ void setup() {
   RUN_PARAM_TEST(test_function, 0.75f, 0.75f);
   RUN_PARAM_TEST(test_function, 0.5f, 0.5f);
   RUN_PARAM_TEST(test_function, 0.1f, 0.1f);
+  RUN_PARAM_TEST(test_function, 1.0f, -1.0f);
+  RUN_PARAM_TEST(test_function, 0.75f, -0.75f);
+  RUN_PARAM_TEST(test_function, 0.5f, -0.5f);
+  RUN_PARAM_TEST(test_function, 0.1f, -0.1f);
+  RUN_PARAM_TEST(test_function, -1.0f, -1.0f);
+  RUN_PARAM_TEST(test_function, -0.75f, -0.75f);
+  RUN_PARAM_TEST(test_function, -0.5f, -0.5f);
+  RUN_PARAM_TEST(test_function, -0.1f, -0.1f);
   UNITY_END();
 }
 
