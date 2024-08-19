@@ -65,7 +65,7 @@ void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t 
       if(!float_repr) {
         // Need to make sure string is exactly "len" long without NULL terminating byte
         // so it fits into the "len" sized slot in the dst buffer.
-        snprintf(float_repr_fallback, len+1, "%+1.3f", daq::BaseDAQ::raw_to_float(number));
+        snprintf(float_repr_fallback, len+1, "% 1.3f", daq::BaseDAQ::raw_to_float(number));
         float_repr = float_repr_fallback;
       }
       memcpy(dst, float_repr, len);
