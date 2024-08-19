@@ -5,5 +5,28 @@
 
 #pragma once
 
+#include "test_fmtlib.h"
+#include <Arduino.h>
+#include <unity.h>
+
+#include "carrier/cluster.h"
+#include "daq/base.h"
+
 constexpr float ANABRID_TESTS_TARGET_PRECISION = 0.05f;
 constexpr bool ANABRID_TESTS_USE_ACL_OUT = true;
+
+std::array<float, 16> measure_sh_gain(platform::Cluster &cluster, daq::BaseDAQ *DAQ) {
+  std::array<float, 16> data{};
+
+  // Measure all channels by using SH gain outputs and switching channels
+  cluster.shblock->to_gain(blocks::SHBlock::GainChannels::ZERO_TO_SEVEN);
+  delay(100);
+  auto data_zero_to_seven = DAQ->sample();
+  cluster.shblock->to_gain(blocks::SHBlock::GainChannels::EIGHT_TO_FIFTEEN);
+  delay(100);
+  auto data_eight_to_fifteen = DAQ->sample();
+
+  std::copy(data_eight_to_fifteen.begin(), data_eight_to_fifteen.end(),
+            std::copy(data_zero_to_seven.begin(), data_zero_to_seven.end(), data.begin()));
+  return data;
+}
