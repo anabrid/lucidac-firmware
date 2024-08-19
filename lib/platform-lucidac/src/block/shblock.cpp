@@ -35,3 +35,16 @@ void blocks::SHBlock::compensate_hardware_offsets() {
   set_inject.trigger();
   delay(100);
 }
+
+void blocks::SHBlock::to_gain(blocks::SHBlock::GainChannels channels) {
+  state = State::GAIN;
+  set_gain.trigger();
+  switch(channels) {
+  case GainChannels::ZERO_TO_SEVEN:
+    set_gain_channels_zero_to_seven.trigger();
+    break;
+  case GainChannels::EIGHT_TO_FIFTEEN:
+    set_gain_channels_eight_to_fifteen.trigger();
+    break;
+  }
+}

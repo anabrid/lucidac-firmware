@@ -25,7 +25,17 @@ public:
 
   static SHBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
 
+  enum class State {
+    TRACK, GAIN, INJECT
+  };
+
+  enum class GainChannels {
+    ZERO_TO_SEVEN, EIGHT_TO_FIFTEEN
+  };
+
 protected:
+  State state = State::INJECT;
+
   // Default state after reset is inject with a potentially random inject current
   const functions::TriggerFunction set_track{bus::address_from_tuple(bus::SH_BLOCK_BADDR(0), 2)};
   const functions::TriggerFunction set_track_at_ic{bus::address_from_tuple(bus::SH_BLOCK_BADDR(0), 3)};
@@ -45,6 +55,8 @@ public:
   [[nodiscard]] bool write_to_hardware() override;
 
   void compensate_hardware_offsets();
+
+  void to_gain(GainChannels channels);
 
 protected:
   bool config_self_from_json(JsonObjectConst cfg) override;
