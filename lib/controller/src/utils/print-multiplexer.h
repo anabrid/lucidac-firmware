@@ -47,7 +47,7 @@ namespace utils {
   public:
     void add(Print* target) { targets.push_back(target); }
     void remove(Print* target) { targets.remove(target); }
-    size_t size() const { targets.size(); }
+    size_t size() const { return targets.size(); }
 
     // Printables which go to all clients
     virtual size_t write(uint8_t b) override {
