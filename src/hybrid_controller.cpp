@@ -32,6 +32,7 @@
 
 platform::LUCIDAC carrier_;
 auto& netconf = net::StartupConfig::get();
+bool network_working;
 
 void leds(uint8_t val) {
   if(carrier_.front_panel) {
@@ -50,12 +51,12 @@ void indicate_led_error() {
   }
 }
 
-void setup_remote_log() {
+/*void setup_remote_log() {
   IPAddress remote{192,168,68,96};
   static EthernetClient client;
   client.connect(remote, 1234);
   msg::Log::get().sinks.add(&client);
-}
+}*/
 
 void setup() {
   // Initialize serial communication
@@ -88,16 +89,16 @@ void setup() {
   leds(0xFF);
 
   LOG(ANABRID_DEBUG_INIT, "Starting up Ethernet...");
-  netconf.begin_ip();
-  if(netconf.enable_mdns)
+  int net_successful = netconf.begin_ip();
+  if(net_successful && netconf.enable_mdns)
     netconf.begin_mdns();
-  if(netconf.enable_jsonl)
+  if(net_successful && netconf.enable_jsonl)
     msg::JsonlServer::get().begin();
-  if(netconf.enable_webserver)
+  if(net_successful && netconf.enable_webserver)
     web::LucidacWebServer::get().begin();
 
-  setup_remote_log();
-  LOG_ALWAYS("Have set up remote log");
+  //setup_remote_log();
+  //LOG_ALWAYS("Have set up remote log");
 
   // Initialize things related to runs
   // TODO, _ERROR_OUT_ shall not be used, see #116

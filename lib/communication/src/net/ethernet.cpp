@@ -92,7 +92,7 @@ void net::StartupConfig::toJson(JsonObject target, nvmconfig::Context c) const {
 }
 
 
-void net::StartupConfig::begin_ip() {
+int net::StartupConfig::begin_ip() {
   if(!enable_ethernet) {
     LOG_ALWAYS("Ethernet disabled by user setting");
   }
@@ -116,12 +116,12 @@ void net::StartupConfig::begin_ip() {
       net::Ethernet.setHostname(hostname.c_str());
       if (!net::Ethernet.begin()) {
         LOG_ERROR("Error starting ethernet DHCP client.");
-        //_ERROR_OUT_
+        return 1;
       }
       LOG(ANABRID_DEBUG_INIT, "Waiting for IP address on ethernet...");
       if (!net::Ethernet.waitForLocalIP(2*1000 /* ms*/)) {
         LOG_ERROR("Error getting IP address.");
-        //_ERROR_OUT_
+        return 2;
       }
   } else {
       if(!valid(static_ipaddr) || !valid(static_netmask) || !valid(static_gw)) {
@@ -133,7 +133,7 @@ void net::StartupConfig::begin_ip() {
       }
       if (!net::Ethernet.begin(static_ipaddr, static_netmask, static_gw)) {
         LOG_ERROR("Error starting ethernet with static IP address.");
-        //_ERROR_OUT_
+        return 3;
       }
       if(!valid(static_dns)) {
         LOG_ERROR("Illegal dns server. Recovering with defaults.")
@@ -154,10 +154,10 @@ void net::StartupConfig::begin_mdns() {
     MDNS.addService("_http", "_tcp", webserver_port);
 }
 
-void net::StartupConfig::begin() {
+/*void net::StartupConfig::begin() {
   net::register_settings();
   begin_ip();
-}
+}*/
 
 void net::status(JsonObject &msg_out) {
   msg_out["interfaceStatus"] = net::Ethernet.interfaceStatus();
