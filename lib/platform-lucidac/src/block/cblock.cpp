@@ -79,44 +79,55 @@ bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  if (cfg.containsKey("elements")) {
-    // Handle an array of factors
-    if (cfg["elements"].is<JsonArrayConst>()) {
-      auto factors = cfg["elements"].as<JsonArrayConst>();
-      if (factors.size() != NUM_COEFF)
+  for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
+    if (cfgItr->key() == "elements") {
+      if (!_config_elements_form_json(cfgItr->value()))
         return false;
-      uint8_t idx = 0;
-      for (JsonVariantConst factor : factors) {
-        if (!factor.is<float>())
-          return false;
-        if (!set_factor(idx++, factor.as<float>()))
-          return false;
-      }
-    }
-    // Handle a mapping of factors
-    if (cfg["elements"].is<JsonObjectConst>()) {
-      serializeJson(cfg, Serial);
-      for (JsonPairConst keyval : cfg["elements"].as<JsonObjectConst>()) {
-        // Keys define index of factor to change
-        // TODO: Check conversion from string to number
-        auto idx = std::stoul(keyval.key().c_str());
-        // Values can either be direct factor float values or {"factor": 0.42} objects
-        if (keyval.value().is<JsonObjectConst>() and
-            keyval.value().as<JsonObjectConst>().containsKey("factor")) {
-          if (!set_factor(idx, keyval.value().as<JsonObjectConst>()["factor"].as<float>()))
-            return false;
-        } else if (keyval.value().is<float>()) {
-          if (!set_factor(idx, keyval.value().as<float>()))
-            return false;
-        } else {
-          return false;
-        }
-      }
+    } else {
+      // Unknown configuration key
+      return false;
     }
   }
-
-  // The combination of checks above must not ignore any valid config dictionary
   return true;
+}
+
+bool blocks::CBlock::_config_elements_form_json(const JsonVariantConst &cfg) {
+  // Handle an array of factors
+  if (cfg.is<JsonArrayConst>()) {
+    auto factors = cfg.as<JsonArrayConst>();
+    if (factors.size() != NUM_COEFF)
+      return false;
+    uint8_t idx = 0;
+    for (JsonVariantConst factor : factors) {
+      if (!factor.is<float>())
+        return false;
+      if (!set_factor(idx++, factor.as<float>()))
+        return false;
+    }
+    return true;
+  }
+  // Handle a mapping of factors
+  else if (cfg.is<JsonObjectConst>()) {
+    serializeJson(cfg, Serial); //! I think this is debug code?
+    for (JsonPairConst keyval : cfg.as<JsonObjectConst>()) {
+      // Keys define index of factor to change
+      // TODO: Check conversion from string to number
+      auto idx = std::stoul(keyval.key().c_str());
+      // Values can either be direct factor float values or {"factor": 0.42} objects
+      if (keyval.value().is<JsonObjectConst>() and
+          keyval.value().as<JsonObjectConst>().containsKey("factor")) {
+        if (!set_factor(idx, keyval.value().as<JsonObjectConst>()["factor"].as<float>()))
+          return false;
+      } else if (keyval.value().is<float>()) {
+        if (!set_factor(idx, keyval.value().as<float>()))
+          return false;
+      } else {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
 }
 
 void blocks::CBlock::config_self_to_json(JsonObject &cfg) {

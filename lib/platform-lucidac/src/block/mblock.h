@@ -192,6 +192,8 @@ protected:
   std::array<float, NUM_INTEGRATORS> ic_values;
   std::array<unsigned int, NUM_INTEGRATORS> time_factors;
 
+  bool _config_elements_from_json(const JsonVariantConst &cfg);
+
 public:
   explicit MIntBlock(bus::addr_t block_address, MIntBlockHAL *hardware);
 
@@ -277,13 +279,11 @@ public:
 public:
   static constexpr uint8_t NUM_MULTIPLIERS = 4;
 
-  static constexpr std::array<uint8_t, NUM_MULTIPLIERS*2> MULTIPLIERS_INPUT_RANGE() {
+  static constexpr std::array<uint8_t, NUM_MULTIPLIERS * 2> MULTIPLIERS_INPUT_RANGE() {
     return {0, 1, 2, 3, 4, 5, 6, 7};
   };
 
-  static constexpr std::array<uint8_t, NUM_MULTIPLIERS> MULTIPLIERS_OUTPUT_RANGE() {
-    return {0, 1, 2, 3};
-    };
+  static constexpr std::array<uint8_t, NUM_MULTIPLIERS> MULTIPLIERS_OUTPUT_RANGE() { return {0, 1, 2, 3}; };
 
 protected:
   MMulBlockHAL *hardware;
@@ -307,6 +307,7 @@ public:
 
 protected:
   bool config_self_from_json(JsonObjectConst cfg) override;
+  bool _config_elements_from_json(const JsonVariantConst &cfg);
 };
 
 } // namespace blocks

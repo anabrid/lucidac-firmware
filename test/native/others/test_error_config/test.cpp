@@ -7,24 +7,18 @@
 #include <iostream>
 #include <unity.h>
 
-#define protected public
 #define private public
-#include "block/iblock.h"
+#define protected public
 
-blocks::IBlock iblock;
+#include "block/ublock.h"
 
-void setUp() {
-  // This is called before *each* test.
-}
-
-void tearDown() {
-  // This is called after *each* test.
-}
+// U Block is just for example
+blocks::UBlock ublock;
 
 auto serialized_data =
     R"({
-		"outputs": { 1: 2 },
-        "upscaling": { 2: true, 1: true }
+        "outputs": { 0: 2 },
+        "nonsense": "not valid"
       })";
 
 void json_to_object() {
@@ -38,15 +32,7 @@ void json_to_object() {
 
   TEST_ASSERT_FALSE(cfg.isNull());
 
-  TEST_ASSERT(iblock.config_self_from_json(cfg));
-  TEST_ASSERT(iblock.get_upscaling(2));
-
-  StaticJsonDocument<2048> newDoc;
-  JsonObject newCfg = newDoc.to<JsonObject>();
-
-  iblock.config_self_to_json(newCfg);
-
-  std::cout << "New cfg: " << newCfg << std::endl;
+  TEST_ASSERT_FALSE(ublock.config_self_from_json(cfg));
 }
 
 int main(int argc, char **argv) {

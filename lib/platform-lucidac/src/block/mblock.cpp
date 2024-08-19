@@ -127,53 +127,63 @@ bool blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  if (cfg.containsKey("elements")) {
-    // Handle an array of integrator configurations
-    if (cfg["elements"].is<JsonArrayConst>()) {
-      auto ints_cfg = cfg["elements"].as<JsonArrayConst>();
-      if (ints_cfg.size() != NUM_INTEGRATORS) {
+  for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
+    if (cfgItr->key() == "elements") {
+      if (!_config_elements_from_json(cfgItr->value()))
         return false;
-      }
-      for (size_t i = 0; i < ints_cfg.size(); i++) {
-        if (!ints_cfg[i].containsKey("ic") or !ints_cfg[i]["ic"].is<float>())
-          return false;
-        if (!set_ic_value(i, ints_cfg[i]["ic"]))
-          return false;
-        if (ints_cfg[i].containsKey("k")) {
-          if (!ints_cfg[i]["k"].is<unsigned int>())
-            return false;
-          if (!set_time_factor(i, ints_cfg[i]["k"]))
-            return false;
-        }
-      }
-    } else if (cfg["elements"].is<JsonObjectConst>()) {
-      for (JsonPairConst keyval : cfg["elements"].as<JsonObjectConst>()) {
-        // Value is an object, with any key being optional
-        if (!keyval.value().is<JsonObjectConst>())
-          return false;
-        // TODO: Check conversion from string to number
-        auto int_idx = std::stoul(keyval.key().c_str());
-        if (int_idx >= NUM_INTEGRATORS)
-          return false;
-        auto int_cfg = keyval.value().as<JsonObjectConst>();
-        if (int_cfg.containsKey("ic")) {
-          if (!int_cfg["ic"].is<float>())
-            return false;
-          if (!set_ic_value(int_idx, int_cfg["ic"]))
-            return false;
-        }
-        if (int_cfg.containsKey("k")) {
-          if (!int_cfg["k"].is<unsigned int>())
-            return false;
-          if (!set_time_factor(int_idx, int_cfg["k"]))
-            return false;
-        }
-      }
     } else {
+      // Unknown configuration key
       return false;
     }
   }
   return true;
+}
+
+bool blocks::MIntBlock::_config_elements_from_json(const JsonVariantConst &cfg) {
+  if (cfg.is<JsonArrayConst>()) {
+    auto ints_cfg = cfg.as<JsonArrayConst>();
+    if (ints_cfg.size() != NUM_INTEGRATORS) {
+      return false;
+    }
+    for (size_t i = 0; i < ints_cfg.size(); i++) {
+      if (!ints_cfg[i].containsKey("ic") or !ints_cfg[i]["ic"].is<float>())
+        return false;
+      if (!set_ic_value(i, ints_cfg[i]["ic"]))
+        return false;
+      if (ints_cfg[i].containsKey("k")) {
+        if (!ints_cfg[i]["k"].is<unsigned int>())
+          return false;
+        if (!set_time_factor(i, ints_cfg[i]["k"]))
+          return false;
+      }
+    }
+    return true;
+  } else if (cfg.is<JsonObjectConst>()) {
+    for (JsonPairConst keyval : cfg.as<JsonObjectConst>()) {
+      // Value is an object, with any key being optional
+      if (!keyval.value().is<JsonObjectConst>())
+        return false;
+      // TODO: Check conversion from string to number
+      auto int_idx = std::stoul(keyval.key().c_str());
+      if (int_idx >= NUM_INTEGRATORS)
+        return false;
+      auto int_cfg = keyval.value().as<JsonObjectConst>();
+      if (int_cfg.containsKey("ic")) {
+        if (!int_cfg["ic"].is<float>())
+          return false;
+        if (!set_ic_value(int_idx, int_cfg["ic"]))
+          return false;
+      }
+      if (int_cfg.containsKey("k")) {
+        if (!int_cfg["k"].is<unsigned int>())
+          return false;
+        if (!set_time_factor(int_idx, int_cfg["k"]))
+          return false;
+      }
+    }
+    return true;
+  }
+  return false;
 }
 
 void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
@@ -192,23 +202,33 @@ bool blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
   // MMulBlock does not expect any configuration currently.
   // But due to automation, some may still be sent.
   // Thus we accept any configuration containing only empty values or similar.
-  if (cfg.containsKey("elements")) {
-    if (cfg["elements"].is<JsonObjectConst>()) {
-      // TODO: Implement
-      return false;
-    } else if (cfg["elements"].is<JsonArrayConst>()) {
-      auto elements_cfg = cfg["elements"].as<JsonArrayConst>();
-      if (elements_cfg.size() != NUM_MULTIPLIERS) {
+  for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
+    if (cfgItr->key() == "elements") {
+      if (!_config_elements_from_json(cfgItr->value()))
         return false;
-      }
-      // TODO: Check each element. But currently makes no sense
-      // for (const auto& element_cfg : elements_cfg) {
-      //}
     } else {
+      // Unknown configuration key
       return false;
     }
   }
   return true;
+}
+
+bool blocks::MMulBlock::_config_elements_from_json(const JsonVariantConst &cfg) {
+  if (cfg.is<JsonObjectConst>()) {
+    // TODO: Implement
+    return false;
+  } else if (cfg.is<JsonArrayConst>()) {
+    auto elements_cfg = cfg.as<JsonArrayConst>();
+    if (elements_cfg.size() != NUM_MULTIPLIERS) {
+      return false;
+    }
+    // TODO: Check each element. But currently makes no sense
+    // for (const auto& element_cfg : elements_cfg) {
+    //}
+    return true;
+  }
+  return false;
 }
 
 // ███████ ███    ██ ████████ ██ ████████ ██    ██     ███████  █████   ██████ ████████  ██████  ██████  ██

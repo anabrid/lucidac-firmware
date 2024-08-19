@@ -91,40 +91,59 @@ bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  if (cfg.containsKey("outputs")) {
-    // Handle a mapping of output to list of inputs
-    // This only overrides outputs that are specifically mentioned
-    if (cfg["outputs"].is<JsonObjectConst>()) {
-      for (JsonPairConst keyval : cfg["outputs"].as<JsonObjectConst>()) {
-        // Key defines output
-        // TODO: Check conversion from string to number
-        auto output = std::stoul(keyval.key().c_str());
-        // Disconnect also sanity checks output index for us
-        if (!disconnect(output))
-          return false;
-        // Input may be given as list or as a single number
-        if (!_connect_from_json(keyval.value(), output))
-          return false;
-      }
-    }
-    // Handle a list of outputs
-    // This must overwrite all outputs, so we clear all of them
-    if (cfg["outputs"].is<JsonArrayConst>()) {
-      auto outputs_json = cfg["outputs"].as<JsonArrayConst>();
-      if (outputs_json.size() != NUM_OUTPUTS)
+  for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
+    if (cfgItr->key() == "outputs") {
+      if (!_config_outputs_from_json(cfgItr->value()))
         return false;
-      reset_outputs();
-      uint8_t idx = 0;
-      for (JsonVariantConst input_spec : outputs_json) {
-        // Input may be given as list or as a single number
-        if (!_connect_from_json(input_spec, idx++))
-          return false;
-      }
+    } else if (cfgItr->key() == "upscaling") {
+      if (!_config_upscaling_from_json(cfgItr->value()))
+        return false;
+    } else {
+      // Unknown configuration key
+      return false;
     }
   }
+  return true;
+}
 
-  if (cfg["upscaling"].is<JsonObjectConst>()) {
-    for (JsonPairConst keyval : cfg["upscaling"].as<JsonObjectConst>()) {
+bool blocks::IBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
+  // Handle a mapping of output to list of inputs
+  // This only overrides outputs that are specifically mentioned
+  if (cfg.is<JsonObjectConst>()) {
+    for (JsonPairConst keyval : cfg.as<JsonObjectConst>()) {
+      // Key defines output
+      // TODO: Check conversion from string to number
+      auto output = std::stoul(keyval.key().c_str());
+      // Disconnect also sanity checks output index for us
+      if (!disconnect(output))
+        return false;
+      // Input may be given as list or as a single number
+      if (!_connect_from_json(keyval.value(), output))
+        return false;
+    }
+    return true;
+  }
+  // Handle a list of outputs
+  // This must overwrite all outputs, so we clear all of them
+  else if (cfg.is<JsonArrayConst>()) {
+    auto outputs_json = cfg.as<JsonArrayConst>();
+    if (outputs_json.size() != NUM_OUTPUTS)
+      return false;
+    reset_outputs();
+    uint8_t idx = 0;
+    for (JsonVariantConst input_spec : outputs_json) {
+      // Input may be given as list or as a single number
+      if (!_connect_from_json(input_spec, idx++))
+        return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+bool blocks::IBlock::_config_upscaling_from_json(const JsonVariantConst &cfg) {
+  if (cfg.is<JsonObjectConst>()) {
+    for (JsonPairConst keyval : cfg.as<JsonObjectConst>()) {
       if (!keyval.value().is<bool>())
         return false;
 
@@ -133,11 +152,10 @@ bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
         return false;
 
       set_upscaling(input, keyval.value());
+      return true;
     }
-  }
-
-  if (cfg["upscaling"].is<JsonArrayConst>()) {
-    auto array = cfg["upscaling"].as<JsonArrayConst>();
+  } else if (cfg.is<JsonArrayConst>()) {
+    auto array = cfg.as<JsonArrayConst>();
     if (array.size() != NUM_INPUTS)
       return false;
 
@@ -146,8 +164,9 @@ bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
         return false;
       set_upscaling(input, array[input]);
     }
+    return true;
   }
-  return true;
+  return false;
 }
 
 bool blocks::IBlock::_connect_from_json(const JsonVariantConst &input_spec, uint8_t output) {
