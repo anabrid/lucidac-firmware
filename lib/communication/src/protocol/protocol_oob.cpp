@@ -2,7 +2,7 @@
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "protocol/client.h"
+#include "protocol/protocol_oob.h"
 
 #include <bitset>
 
@@ -57,8 +57,14 @@ void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t 
   size_t inner_length = 3 + inner_count * 7 - 1;
   for (size_t outer_i = 0; outer_i < outer_count; outer_i++) {
     for (size_t inner_i = 0; inner_i < inner_count; inner_i++) {
-      memcpy(buffer + outer_i * inner_length + 1 + inner_i * 7,
-             daq::BaseDAQ::raw_to_str(data[outer_i * inner_count + inner_i]), 6);
+      const uint32_t number = data[outer_i * inner_count + inner_i];
+      const char *float_repr = daq::BaseDAQ::raw_to_str(number);
+      const char *dst = buffer + outer_i * inner_length + 1 + inner_i * 7;
+      const size_t len = 6;
+      if(float_repr)
+        memcpy(dst, float_repr, len);
+      else
+        snprintf(buffer, len, "%-1.3f", number);
     }
   }
   // digitalWriteFast(LED_BUILTIN, LOW);

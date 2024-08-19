@@ -10,10 +10,14 @@
 
 #include "handlers/login_lock.h"
 #include "protocol/protocol.h"
+#include "protocol/protocol_oob.h"
+
+#include "run/run_manager.h"
 
 #include <algorithm> 
 #include <cctype>
 #include <locale>
+#include "protocol.h"
 
 
 void trim(char *str) {
@@ -160,3 +164,20 @@ void msg::JsonLinesProtocol::process_string_input(const std::string &envelope_in
   }
 }
 
+void msg::JsonLinesProtocol::process_out_of_band_handlers(carrier::Carrier& carrier_) {
+  // Currently, the following prints to all connected clients.
+  static client::RunStateChangeNotificationHandler run_state_change_handler{
+    msg::JsonLinesProtocol::get().broadcast,
+    *msg::JsonLinesProtocol::get().envelope_out
+  };
+  static client::RunDataNotificationHandler run_data_handler{
+    carrier_,
+    msg::JsonLinesProtocol::get().broadcast,
+    *msg::JsonLinesProtocol::get().envelope_out
+  };
+
+  if (!run::RunManager::get().queue.empty()) {
+    Serial.println("faking run");
+    run::RunManager::get().run_next(&run_state_change_handler, &run_data_handler);
+  }
+}

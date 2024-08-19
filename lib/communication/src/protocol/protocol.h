@@ -14,6 +14,8 @@
 #include "utils/durations.h"
 #include "utils/print-multiplexer.h"
 
+namespace carrier { class Carrier; }
+
 namespace msg {
 
 /**
@@ -48,6 +50,8 @@ public:
     void process_serial_input(net::auth::AuthentificationContext &user_context);
     bool process_tcp_input(net::EthernetClient& stream, net::auth::AuthentificationContext &user_context);
     void process_string_input(const std::string& envelope_in, std::string& envelope_out, net::auth::AuthentificationContext &user_context);
+
+    void process_out_of_band_handlers(carrier::Carrier& carrier);
 };
 
 

@@ -31,7 +31,10 @@ float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
 }
 
 const char *daq::BaseDAQ::raw_to_str(uint16_t raw) {
-  return helpers::normalized_to_float_str_arr[raw_to_normalized(raw)];
+  size_t idx = raw_to_normalized(raw);
+  if(idx > helpers::normalized_to_float_str_arr.size())
+    return nullptr;
+  return helpers::normalized_to_float_str_arr[idx];
 }
 
 std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, unsigned int delay_us) {

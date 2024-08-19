@@ -28,6 +28,17 @@ public:
   void handle(run::RunStateChange change, const run::Run &run) override;
 };
 
+/**
+ * This class allows to compose a specific JSON message without using ArduinoJSON.
+ * The message contains ADC/DAQ data and using ArduinoJSON buffering turns out to
+ * be toos slow in practice.
+ * 
+ * The class is only used internally in the RunStateChangeNotificationHandler.
+ * 
+ * This class is rather hacky, should be considered to be replaced with
+ * @see utils::StreamingJson or even some tailored binary stuff, see tickets/issues
+ * where JSON alternatives are discussed.
+ **/
 class RunDataNotificationHandler : public run::RunDataHandler {
 public:
   // TODO: This can become invalid on disconnects

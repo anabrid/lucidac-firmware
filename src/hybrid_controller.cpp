@@ -17,7 +17,6 @@
 
 #include "lucidac/lucidac.h"
 #include "build/distributor.h"
-#include "protocol/client.h"
 #include "utils/logging.h"
 #include "protocol/registry.h"
 #include "protocol/handler.h"
@@ -27,9 +26,9 @@
 #include "net/auth.h"
 #include "net/settings.h"
 #include "net/settings.h"
-#include "run/run_manager.h"
 #include "utils/hashflash.h"
 #include "web/server.h"
+#include "mode/mode.h"
 
 platform::LUCIDAC carrier_;
 auto& netconf = net::StartupConfig::get();
@@ -134,19 +133,5 @@ void loop() {
   if(netconf.enable_webserver)
     web::LucidacWebServer::get().loop();
 
-  // Currently, the following prints to all connected clients.
-  static client::RunStateChangeNotificationHandler run_state_change_handler{
-    msg::JsonLinesProtocol::get().broadcast,
-    *msg::JsonLinesProtocol::get().envelope_out
-  };
-  static client::RunDataNotificationHandler run_data_handler{
-    carrier_,
-    msg::JsonLinesProtocol::get().broadcast,
-    *msg::JsonLinesProtocol::get().envelope_out
-  };
-
-  if (!run::RunManager::get().queue.empty()) {
-    Serial.println("faking run");
-    run::RunManager::get().run_next(&run_state_change_handler, &run_data_handler);
-  }
+  msg::JsonLinesProtocol::get().process_out_of_band_handlers(carrier_);
 }
