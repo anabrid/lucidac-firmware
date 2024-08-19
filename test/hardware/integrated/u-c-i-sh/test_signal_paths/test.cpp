@@ -1,0 +1,119 @@
+// Copyright (c) 2024 anabrid GmbH
+// Contact: https://www.anabrid.com/licensing/
+//
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
+
+#include <Arduino.h>
+#include <unity.h>
+
+#include "test_common.h"
+#include "test_fmtlib.h"
+#include "test_parametrized.h"
+
+#include "daq/daq.h"
+#include "io/io.h"
+
+#define private public
+#define protected public
+#include "lucidac/lucidac.h"
+
+using namespace platform;
+using namespace blocks;
+
+// TODO: Make this independent on underlying hardware by dynamically detecting carrier board
+LUCIDAC carrier_;
+blocks::CTRLBlockHAL_V_1_0_2 ctrlblock_hal;
+daq::OneshotDAQ DAQ;
+
+typedef std::vector<uint8_t> I;
+
+void setUp() {
+  // This is called before *each* test.
+  carrier_.reset(true);
+}
+
+void tearDown() {
+  // This is called after *each* test.
+}
+
+void test_init_and_blocks() {
+  // In carrier_.init(), missing blocks are ignored
+  TEST_ASSERT(carrier_.init());
+  // We do need certain blocks
+  for (auto &cluster : carrier_.clusters) {
+    TEST_ASSERT_NOT_NULL(cluster.ublock);
+    TEST_ASSERT_NOT_NULL(cluster.cblock);
+    TEST_ASSERT_NOT_NULL(cluster.iblock);
+    TEST_ASSERT_NOT_NULL(cluster.shblock);
+  }
+  TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
+}
+
+void test_summation(const std::array<float, 32> &factors, const std::array<I, 16> &connections) {
+  TEST_MESSAGE_FORMAT("factors={}", factors);
+  TEST_MESSAGE_FORMAT("connections={}", connections);
+  // Calculate expected sum
+  std::array<float, 16> expected{};
+  for (auto i_out_idx = 0u; i_out_idx < connections.size(); i_out_idx++) {
+    for (uint8_t i_in_idx : connections[i_out_idx]) {
+      expected[i_out_idx] += factors[i_in_idx];
+    }
+  }
+  TEST_MESSAGE_FORMAT("expected={}", expected);
+
+  // Configure on hardware
+  for (auto &cluster : carrier_.clusters) {
+    carrier_.ctrl_block->set_adc_bus_to_cluster_gain(cluster.get_cluster_idx());
+
+    // Connect reference through U-C-I to SH
+    cluster.ublock->reset_connections();
+    for (auto i_out_idx = 0u; i_out_idx < connections.size(); i_out_idx++) {
+      for (uint8_t i_in_idx : connections[i_out_idx]) {
+        TEST_ASSERT(
+            cluster.add_constant(UBlock::Transmission_Mode::POS_REF, i_in_idx, factors[i_in_idx], i_out_idx));
+      }
+    }
+    TEST_ASSERT(cluster.write_to_hardware());
+    // We only calibrate offsets, since we want this test case to be simple
+    TEST_ASSERT(cluster.calibrate_offsets());
+
+    // Measure by using SH gain outputs
+    auto data = measure_sh_gain(cluster, &DAQ);
+    TEST_MESSAGE_FORMAT("data={}", data);
+    for (auto idx = 0u; idx < data.size(); idx++)
+      TEST_ASSERT_FLOAT_WITHIN(0.15f, expected[idx], data[idx]);
+  }
+}
+
+void test_n_summations() {
+  for (auto N = 1u; N < 32; N++) {
+    std::array<float, 32> factors{};
+    std::fill(factors.begin(), factors.end(), 1.0f / static_cast<float>(N));
+    for (auto i_out_idx : IBlock::OUTPUT_IDX_RANGE()) {
+      std::array<I, 16> connections;
+      for (auto i_in_idx = 0u; i_in_idx < N; i_in_idx++)
+        connections[i_out_idx].emplace_back(i_in_idx);
+      // Run test on this configuration
+      TEST_MESSAGE("-----------------------");
+      carrier_.reset(true);
+      test_summation(factors, connections);
+    }
+  }
+}
+
+void setup() {
+  bus::init();
+  io::init();
+  DAQ.init(0);
+
+  UNITY_BEGIN();
+  RUN_TEST(test_init_and_blocks);
+  RUN_PARAM_TEST(test_summation,
+                 {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8,
+                  0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8},
+                 {I{1}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}});
+  RUN_TEST(test_n_summations);
+  UNITY_END();
+}
+
+void loop() { delay(500); }
