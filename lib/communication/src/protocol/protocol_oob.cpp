@@ -59,12 +59,16 @@ void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t 
     for (size_t inner_i = 0; inner_i < inner_count; inner_i++) {
       const uint32_t number = data[outer_i * inner_count + inner_i];
       const char *float_repr = daq::BaseDAQ::raw_to_str(number);
-      const char *dst = buffer + outer_i * inner_length + 1 + inner_i * 7;
-      const size_t len = 6;
-      if(float_repr)
-        memcpy(dst, float_repr, len);
-      else
-        snprintf(buffer, len, "%-1.3f", number);
+      char *dst = buffer + outer_i * inner_length + 1 + inner_i * 7;
+      constexpr size_t len = 6;
+      char float_repr_fallback[len+2];
+      if(!float_repr) {
+        // Need to make sure string is exactly "len" long without NULL terminating byte
+        // so it fits into the "len" sized slot in the dst buffer.
+        snprintf(float_repr_fallback, len+1, "%+1.3f", daq::BaseDAQ::raw_to_float(number));
+        float_repr = float_repr_fallback;
+      }
+      memcpy(dst, float_repr, len);
     }
   }
   // digitalWriteFast(LED_BUILTIN, LOW);
