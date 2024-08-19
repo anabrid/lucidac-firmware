@@ -6,5 +6,4 @@
 #pragma once
 
 // Use like RUN_PARAM_TEST(test_function, 5, "bla");
-#define RUN_PARAM_TEST(func, ...) \
-    RUN_TEST([]() { return func(__VA_ARGS__); })
+#define RUN_PARAM_TEST(func, ...) UnityDefaultTestRun([]() { return func(__VA_ARGS__); }, #func, __LINE__)
