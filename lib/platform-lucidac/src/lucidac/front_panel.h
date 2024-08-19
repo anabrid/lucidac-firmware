@@ -39,6 +39,9 @@ public:
 
   std::vector<Entity *> get_child_entities() override { return {}; };
 
+protected:
+  bool _config_leds_from_json(const JsonVariantConst &cfg);
+  bool _config_signal_generator_from_json(const JsonVariantConst &cfg);
   void config_self_to_json(JsonObject &cfg) override;
 
 public:

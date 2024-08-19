@@ -237,10 +237,11 @@ public:
 protected:
   void config_self_to_json(JsonObject &cfg) override;
 
+  bool _config_outputs_from_json(const JsonVariantConst &cfg);
+
   friend class ::platform::Cluster;
   friend class ::blocks::MBlock;
 };
-
 } // namespace blocks
 
 // Include template definitions

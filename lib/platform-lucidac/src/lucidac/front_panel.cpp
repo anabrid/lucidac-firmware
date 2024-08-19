@@ -189,18 +189,51 @@ platform::LUCIDACFrontPanel::from_entity_classifier(entities::EntityClassifier c
 }
 
 bool platform::LUCIDACFrontPanel::config_self_from_json(JsonObjectConst cfg) {
-  if (cfg["leds"].is<uint8_t>())
-    leds.set_all(cfg["leds"]);
+  for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
+    if (cfgItr->key() == "leds") {
+      if (!_config_leds_from_json(cfgItr->value()))
+        return false;
+    } else if (cfgItr->key() == "signal_generator") {
+      if (!_config_signal_generator_from_json(cfgItr->value()))
+        return false;
+    } else {
+      // Unknown configuration key
+      return false;
+    }
+  }
 
-  if (cfg["signal_generator"].is<JsonObjectConst>()) {
-    auto cfg_generator = cfg["signal_generator"].as<JsonObjectConst>();
-    if (cfg_generator["frequency"].is<float>())
-      signal_generator.set_frequency(cfg_generator["frequency"]);
+  return true;
+}
 
-    if (cfg_generator["phase"].is<float>())
-      signal_generator.set_phase(cfg_generator["phase"]);
+bool platform::LUCIDACFrontPanel::_config_leds_from_json(const JsonVariantConst &cfg) {
+  if (!cfg.is<uint8_t>())
+    return false;
+  leds.set_all(cfg);
+  return true;
+}
 
-    if (cfg_generator["wave_form"].is<std::string>()) {
+bool platform::LUCIDACFrontPanel::_config_signal_generator_from_json(const JsonVariantConst &cfg) {
+  if (!cfg.is<JsonObjectConst>())
+    return false;
+
+  auto cfg_generator = cfg.as<JsonObjectConst>();
+  for (auto cfgItr = cfg_generator.begin(); cfgItr != cfg_generator.end(); ++cfgItr) {
+    if (cfgItr->key() == "frequency") {
+      if (!cfgItr->value().is<float>())
+        return false;
+
+      signal_generator.set_frequency(cfgItr->value());
+
+    } else if (cfgItr->key() == "phase") {
+      if (!cfgItr->value().is<float>())
+        return false;
+
+      signal_generator.set_phase(cfgItr->value());
+
+    } else if (cfgItr->key() == "wave_form") {
+      if (!cfgItr->value().is<std::string>())
+        return false;
+
       std::string wave_form = cfg_generator["wave_form"];
       if (wave_form == "sine")
         signal_generator.set_wave_form(functions::AD9834::WaveForm::SINE);
@@ -210,46 +243,62 @@ bool platform::LUCIDACFrontPanel::config_self_from_json(JsonObjectConst cfg) {
         signal_generator.set_wave_form(functions::AD9834::WaveForm::TRIANGLE);
       else
         return false;
-    }
 
-    if (cfg_generator["amplitude"].is<float>())
-      if (!signal_generator.set_amplitude(cfg_generator["amplitude"]))
+    } else if (cfgItr->key() == "amplitude") {
+      if (!cfgItr->value().is<float>())
         return false;
 
-    if (cfg_generator["square_voltage_low"].is<float>())
-      if (!signal_generator.set_square_voltage_low(cfg_generator["square_voltage_low"]))
+      signal_generator.set_amplitude(cfgItr->value());
+
+    } else if (cfgItr->key() == "square_voltage_low") {
+      if (!cfgItr->value().is<float>())
         return false;
 
-    if (cfg_generator["square_voltage_high"].is<float>())
-      if (!signal_generator.set_square_voltage_high(cfg_generator["square_voltage_high"]))
+      signal_generator.set_square_voltage_low(cfgItr->value());
+
+    } else if (cfgItr->key() == "square_voltage_high") {
+      if (!cfgItr->value().is<float>())
         return false;
 
-    if (cfg_generator["offset"].is<float>())
-      if (!signal_generator.set_offset(cfg_generator["offset"]))
+      signal_generator.set_square_voltage_high(cfgItr->value());
+
+    } else if (cfgItr->key() == "offset") {
+      if (!cfgItr->value().is<float>())
         return false;
 
-    if (cfg_generator["sleep"].is<bool>()) {
-      if (cfg_generator["sleep"])
+      signal_generator.set_offset(cfgItr->value());
+
+    } else if (cfgItr->key() == "sleep") {
+      if (!cfgItr->value().is<bool>())
+        return false;
+
+      if (cfgItr->value())
         signal_generator.sleep();
       else
         signal_generator.awake();
-    }
 
-    if (cfg_generator["dac_outputs"].is<JsonArrayConst>()) {
+    } else if (cfgItr->key() == "dac_outputs") {
+      if (!cfgItr->value().is<JsonArrayConst>())
+        return false;
+
       auto dac_outputs = cfg_generator["dac_outputs"].as<JsonArrayConst>();
       if (dac_outputs.size() != 2)
         return false;
 
-      if (dac_outputs[0].is<float>())
-        if (!signal_generator.set_dac_out0(dac_outputs[0]))
-          return false;
+      if (!dac_outputs[0].is<float>())
+        return false;
+      if (!dac_outputs[1].is<float>())
+        return false;
 
-      if (dac_outputs[1].is<float>())
-        if (!signal_generator.set_dac_out1(dac_outputs[1]))
-          return false;
+      if (!signal_generator.set_dac_out0(dac_outputs[0]))
+        return false;
+      if (!signal_generator.set_dac_out1(dac_outputs[1]))
+        return false;
+
+    } else {
+      return false;
     }
   }
-
   return true;
 }
 

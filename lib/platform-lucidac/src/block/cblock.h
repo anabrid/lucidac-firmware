@@ -160,6 +160,8 @@ public:
 protected:
   void config_self_to_json(JsonObject &cfg) override;
 
+  bool _config_elements_form_json(const JsonVariantConst &cfg);
+
   friend class ::platform::Calibration;
 };
 

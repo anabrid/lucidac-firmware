@@ -8,6 +8,7 @@
 #include <unity.h>
 
 #define private public
+#define protected public
 #include "lucidac/front_panel.h"
 
 platform::LUCIDACFrontPanel fp;

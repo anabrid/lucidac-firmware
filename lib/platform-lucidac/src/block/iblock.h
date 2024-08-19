@@ -118,6 +118,9 @@ public:
 protected:
   bool _connect_from_json(const JsonVariantConst &input_spec, uint8_t output);
 
+  bool _config_outputs_from_json(const JsonVariantConst &cfg);
+  bool _config_upscaling_from_json(const JsonVariantConst &cfg);
+
   void config_self_to_json(JsonObject &cfg) override;
 
   bool _is_connected(uint8_t input, uint8_t output) const;
