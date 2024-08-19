@@ -8,6 +8,7 @@
 
 #define ANABRID_PEDANTIC
 
+#include "io/io.h"
 #include "daq/daq.h"
 #include "lucidac/lucidac.h"
 #include "block/mblock.h"
@@ -32,83 +33,86 @@ using namespace platform;
 LUCIDAC lucidac;
 daq::OneshotDAQ the_daq;
 
-uint8_t integrator, lane, const_lane, adc_channel;
+uint8_t integrator, lane, adc_channel;
 
 #define SHOW(variable) " " #variable "=" << variable
 
 float slope, ic;
 unsigned int time_factor; // k0
-float op_time_secs;
-float expected_value = 1.0;
+float op_time_us;
+float expected_value;
 
-void setup_adc() {
-  // setup the ADC
-  adc_channel = 0;
-  lucidac.set_adc_channel(adc_channel, integrator);
+void test_init_and_blocks() {
+  bus::init();
+  io::init();
+  mode::ManualControl::init();
 
-  // default value, was set by lucidac.reset().
-  TEST_ASSERT(lucidac.ctrl_block->get_adc_bus() == blocks::CTRLBlock::ADCBus::ADC);
+  // In carrier_.init(), missing blocks are ignored
+  TEST_ASSERT(lucidac.init());
+  delayMicroseconds(50);
 
   TEST_ASSERT(the_daq.init(0));
+
+  lucidac.reset(false);
+  // We do need certain blocks
+  for (auto &cluster : lucidac.clusters) {
+    TEST_ASSERT_NOT_NULL(cluster.ublock);
+    TEST_ASSERT_NOT_NULL(cluster.cblock);
+    TEST_ASSERT_NOT_NULL(cluster.iblock);
+    //TEST_ASSERT_NOT_NULL(cluster.shblock);
+  }
+  TEST_ASSERT_NOT_NULL(lucidac.ctrl_block);
 }
 
 
 void configure() {
+    std::cout << "A\n" << std::endl;
     lucidac.reset(false);
+    std::cout << "B\n" << std::endl;
     auto cluster = lucidac.clusters[0];
 
-    // TODO: Detect where we have the M-Int block readily available at the correct position.
-    // This assumes an M-Int-Block in slot M0
-
-    // Determine which integrator to use
-    integrator = 0;
-
-    ic = -1.0;
-    slope = 0.1;
-
+    std::cout << "C\n" << std::endl;
     auto mintblock = (blocks::MIntBlock*)cluster.m0block;
     TEST_ASSERT(mintblock != nullptr);
+    std::cout << "D\n" << std::endl;
+    TEST_ASSERT(mintblock->is_entity_type(blocks::MBlock::TYPES::M_INT8_BLOCK));
+
+    std::cout << "E\n" << std::endl;
     TEST_ASSERT(mintblock->set_ic_value(integrator, ic));
     TEST_ASSERT(mintblock->set_time_factor(integrator, time_factor));
 
-    // Make up the constant
-    const_lane = 0;
-    if(lane == const_lane) const_lane++;
-
     // Feed a constant into the integrator input
-    TEST_ASSERT(cluster.add_constant(blocks::UBlock::Transmission_Mode::POS_REF, const_lane, slope, integrator));
+    std::cout << "F\n" << std::endl;
+    TEST_ASSERT(cluster.add_constant(blocks::UBlock::Transmission_Mode::POS_REF, lane, slope, integrator));
 
-    bool use_acl_out_for_debugging = true;
-    if(use_acl_out_for_debugging) {
-        // which ACL_OUT to use
-        uint8_t acl_out = 0;
-        const uint8_t acl_lane_start = 24;
-        TEST_ASSERT(lucidac.set_acl_select(acl_out, platform::LUCIDAC::ACL::EXTERNAL_));
+    // ACL_OUT0
+    uint8_t sink = 15;
+    TEST_ASSERT(cluster.route(integrator, 24, 1.0, sink));
 
-        // a cross-lane where to sink the ACL_IN to. We don't use it so
-        // just put it so some computing element on M1 and hope for the best.
-        // If you want to improve it, configure U/C block instead of using route()
-        // in the next linkes.
-        uint8_t sink = 15;
+    TEST_ASSERT(lucidac.set_adc_channel(adc_channel, integrator));
 
-        TEST_ASSERT(cluster.route(integrator, acl_lane_start + acl_out, 1.0, sink));
-    }
+    // default value, was set by lucidac.reset().
+    TEST_ASSERT(lucidac.ctrl_block->get_adc_bus() == blocks::CTRLBlock::ADCBus::ADC);
 
-    TEST_ASSERT_EQUAL(1, cluster.write_to_hardware());
+    std::cout << "G\n" << std::endl;
+    TEST_ASSERT(cluster.write_to_hardware());
     delay(10);
 }
 
 void run_and_check() {
+    std::cout << "IC\n" << std::endl;
     mode::ManualControl::to_ic();
     delayMicroseconds(120); // probably shorten!
+    std::cout << "OP\n" << std::endl;
     mode::ManualControl::to_op();
-    
-    delayMicroseconds((int)(op_time_secs * 1000));
-
+    delayMicroseconds(op_time_us);
     mode::ManualControl::to_halt();
 
-    float measured_value_raw = the_daq.sample_raw(adc_channel);
+    std::cout << "SAMPLE\n" << std::endl;
+    uint16_t measured_value_raw = the_daq.sample_raw(adc_channel);
+    std::cout << SHOW(measured_value_raw) << std::endl;
     float measured_value = the_daq.sample(adc_channel);
+    std::cout << SHOW(measured_value) << std::endl;
 
     std::cout << SHOW(integrator) << SHOW(measured_value_raw) << SHOW(measured_value) << std::endl;
 
@@ -117,39 +121,43 @@ void run_and_check() {
     TEST_ASSERT( fabs(measured_value - expected_value) < acceptable_abs_error );
 }
 
-void all_testcases() {
-    float slopes[] = { -1, +1};
-    float ics[]    = { +1, -1};
+int sign(float x) { return (x > 0) ? 1 : ((x < 0) ? -1 : 0); }
 
+void all_testcases() {
+    float slopes[] = { -1, +1, +10, -10 };
+    float ics[]    = { +1, -1 };
     unsigned int time_factors[] = { 100, 10'000 };
 
-    for(int conf_idx=0; conf_idx < sizeof(slopes) / sizeof(slopes[0]); conf_idx++) {
-        slope = slopes[conf_idx];
-        ic = ics[conf_idx];
+    integrator = 0;
+    lane = 0;
 
-        for(int factor_idx; factor_idx < sizeof(time_factors) / sizeof(time_factors[0]); factor_idx++) {
-            time_factor = time_factors[factor_idx];
+    for(auto cur_slope : slopes)
+    for(auto cur_ic : ics)
+    for(auto cur_time_factor : time_factors) {
+        slope = cur_slope;
+        ic = cur_ic;
+        time_factor = cur_time_factor;
 
-            // determine the required time until the ramp reaches expected_value.
-            op_time_secs = (expected_value / time_factor - ic) / slope;
+        if(sign(slope) == sign(ic)) continue;
 
-            std::cout << SHOW(slope) << SHOW(ic) << SHOW(time_factor) << SHOW( op_time_secs ) << std::endl;
+        expected_value = -ic;
 
-            RUN_TEST(setup);
-            RUN_TEST(run_and_check);
-        }
+        // determine the required time until the ramp reaches expected_value.
+        op_time_us = abs(expected_value - ic)/(abs(slope)*time_factor) * 1000 * 1000;
+
+        std::cout << SHOW(slope) << SHOW(ic) << SHOW(time_factor) << SHOW( op_time_us ) << std::endl;
+
+        TEST_ASSERT(op_time_us > 0);
+        RUN_TEST(configure);
+        std::cout << "H\n" << std::endl;
+        RUN_TEST(run_and_check);
     }
 }
 
 void setup() {
   UNITY_BEGIN();
-
-  bus::init();
-  TEST_ASSERT(lucidac.init());
-
-  RUN_TEST(setup_adc);
+  TEST_ASSERT(test_init_and_blocks);
   all_testcases(); // calls RUN_TEST internally
-
   UNITY_END();
 }
 

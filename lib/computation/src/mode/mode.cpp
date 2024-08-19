@@ -15,7 +15,6 @@ void mode::ManualControl::init() {
   pinMode(PIN_MODE_OP, OUTPUT);
   digitalWriteFast(PIN_MODE_IC, HIGH);
   digitalWriteFast(PIN_MODE_OP, HIGH);
-  is_initialized = true;
 }
 
 void mode::ManualControl::to_ic() {
@@ -78,6 +77,7 @@ void mode::RealManualControl::to_halt() {
   }
 }
 
+// storage and default values for static class members
 bool mode::FlexIOControl::_is_initialized = false;
 bool mode::FlexIOControl::_is_enabled = false;
 

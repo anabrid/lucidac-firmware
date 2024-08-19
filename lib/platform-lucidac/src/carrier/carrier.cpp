@@ -231,8 +231,7 @@ int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
 
   bool write_success = resolved_entity->config_from_json(msg_in["config"]);
   if (!write_success && msg_out["error"].isNull()) {
-    // TODO: Never reachable due to msg_out["error"].isNull()
-    msg_out["error"] = "Error applying configuration to entity.";
+    msg_out["error"] = std::string("Error applying configuration to entity ") + resolved_entity->get_entity_id();
     return error(5);
   }
 

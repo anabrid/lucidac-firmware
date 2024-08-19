@@ -44,7 +44,6 @@ enum class Sync { NONE, MASTER, SLAVE };
  **/
 class ManualControl {
 public:
-  static bool is_initialized;
   static void init();
   static void to_ic();
   static void to_op();
