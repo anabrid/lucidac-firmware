@@ -50,7 +50,7 @@ void test_init_and_blocks() {
 }
 
 void test_summation(const std::array<float, 32> &factors, const std::array<I, 16> &connections) {
-  TEST_MESSAGE_FORMAT("factors={}", factors);
+  TEST_MESSAGE_FORMAT("factor={}", factors[0]); // All factors are the same
   TEST_MESSAGE_FORMAT("connections={}", connections);
   // Calculate expected sum
   std::array<float, 16> expected{};
@@ -90,13 +90,16 @@ void test_n_summations() {
     std::array<float, 32> factors{};
     std::fill(factors.begin(), factors.end(), 1.0f / static_cast<float>(N));
     for (auto i_out_idx : IBlock::OUTPUT_IDX_RANGE()) {
-      std::array<I, 16> connections;
-      for (auto i_in_idx = 0u; i_in_idx < N; i_in_idx++)
-        connections[i_out_idx].emplace_back(i_in_idx);
-      // Run test on this configuration
-      TEST_MESSAGE("-----------------------");
-      carrier_.reset(true);
-      test_summation(factors, connections);
+      for (auto i_in_shift = 0u; i_in_shift < 32u - N; i_in_shift += N) {
+        std::array<I, 16> connections;
+        for (auto i_in_idx = 0u; i_in_idx < N; i_in_idx++)
+          connections[i_out_idx].emplace_back(i_in_idx + i_in_shift);
+        // Run test on this configuration
+        TEST_MESSAGE("--------------------------------------");
+        TEST_MESSAGE(("Testing " + std::to_string(N) + " connections").c_str());
+        carrier_.reset(true);
+        test_summation(factors, connections);
+      }
     }
   }
 }
