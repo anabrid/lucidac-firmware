@@ -272,7 +272,7 @@ bool blocks::MIntBlockHAL_V_1_0_0::write_ic(uint8_t idx, float ic) {
   //       And 2V equals a 1, since the output is halved after the integrators.
   //       Since we enabled gain=2, we don't need to halve/double here.
   //       Resulting in a shift of -1 and the inversion.
-  return f_ic_dac.set_channel(idx, (ic - 1.0f) * 1.25f);
+  return f_ic_dac.set_channel(idx, (ic + 1.0f) * 1.25f);
 }
 
 bool blocks::MIntBlockHAL_V_1_0_0::write_time_factor_switches(std::bitset<8> switches) {
