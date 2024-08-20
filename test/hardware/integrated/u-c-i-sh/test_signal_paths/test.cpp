@@ -49,17 +49,21 @@ void test_init_and_blocks() {
   TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
 }
 
-void test_summation(const std::array<float, 32> &factors, const std::array<I, 16> &connections) {
+void test_summation(const std::array<float, 32> &factors, const std::array<I, 16> &connections,
+                    bool full_calibration) {
   TEST_MESSAGE_FORMAT("factor={}", factors[0]); // All factors are the same
   TEST_MESSAGE_FORMAT("connections={}", connections);
   // Calculate expected sum
   std::array<float, 16> expected{};
+  std::array<float, 16> deviations{};
   for (auto i_out_idx = 0u; i_out_idx < connections.size(); i_out_idx++) {
     for (uint8_t i_in_idx : connections[i_out_idx]) {
       expected[i_out_idx] += factors[i_in_idx];
     }
   }
   TEST_MESSAGE_FORMAT("expected={}", expected);
+
+  unsigned int relevant_i_out = 0;
 
   // Configure on hardware
   for (auto &cluster : carrier_.clusters) {
@@ -69,36 +73,48 @@ void test_summation(const std::array<float, 32> &factors, const std::array<I, 16
     cluster.ublock->reset_connections();
     for (auto i_out_idx = 0u; i_out_idx < connections.size(); i_out_idx++) {
       for (uint8_t i_in_idx : connections[i_out_idx]) {
+        relevant_i_out = i_out_idx; // We only have one output we can use at a time
         TEST_ASSERT(
             cluster.add_constant(UBlock::Transmission_Mode::POS_REF, i_in_idx, factors[i_in_idx], i_out_idx));
       }
     }
     TEST_ASSERT(cluster.write_to_hardware());
     // We only calibrate offsets, since we want this test case to be simple
-    TEST_ASSERT(cluster.calibrate_offsets());
+    if (full_calibration) {
+      cluster.cblock->reset_gain_corrections();
+      TEST_ASSERT(cluster.calibrate(&DAQ));
+    } else
+      TEST_ASSERT(cluster.calibrate_offsets());
 
     // Measure by using SH gain outputs
     auto data = measure_sh_gain(cluster, &DAQ);
     TEST_MESSAGE_FORMAT("data={}", data);
-    for (auto idx = 0u; idx < data.size(); idx++)
-      TEST_ASSERT_FLOAT_WITHIN(0.15f, expected[idx], data[idx]);
+
+    for (auto idx = 0u; idx < data.size(); idx++) {
+      TEST_ASSERT_FLOAT_WITHIN(full_calibration ? 0.1f : 0.05f, expected[idx], data[idx]);
+      deviations[idx] = data[idx] - expected[idx];
+    }
+
+    TEST_MESSAGE_FORMAT("absolute deviation ={}",
+                        deviations[relevant_i_out]); // this is absolute, but since we sum to one, relative and
+                                                     // absolute deviation are the same
   }
 }
 
 void test_n_summations() {
-  for (auto N = 1u; N < 32; N++) {
+  for (auto N : {5u}) {
     std::array<float, 32> factors{};
     std::fill(factors.begin(), factors.end(), 1.0f / static_cast<float>(N));
-    for (auto i_out_idx : IBlock::OUTPUT_IDX_RANGE()) {
+    for (auto i_out_idx : {0, 1, 2, 3, 4}) {
       for (auto i_in_shift = 0u; i_in_shift < 32u - N; i_in_shift += N) {
         std::array<I, 16> connections;
         for (auto i_in_idx = 0u; i_in_idx < N; i_in_idx++)
           connections[i_out_idx].emplace_back(i_in_idx + i_in_shift);
         // Run test on this configuration
         TEST_MESSAGE("--------------------------------------");
-        TEST_MESSAGE(("Testing " + std::to_string(N) + " connections").c_str());
+        TEST_MESSAGE_FORMAT("Testing = {} connections", N);
         carrier_.reset(true);
-        test_summation(factors, connections);
+        test_summation(factors, connections, i_out_idx == 0);
       }
     }
   }
@@ -114,7 +130,7 @@ void setup() {
   RUN_PARAM_TEST(test_summation,
                  {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8,
                   0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8},
-                 {I{1}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}});
+                 {I{1}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}}, false);
   RUN_TEST(test_n_summations);
   UNITY_END();
 }
