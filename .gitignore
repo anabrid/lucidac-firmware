@@ -39,3 +39,6 @@ docs/xml
 *.hex
 teensy_loader_cli*
 
+# alternative uploaders
+rygel
+tycmd
