@@ -8,7 +8,7 @@
  * - FlexIODAQ can not be instantiated in top-level code outside of functions
  */
 
-#include <core_pins.h>
+#include <Arduino.h>
 #include <unity.h>
 
 // Include things with all private members made public,
@@ -37,15 +37,13 @@ public:
 
 DummyRunDataHandler dummy_run_data_handler{};
 
-FlexIOControl mode_ctrl{};
-
 void do_run(RunConfig run_config, DAQConfig daq_config) {
   TEST_ASSERT(daq_config.is_valid());
 
   std::string run_id{"550e8400-e29b-11d4-a716-446655440000"};
   Run run_{run_id, run_config, daq_config};
 
-  TEST_ASSERT(FlexIOControl::init(run_config.ic_time, run_config.op_time, mode::OnOverload::HALT,
+  TEST_ASSERT(FlexIOControl::init(run_config.ic_time, run_config.op_time, mode::OnOverload::IGNORE,
                                   mode::OnExtHalt::IGNORE));
   FlexIODAQ daq_{run_, daq_config, &dummy_run_data_handler};
   dummy_run_data_handler.num_of_data_vectors_streamed = 0;
@@ -69,7 +67,7 @@ void do_run(RunConfig run_config, DAQConfig daq_config) {
   // This is hard to check for, since the DMA active flag is only set once the DMA
   // is triggered by the last CLK pulse, which is after around 1 microsecond.
   // Easiest solution is to wait for it.
-  delayMicroseconds(1);
+  delayMicroseconds(5);
   if (!daq_.stream(true)) {
     TEST_FAIL_MESSAGE("daq remaining partial data streaming error");
   }
