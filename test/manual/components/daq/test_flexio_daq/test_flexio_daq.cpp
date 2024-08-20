@@ -39,8 +39,7 @@ public:
 
 DummyRunDataHandler dummy_run_data_handler{};
 
-void test_number_of_samples(RunConfig run_config, DAQConfig daq_config, //
-                            size_t absolute_number_of_samples, size_t last_number_of_samples) {
+void test_number_of_samples(RunConfig run_config, DAQConfig daq_config, size_t absolute_number_of_samples) {
   TEST_ASSERT(daq_config.is_valid());
 
   std::string run_id{"550e8400-e29b-11d4-a716-446655440000"};
@@ -86,10 +85,9 @@ void test_number_of_samples(RunConfig run_config, DAQConfig daq_config, //
   // Check number of absolute and last samples seen
   delayMicroseconds(5);
   TEST_ASSERT_EQUAL(absolute_number_of_samples, dummy_run_data_handler.num_of_data_vectors_streamed);
-  TEST_ASSERT_EQUAL(last_number_of_samples, ContinuousDAQ::get_number_of_data_vectors_in_buffer());
+  TEST_ASSERT_EQUAL(absolute_number_of_samples % (dma::BUFFER_SIZE / daq_config.get_num_channels()),
+                    ContinuousDAQ::get_number_of_data_vectors_in_buffer());
 }
-
-void one_time_setup() {}
 
 void setUp() {
   // This is called before *each* test.
@@ -103,15 +101,23 @@ void tearDown() {
 }
 
 void setup() {
-  one_time_setup();
   delayMicroseconds(100);
+
+  // CARE: Currently, the OP time is not absolutely perfect, so the number of samples
+  //       is not exactly sample_rate*op_time and determined empirically.
+
   UNITY_BEGIN();
-  RUN_PARAM_TEST(test_number_of_samples, {1000, 42'000}, {1, 100'000}, 5, 5);
-  RUN_PARAM_TEST(test_number_of_samples, {1000, 32 * 10'000}, {8, 100'000}, 32, 0);
-  RUN_PARAM_TEST(test_number_of_samples, {1000, 3500}, {1, 100'000}, 1, 1);
-  RUN_PARAM_TEST(test_number_of_samples, {1000, 42000}, {1, 10'000}, 1, 1);
-  RUN_PARAM_TEST(test_number_of_samples, {1000, 10'000}, {1, 100'000}, 2, 2);
-  RUN_PARAM_TEST(test_number_of_samples, {1000, 33 * 10'000}, {8, 100'000}, 33, 1);
+  // Some short ones and corner-cases
+  RUN_PARAM_TEST(test_number_of_samples, {1000, 45'000}, {1, 100'000}, 5);
+  RUN_PARAM_TEST(test_number_of_samples, {1000, 32 * 10'000}, {8, 100'000}, 32);
+  RUN_PARAM_TEST(test_number_of_samples, {1000, 3500}, {1, 100'000}, 1);
+  RUN_PARAM_TEST(test_number_of_samples, {1000, 42000}, {1, 10'000}, 1);
+  RUN_PARAM_TEST(test_number_of_samples, {1000, 10'000}, {1, 100'000}, 2);
+  RUN_PARAM_TEST(test_number_of_samples, {1000, 33 * 10'000}, {8, 100'000}, 33);
+  // Do something longer
+  RUN_PARAM_TEST(test_number_of_samples, {1000, 785'000}, {8, 100'000}, 79);
+  RUN_PARAM_TEST(test_number_of_samples, {1000, 795'000}, {8, 100'000}, 80);
+  RUN_PARAM_TEST(test_number_of_samples, {1000, 1'005'000}, {8, 100'000}, 100);
   UNITY_END();
 }
 

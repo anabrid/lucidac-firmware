@@ -176,7 +176,19 @@ bool ContinuousDAQ::stream(bool partial) {
     // Stream the remaining partially filled part of the buffer.
     // This should be done exactly once, after the data acquisition stopped.
     active_buffer_part = partial_buffer_part;
-    outer_count = get_number_of_data_vectors_in_buffer();
+    if (partial_buffer_part == dma::buffer.data())
+      // If we have streamed out the second part the last time,
+      // the partial data is in the first part of the buffer
+      // and get_number_of_data_vectors_in_buffer returns only
+      // the number of partial data vectors to stream.
+      outer_count = get_number_of_data_vectors_in_buffer();
+    else
+      // If we have streamed out the first part the last time,
+      // the partial data is in the second half,
+      // and get_number_of_data_vectors_in_buffer does not consider this
+      // and returns number of vectors in first_half plus number of partials
+      // in second half, and we have to subtract the number in the first half.
+      outer_count = get_number_of_data_vectors_in_buffer() - outer_count;
     if (!outer_count) {
       return true;
     }
