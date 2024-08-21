@@ -1,6 +1,5 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #pragma once
@@ -14,9 +13,9 @@
 #include <FlexIO_t4.h>
 #endif
 
-#include "base.h"
+#include "daq/base.h"
 #include "run/run.h"
-#include "serializer.h"
+#include "daq/serializer.h"
 
 /// @brief Routines for Data Aquisition (DAQ) / Analog2Digital converters (ADCs)
 namespace daq {
@@ -69,6 +68,7 @@ public:
 /**
  * Do single captures with the ADC.
  * This class is meant to be used as quasi Singleton standalone.
+ * \ingroup Singletons
  **/
 class OneshotDAQ : public BaseDAQ {
 public:
@@ -81,6 +81,10 @@ public:
   float sample(uint8_t index) override;
 
   std::array<uint16_t, NUM_CHANNELS> sample_avg_raw(size_t samples, unsigned int delay_us);
+
+  // Call via protocol
+  ///@ingroup User-Functions
+  int sample(JsonObjectConst msg_in, JsonObject &msg_out);
 };
 
 } // namespace daq

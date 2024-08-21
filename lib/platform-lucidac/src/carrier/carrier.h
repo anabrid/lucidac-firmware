@@ -1,6 +1,5 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #pragma once
@@ -8,14 +7,13 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <array>
+#include <string>
 
 #include "block/ctrlblock.h"
 #include "chips/TMP127Q1.h"
 #include "cluster.h"
 #include "daq/base.h"
 #include "entity/entity.h"
-#include "is_number.h"
-#include "mac_utils.h"
 
 using namespace platform;
 
@@ -27,12 +25,21 @@ public:
   virtual void reset_adc_bus_mux() = 0;
 };
 
+/**
+ * \brief Top-level hierarchy controlled by a single microcontroller
+ *
+ * A Carrier (also refered to as module holder, base board or mother board) contains
+ * one microcontroller and multiple clusters, where the clusers hold the actual analog
+ * computing hardware.
+ *
+ * \ingroup Singletons
+ **/
 class Carrier : public entities::Entity {
 public:
   static constexpr int8_t ADC_CHANNEL_DISABLED = -1;
 
 protected:
-  Carrier_HAL* hardware;
+  Carrier_HAL *hardware;
 
   std::array<int8_t, 8> adc_channels{ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED,
                                      ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED, ADC_CHANNEL_DISABLED,
@@ -40,17 +47,17 @@ protected:
 
 public:
   std::vector<Cluster> clusters;
-  blocks::CTRLBlock* ctrl_block = nullptr;
+  blocks::CTRLBlock *ctrl_block = nullptr;
 
-  explicit Carrier(std::vector<Cluster> clusters, Carrier_HAL* hardware);
+  explicit Carrier(std::vector<Cluster> clusters, Carrier_HAL *hardware);
 
   entities::EntityClass get_entity_class() const final;
 
   virtual bool init();
 
   virtual bool calibrate_offset();
-  virtual bool calibrate_routes_in_cluster(Cluster& cluster, daq::BaseDAQ* daq_);
-  virtual bool calibrate_routes(daq::BaseDAQ* daq_);
+  virtual bool calibrate_routes_in_cluster(Cluster &cluster, daq::BaseDAQ *daq_);
+  virtual bool calibrate_routes(daq::BaseDAQ *daq_);
   virtual bool calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock, daq::BaseDAQ *daq_);
 
   virtual void reset(bool keep_calibration);
@@ -61,7 +68,11 @@ public:
 
   bool config_self_from_json(JsonObjectConst cfg) override;
 
-  [[nodiscard]] virtual bool write_to_hardware();
+  // Error codes:
+  // -1 Cluster write failed
+  // -2 CTRL Block write failed
+  // -3 ADC Bus write failed
+  [[nodiscard]] virtual int write_to_hardware();
 
   [[nodiscard]] const std::array<int8_t, 8> &get_adc_channels() const;
   [[nodiscard]] bool set_adc_channels(const std::array<int8_t, 8> &channels);
@@ -71,6 +82,14 @@ public:
 public:
   // Module addresses
   static constexpr uint8_t CARRIER_MADDR = 5;
+
+  ///@addtogroup User-Functions
+  ///@{
+  int set_config(JsonObjectConst msg_in, JsonObject &msg_out);
+  int get_config(JsonObjectConst msg_in, JsonObject &msg_out);
+  virtual int get_entities(JsonObjectConst msg_in, JsonObject &msg_out);
+  int reset(JsonObjectConst msg_in, JsonObject &msg_out);
+  ///@}
 };
 
 } // namespace carrier

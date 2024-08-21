@@ -1,6 +1,5 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #pragma once
@@ -12,8 +11,11 @@
 namespace platform {
 
 /**
- * The Lucidac class represents all (most) hardware of the Lucidac.
- * It serves as the primary entry point for on-microcontroller programming.
+ * The Lucidac class represents a single cluster. A cluster holds a number of
+ * "blocks" (also refered to as DIMM modules) where the interconnection matrix
+ * is composed by the U/C/I blocks and the computing elements by the M blocks.
+ * 
+ * \ingroup Singletons
  **/
 class Cluster : public entities::Entity {
 private:

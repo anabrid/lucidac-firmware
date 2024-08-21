@@ -1,6 +1,5 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #pragma once
@@ -15,6 +14,11 @@
 
 namespace metadata {
 
+/**
+ * The abstract metadata memory class allows to represent different EEPROM sizes, for instance
+ * does the 25AA02E64 hold 256 bytes while 25AA02E32 holds only 128 bytes. However, the extension
+ * rather looks into bigger then smaller EEPROMs.
+ **/
 template <std::size_t dataSize> class MetadataMemory : public functions::DataFunction {
 private:
   std::array<uint8_t, dataSize> data;

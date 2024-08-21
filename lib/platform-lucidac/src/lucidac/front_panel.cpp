@@ -7,7 +7,10 @@
 
 platform::LUCIDACFrontPanel::LUCIDACFrontPanel() : entities::Entity("FP") {}
 
-bool platform::LUCIDACFrontPanel::init() { return signal_generator.init(); }
+bool platform::LUCIDACFrontPanel::init() {
+  leds.reset();
+  return signal_generator.init();
+}
 
 void platform::LUCIDACFrontPanel::reset() {
   leds.reset();

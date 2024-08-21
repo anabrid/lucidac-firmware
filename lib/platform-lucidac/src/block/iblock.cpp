@@ -1,12 +1,11 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "iblock.h"
+#include "block/iblock.h"
 
 #include "bus/functions.h"
-#include "logging.h"
+#include "utils/logging.h"
 
 const SPISettings functions::ICommandRegisterFunction::DEFAULT_SPI_SETTINGS{
     4'000'000, MSBFIRST, SPI_MODE2 /* chip expects SPI MODE0, but CLK is inverted on the way */};
@@ -113,6 +112,8 @@ bool blocks::IBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
     for (JsonPairConst keyval : cfg.as<JsonObjectConst>()) {
       // Key defines output
       // TODO: Check conversion from string to number
+      if (!keyval.key().is<int>())
+        return false;
       auto output = std::stoul(keyval.key().c_str());
       // Disconnect also sanity checks output index for us
       if (!disconnect(output))

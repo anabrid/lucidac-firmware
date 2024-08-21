@@ -1,0 +1,29 @@
+/**
+
+\dir docs Most documentation pages
+
+\dir lib  Project-specific libraries (PlatformIO library folder)
+
+This directory contains libraries written within this project, i.e. not external
+dependencies but "internal" ones. Almost all code is sorted within this directory.
+In princple, each subdirectory can be treated as an independent library. See
+also [PlatformIO Library Managament](https://docs.platformio.org/en/latest/librarymanager/)
+for details.
+
+\dir lib/communication Analog and hybrid analog-digital high level computation steering
+
+Run managament and data aquisition-specific code:
+This directory contains the namespaces/sublibraries @ref daq, @ref mode and @ref run which
+deal with the hybrid controller state machine, data aquisition (DAQ) and other run-managament
+specific code.
+
+\dir lib/controller Administrative code for the controller itself
+
+Utility/Maintenance/Plumbing classes for the LUCIDAC Teensy Controller and (PlatformIO) build system
+
+\dir lib/hal-lucidac Hardware abstraction layer for the LUCIDAC digital-analog hybrid computer
+
+\dir lib/platform-lucidac LUCIDAC-baseboard specific hardware routines
+
+
+**/

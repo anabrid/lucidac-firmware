@@ -1,15 +1,19 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #pragma once
 
-#include "bus/bus.h"
 #include "bus/functions.h"
+#include "bus/bus.h"
 
 namespace functions {
 
+/**
+ * The DAC60508 is the 12-Bit 8-channel DAC, used in the MInt-Block
+ * for the initial conditions. This class encapsulates the SPI programming
+ * access to the chip.
+ **/
 class DAC60508 : public DataFunction {
 public:
   static constexpr uint8_t REG_NOOP = 0;

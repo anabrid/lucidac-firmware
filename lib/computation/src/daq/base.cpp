@@ -1,9 +1,8 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "base.h"
+#include "daq/base.h"
 
 daq::DAQConfig::DAQConfig(uint8_t num_channels, unsigned int sample_rate)
     : num_channels(num_channels), sample_rate(sample_rate) {

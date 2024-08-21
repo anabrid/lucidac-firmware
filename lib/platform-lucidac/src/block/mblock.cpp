@@ -1,10 +1,9 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "mblock.h"
-#include "logging.h"
+#include "block/mblock.h"
+#include "utils/logging.h"
 
 #include "carrier/cluster.h"
 
@@ -295,7 +294,7 @@ bool blocks::MIntBlockHAL_V_1_0_X::write_ic(uint8_t idx, float ic) {
   //       And 2V equals a 1, since the output is halved after the integrators.
   //       Since we enabled gain=2, we don't need to halve/double here.
   //       Resulting in a shift of -1 and the inversion.
-  return f_ic_dac.set_channel(idx, (ic - 1.0f) * -1.25f);
+  return f_ic_dac.set_channel(idx, (ic + 1.0f) * 1.25f);
 }
 
 bool blocks::MIntBlockHAL_V_1_0_X::write_time_factor_switches(std::bitset<8> switches) {

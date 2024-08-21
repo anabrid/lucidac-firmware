@@ -1,6 +1,5 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #pragma once
@@ -9,7 +8,6 @@
 #include <cstdint>
 
 #include "block/base.h"
-#include "bus/bus.h"
 #include "chips/DAC60508.h"
 #include "chips/SR74HCT595.h"
 #include "daq/base.h"

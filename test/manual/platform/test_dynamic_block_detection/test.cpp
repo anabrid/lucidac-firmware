@@ -6,19 +6,19 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#ifndef ANABRID_PEDANTIC
-#error "This test case requires PEDANTIC mode."
-#endif
+#define ANABRID_PEDANTIC
 
 #include "block/blocks.h"
 #include "chips/EEPROM25AA02.h"
 #include "entity/entity.h"
+#include "lucidac/front_panel.h"
 
 #include "test_fmtlib.h"
 
 using namespace blocks;
 using namespace functions;
 using namespace metadata;
+using platform::LUCIDACFrontPanel;
 
 void setUp() {
   // This is called before *each* test.
@@ -27,6 +27,9 @@ void setUp() {
 void tearDown() {
   // This is called after *each* test.
 }
+
+bool setup_mblocks = false, setup_ublock = true, setup_iblock = false, setup_cblock = false,
+     setup_shblock = false, setup_ctrlblock = false, setup_fp = false;
 
 void test_prepare_eeprom() {
   // Write to metadata memory for preparing the test case.
@@ -42,49 +45,61 @@ void test_prepare_eeprom() {
   TEST_ASSERT(m0_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
   */
 
-  EEPROM25AA02 m1_eeprom(bus::idx_to_addr(0, MBlock::M1_IDX, 0));
-  TEST_ASSERT(m1_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
-                               static_cast<uint8_t>(MBlock::CLASS_)));
-  TEST_ASSERT(m1_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1,
-                               static_cast<uint8_t>(MBlock::TYPES::M_MUL4_BLOCK)));
-  TEST_ASSERT(m1_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 1));
-  TEST_ASSERT(m1_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
+  if (setup_mblocks) {
+    EEPROM25AA02 m1_eeprom(bus::idx_to_addr(0, MBlock::M1_IDX, 0));
+    TEST_ASSERT(m1_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
+                                 static_cast<uint8_t>(MBlock::CLASS_)));
+    TEST_ASSERT(m1_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1,
+                                 static_cast<uint8_t>(MBlock::TYPES::M_MUL4_BLOCK)));
+    TEST_ASSERT(m1_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 1));
+    TEST_ASSERT(m1_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
+  }
 
-  EEPROM25AA02 u_eeprom(bus::idx_to_addr(0, UBlock::BLOCK_IDX, 0));
-  TEST_ASSERT(u_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
-                              static_cast<uint8_t>(entities::EntityClass::U_BLOCK)));
-  TEST_ASSERT(u_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1, 1));
-  TEST_ASSERT(u_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 1));
-  TEST_ASSERT(u_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
+  if (setup_ublock) {
+    EEPROM25AA02 u_eeprom(bus::idx_to_addr(0, UBlock::BLOCK_IDX, 0));
+    TEST_ASSERT(u_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
+                                static_cast<uint8_t>(entities::EntityClass::U_BLOCK)));
+    TEST_ASSERT(u_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1, 1));
+    TEST_ASSERT(u_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 1));
+    TEST_ASSERT(u_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
+  }
 
-  EEPROM25AA02 c_eeprom(bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0));
-  TEST_ASSERT(
-      c_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0, static_cast<uint8_t>(CBlock::CLASS_)));
-  TEST_ASSERT(
-      c_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1, static_cast<uint8_t>(CBlock::TYPE)));
-  TEST_ASSERT(c_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 2));
-  TEST_ASSERT(c_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
+  if (setup_cblock) {
+    EEPROM25AA02 c_eeprom(bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0));
+    TEST_ASSERT(c_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
+                                static_cast<uint8_t>(CBlock::CLASS_)));
+    TEST_ASSERT(
+        c_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1, static_cast<uint8_t>(CBlock::TYPE)));
+    TEST_ASSERT(c_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 2));
+    TEST_ASSERT(c_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
+  }
 
-  EEPROM25AA02 i_eeprom(bus::idx_to_addr(0, IBlock::BLOCK_IDX, 0));
-  TEST_ASSERT(i_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
-                              static_cast<uint8_t>(entities::EntityClass::I_BLOCK)));
-  TEST_ASSERT(i_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1, 1));
-  TEST_ASSERT(i_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 1));
-  TEST_ASSERT(i_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
+  if (setup_iblock) {
+    EEPROM25AA02 i_eeprom(bus::idx_to_addr(0, IBlock::BLOCK_IDX, 0));
+    TEST_ASSERT(i_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
+                                static_cast<uint8_t>(entities::EntityClass::I_BLOCK)));
+    TEST_ASSERT(i_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1, 1));
+    TEST_ASSERT(i_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 1));
+    TEST_ASSERT(i_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
+  }
 
-  EEPROM25AA02 sh_eeprom(bus::idx_to_addr(0, SHBlock::BLOCK_IDX, 0));
-  TEST_ASSERT(sh_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
-                               static_cast<uint8_t>(entities::EntityClass::SH_BLOCK)));
-  TEST_ASSERT(sh_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1, 1));
-  TEST_ASSERT(sh_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 1));
-  TEST_ASSERT(sh_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
+  if (setup_shblock) {
+    EEPROM25AA02 sh_eeprom(bus::idx_to_addr(0, SHBlock::BLOCK_IDX, 0));
+    TEST_ASSERT(sh_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
+                                 static_cast<uint8_t>(entities::EntityClass::SH_BLOCK)));
+    TEST_ASSERT(sh_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1, 1));
+    TEST_ASSERT(sh_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 1));
+    TEST_ASSERT(sh_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
+  }
 
-  EEPROM25AA02 ctrl_eeprom(bus::address_from_tuple(1, 0));
-  TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
-                                 static_cast<uint8_t>(entities::EntityClass::CTRL_BLOCK)));
-  TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1, 1));
-  TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 1));
-  TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
+  if (setup_ctrlblock) {
+    EEPROM25AA02 ctrl_eeprom(bus::address_from_tuple(1, 0));
+    TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 0,
+                                   static_cast<uint8_t>(entities::EntityClass::CTRL_BLOCK)));
+    TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 1, 1));
+    TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 2, 1));
+    TEST_ASSERT(ctrl_eeprom.write8(offsetof(MetadataMemoryLayoutV1, classifier) + 3, 1));
+  }
 }
 
 void test_detect_block() {
@@ -105,6 +120,9 @@ void test_read_euis() {
   }
   MetadataEditor reader{bus::address_from_tuple(1, 0)};
   TEST_MESSAGE_FORMAT("{}", reader.read_eui());
+  // fp
+  MetadataEditor reader_fp{bus::address_from_tuple(2, 0)};
+  TEST_MESSAGE_FORMAT("{}", reader_fp.read_eui());
 }
 
 void setup() {

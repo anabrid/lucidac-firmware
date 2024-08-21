@@ -1,0 +1,12 @@
+*.zip
+*.gz
+*.http
+public
+dist
+assets
+*.svg
+*.png
+*.jpg
+*.html
+*.css
+*.js

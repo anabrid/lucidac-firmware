@@ -1,6 +1,5 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #pragma once
@@ -10,10 +9,10 @@
 #include <cstdint>
 
 #include "block/base.h"
-#include "bus/bus.h"
 #include "bus/functions.h"
 #include "chips/SR74HCT595.h"
 
+/// @brief  namespace for internal helpers
 namespace functions {
 
 /**
