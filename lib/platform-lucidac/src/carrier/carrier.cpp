@@ -205,7 +205,7 @@ void carrier::Carrier::reset_adc_channels() {
   std::fill(adc_channels.begin(), adc_channels.end(), ADC_CHANNEL_DISABLED);
 }
 
-constexpr int error(int i) { return i; } // just some syntactic suggar
+constexpr int error(int i) { return i; } // just some syntactic sugar
 
 constexpr int success = 0;
 
