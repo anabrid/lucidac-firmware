@@ -11,7 +11,7 @@
 #    and run against exactly this firmware version. Basically that is part of the
 #    definition of a Compilation Database.
 #
-# Currently, the script only creates the *.elf.a file, nothing else. 
+# Currently, the script only creates the *.elf.a file, nothing else.
 
 # this is a POST script, cf. https://docs.platformio.org/en/latest/scripting/launch_types.html#scripting-launch-types
 # cf. ~/.platformio/platforms/teensy/builder/main.py
@@ -44,11 +44,12 @@ me = "controller/build_plugin_system.py"
 # executable (firmware) contains no more symbol table.
 target_elf = join("$BUILD_DIR", "${PROGNAME}.elf")
 target_elf_a = target_elf + ".a"
-env.Append(
-    LINKFLAGS=[
-        "-Wl,--out-implib," + target_elf_a
-    ],
-)
+# This isnt working on mac, probably because there is no real gcc
+#env.Append(
+#    LINKFLAGS=[
+#        "-Wl,--out-implib," + target_elf_a
+#    ],
+#)
 print(me, "will also build", basename(env.subst(target_elf_a)))
 
 ###############################################################################
@@ -58,7 +59,7 @@ print(me, "will also build", basename(env.subst(target_elf_a)))
 # Note:
 #   This step is actually *not* needed for the plugin system but instead for OTA updating.
 #   It is, however, pretty easy to do this anytime after build time since it just requires
-#   running an objcopy on the elf or (i)hex file. 
+#   running an objcopy on the elf or (i)hex file.
 
 if 0:
     # The following is a makefile'y way to execute something like
@@ -105,7 +106,7 @@ if understand_the_build_system:
     fh = open(join("/tmp/", "Makefile.txt"), "w")
     for var in "CCFLAGS CXXFLAGS CPPFLAGS _CPPDEFFLAGS _CPPINCFLAGS CC CXX OBJCOPY PROGPATH".split():
         fh.write("%s = %s\n" % (var, expand(var)))
-    
+
     # path contains path to arm-none-eabi-gcc and friends
     path = env['ENV']['PATH'] # same as os.environ['PATH']
     fh.write("PATH = "+path)

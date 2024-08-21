@@ -4,26 +4,31 @@
 
 #include "protocol/jsonl_logging.h"
 
+#ifdef ARDUINO
+
 size_t msg::StreamLogger::write(uint8_t b) {
-//size_t write(const uint8_t *buffer, size_t size) override {
-    if(new_line) {
-        target.begin_dict();
-        target.kv("type", "log");
-        target.kv("count", line_count++);
-        target.kv("time", millis());
-        target.key("msg");
-        target.begin_str();
-        new_line = false;
-    }
-    if(b == '\r') return 1; // ignore CR in CR NL line endings.
-    if(b == '\n') {
-        target.end_str();
-        target.end_dict();
-        target.output.println("");
-        target.output.flush();
-        new_line = true;
-        return 1;
-    } else {
-        return target.output.write(b);
-    }
+  // size_t write(const uint8_t *buffer, size_t size) override {
+  if (new_line) {
+    target.begin_dict();
+    target.kv("type", "log");
+    target.kv("count", line_count++);
+    target.kv("time", millis());
+    target.key("msg");
+    target.begin_str();
+    new_line = false;
+  }
+  if (b == '\r')
+    return 1; // ignore CR in CR NL line endings.
+  if (b == '\n') {
+    target.end_str();
+    target.end_dict();
+    target.output.println("");
+    target.output.flush();
+    new_line = true;
+    return 1;
+  } else {
+    return target.output.write(b);
+  }
 }
+
+#endif // ARDUINO

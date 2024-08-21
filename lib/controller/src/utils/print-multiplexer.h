@@ -5,6 +5,9 @@
 #pragma once
 
 #include <Arduino.h>
+
+#ifdef ARDUINO
+
 #include <algorithm>
 #include <list>
 #include <vector>
@@ -92,3 +95,5 @@ public:
 };
 
 } // namespace utils
+
+#endif // ARDUINO

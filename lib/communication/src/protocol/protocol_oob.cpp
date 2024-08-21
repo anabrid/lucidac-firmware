@@ -4,11 +4,13 @@
 
 #include "protocol/protocol_oob.h"
 
+#ifdef ARDUINO
+
 #include <bitset>
 
 #include "daq/daq.h"
-#include "utils/logging.h"
 #include "run/run.h"
+#include "utils/logging.h"
 
 void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange change, const run::Run &run) {
   envelope_out.clear();
@@ -19,12 +21,11 @@ void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange
   msg["old"] = run::RunStateNames[static_cast<size_t>(change.old)];
   msg["new"] = run::RunStateNames[static_cast<size_t>(change.new_)];
   serializeJson(envelope_out, target);
-  target.write("\n"); // note EthernetClient::writeFully("\n") is probably 
+  target.write("\n"); // note EthernetClient::writeFully("\n") is probably
   target.flush();
 }
 
-client::RunDataNotificationHandler::RunDataNotificationHandler(carrier::Carrier &carrier,
-                                                               Print &target,
+client::RunDataNotificationHandler::RunDataNotificationHandler(carrier::Carrier &carrier, Print &target,
                                                                DynamicJsonDocument &envelopeOut)
     : carrier(carrier), target(target), envelope_out(envelopeOut) {}
 
@@ -61,11 +62,11 @@ void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t 
       const char *float_repr = daq::BaseDAQ::raw_to_str(number);
       char *dst = buffer + outer_i * inner_length + 1 + inner_i * 7;
       constexpr size_t len = 6;
-      char float_repr_fallback[len+2];
-      if(!float_repr) {
+      char float_repr_fallback[len + 2];
+      if (!float_repr) {
         // Need to make sure string is exactly "len" long without NULL terminating byte
         // so it fits into the "len" sized slot in the dst buffer.
-        snprintf(float_repr_fallback, len+1, "% 1.3f", daq::BaseDAQ::raw_to_float(number));
+        snprintf(float_repr_fallback, len + 1, "% 1.3f", daq::BaseDAQ::raw_to_float(number));
         float_repr = float_repr_fallback;
       }
       memcpy(dst, float_repr, len);
@@ -133,3 +134,5 @@ size_t client::RunDataNotificationHandler::calculate_total_buffer_length(size_t 
   return BUFFER_LENGTH_STATIC + outer_count * inner_length - sizeof(',' /* trailing comma */) +
          sizeof(MESSAGE_END) - sizeof('\0' /* null byte in MESSAGE_END */) + sizeof('\n' /* newline */);
 }
+
+#endif // ARDUINO

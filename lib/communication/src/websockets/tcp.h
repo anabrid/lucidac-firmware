@@ -1,106 +1,109 @@
 #pragma once
 
-#include "websockets/common.h"
+#include <Arduino.h>
+#ifdef ARDUINO
+
 #include "QNEthernet.h"
+#include "websockets/common.h"
 
 // Forward declaration to avoid circular reference
-namespace web { class LucidacWebsocketsClient; }
+namespace web {
+class LucidacWebsocketsClient;
+}
 
-namespace websockets { namespace network {
-  using qindesign::network::EthernetServer;
-  using qindesign::network::EthernetClient;
-  using web::LucidacWebsocketsClient;
+namespace websockets {
+namespace network {
+using qindesign::network::EthernetClient;
+using qindesign::network::EthernetServer;
+using web::LucidacWebsocketsClient;
 
-  struct TcpClient {
-    LucidacWebsocketsClient* context;
-    EthernetClient* client;
+struct TcpClient {
+  LucidacWebsocketsClient *context;
+  EthernetClient *client;
 
-    // Formerly, this was a kind-of-socket
-    // TcpClient(EthernetClient* client) : client(client) {}
-    // But now we have the full client context
-    TcpClient(LucidacWebsocketsClient* context);
-    TcpClient() {}
+  // Formerly, this was a kind-of-socket
+  // TcpClient(EthernetClient* client) : client(client) {}
+  // But now we have the full client context
+  TcpClient(LucidacWebsocketsClient *context);
 
-    bool connect(std::string host, int port) {
-      return client && client->connect(host.c_str(), port);
-    }
+  TcpClient() {}
 
-    bool poll() {
-      return client && client->available() > 0; // Returns the amount of data available, whether the connection is closed or not.
-    }
+  bool connect(std::string host, int port) { return client && client->connect(host.c_str(), port); }
 
-    bool available()  {
-      return (bool)client; // Returns whether connected (at least in QNEthernet).
-    }
+  bool poll() {
+    return client && client->available() >
+                         0; // Returns the amount of data available, whether the connection is closed or not.
+  }
 
-    void send(std::string data)  {
-      client && client->writeFully(reinterpret_cast<uint8_t*>(const_cast<char*>(data.c_str())), data.size());
-    }
+  bool available() {
+    return (bool)client; // Returns whether connected (at least in QNEthernet).
+  }
 
-    void send(uint8_t* data, uint32_t len)  {
-      client && client->writeFully(data, len);
-    }
-    
-    std::string readLine()  {
-      int val;
-      std::string line;
-      do {
-        val = client->read();
-        if(val < 0) continue;
-        line += (char)val;
-      } while(val != '\n');
-      if(!available()) close();
-      return line;
-    }
+  void send(std::string data) {
+    client && client->writeFully(reinterpret_cast<uint8_t *>(const_cast<char *>(data.c_str())), data.size());
+  }
 
-    int read(uint8_t* buffer, uint32_t len)  {
-      return client->read(buffer, len);
-    }
+  void send(uint8_t *data, uint32_t len) { client && client->writeFully(data, len); }
 
-    void close()  {
-      if(client) client->stop();
-    }
+  std::string readLine() {
+    int val;
+    std::string line;
+    do {
+      val = client->read();
+      if (val < 0)
+        continue;
+      line += (char)val;
+    } while (val != '\n');
+    if (!available())
+      close();
+    return line;
+  }
 
-    ~TcpClient() {
+  int read(uint8_t *buffer, uint32_t len) { return client->read(buffer, len); }
+
+  void close() {
+    if (client)
       client->stop();
-    }
-  };
+  }
 
-  #define DUMMY_PORT 0
+  ~TcpClient() { client->stop(); }
+};
 
-  class TcpServer {
-    EthernetServer server;
-  public:
-    TcpServer() : server(DUMMY_PORT) {}
-    bool poll()  {
-      return server.availableForWrite();
-    }
+#define DUMMY_PORT 0
 
-    bool listen(uint16_t port)  {
-      server.begin(port);
-      return available();
-    }
-    
-    TcpClient* accept()  {
-      while(available()) {
-        auto client = server.available();
-        // FIXME if we want to use the Server.
-        // if(client) return new TcpClient(client);
-      }
-      return new TcpClient;
-    }
+class TcpServer {
+  EthernetServer server;
 
-    bool available()  {
-      return server.availableForWrite();
-    }
-    
-    void close()  {
-      server.end();
-    }
+public:
+  TcpServer() : server(DUMMY_PORT) {}
 
-    ~TcpServer() {
-      if(available()) close();
-    }
-  };
+  bool poll() { return server.availableForWrite(); }
 
-}} // websockets::network
+  bool listen(uint16_t port) {
+    server.begin(port);
+    return available();
+  }
+
+  TcpClient *accept() {
+    while (available()) {
+      auto client = server.available();
+      // FIXME if we want to use the Server.
+      // if(client) return new TcpClient(client);
+    }
+    return new TcpClient;
+  }
+
+  bool available() { return server.availableForWrite(); }
+
+  void close() { server.end(); }
+
+  ~TcpServer() {
+    if (available())
+      close();
+  }
+};
+
+} // namespace network
+} // namespace websockets
+
+#endif // ARDUINO

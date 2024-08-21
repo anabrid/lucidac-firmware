@@ -154,7 +154,6 @@ bool platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
     }*/
     for (size_t i = 0; i < cfg_adc_channels.size() && i < adc_channels.size(); i++) {
       adc_channels[i] = cfg_adc_channels[i];
-      Serial.printf("platform::LUCIDAC::config_self_from_json adc_channels[%d] = %i\n", i, adc_channels[i]);
     }
     bool written = hardware->write_adc_bus_mux(adc_channels);
     if (!written)
@@ -164,8 +163,6 @@ bool platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
   if (cfg.containsKey("acl_select")) {
     auto cfg_acl_select = cfg["acl_select"].as<JsonArrayConst>();
     for (size_t i = 0; i < cfg_acl_select.size() && i < acl_select.size(); i++) {
-      Serial.printf("platform::LUCIDAC::config_self_from_json acl_select[%d] = %s\n", i,
-                    cfg_acl_select[i].as<const char *>());
       if (cfg_acl_select[i] == "internal") {
         acl_select[i] = platform::LUCIDAC_HAL::ACL::INTERNAL_;
       } else if (cfg_acl_select[i] == "external") {

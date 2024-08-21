@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <Arduino.h>
+#ifdef ARDUINO
+
 #include <ArduinoJson.h>
 #include <QNEthernetClient.h>
 
@@ -14,7 +17,7 @@
 namespace client {
 
 class RunStateChangeNotificationHandler : public run::RunStateChangeHandler {
-// TODO: is only public for some hacky fake data streaming for now
+  // TODO: is only public for some hacky fake data streaming for now
 public:
   // TODO: This can become invalid on disconnects
   // TODO: Possibly needs locking/synchronizing with other writes
@@ -32,9 +35,9 @@ public:
  * This class allows to compose a specific JSON message without using ArduinoJSON.
  * The message contains ADC/DAQ data and using ArduinoJSON buffering turns out to
  * be toos slow in practice.
- * 
+ *
  * The class is only used internally in the RunStateChangeNotificationHandler.
- * 
+ *
  * This class is rather hacky, should be considered to be replaced with
  * @see utils::StreamingJson or even some tailored binary stuff, see tickets/issues
  * where JSON alternatives are discussed.
@@ -43,8 +46,8 @@ class RunDataNotificationHandler : public run::RunDataHandler {
 public:
   // TODO: This can become invalid on disconnects
   // TODO: Possibly needs locking/synchronizing with other writes
-  carrier::Carrier& carrier;
-  Print &target; //net::EthernetClient &client;
+  carrier::Carrier &carrier;
+  Print &target; // net::EthernetClient &client;
   DynamicJsonDocument &envelope_out;
 
 private:
@@ -64,8 +67,7 @@ private:
   size_t actual_buffer_length = BUFFER_LENGTH;
 
 public:
-  RunDataNotificationHandler(carrier::Carrier &carrier, Print &target,
-                             DynamicJsonDocument &envelopeOut);
+  RunDataNotificationHandler(carrier::Carrier &carrier, Print &target, DynamicJsonDocument &envelopeOut);
 
   static size_t calculate_inner_buffer_length(size_t inner_count);
   static size_t calculate_outer_buffer_position(size_t outer_count, size_t inner_count);
@@ -78,3 +80,5 @@ public:
 };
 
 } // namespace client
+
+#endif // ARDUINO

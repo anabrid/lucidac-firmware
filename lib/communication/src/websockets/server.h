@@ -1,30 +1,34 @@
 #pragma once
 
-#include "common.h"
-#include "client.h"
+#include <Arduino.h>
+#ifdef ARDUINO
 
+#include "client.h"
+#include "common.h"
 
 #include <functional>
 
 namespace websockets {
-  class WebsocketsServer {
-  public:
-    WebsocketsServer(network::TcpServer* server = new network::TcpServer);
-    
-    WebsocketsServer(const WebsocketsServer& other) = delete;
-    WebsocketsServer(const WebsocketsServer&& other) = delete;
-    
-    WebsocketsServer& operator=(const WebsocketsServer& other) = delete;
-    WebsocketsServer& operator=(const WebsocketsServer&& other) = delete;
+class WebsocketsServer {
+public:
+  WebsocketsServer(network::TcpServer *server = new network::TcpServer);
 
-    bool available();
-    void listen(uint16_t port);
-    bool poll();
-    WebsocketsClient accept();
+  WebsocketsServer(const WebsocketsServer &other) = delete;
+  WebsocketsServer(const WebsocketsServer &&other) = delete;
 
-    virtual ~WebsocketsServer();
+  WebsocketsServer &operator=(const WebsocketsServer &other) = delete;
+  WebsocketsServer &operator=(const WebsocketsServer &&other) = delete;
 
-  private:
-    network::TcpServer* _server;
-  };
-}
+  bool available();
+  void listen(uint16_t port);
+  bool poll();
+  WebsocketsClient accept();
+
+  virtual ~WebsocketsServer();
+
+private:
+  network::TcpServer *_server;
+};
+} // namespace websockets
+
+#endif // ARDUINO

@@ -13,7 +13,13 @@ carrier::Carrier::Carrier(std::vector<Cluster> clusters, carrier::Carrier_HAL *h
 
 bool carrier::Carrier::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
+
+#ifdef ARDUINO
   entity_id = net::StartupConfig::get().mac;
+#else
+  entity_id = "Placeholder ID";
+#endif
+
   if (entity_id.empty())
     return false;
 

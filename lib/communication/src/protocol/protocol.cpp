@@ -1,9 +1,13 @@
+#include "protocol.h"
+
+#ifdef ARDUINO
+
 #include "protocol/registry.h"
 
+#include "utils/StringPrint.h"
+#include "utils/durations.h"
 #include "utils/logging.h"
 #include "utils/serial_lines.h"
-#include "utils/durations.h"
-#include "utils/StringPrint.h"
 
 #include "net/auth.h"
 #include "net/settings.h"
@@ -14,11 +18,9 @@
 
 #include "run/run_manager.h"
 
-#include <algorithm> 
+#include <algorithm>
 #include <cctype>
 #include <locale>
-#include "protocol.h"
-
 
 void trim(char *str) {
   unsigned int start = 0, end = strlen(str) - 1;
@@ -50,7 +52,7 @@ msg::JsonLinesProtocol &msg::JsonLinesProtocol::get() {
   return obj;
 }
 
-void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &user_context, Print& output) {
+void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &user_context, Print &output) {
   auto envelope_out = this->envelope_out->to<JsonObject>();
   auto envelope_in = this->envelope_in->as<JsonObjectConst>();
 
@@ -71,15 +73,15 @@ void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &u
   if (!msg_handler) {
     return_code = -10; // No handler for message known
     msg_out["error"] = "Unknown message type. Try this message: {'type':'help'}.";
-  } else if(!user_context.can_do(requiredClearance)) {
+  } else if (!user_context.can_do(requiredClearance)) {
     return_code = -20;
     msg_out["error"] = "User is not authorized for action";
   } else {
     auto msg_in = envelope_in["msg"].as<JsonObjectConst>();
     return_code = msg_handler->handle(msg_in, msg_out);
-    if(return_code == msg::handlers::MessageHandler::not_implemented) {
+    if (return_code == msg::handlers::MessageHandler::not_implemented) {
       return_code = msg_handler->handle(msg_in, msg_out, user_context);
-      if(return_code == msg::handlers::MessageHandler::not_implemented) {
+      if (return_code == msg::handlers::MessageHandler::not_implemented) {
         // we don't use envelope_out but stream instead
         auto envelope_and_msg_out = utils::StreamingJson(output);
         envelope_and_msg_out.begin_dict();
@@ -87,9 +89,9 @@ void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &u
         envelope_and_msg_out.kv("type", msg_type);
         envelope_and_msg_out.key("msg");
         // it is now the job of the handler to wrap his content into
-        // begin_dict() / end_dict() or begin_list() / end_list() 
+        // begin_dict() / end_dict() or begin_list() / end_list()
         return_code = msg_handler->handle(msg_in, envelope_and_msg_out);
-        if(return_code != 0) {
+        if (return_code != 0) {
           LOG_ALWAYS("Error while handling streaming message.")
         }
         envelope_and_msg_out.kv("code", return_code);
@@ -115,22 +117,25 @@ void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &u
 utils::SerialLineReader serial_line_reader;
 
 void msg::JsonLinesProtocol::process_serial_input(net::auth::AuthentificationContext &user_context) {
-  char* line = serial_line_reader.line_available();
-  if(!line) return;
+  char *line = serial_line_reader.line_available();
+  if (!line)
+    return;
 
   auto error = deserializeJson(*envelope_in, line);
   if (error == DeserializationError::Code::EmptyInput) {
     // do nothing, just ignore empty input.
-  } else if(error) {
+  } else if (error) {
     trim(line); // for not-destroying the output
-    Serial.printf("### Malformed input. Expecting JSON-Lines. Error: %s. Input was: '%s'\n", error.c_str(), line);
+    Serial.printf("### Malformed input. Expecting JSON-Lines. Error: %s. Input was: '%s'\n", error.c_str(),
+                  line);
   } else {
     handleMessage(user_context, Serial);
     Serial.println();
   }
 }
 
-bool msg::JsonLinesProtocol::process_tcp_input(net::EthernetClient& connection, net::auth::AuthentificationContext &user_context) {
+bool msg::JsonLinesProtocol::process_tcp_input(net::EthernetClient &connection,
+                                               net::auth::AuthentificationContext &user_context) {
   auto error = deserializeJson(*envelope_in, connection);
   if (error == DeserializationError::Code::EmptyInput) {
     Serial.print(".");
@@ -139,15 +144,17 @@ bool msg::JsonLinesProtocol::process_tcp_input(net::EthernetClient& connection, 
     Serial.println(error.c_str());
   } else {
     handleMessage(user_context, connection);
-    //serializeJson(envelope_out->as<JsonObject>(), Serial);
-    //serializeJson(envelope_out->as<JsonObject>(), connection);
+    // serializeJson(envelope_out->as<JsonObject>(), Serial);
+    // serializeJson(envelope_out->as<JsonObject>(), connection);
     if (!connection.writeFully("\n"))
       return true; // break;
   }
   return false;
 }
 
-void msg::JsonLinesProtocol::process_string_input(const std::string &envelope_in_str, std::string& envelope_out_str, net::auth::AuthentificationContext &user_context) {
+void msg::JsonLinesProtocol::process_string_input(const std::string &envelope_in_str,
+                                                  std::string &envelope_out_str,
+                                                  net::auth::AuthentificationContext &user_context) {
   auto error = deserializeJson(*envelope_in, envelope_in_str);
   if (error == DeserializationError::Code::EmptyInput) {
     Serial.print(".");
@@ -159,19 +166,21 @@ void msg::JsonLinesProtocol::process_string_input(const std::string &envelope_in
     utils::StringPrint s;
     handleMessage(user_context, s);
     envelope_out_str = s.str();
-    //serializeJson(envelope_out->as<JsonObject>(), Serial);
-    //serializeJson(envelope_out->as<JsonObject>(), envelope_out_str);
+    // serializeJson(envelope_out->as<JsonObject>(), Serial);
+    // serializeJson(envelope_out->as<JsonObject>(), envelope_out_str);
   }
 }
 
-void msg::JsonLinesProtocol::process_out_of_band_handlers(carrier::Carrier& carrier_) {
+void msg::JsonLinesProtocol::process_out_of_band_handlers(carrier::Carrier &carrier_) {
   // Currently, the following prints to all connected clients.
   static client::RunStateChangeNotificationHandler run_state_change_handler{broadcast, *envelope_out};
   static client::RunDataNotificationHandler run_data_handler{carrier_, broadcast, *envelope_out};
 
   if (!run::RunManager::get().queue.empty()) {
     LOGMEV("Protocol OOB RunManager now broadcasting to %d targets\n", broadcast.size());
-    //broadcast.println("{'TEST':'TEST'}");
+    // broadcast.println("{'TEST':'TEST'}");
     run::RunManager::get().run_next(&run_state_change_handler, &run_data_handler);
   }
 }
+
+#endif // ARDUINO

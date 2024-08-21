@@ -1,8 +1,10 @@
+#ifdef ARDUINO
+
 #include <ArduinoJson.h>
 
-#include "utils/logging.h"
 #include "net/ethernet.h"
 #include "net/settings.h"
+#include "utils/logging.h"
 
 #include "protocol/jsonl_server.h"
 #include "web/server.h"
@@ -10,21 +12,21 @@
 using namespace utils;
 
 void net::StartupConfig::reset_defaults() {
-  #ifdef ANABRID_SKIP_ETHERNET
+#ifdef ANABRID_SKIP_ETHERNET
   enable_ethernet = false;
   LOG_ALWAYS("Skipping Ethernet due to build flag ANABRID_ETHERNET");
-  #else
+#else
   enable_ethernet = true;
-  #endif
+#endif
 
-  // This build flag basically solves a "deadlock" if a no DHCP server is
-  // available but the teensy is configured for dhcp.
-  #ifdef ANABRID_SKIP_DHCP
+// This build flag basically solves a "deadlock" if a no DHCP server is
+// available but the teensy is configured for dhcp.
+#ifdef ANABRID_SKIP_DHCP
   enable_dhcp = false;
   LOG_ALWAYS("Skipping DHCP due to build flag ANABRID_SKIP_DHCP");
-  #else
+#else
   enable_dhcp = true;
-  #endif
+#endif
 
   mac.reset();
 
@@ -47,11 +49,9 @@ void net::StartupConfig::reset_defaults() {
   jsonl_port = 5732;
   webserver_port = 80;
 
-  connection_timeout_ms = 72*1000*1000; /// @TODO test timeout.
+  connection_timeout_ms = 72 * 1000 * 1000; /// @TODO test timeout.
   max_connections = 20;
 }
-
-
 
 void net::StartupConfig::fromJson(JsonObjectConst src, nvmconfig::Context c) {
   JSON_GET(src, enable_ethernet);
@@ -63,7 +63,7 @@ void net::StartupConfig::fromJson(JsonObjectConst src, nvmconfig::Context c) {
   JSON_GET(src, jsonl_port);
   JSON_GET(src, webserver_port);
   JSON_GET(src, mac);
-  JSON_GET_AS(src, hostname, const char*);
+  JSON_GET_AS(src, hostname, const char *);
   JSON_GET_AS(src, static_ipaddr, IPAddress);
   JSON_GET_AS(src, static_netmask, IPAddress);
   JSON_GET_AS(src, static_gw, IPAddress);
@@ -71,7 +71,8 @@ void net::StartupConfig::fromJson(JsonObjectConst src, nvmconfig::Context c) {
 
   // Maximum hostname length is an industry standard (POSIX is 255 chars limits.h)
   // and also and dictated by EEPROM size.
-  if(hostname.length() > 250) hostname = hostname.substr(0, 250);
+  if (hostname.length() > 250)
+    hostname = hostname.substr(0, 250);
 }
 
 void net::StartupConfig::toJson(JsonObject target, nvmconfig::Context c) const {
@@ -91,66 +92,67 @@ void net::StartupConfig::toJson(JsonObject target, nvmconfig::Context c) const {
   JSON_SET(target, static_dns);
 }
 
-
 int net::StartupConfig::begin_ip() {
-  if(!enable_ethernet) {
+  if (!enable_ethernet) {
     LOG_ALWAYS("Ethernet disabled by user setting");
   }
 
-  //if(!net::Ethernet.linkState()) {
-    // TODO: This is only a workaround in the moment and requires later
-    //       setup with the onLinkState callback
-    //LOG_ALWAYS("Ethernet: No link detected. Skipping Ethernet setup.");
-    //return;
+  // if(!net::Ethernet.linkState()) {
+  //  TODO: This is only a workaround in the moment and requires later
+  //        setup with the onLinkState callback
+  // LOG_ALWAYS("Ethernet: No link detected. Skipping Ethernet setup.");
+  // return;
   //}
 
-  if(valid(mac)) net::Ethernet.setMACAddress(mac.mac); // else keep system default
+  if (valid(mac))
+    net::Ethernet.setMACAddress(mac.mac); // else keep system default
 
   LOG2("MAC: ", toString(mac).c_str())
 
   // TODO: Should indicate the state of the IP aquisition on the
   //       LEDs of the LUCIDAC front.
 
-  if(enable_dhcp) {
-      LOG2("DHCP with Hostname: ", hostname.c_str());
-      net::Ethernet.setHostname(hostname.c_str());
-      if (!net::Ethernet.begin()) {
-        LOG_ERROR("Error starting ethernet DHCP client.");
-        return 1;
-      }
-      LOG(ANABRID_DEBUG_INIT, "Waiting for IP address on ethernet...");
-      if (!net::Ethernet.waitForLocalIP(2*1000 /* ms*/)) {
-        LOG_ERROR("Error getting IP address.");
-        return 2;
-      }
+  if (enable_dhcp) {
+    LOG2("DHCP with Hostname: ", hostname.c_str());
+    net::Ethernet.setHostname(hostname.c_str());
+    if (!net::Ethernet.begin()) {
+      LOG_ERROR("Error starting ethernet DHCP client.");
+      return 1;
+    }
+    LOG(ANABRID_DEBUG_INIT, "Waiting for IP address on ethernet...");
+    if (!net::Ethernet.waitForLocalIP(2 * 1000 /* ms*/)) {
+      LOG_ERROR("Error getting IP address.");
+      return 2;
+    }
   } else {
-      if(!valid(static_ipaddr) || !valid(static_netmask) || !valid(static_gw)) {
-        LOG_ERROR("Illegal ipaddr/netmask/gw. Recovering with defaults.");
-        auto defaults = StartupConfig();
-        static_ipaddr = defaults.static_ipaddr;
-        static_netmask = defaults.static_netmask;
-        static_gw = defaults.static_gw;
-      }
-      if (!net::Ethernet.begin(static_ipaddr, static_netmask, static_gw)) {
-        LOG_ERROR("Error starting ethernet with static IP address.");
-        return 3;
-      }
-      if(!valid(static_dns)) {
-        LOG_ERROR("Illegal dns server. Recovering with defaults.")
-        auto defaults = StartupConfig();
-        static_dns = defaults.static_dns;
-      }
-      net::Ethernet.setDnsServerIP(static_dns);
+    if (!valid(static_ipaddr) || !valid(static_netmask) || !valid(static_gw)) {
+      LOG_ERROR("Illegal ipaddr/netmask/gw. Recovering with defaults.");
+      auto defaults = StartupConfig();
+      static_ipaddr = defaults.static_ipaddr;
+      static_netmask = defaults.static_netmask;
+      static_gw = defaults.static_gw;
+    }
+    if (!net::Ethernet.begin(static_ipaddr, static_netmask, static_gw)) {
+      LOG_ERROR("Error starting ethernet with static IP address.");
+      return 3;
+    }
+    if (!valid(static_dns)) {
+      LOG_ERROR("Illegal dns server. Recovering with defaults.")
+      auto defaults = StartupConfig();
+      static_dns = defaults.static_dns;
+    }
+    net::Ethernet.setDnsServerIP(static_dns);
   }
 
   LOG4("JSONL Listening on ", net::Ethernet.localIP(), ":", jsonl_port);
+  return 0;
 }
 
 void net::StartupConfig::begin_mdns() {
   MDNS.begin(hostname.c_str());
-  if(enable_jsonl)
+  if (enable_jsonl)
     MDNS.addService("_lucijsonl", "_tcp", jsonl_port);
-  if(enable_webserver)
+  if (enable_webserver)
     MDNS.addService("_http", "_tcp", webserver_port);
 }
 
@@ -186,3 +188,5 @@ void net::status(JsonObject &msg_out) {
   // auto settings = msg_out.createNestedObject("settings");
   // eth.write_to_json(settings);
 }
+
+#endif // ARDUINO
