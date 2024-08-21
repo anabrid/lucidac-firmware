@@ -12,7 +12,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-#include "versions.h"
+#include "version.h"
 
 namespace entities {
 
@@ -72,8 +72,7 @@ struct __attribute__((packed)) EntityClassifier {
   template <class Version_> Version_ version_as() const { return static_cast<Version_>(version); }
 
   std::string to_string() const {
-    return "(" + std::to_string(class_) + ", " + std::to_string(type) + ", " + std::to_string(version.major) +
-           "." + std::to_string(version.minor) + "." + std::to_string(version.patch) + ", " +
+    return "(" + std::to_string(class_) + ", " + std::to_string(type) + ", " + version.to_string() + ", " +
            std::to_string(variant) + ")";
   }
 

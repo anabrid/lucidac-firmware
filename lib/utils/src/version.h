@@ -6,6 +6,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <string>
 
 namespace entities {
 
@@ -20,6 +21,10 @@ struct __attribute__((packed)) Version {
   constexpr Version(const uint8_t major_, const uint8_t minor_) : major(major_), minor(minor_), patch(0) {}
 
   constexpr explicit Version(const uint8_t major_) : major(major_), minor(0), patch(0) {}
+
+  std::string to_string() const {
+    return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+  }
 
   bool operator==(const Version &r) const {
     return this->major == r.major && this->minor == r.minor && this->patch == r.patch;
