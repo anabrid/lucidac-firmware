@@ -112,9 +112,12 @@ bool blocks::IBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
     for (JsonPairConst keyval : cfg.as<JsonObjectConst>()) {
       // Key defines output
       // TODO: Check conversion from string to number
-      if (!keyval.key().is<int>())
+
+      std::string output_str = keyval.key().c_str();
+      if (!utils::is_number(output_str.begin(), output_str.end()))
         return false;
-      auto output = std::stoul(keyval.key().c_str());
+
+      auto output = std::stoul(output_str);
       // Disconnect also sanity checks output index for us
       if (!disconnect(output))
         return false;

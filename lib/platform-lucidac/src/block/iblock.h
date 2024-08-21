@@ -11,6 +11,7 @@
 #include "block/base.h"
 #include "bus/functions.h"
 #include "chips/SR74HCT595.h"
+#include "utils/is_number.h"
 
 /// @brief  namespace for internal helpers
 namespace functions {
