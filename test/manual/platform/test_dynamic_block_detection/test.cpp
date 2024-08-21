@@ -6,7 +6,9 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#define ANABRID_PEDANTIC
+#ifndef ANABRID_PEDANTIC
+#error This test needs pedantic mode!
+#endif
 
 #include "block/blocks.h"
 #include "chips/EEPROM25AA02.h"

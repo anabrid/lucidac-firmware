@@ -6,7 +6,9 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#define ANABRID_PEDANTIC
+#ifndef ANABRID_PEDANTIC
+#error This test needs pedantic mode!
+#endif
 
 #include "daq/daq.h"
 #include "lucidac/lucidac.h"
@@ -15,16 +17,16 @@
 
 /**
  * How to use this test:
- * 
- * - Use LUCIDAC with M1 = M-Block-ID 
+ *
+ * - Use LUCIDAC with M1 = M-Block-ID
  *   (TODO: Extend test to be able to use any MMul/M-ID block at any M1/M0)
- * 
+ *
  * - Patch MCX MANUALLY on Front panel:
  *   - Connect AUX0 to IN0
  *   - Connect AUX1 to IN1
  *
  * Typical output:
- * 
+ *
  * DAC0 input: 0.75 Expected output: -0.0125 Raw output: 8110 ADC0 output: 0.0124367
  * DAC1 input: -0.25 Expected output: 0.0375 Raw output: 8437 ACD1 output: -0.0374626
  * DAC0 input: -1 Expected output: 0.05 Raw output: 8519 ADC0 output: -0.0496703
@@ -55,7 +57,7 @@ void test_dac_adc(float val0 = 0.75, float val1 = -0.25) {
   //       I.e. detect on M-Mul or M-ID block and select suitable cross lanes!
 
   // this most likely only applies for M-ID block, not M-Mul which has gain 1.
-  float id_gain = 1./20;
+  float id_gain = 1. / 20;
 
   // The following by purpose swaps val0 and val1 because it is known that
   // DAC1 and DAC0 are wrongly labeled...
@@ -92,23 +94,17 @@ void test_dac_adc(float val0 = 0.75, float val1 = -0.25) {
   float measured_val0 = channels[adc_channel_val0];
   float measured_val1 = channels[adc_channel_val1];
 
-  std::cout << " DAC0 input: " << val0
-            << " Expected output: " << expected_val0
-            << " Raw output: " << channels_raw[0]
-            << " ADC0 output: " << measured_val0
-            << std::endl;
-  std::cout << " DAC1 input: " << val1
-            << " Expected output: " << expected_val1
-            << " Raw output: " << channels_raw[1]
-            << " ACD1 output: " << measured_val1
-            << std::endl;
+  std::cout << " DAC0 input: " << val0 << " Expected output: " << expected_val0
+            << " Raw output: " << channels_raw[0] << " ADC0 output: " << measured_val0 << std::endl;
+  std::cout << " DAC1 input: " << val1 << " Expected output: " << expected_val1
+            << " Raw output: " << channels_raw[1] << " ACD1 output: " << measured_val1 << std::endl;
 
   // TODO: Improve, this is quite a lot of absolute tolerance.
   // I think 5% relative tolerance should do it.
   float abs_tolerance = 0.1;
 
-  TEST_ASSERT( fabs(expected_val0 - measured_val0) < abs_tolerance );
-  TEST_ASSERT( fabs(expected_val1 - measured_val1) < abs_tolerance );
+  TEST_ASSERT(fabs(expected_val0 - measured_val0) < abs_tolerance);
+  TEST_ASSERT(fabs(expected_val1 - measured_val1) < abs_tolerance);
 }
 
 void test_dac_adc_values() {
