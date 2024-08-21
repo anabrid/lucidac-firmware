@@ -29,7 +29,7 @@ except (NameError, KeyError):
   # NameError: pure python does not know 'Import' (is not defined in pure Python).
   # KeyError: doesn't know some of the interesting_fields keys
   build_system = {}
-  build_flags = []    
+  build_flags = []
 
 # all the following libs are python built-ins:
 import pathlib, json, textwrap, uuid, pprint, subprocess, datetime, re
@@ -121,7 +121,8 @@ code_files["distributor_generated.h"] = \
 
 code_files["distributor_generated.cpp"] = \
 """
-#ifdef ANABRID_FOR_TEENSY
+#include <Arduino.h>
+#ifdef ARDUINO
 #include "build/distributor.h"
 
 // Interestingly, FLASHMEM and PROGMEM *do* have an effect in Teensy,
@@ -139,7 +140,7 @@ FLASHMEM const char* dist::as_json() {
 FLASHMEM void dist::write_to_json(JsonObject target) {
 %(distdb_as_json_defines)s
 }
-#endif /* ANABRID_FOR_TEENSY */
+#endif /* ARDUINO */
 """
 
 for fname, content in code_files.items():
