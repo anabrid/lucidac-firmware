@@ -82,6 +82,8 @@ bool LUCIDAC::init() {
 
 void LUCIDAC::reset(bool keep_calibration) {
   Carrier::reset(keep_calibration);
+  if (front_panel)
+    front_panel->reset();
   reset_acl_select();
 }
 

@@ -9,6 +9,11 @@ platform::LUCIDACFrontPanel::LUCIDACFrontPanel() : entities::Entity("FP") {}
 
 bool platform::LUCIDACFrontPanel::init() { return signal_generator.init(); }
 
+void platform::LUCIDACFrontPanel::reset() {
+  leds.reset();
+  signal_generator.sleep();
+}
+
 int platform::LUCIDACFrontPanel::write_to_hardware() {
   if (!leds.write_to_hardware())
     return -1;

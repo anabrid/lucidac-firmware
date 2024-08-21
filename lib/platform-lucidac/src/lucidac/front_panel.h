@@ -60,8 +60,11 @@ public:
 
   LUCIDACFrontPanel();
 
-  //! Initializes the front panel and puts the frequency generator to sleep.
+  //! Initializes the front panel and puts the signal generator to sleep.
   bool init();
+
+  //! Resets the front panel to default state e.g. all LEDs off and signal generator sleeping
+  void reset();
 
   //! Writes the hardware state of the LEDs and the signal generator
   // Error codes:
