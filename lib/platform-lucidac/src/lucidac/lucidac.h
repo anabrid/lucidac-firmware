@@ -69,6 +69,9 @@ protected:
   std::array<ACL, 8> acl_select{ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_,
                                 ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_};
 
+  bool _config_adc_from_json(const JsonVariantConst &cfg);
+  bool _config_acl_from_json(const JsonVariantConst &cfg);
+
 public:
   LUCIDACFrontPanel *front_panel = nullptr;
 

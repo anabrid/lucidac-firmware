@@ -140,45 +140,63 @@ int LUCIDAC::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
 }
 
 bool platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
-  bool carrier_res = this->carrier::Carrier::config_self_from_json(cfg);
-  if (!carrier_res)
+  if (!this->carrier::Carrier::config_self_from_json(cfg))
     return false;
 
-  // TODO: This code is very quick and dirty. Use JSON custom converters to make nicer.
+  for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
+    if (cfgItr->key() == "adc_channels") {
+      if (!_config_adc_from_json(cfgItr->value()))
+        return false;
+    } else if (cfgItr->key() == "acl_select") {
+      if (!_config_acl_from_json(cfgItr->value()))
+        return false;
+    } else {
+      // Unknown configuration key
+      return false;
+    }
+  }
 
   if (cfg.containsKey("adc_channels")) {
-    auto cfg_adc_channels = cfg["adc_channels"].as<JsonArrayConst>();
-    /*if(cfg_adc_channels.size() != adc_channels.size()) {
-      LOG_ALWAYS("platform::LUCIDAC::config_self_from_json: Error, given adc_channels has wrong size");
-      return false;
-    }*/
-    for (size_t i = 0; i < cfg_adc_channels.size() && i < adc_channels.size(); i++) {
-      adc_channels[i] = cfg_adc_channels[i];
-    }
-    bool written = hardware->write_adc_bus_mux(adc_channels);
-    if (!written)
-      return written;
   }
 
   if (cfg.containsKey("acl_select")) {
-    auto cfg_acl_select = cfg["acl_select"].as<JsonArrayConst>();
-    for (size_t i = 0; i < cfg_acl_select.size() && i < acl_select.size(); i++) {
-      if (cfg_acl_select[i] == "internal") {
-        acl_select[i] = platform::LUCIDAC_HAL::ACL::INTERNAL_;
-      } else if (cfg_acl_select[i] == "external") {
-        acl_select[i] = platform::LUCIDAC_HAL::ACL::EXTERNAL_;
-      } else {
-        LOG_ALWAYS("platform::LUCIDAC::config_self_from_json: Expected acl_select[i] to be either 'internal' "
-                   "or 'external' string")
-        return false;
-      }
-    }
-    bool written = hardware->write_acl(acl_select);
-    if (!written)
-      return written;
   }
 
   return true;
+}
+
+bool platform::LUCIDAC::_config_adc_from_json(const JsonVariantConst &cfg) {
+  if (!cfg.is<JsonArrayConst>())
+    return false;
+
+  auto cfg_adc_channels = cfg.as<JsonArrayConst>();
+  /*if(cfg_adc_channels.size() != adc_channels.size()) {
+    LOG_ALWAYS("platform::LUCIDAC::config_self_from_json: Error, given adc_channels has wrong size");
+    return false;
+  }*/
+  for (size_t i = 0; i < cfg_adc_channels.size() && i < adc_channels.size(); i++) {
+    adc_channels[i] = cfg_adc_channels[i];
+  }
+  return hardware->write_adc_bus_mux(adc_channels);
+}
+
+bool platform::LUCIDAC::_config_acl_from_json(const JsonVariantConst &cfg) {
+  if (!cfg.is<JsonArrayConst>())
+    return false;
+
+  auto cfg_acl_select = cfg.as<JsonArrayConst>();
+  for (size_t i = 0; i < cfg_acl_select.size() && i < acl_select.size(); i++) {
+    if (cfg_acl_select[i] == "internal") {
+      acl_select[i] = platform::LUCIDAC_HAL::ACL::INTERNAL_;
+    } else if (cfg_acl_select[i] == "external") {
+      acl_select[i] = platform::LUCIDAC_HAL::ACL::EXTERNAL_;
+    } else {
+      LOG_ALWAYS("platform::LUCIDAC::config_self_from_json: Expected acl_select[i] to be either 'internal' "
+                 "or 'external' string")
+      return false;
+    }
+  }
+  return hardware->write_acl(acl_select);
 }
 
 void platform::LUCIDAC::config_self_to_json(JsonObject &cfg) {
