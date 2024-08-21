@@ -8,7 +8,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "running_avg.h"
+#include "utils/running_avg.h"
 
 template <class T> void print_array(const T &arr) {
   std::cout << "{ ";
