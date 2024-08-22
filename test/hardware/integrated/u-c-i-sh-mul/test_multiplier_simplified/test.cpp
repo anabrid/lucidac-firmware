@@ -3,7 +3,6 @@
 //
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "test_fmtlib.h"
 #include <Arduino.h>
 #include <unity.h>
 
@@ -80,7 +79,7 @@ void test_calibration() {
 
   delay(10);
   auto data = DAQ.sample_avg_raw(10, 100);
-  TEST_MESSAGE_FORMAT("DAQ values are {}", data);
+  std::cout << "DAQ values are " << data << std::endl;
 }
 
 void setup() {

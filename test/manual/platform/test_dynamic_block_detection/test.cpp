@@ -15,8 +15,6 @@
 #include "entity/entity.h"
 #include "lucidac/front_panel.h"
 
-#include "test_fmtlib.h"
-
 using namespace blocks;
 using namespace functions;
 using namespace metadata;
@@ -118,13 +116,13 @@ void test_read_euis() {
   for (auto block_idx : {bus::M0_BLOCK_IDX, bus::M1_BLOCK_IDX, UBlock::BLOCK_IDX, CBlock::BLOCK_IDX,
                          IBlock::BLOCK_IDX, SHBlock::BLOCK_IDX}) {
     MetadataEditor reader{bus::idx_to_addr(0, block_idx, 0)};
-    TEST_MESSAGE_FORMAT("{}", reader.read_eui());
+    std::cout << reader.read_eui() << std::endl;
   }
   MetadataEditor reader{bus::address_from_tuple(1, 0)};
-  TEST_MESSAGE_FORMAT("{}", reader.read_eui());
+  std::cout << reader.read_eui() << std::endl;
   // fp
   MetadataEditor reader_fp{bus::address_from_tuple(2, 0)};
-  TEST_MESSAGE_FORMAT("{}", reader_fp.read_eui());
+  std::cout << reader_fp.read_eui() << std::endl;
 }
 
 void setup() {

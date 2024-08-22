@@ -11,6 +11,11 @@
 
 #include <Arduino.h>
 
+#include <array>
+#include <iostream>
+#include <type_traits>
+#include <vector>
+
 #ifndef ARDUINO
 #define LOG_TARGET Serial
 #else
@@ -24,7 +29,6 @@
 #include "StreamUtils.h" // ArduinoSreamUtils
 #define __LOG(message) LOG_TARGET.println(message);
 #else
-#include <iostream>
 #define __LOG(message) std::cerr << message;
 #endif
 
@@ -131,7 +135,46 @@
 #define LOG_END(message) LOG_TARGET.println(message);
 
 // Log something which calls like foo(JsonObject& x) without hazzle, within LOG_START ... LOG_END.
-//#define LOG_JSON(functioncall) { StaticJsonDocument<200> tmp; functioncall(tmp.to<JsonObject>());
+// #define LOG_JSON(functioncall) { StaticJsonDocument<200> tmp; functioncall(tmp.to<JsonObject>());
 // serializeJson(tmp, Serial); }
 
-//#undef LOG_TARGET // was only an internal helper
+// #undef LOG_TARGET // was only an internal helper
+
+template <typename T, size_t size> std::ostream &operator<<(std::ostream &os, const std::array<T, size> &arr) {
+  if (arr.empty())
+    os << "[ ]";
+  else {
+    os << "[ ";
+    for (size_t i = 0; i < arr.size() - 1; i++) {
+      if constexpr (std::is_same<T, uint8_t>::value)
+        os << +arr[i] << ", ";
+      else
+        os << arr[i] << ",";
+    }
+    if constexpr (std::is_same<T, uint8_t>::value)
+      os << +arr.back() << " ]";
+    else
+      os << arr.back() << " ]";
+  }
+  return os;
+}
+
+template <typename T> std::ostream &operator<<(std::ostream &os, const std::vector<T> &vec) {
+  if (vec.empty())
+    os << "[ ]";
+  else {
+    os << "[ ";
+    for (size_t i = 0; i < vec.size() - 1; i++) {
+      if constexpr (std::is_same<T, uint8_t>::value)
+        os << +vec[i] << ", ";
+      else
+        os << vec[i] << ",";
+    }
+    if constexpr (std::is_same<T, uint8_t>::value)
+      os << +vec.back() << " ]";
+    else
+      os << vec.back() << " ]";
+  }
+
+  return os;
+}

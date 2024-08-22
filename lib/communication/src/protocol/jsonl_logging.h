@@ -71,6 +71,8 @@ struct Log : public Print {
   }
 };
 
+void init_serial();
+
 /**
  * This class holds a finite size log (i.e. list of strings) as a ring buffer.
  * This log is supposed to be wiped as soon as the RAM is needed, i.e. at data aquisition.

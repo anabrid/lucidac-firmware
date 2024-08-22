@@ -7,7 +7,6 @@
 #include <unity.h>
 
 #include "test_common.h"
-#include "test_fmtlib.h"
 #include "test_parametrized.h"
 
 #include "daq/daq.h"
@@ -51,8 +50,9 @@ void test_init_and_blocks() {
 
 void test_summation(const std::array<float, 32> &factors, const std::array<I, 16> &connections,
                     bool full_calibration) {
-  TEST_MESSAGE_FORMAT("factor={}", factors[0]); // All factors are the same
-  TEST_MESSAGE_FORMAT("connections={}", connections);
+  std::cout << "factor=" << factors[0] << std::endl; // All factors are the same
+  std::cout << "connections= " << connections << std::endl;
+
   // Calculate expected sum
   std::array<float, 16> expected{};
   std::array<float, 16> deviations{};
@@ -61,7 +61,7 @@ void test_summation(const std::array<float, 32> &factors, const std::array<I, 16
       expected[i_out_idx] += factors[i_in_idx];
     }
   }
-  TEST_MESSAGE_FORMAT("expected={}", expected);
+  std::cout << "expected= " << expected << std::endl;
 
   unsigned int relevant_i_out = 0;
 
@@ -88,16 +88,16 @@ void test_summation(const std::array<float, 32> &factors, const std::array<I, 16
 
     // Measure by using SH gain outputs
     auto data = measure_sh_gain(cluster, &DAQ);
-    TEST_MESSAGE_FORMAT("data={}", data);
+    std::cout << "data=" << data << std::endl;
 
     for (auto idx = 0u; idx < data.size(); idx++) {
       TEST_ASSERT_FLOAT_WITHIN(full_calibration ? 0.1f : 0.05f, expected[idx], data[idx]);
       deviations[idx] = data[idx] - expected[idx];
     }
 
-    TEST_MESSAGE_FORMAT("absolute deviation ={}",
-                        deviations[relevant_i_out]); // this is absolute, but since we sum to one, relative and
-                                                     // absolute deviation are the same
+    std::cout << "absolute deviation = " << deviations[relevant_i_out]
+              << std::endl; // this is absolute, but since we sum to one, relative and
+                            // absolute deviation are the same
   }
 }
 
@@ -112,7 +112,7 @@ void test_n_summations() {
           connections[i_out_idx].emplace_back(i_in_idx + i_in_shift);
         // Run test on this configuration
         TEST_MESSAGE("--------------------------------------");
-        TEST_MESSAGE_FORMAT("Testing = {} connections", N);
+        std::cout << "Testing " << N << " connections" << std::endl;
         carrier_.reset(true);
         test_summation(factors, connections, i_out_idx == 0);
       }

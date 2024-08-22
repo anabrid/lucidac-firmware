@@ -10,7 +10,6 @@
 #define protected public
 
 #include "test_common.h"
-#include "test_fmtlib.h"
 #include "test_parametrized.h"
 
 #include "daq/daq.h"
@@ -75,7 +74,7 @@ void test_summation() {
   delay(50);
 
   auto sample = DAQ.sample();
-  TEST_MESSAGE_FORMAT("Read In = {}", sample);
+  std::cout << "Read In = " << sample << std::endl;
 }
 
 void setup() {

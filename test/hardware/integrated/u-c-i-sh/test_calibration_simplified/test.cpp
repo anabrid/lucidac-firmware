@@ -3,7 +3,6 @@
 //
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "test_fmtlib.h"
 #include <Arduino.h>
 #include <unity.h>
 
@@ -60,7 +59,7 @@ void test_calibration() {
   TEST_ASSERT(cluster_.calibrate(&DAQ));
 
   // Check whether all gain corrections are in a reasonable range
-  TEST_MESSAGE_FORMAT("Gain corrections are {}.", cluster_.cblock->get_gain_corrections());
+  std::cout << "Gain corrections are: " << cluster_.cblock->get_gain_corrections() << std::endl;
   for (auto gain_correction : cluster_.cblock->get_gain_corrections())
     TEST_ASSERT_FLOAT_WITHIN(0.1f, 1.0f, gain_correction);
 

@@ -6,7 +6,6 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "test_fmtlib.h"
 #include "test_parametrized.h"
 
 #include "daq/daq.h"
@@ -49,12 +48,12 @@ void test_calibration() {
     for (auto mblock : {cluster.m0block, cluster.m1block}) {
       if (!mblock or !mblock->is_entity_type(MBlock::TYPES::M_MUL4_BLOCK))
         continue;
-      TEST_MESSAGE_FORMAT("Calibrating M{}-block in cluster {}...", static_cast<uint8_t>(mblock->slot),
-                          cluster.cluster_idx);
+      printf("Calibrating M%d-block in cluster %d...\n", static_cast<uint8_t>(mblock->slot),
+             cluster.cluster_idx);
       TEST_ASSERT(carrier_.calibrate_mblock(cluster, *mblock, &DAQ));
       for (auto &calibration : static_cast<MMulBlock *>(mblock)->get_calibration())
-        TEST_MESSAGE_FORMAT("Calibration: offset_x={}, offset_y={}, offset_z={}", calibration.offset_x,
-                            calibration.offset_y, calibration.offset_z);
+        printf("Calibration: offset_x=%d, offset_y=%d, offset_z=%d\n", calibration.offset_x,
+               calibration.offset_y, calibration.offset_z);
     }
 }
 
@@ -110,8 +109,8 @@ void test_function(float x, float y) {
       for (auto mul_idx : MMulBlock::MULTIPLIERS_OUTPUT_RANGE()) {
         if (fabs(data[mul_idx] - x * y) > fabs(0.1 * x * y)) {
           error = true;
-          TEST_MESSAGE_FORMAT("ERROR cluster={} mblock-slot={} mul_idx={} output={} outside acceptable range!",
-                              cluster.cluster_idx, static_cast<uint8_t>(mblock->slot), mul_idx, data[mul_idx]);
+          printf("ERROR cluster=%d mblock-slot=%d mul_idx=%d output=%f outside acceptable range!\n",
+                 cluster.cluster_idx, static_cast<uint8_t>(mblock->slot), mul_idx, data[mul_idx]);
         }
       }
     }

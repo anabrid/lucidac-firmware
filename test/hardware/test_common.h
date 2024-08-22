@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include "test_fmtlib.h"
 #include <Arduino.h>
 #include <unity.h>
 
