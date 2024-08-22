@@ -52,7 +52,7 @@ void test_calibration() {
              cluster.cluster_idx);
       TEST_ASSERT(carrier_.calibrate_mblock(cluster, *mblock, &DAQ));
       for (auto &calibration : static_cast<MMulBlock *>(mblock)->get_calibration())
-        printf("Calibration: offset_x=%d, offset_y=%d, offset_z=%d\n", calibration.offset_x,
+        printf("Calibration: offset_x=%f, offset_y=%f, offset_z=%f\n", calibration.offset_x,
                calibration.offset_y, calibration.offset_z);
     }
 }

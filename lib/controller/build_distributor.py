@@ -121,7 +121,6 @@ code_files["distributor_generated.h"] = \
 
 code_files["distributor_generated.cpp"] = \
 """
-#include <Arduino.h>
 #ifdef ARDUINO
 #include "build/distributor.h"
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Arduino.h>
 #ifdef ARDUINO
 
 #include "nvmconfig/persistent.h"

@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <Arduino.h>
 #ifdef ARDUINO
 
 #include <IPAddress.h>

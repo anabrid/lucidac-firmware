@@ -20,7 +20,6 @@
   THE SOFTWARE.
 */
 
-#include <Arduino.h>
 #ifdef ARDUINO
 
 #ifndef AWOT_H_

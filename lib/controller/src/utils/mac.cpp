@@ -1,6 +1,5 @@
 #include "utils/mac.h"
 
-#include <Arduino.h>
 #ifdef ARDUINO
 
 #include <QNEthernet.h>
