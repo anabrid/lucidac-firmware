@@ -85,6 +85,8 @@ platform::Cluster::Cluster(uint8_t cluster_idx)
 
 bool platform::Cluster::calibrate_offsets() {
   LOG_ANABRID_DEBUG_CALIBRATION("Calibrating offsets");
+  if (!ublock or !shblock)
+    return false;
 
   auto old_transmission_modes = ublock->get_all_transmission_modes();
 
