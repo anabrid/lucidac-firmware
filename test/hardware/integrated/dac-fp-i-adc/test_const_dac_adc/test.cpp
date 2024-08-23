@@ -4,8 +4,12 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include <Arduino.h>
-#include <unity.h>
 #include <iostream>
+#include <unity.h>
+
+#include "protocol/jsonl_logging.h"
+#include "test_common.h"
+#include "test_parametrized.h"
 
 #ifndef ANABRID_PEDANTIC
 #error "This test requires pedantic mode."
@@ -41,12 +45,29 @@
 using namespace platform;
 
 LUCIDAC lucidac;
+daq::OneshotDAQ daq_;
 
-void test_dac_adc(float val0 = 0.75, float val1 = -0.25) {
-  TEST_ASSERT(lucidac.front_panel != nullptr);
+void test_init_and_blocks() {
+  // In carrier_.init(), missing blocks are ignored
+  TEST_ASSERT(lucidac.init());
+  // We do need certain blocks
+  for (auto &cluster : lucidac.clusters) {
+    TEST_ASSERT_NOT_NULL(cluster.iblock);
+    TEST_ASSERT_NOT_NULL(cluster.shblock);
+  }
+  TEST_ASSERT_NOT_NULL(lucidac.ctrl_block);
+  TEST_ASSERT_NOT_NULL(lucidac.front_panel);
+  // Reset
+  lucidac.reset(false);
+  TEST_ASSERT(lucidac.write_to_hardware());
+}
 
-  TEST_ASSERT(lucidac.front_panel->signal_generator.set_dac_out0(val0));
-  TEST_ASSERT(lucidac.front_panel->signal_generator.set_dac_out1(val1));
+void test_dac_adc(float val0 = 0.5, float val1 = -0.25) {
+  // The current implementation of the front plane outputs the value as voltage,
+  // not in machine units (scaled by two), so we do it here for now.
+  // TODO: Fix in front plane
+  TEST_ASSERT(lucidac.front_panel->signal_generator.set_dac_out0(2 * val0));
+  TEST_ASSERT(lucidac.front_panel->signal_generator.set_dac_out1(2 * val1));
 
   TEST_ASSERT(lucidac.set_acl_select(0, platform::LUCIDAC::ACL::EXTERNAL_));
   TEST_ASSERT(lucidac.set_acl_select(1, platform::LUCIDAC::ACL::EXTERNAL_));
@@ -54,75 +75,42 @@ void test_dac_adc(float val0 = 0.75, float val1 = -0.25) {
   uint8_t acl0_lane = 24;
   uint8_t acl1_lane = 25;
 
-  // TODO: Detect where we have an identity connection in the system!
-  //       I.e. detect on M-Mul or M-ID block and select suitable cross lanes!
-
-  // this most likely only applies for M-ID block, not M-Mul which has gain 1.
-  float id_gain = 1. / 20;
-
-  // The following by purpose swaps val0 and val1 because it is known that
-  // DAC1 and DAC0 are wrongly labeled...
-  float expected_val0 = id_gain * val1;
-  float expected_val1 = id_gain * val0;
-
-  // This assumes an M-ID block in slot M1
-  uint8_t m1_id0_in = 8, m1_id0_out = 8;
-  uint8_t m1_id1_in = 9, m1_id1_out = 9;
-
-  lucidac.clusters[0].iblock->connect(acl0_lane, m1_id0_in);
-  lucidac.clusters[0].iblock->connect(acl1_lane, m1_id1_in);
-
+  // Connect ACL to I-Block outputs
   uint8_t adc_channel_val0 = 0;
   uint8_t adc_channel_val1 = 1;
+  TEST_ASSERT(lucidac.clusters[0].iblock->connect(acl0_lane, adc_channel_val0));
+  TEST_ASSERT(lucidac.clusters[0].iblock->connect(acl1_lane, adc_channel_val1));
 
-  TEST_ASSERT(lucidac.set_adc_channel(adc_channel_val0, m1_id0_out));
-  TEST_ASSERT(lucidac.set_adc_channel(adc_channel_val1, m1_id1_out));
+  // Prepare measure data via SH-Block
+  TEST_ASSERT(lucidac.ctrl_block->set_adc_bus_to_cluster_gain(0));
 
-  // write all at once: front panel, iblock, acl_select and adc_channels
+  // Write configuration to hardware
   TEST_ASSERT_EQUAL(1, lucidac.write_to_hardware());
 
-  // default value, was set by lucidac.reset().
-  TEST_ASSERT(lucidac.ctrl_block->get_adc_bus() == blocks::CTRLBlock::ADCBus::ADC);
+  // Measure data via SH-Block
+  auto data = measure_sh_gain(lucidac.clusters[0], &daq_);
 
-  delay(10);
-
-  auto daq = daq::OneshotDAQ();
-  TEST_ASSERT(daq.init(0));
-
-  auto channels_raw = daq.sample_raw();
-  auto channels = daq.sample();
-
-  float measured_val0 = channels[adc_channel_val0];
-  float measured_val1 = channels[adc_channel_val1];
-
-  std::cout << " DAC0 input: " << val0 << " Expected output: " << expected_val0
-            << " Raw output: " << channels_raw[0] << " ADC0 output: " << measured_val0 << std::endl;
-  std::cout << " DAC1 input: " << val1 << " Expected output: " << expected_val1
-            << " Raw output: " << channels_raw[1] << " ACD1 output: " << measured_val1 << std::endl;
+  float measured_val0 = data[adc_channel_val0];
+  float measured_val1 = data[adc_channel_val1];
+  std::cout << data << std::endl;
 
   // TODO: Improve, this is quite a lot of absolute tolerance.
   // I think 5% relative tolerance should do it.
   float abs_tolerance = 0.1;
-
-  TEST_ASSERT(fabs(expected_val0 - measured_val0) < abs_tolerance);
-  TEST_ASSERT(fabs(expected_val1 - measured_val1) < abs_tolerance);
-}
-
-void test_dac_adc_values() {
-  test_dac_adc();
-  test_dac_adc(-1.0, +1.0);
-  test_dac_adc(-0.5, -0.5);
+  TEST_ASSERT_FLOAT_WITHIN(abs_tolerance, val0, measured_val0);
+  TEST_ASSERT_FLOAT_WITHIN(abs_tolerance, val1, measured_val1);
 }
 
 void setup() {
-  UNITY_BEGIN();
-
+  msg::activate_serial_log();
   bus::init();
-  TEST_ASSERT(lucidac.init());
+  daq_.init(0);
 
-  lucidac.reset(false);
-  RUN_TEST(test_dac_adc_values);
-
+  UNITY_BEGIN();
+  RUN_TEST(test_init_and_blocks);
+  RUN_PARAM_TEST(test_dac_adc);
+  RUN_PARAM_TEST(test_dac_adc, -1.0f, +1.0f);
+  RUN_PARAM_TEST(test_dac_adc, -0.5f, -0.5f);
   UNITY_END();
 }
 
