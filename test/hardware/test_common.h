@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include "test_fmtlib.h"
 #include <Arduino.h>
 #include <unity.h>
 
@@ -17,6 +16,9 @@ constexpr bool ANABRID_TESTS_USE_ACL_OUT = true;
 
 std::array<float, 16> measure_sh_gain(platform::Cluster &cluster, daq::BaseDAQ *DAQ,
                                       unsigned int averages = 42, unsigned int averages_delay = 100) {
+  // CARE: This assumes ADC bus is set to cluster gain
+  // CARE: The SH-Block adds its offset corrections on gain measurements (as is expected),
+  //       but starts with a random offset, so without calibration may give random signals.
   std::array<float, 16> data{};
 
   // Measure all channels by using SH gain outputs and switching channels

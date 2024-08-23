@@ -5,12 +5,12 @@
 
 #include <Arduino.h>
 #include <unity.h>
+#include <iostream>
 
 #define private public
 #define protected public
 
 #include "test_common.h"
-#include "test_fmtlib.h"
 #include "test_parametrized.h"
 
 #include "daq/daq.h"
@@ -47,8 +47,9 @@ void test_init_and_blocks() {
     TEST_ASSERT_NOT_NULL(cluster.m1block);
   }
   TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
-
+  // Reset
   carrier_.reset(false);
+  TEST_ASSERT(carrier_.write_to_hardware());
 }
 
 void test_summation() {
@@ -75,7 +76,7 @@ void test_summation() {
   delay(50);
 
   auto sample = DAQ.sample();
-  TEST_MESSAGE_FORMAT("Read In = {}", sample);
+  std::cout << "Read In = " << sample << std::endl;
 }
 
 void setup() {

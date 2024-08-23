@@ -1,14 +1,13 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "run_manager.h"
+#include "run/run_manager.h"
 
 #include <Arduino.h>
 
 #include "daq/daq.h"
-#include "logging.h"
+#include "utils/logging.h"
 
 run::RunManager run::RunManager::_instance{};
 
@@ -78,4 +77,13 @@ void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunD
   auto change = run.to(RunState::DONE, actual_op_time);
   state_change_handler->handle(change, run);
   queue.pop();
+}
+
+int run::RunManager::start_run(JsonObjectConst msg_in, JsonObject &msg_out) {
+  if (!msg_in.containsKey("id") or !msg_in["id"].is<std::string>())
+    return 1;
+  // Create run and put it into queue
+  auto run = run::Run::from_json(msg_in);
+  queue.push(std::move(run));
+  return 0 /* success */;
 }

@@ -1,6 +1,5 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #pragma once
@@ -8,10 +7,15 @@
 #include "base.h"
 
 #include "bus/bus.h"
-#include "logging.h"
 #include "metadata/metadata.h"
+#include "utils/logging.h"
 
 namespace metadata {
+
+/**
+ * This structure describes the 256 byte memory of the 25AA02E64 EEPROMs in Memory Version 1.
+ **/
+
 enum class LayoutVersion : uint8_t { V1 = 1 };
 
 struct __attribute__((packed)) MetadataMemoryLayoutV1 {

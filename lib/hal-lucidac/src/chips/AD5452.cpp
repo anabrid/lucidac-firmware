@@ -1,9 +1,8 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "AD5452.h"
+#include "chips/AD5452.h"
 
 const SPISettings functions::AD5452::DEFAULT_SPI_SETTINGS{4'000'000, MSBFIRST, SPI_MODE1};
 

@@ -1,12 +1,11 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #pragma once
 
-#include "bus/bus.h"
 #include "entity/entity.h"
+#include "bus/bus.h"
 
 namespace blocks {
 

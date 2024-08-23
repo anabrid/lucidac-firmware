@@ -1,6 +1,7 @@
 .idea/
 cmake-build-*
 CMakeListsPrivate.txt
+*_disabled
 
 ### Created by https://www.gitignore.io
 ### PlatformIO ###
@@ -27,3 +28,17 @@ _deps
 # External projects
 *-prefix/
 .vscode/
+
+# Doxygen output
+docs/html
+docs/latex
+docs/xml
+
+# Any kind of local patches
+*.elf
+*.hex
+teensy_loader_cli*
+
+# alternative uploaders
+rygel
+tycmd

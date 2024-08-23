@@ -7,7 +7,7 @@
 
 #include "block/blocks.h"
 #include "carrier/carrier.h"
-#include "front_panel.h"
+#include "lucidac/front_panel.h"
 
 namespace platform {
 
@@ -69,10 +69,13 @@ protected:
   std::array<ACL, 8> acl_select{ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_,
                                 ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_, ACL::INTERNAL_};
 
+  bool _config_adc_from_json(const JsonVariantConst &cfg);
+  bool _config_acl_from_json(const JsonVariantConst &cfg);
+
 public:
   LUCIDACFrontPanel *front_panel = nullptr;
 
-  explicit LUCIDAC(LUCIDAC_HAL* hardware);
+  explicit LUCIDAC(LUCIDAC_HAL *hardware);
   LUCIDAC();
 
   bool init() override;
@@ -83,7 +86,18 @@ public:
 
   Entity *get_child_entity(const std::string &child_id) override;
 
-  [[nodiscard]] bool write_to_hardware() override;
+  int get_entities(JsonObjectConst msg_in, JsonObject &msg_out) override;
+
+  bool config_self_from_json(JsonObjectConst cfg) override;
+  void config_self_to_json(JsonObject &cfg) override;
+
+  // Error codes:
+  // -1 Cluster write failed
+  // -2 CTRL Block write failed
+  // -3 ADC Bus write failed
+  // -4 Front Panel write failed
+  // -5 Write ACL failed
+  [[nodiscard]] int write_to_hardware() override;
 
   [[nodiscard]] const std::array<ACL, 8> &get_acl_select() const;
   void set_acl_select(const std::array<ACL, 8> &acl_select_);

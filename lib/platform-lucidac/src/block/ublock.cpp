@@ -1,13 +1,12 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include <algorithm>
 
 #include "ublock.h"
 
-#include "logging.h"
+#include "utils/logging.h"
 
 void utils::shift_5_left(uint8_t *buffer, size_t size) {
   for (size_t idx = 0; idx < size - 1; idx++) {
@@ -227,6 +226,7 @@ void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), en
 
 void blocks::UBlock::reset(const bool keep_offsets) {
   FunctionBlock::reset(keep_offsets);
+  change_all_transmission_modes(blocks::UBlock::Transmission_Mode::ANALOG_INPUT);
   reset_connections();
   reset_reference_magnitude();
 }
@@ -238,6 +238,9 @@ bool blocks::UBlock::config_self_from_json(JsonObjectConst cfg) {
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "outputs") {
       if (!_config_outputs_from_json(cfgItr->value()))
+        return false;
+    } else if (cfgItr->key() == "constant") {
+      if (!_config_constants_from_json(cfgItr->value()))
         return false;
     } else {
       // Unknown configuration key
@@ -293,6 +296,25 @@ bool blocks::UBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
     return true;
   }
   return false;
+}
+
+bool blocks::UBlock::_config_constants_from_json(const JsonVariantConst &cfg) {
+  if ((cfg.is<bool>() && cfg == false) || cfg.isNull()) {
+    change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::ANALOG_INPUT);
+    reset_reference_magnitude();
+    return true;
+  } else if (cfg.is<float>() && cfg == 0.1f) {
+    change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::POS_REF);
+    change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE_TENTH);
+    return true;
+  } else if ((cfg.is<float>() && cfg == 1.0f) || (cfg.is<bool>() && cfg == true)) {
+    change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::POS_REF);
+    change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE);
+    return true;
+  } else {
+    LOG_ALWAYS("UBlock::config_self_from_json: Cannot understand value 'constant'");
+    return false;
+  }
 }
 
 void blocks::UBlock::config_self_to_json(JsonObject &cfg) {

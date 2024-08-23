@@ -8,7 +8,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "version.h"
+#include "entity/version.h"
 
 using namespace entities;
 

@@ -1,11 +1,10 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "bus.h"
+#include "bus/bus.h"
 
-#include "logging.h"
+#include "utils/logging.h"
 
 SPIClass &bus::spi = BUS_SPI_INTERFACE;
 

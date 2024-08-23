@@ -1,9 +1,8 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "DAC60508.h"
+#include "chips/DAC60508.h"
 
 const SPISettings functions::DAC60508::DEFAULT_SPI_SETTINGS{4'000'000, MSBFIRST, SPI_MODE2};
 

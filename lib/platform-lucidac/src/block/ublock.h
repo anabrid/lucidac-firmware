@@ -1,6 +1,5 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #pragma once
@@ -10,9 +9,7 @@
 #include <utility>
 
 #include "block/base.h"
-#include "bus/bus.h"
 #include "bus/functions.h"
-#include "carrier/analog.h"
 #include "chips/SR74HCT595.h"
 
 namespace platform {
@@ -238,6 +235,7 @@ protected:
   void config_self_to_json(JsonObject &cfg) override;
 
   bool _config_outputs_from_json(const JsonVariantConst &cfg);
+  bool _config_constants_from_json(const JsonVariantConst &cfg);
 
   friend class ::platform::Cluster;
   friend class ::blocks::MBlock;

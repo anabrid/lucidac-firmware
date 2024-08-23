@@ -3,9 +3,9 @@
 //
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "test_fmtlib.h"
 #include <Arduino.h>
 #include <unity.h>
+#include <iostream>
 
 #include "daq/daq.h"
 #include "io/io.h"
@@ -38,6 +38,9 @@ void test_init_and_blocks() {
     TEST_ASSERT_NOT_NULL(cluster.shblock);
   }
   TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
+  // Reset
+  carrier_.reset(false);
+  TEST_ASSERT(carrier_.write_to_hardware());
 }
 
 void test_calibration() {
@@ -53,10 +56,10 @@ void test_calibration() {
 
   TEST_ASSERT(carrier_.calibrate_routes(&DAQ));
 
-  for (auto &cluster: carrier_.clusters) {
+  for (auto &cluster : carrier_.clusters) {
     // Check whether all gain corrections are in a reasonable range
-    TEST_MESSAGE_FORMAT("Gain corrections are {}.", cluster.cblock->get_gain_corrections());
-    for (auto gain_correction: cluster.cblock->get_gain_corrections())
+    std::cout << "Gain corrections are: " << cluster.cblock->get_gain_corrections() << std::endl;
+    for (auto gain_correction : cluster.cblock->get_gain_corrections())
       TEST_ASSERT_FLOAT_WITHIN(0.1f, 1.0f, gain_correction);
 
     // Check whether all connections have been restored
@@ -72,6 +75,8 @@ void test_calibration() {
 void setup() {
   bus::init();
   io::init();
+  msg::activate_serial_log();
+
   DAQ.init(0);
 
   UNITY_BEGIN();

@@ -42,6 +42,31 @@ build_job:
       dotenv: .anabrid_build_result.env
     expire_in: 4 weeks
 
+build_docs:
+  variables:
+    # clone submodules which are currently only relevant for docs
+    GIT_SUBMODULE_STRATEGY: normal
+  stage: build
+  image: alpine # suggested in https://gitlab.com/pages/doxygen but shitty
+  script:
+    - apk update && apk add doxygen # TODO: this is slow, use proper image
+    - doxygen docs/Doxyfile
+  artifacts:
+    paths:
+      - docs/html
+      
+upload_docs:
+  stage: release
+  # TODO: Change to a specialized image
+  image: svenk/latex
+  needs: # instead of "dependencies:", should go faster
+    - build_docs
+  script:
+    - chmod 600 "$SSH_PRIVATE_KEY_FILE_STAGING"
+    - echo "ai.svenk.org ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBE2YTwpWWq4ceRXHbCFHlw5kmRVLQjKbdYeFAAyYUDXFRhCjRknE6DKlGIIciKOqzAMiFGz5/vxb6tKMCKBeFU0=" > ~/userknown.txt
+    - echo -e "cd anabrid.dev/docs/hybrid-controller/\nput -R docs/html/*" | sftp -o "UserKnownHostsFile=~/userknown.txt" -i"$SSH_PRIVATE_KEY_FILE_STAGING" $DEPLOY_STAGING_SSH_HOST
+
+
 
 release_job:
   stage: release
@@ -62,3 +87,4 @@ release_job:
       links:
         - name: 'Firmware binary hex file'
           url: '$CI_PROJECT_URL/-/jobs/${ANABRID_BUILD_JOB_ID}/artifacts/raw/.pio/build/teensy41/firmware.hex'
+

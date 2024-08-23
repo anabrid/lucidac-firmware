@@ -1,11 +1,12 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "mode.h"
+#include "mode/mode.h"
 
 #include <Arduino.h>
+
+#include "utils/logging.h"
 
 void mode::ManualControl::init() {
   digitalWriteFast(PIN_MODE_IC, HIGH);
@@ -30,6 +31,55 @@ void mode::ManualControl::to_halt() {
   digitalWriteFast(PIN_MODE_IC, HIGH);
   digitalWriteFast(PIN_MODE_OP, HIGH);
 }
+
+void mode::RealManualControl::enable() {
+  if(mode::FlexIOControl::is_initialized()) {
+    if(mode::FlexIOControl::is_enabled()) {
+      mode::FlexIOControl::disable();
+    }
+  }
+}
+
+void mode::RealManualControl::disable() {
+  if(mode::FlexIOControl::is_initialized()) {
+    if(!mode::FlexIOControl::is_enabled()) {
+      mode::FlexIOControl::enable();
+    } else {
+      // this should not happen.
+    }
+  }
+}
+
+void mode::RealManualControl::to_ic() {
+  enable();
+  if(mode::FlexIOControl::is_initialized()) {
+    mode::FlexIOControl::to_ic();
+  } else {
+    mode::ManualControl::to_ic();
+  }
+}
+
+void mode::RealManualControl::to_op() {
+  enable();
+  if(mode::FlexIOControl::is_initialized()) {
+    mode::FlexIOControl::to_op();
+  } else {
+    mode::ManualControl::to_op();
+  }
+}
+
+void mode::RealManualControl::to_halt() {
+  enable();
+  if(mode::FlexIOControl::is_initialized()) {
+    mode::FlexIOControl::to_idle();
+  } else {
+    mode::ManualControl::to_halt();
+  }
+}
+
+// storage and default values for static class members
+bool mode::FlexIOControl::_is_initialized = false;
+bool mode::FlexIOControl::_is_enabled = false;
 
 bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_time_ns,
                                mode::OnOverload on_overload, mode::OnExtHalt on_ext_halt, mode::Sync sync) {
@@ -114,8 +164,10 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
 
   // Sanity check ic_time_ns, which must be countable by a 16bit timer at CLK_FREQ
   // TODO: Change IC timer to a two-stage timer like the OP timer to increase maximum IC time
-  if (ic_time_ns < 100 or ic_time_ns >= 270001)
+  if (ic_time_ns < 100 or ic_time_ns >= 270001) {
+    LOG_ERROR("FlexIOControl: Requested ic_time_ns cannot be represented by 16bit.");
     return false;
+  }
   // We can change FLEXIO_SHIFTCTL_TIMPOL to only have to divide by 1000, but it does not matter much.
   uint32_t num_ic_clocks = ic_time_ns * CLK_FREQ_MHz / 2000;
   // There is a constant delay (1-2 FlexIO cycles) before enabling the timer, which we correct here
@@ -145,8 +197,10 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   // Sanity check op_time_ns, which we will count with two 16bit timers (=32bit) at CLK_FREQ
   // Just limit to 1 second for now, the actual math is slightly more complicated
   // Also, we don't really want to do extremely short OP times (for now?)
-  if (op_time_ns < 100 or op_time_ns > 1'000'000'000)
+  if (op_time_ns < 100 or op_time_ns > 1'000'000'000) {
+    LOG_ERROR("FlexIOControl: Requested op_time_ns cannot be represented by 32bit.");
     return false;
+  }
 
   // Configure a timer to set an input pin high, signaling end of op_time
   if (op_time_ns < 0xFFFFull * 1000ull / CLK_FREQ_MHz) {
@@ -294,17 +348,20 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   }
 
   enable();
+  _is_initialized = true;
   return true;
 }
 
 void mode::FlexIOControl::disable() {
   auto flexio = FlexIOHandler::flexIOHandler_list[2];
   flexio->port().CTRL &= ~FLEXIO_CTRL_FLEXEN;
+  _is_enabled = false;
 }
 
 void mode::FlexIOControl::enable() {
   auto flexio = FlexIOHandler::flexIOHandler_list[2];
   flexio->port().CTRL |= FLEXIO_CTRL_FLEXEN;
+  _is_enabled = true;
 }
 
 void mode::FlexIOControl::force_start() { to_ic(); }

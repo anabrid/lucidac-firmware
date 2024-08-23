@@ -1,11 +1,10 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "cblock.h"
+#include "block/cblock.h"
 
-#include "logging.h"
+#include "utils/logging.h"
 
 blocks::CBlock::CBlock(const bus::addr_t block_address, CBlockHAL *hardware)
     : FunctionBlock("C", block_address), hardware(hardware) {}

@@ -1,15 +1,14 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include <Arduino.h>
 #include <algorithm>
 #include <bitset>
 
-#include "daq.h"
-#include "logging.h"
-#include "running_avg.h"
+#include "daq/daq.h"
+#include "utils/logging.h"
+#include "utils/running_avg.h"
 
 bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate_unused) {
   pinMode(PIN_CNVST, OUTPUT);
@@ -32,7 +31,10 @@ float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
 }
 
 const char *daq::BaseDAQ::raw_to_str(uint16_t raw) {
-  return helpers::normalized_to_float_str_arr[raw_to_normalized(raw)];
+  size_t idx = raw_to_normalized(raw);
+  if (idx > helpers::normalized_to_float_str_arr.size())
+    return nullptr;
+  return helpers::normalized_to_float_str_arr[idx];
 }
 
 std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, unsigned int delay_us) {
@@ -389,8 +391,10 @@ bool daq::FlexIODAQ::init(unsigned int) {
   // Enable dma channel
   dma::channel.enable();
 
-  if (dma::channel.error())
+  if (dma::channel.error()) {
+    LOG_ERROR("dma::channel.error");
     return false;
+  }
 
   return true;
 }
@@ -460,3 +464,29 @@ bool daq::FlexIODAQ::finalize() {
 }
 
 #endif
+
+int daq::OneshotDAQ::sample(JsonObjectConst msg_in, JsonObject &msg_out) {
+  std::array<float, daq::NUM_CHANNELS> data{};
+
+  auto do_sample_avg = msg_in["sample_avg"];
+  if (do_sample_avg) {
+    data = sample_avg(do_sample_avg["size_samples"], do_sample_avg["avg_us"]);
+  } else {
+    data = sample();
+  }
+
+  if (msg_in.containsKey("channel")) {
+    uint8_t channel = msg_in["channel"];
+    if (channel < 0 || channel >= NUM_CHANNELS) {
+      msg_out["error"] = "Channel has to be a single number.";
+      return 1;
+    }
+
+    msg_out["data"] = data[channel];
+    return 0;
+  } else {
+    auto data_json = msg_out.createNestedArray("data");
+    copyArray(data.data(), data.size(), data_json);
+    return 0;
+  }
+}

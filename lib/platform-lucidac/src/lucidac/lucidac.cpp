@@ -45,6 +45,7 @@ bool LUCIDAC_HAL::write_adc_bus_mux(std::array<int8_t, 8> channels) {
   // Reset previous connections
   // It's easier to do a full reset then to remember all previous connections
   reset_adc_bus_mux();
+  delayNanoseconds(420);
 
   // Write data to chip
   for (uint8_t output_idx = 0; output_idx < channels.size(); output_idx++) {
@@ -85,6 +86,7 @@ void LUCIDAC::reset(bool keep_calibration) {
   if (front_panel)
     front_panel->reset();
   reset_acl_select();
+  reset_adc_channels();
 }
 
 std::vector<entities::Entity *> LUCIDAC::get_child_entities() {
@@ -100,13 +102,14 @@ entities::Entity *LUCIDAC::get_child_entity(const std::string &child_id) {
   return this->carrier::Carrier::get_child_entity(child_id);
 }
 
-bool LUCIDAC::write_to_hardware() {
-  if (!Carrier::write_to_hardware())
-    return false;
+int LUCIDAC::write_to_hardware() {
+  int carrier_return = Carrier::write_to_hardware();
+  if (carrier_return != 1)
+    return carrier_return;
   if (front_panel and !front_panel->write_to_hardware())
-    return false;
+    return -4;
   if (!hardware->write_acl(acl_select))
-    return false;
+    return -5;
   return true;
 }
 
@@ -122,3 +125,85 @@ bool LUCIDAC::set_acl_select(uint8_t idx, LUCIDAC::ACL acl) {
 }
 
 void LUCIDAC::reset_acl_select() { std::fill(acl_select.begin(), acl_select.end(), ACL::INTERNAL_); }
+
+int LUCIDAC::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
+  auto carrier_res = this->carrier::Carrier::get_entities(msg_in, msg_out);
+  if (carrier_res != 0)
+    return carrier_res;
+  if (front_panel)
+    msg_out["entities"]["/FP"] = front_panel->get_entity_classifier();
+  return 0;
+}
+
+bool platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
+  if (!this->carrier::Carrier::config_self_from_json(cfg))
+    return false;
+
+  for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
+    if (cfgItr->key() == "adc_channels") {
+      if (!_config_adc_from_json(cfgItr->value()))
+        return false;
+    } else if (cfgItr->key() == "acl_select") {
+      if (!_config_acl_from_json(cfgItr->value()))
+        return false;
+    } else {
+      // Unknown configuration key
+      return false;
+    }
+  }
+
+  if (cfg.containsKey("adc_channels")) {
+  }
+
+  if (cfg.containsKey("acl_select")) {
+  }
+
+  return true;
+}
+
+bool platform::LUCIDAC::_config_adc_from_json(const JsonVariantConst &cfg) {
+  if (!cfg.is<JsonArrayConst>())
+    return false;
+
+  auto cfg_adc_channels = cfg.as<JsonArrayConst>();
+  /*if(cfg_adc_channels.size() != adc_channels.size()) {
+    LOG_ALWAYS("platform::LUCIDAC::config_self_from_json: Error, given adc_channels has wrong size");
+    return false;
+  }*/
+  for (size_t i = 0; i < cfg_adc_channels.size() && i < adc_channels.size(); i++) {
+    adc_channels[i] = cfg_adc_channels[i];
+  }
+  return hardware->write_adc_bus_mux(adc_channels);
+}
+
+bool platform::LUCIDAC::_config_acl_from_json(const JsonVariantConst &cfg) {
+  if (!cfg.is<JsonArrayConst>())
+    return false;
+
+  auto cfg_acl_select = cfg.as<JsonArrayConst>();
+  for (size_t i = 0; i < cfg_acl_select.size() && i < acl_select.size(); i++) {
+    if (cfg_acl_select[i] == "internal") {
+      acl_select[i] = platform::LUCIDAC_HAL::ACL::INTERNAL_;
+    } else if (cfg_acl_select[i] == "external") {
+      acl_select[i] = platform::LUCIDAC_HAL::ACL::EXTERNAL_;
+    } else {
+      LOG_ALWAYS("platform::LUCIDAC::config_self_from_json: Expected acl_select[i] to be either 'internal' "
+                 "or 'external' string")
+      return false;
+    }
+  }
+  return hardware->write_acl(acl_select);
+}
+
+void platform::LUCIDAC::config_self_to_json(JsonObject &cfg) {
+  // TODO: This code is very quick and dirty. Use JSON custom converters to make nicer.
+
+  auto cfg_acl_channels = cfg.createNestedArray("acl_channels");
+  auto cfg_acl_select = cfg.createNestedArray("acl_select");
+
+  for (size_t i = 0; i < adc_channels.size(); i++)
+    cfg_acl_channels.add(adc_channels[i]);
+
+  for (size_t i = 0; i < acl_select.size(); i++)
+    cfg_acl_select.add(acl_select[i] == platform::LUCIDAC_HAL::ACL::INTERNAL_ ? "internal" : "external");
+}

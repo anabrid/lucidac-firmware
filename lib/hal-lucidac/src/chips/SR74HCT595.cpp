@@ -1,9 +1,8 @@
 // Copyright (c) 2024 anabrid GmbH
 // Contact: https://www.anabrid.com/licensing/
-//
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#include "SR74HCT595.h"
+#include "chips/SR74HCT595.h"
 
 const SPISettings functions::SR74HCT595::DEFAULT_SPI_SETTINGS{
     4'000'000, MSBFIRST, SPI_MODE3 /* Chip expects MODE0, CLK is inverted on the way */};
