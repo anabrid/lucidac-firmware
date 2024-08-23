@@ -47,6 +47,9 @@ void test_init_and_blocks() {
     TEST_ASSERT_NOT_NULL(cluster.shblock);
   }
   TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
+  // Reset
+  carrier_.reset(false);
+  TEST_ASSERT(carrier_.write_to_hardware());
 }
 
 void test_summation(const std::array<float, 32> &factors, const std::array<I, 16> &connections,
@@ -69,6 +72,7 @@ void test_summation(const std::array<float, 32> &factors, const std::array<I, 16
   // Configure on hardware
   for (auto &cluster : carrier_.clusters) {
     carrier_.ctrl_block->set_adc_bus_to_cluster_gain(cluster.get_cluster_idx());
+    TEST_ASSERT(carrier_.ctrl_block->write_to_hardware());
 
     // Connect reference through U-C-I to SH
     cluster.ublock->reset_connections();
