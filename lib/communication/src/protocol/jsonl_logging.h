@@ -71,7 +71,7 @@ struct Log : public Print {
   }
 };
 
-void init_serial();
+void activate_serial_log();
 
 /**
  * This class holds a finite size log (i.e. list of strings) as a ring buffer.

@@ -31,6 +31,6 @@ size_t msg::StreamLogger::write(uint8_t b) {
   }
 }
 
-void msg::init_serial() { msg::Log::get().sinks.add(&Serial); }
+void msg::activate_serial_log() { msg::Log::get().sinks.add(&Serial); }
 
 #endif // ARDUINO

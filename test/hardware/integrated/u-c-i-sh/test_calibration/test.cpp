@@ -72,7 +72,7 @@ void test_calibration() {
 void setup() {
   bus::init();
   io::init();
-  msg::init_serial();
+  msg::activate_serial_log();
 
   DAQ.init(0);
 

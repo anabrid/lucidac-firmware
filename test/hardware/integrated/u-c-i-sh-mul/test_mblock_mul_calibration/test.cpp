@@ -10,6 +10,7 @@
 
 #include "daq/daq.h"
 #include "io/io.h"
+#include "protocol/jsonl_logging.h"
 
 #define private public
 #define protected public
@@ -121,6 +122,7 @@ void setup() {
   bus::init();
   io::init();
   DAQ.init(0);
+  msg::activate_serial_log();
 
   UNITY_BEGIN();
   RUN_TEST(test_init_and_blocks);
