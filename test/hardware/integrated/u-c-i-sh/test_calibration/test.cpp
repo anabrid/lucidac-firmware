@@ -5,6 +5,7 @@
 
 #include <Arduino.h>
 #include <unity.h>
+#include <iostream>
 
 #include "daq/daq.h"
 #include "io/io.h"

@@ -5,6 +5,7 @@
 
 #include <Arduino.h>
 #include <unity.h>
+#include <iostream>
 
 #include "test_common.h"
 #include "test_parametrized.h"

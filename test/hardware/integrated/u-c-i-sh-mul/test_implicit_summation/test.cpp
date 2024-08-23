@@ -5,6 +5,7 @@
 
 #include <Arduino.h>
 #include <unity.h>
+#include <iostream>
 
 #define private public
 #define protected public

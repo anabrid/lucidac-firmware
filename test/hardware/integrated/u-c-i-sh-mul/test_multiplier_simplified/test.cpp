@@ -5,9 +5,11 @@
 
 #include <Arduino.h>
 #include <unity.h>
+#include <iostream>
 
 #define private public
 #define protected public
+
 #include "daq/daq.h"
 #include "io/io.h"
 

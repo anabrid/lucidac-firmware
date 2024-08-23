@@ -5,9 +5,10 @@
 
 #include <Arduino.h>
 #include <unity.h>
+#include <iostream>
 
 #ifndef ANABRID_PEDANTIC
-#error This test needs pedantic mode!
+#error "This test requires pedantic mode."
 #endif
 
 #include "daq/daq.h"
