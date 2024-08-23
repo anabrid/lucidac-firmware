@@ -7,7 +7,7 @@
 #include <unity.h>
 
 #ifndef ANABRID_PEDANTIC
-#error This test needs pedantic mode!
+#error "This test requires pedantic mode."
 #endif
 
 #include "block/mblock.h"
@@ -158,7 +158,7 @@ void all_testcases() {
 
 void setup() {
   UNITY_BEGIN();
-  TEST_ASSERT(test_init_and_blocks);
+  RUN_TEST(test_init_and_blocks);
   all_testcases(); // calls RUN_TEST internally
   UNITY_END();
 }
