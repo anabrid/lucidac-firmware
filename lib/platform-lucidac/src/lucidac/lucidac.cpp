@@ -86,11 +86,7 @@ void LUCIDAC::reset(bool keep_calibration) {
   if (front_panel)
     front_panel->reset();
   reset_acl_select();
-
-  // TODO: Shouldn't this reset() call also reset everything in the LUCIDAC_HAL
-  //       class?
-  hardware->reset_acl();
-  hardware->reset_adc_bus_mux();
+  reset_adc_channels();
 }
 
 std::vector<entities::Entity *> LUCIDAC::get_child_entities() {
