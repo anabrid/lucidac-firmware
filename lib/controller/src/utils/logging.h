@@ -12,7 +12,7 @@
 #include <Arduino.h>
 
 #include <array>
-#include <iostream>
+#include <ostream>
 #include <type_traits>
 #include <vector>
 
@@ -149,7 +149,7 @@ template <typename T, size_t size> std::ostream &operator<<(std::ostream &os, co
       if constexpr (std::is_same<T, uint8_t>::value)
         os << +arr[i] << ", ";
       else
-        os << arr[i] << ",";
+        os << arr[i] << ", ";
     }
     if constexpr (std::is_same<T, uint8_t>::value)
       os << +arr.back() << " ]";
@@ -168,7 +168,7 @@ template <typename T> std::ostream &operator<<(std::ostream &os, const std::vect
       if constexpr (std::is_same<T, uint8_t>::value)
         os << +vec[i] << ", ";
       else
-        os << vec[i] << ",";
+        os << vec[i] << ", ";
     }
     if constexpr (std::is_same<T, uint8_t>::value)
       os << +vec.back() << " ]";
