@@ -52,6 +52,12 @@ void blocks::CBlock::reset(bool keep_calibration) {
     reset_gain_corrections();
 }
 
+float blocks::CBlock::get_gain_correction(uint8_t idx) const {
+  if (idx > NUM_COEFF)
+    return -2.0f;
+  return gain_corrections_[idx];
+}
+
 const std::array<float, blocks::CBlock::NUM_COEFF> &blocks::CBlock::get_gain_corrections() const {
   return gain_corrections_;
 }

@@ -143,13 +143,13 @@ public:
   [[nodiscard]] bool set_factor(uint8_t idx, float factor);
   float get_factor(uint8_t idx);
 
+  float get_gain_correction(uint8_t idx) const;
   const std::array<float, NUM_COEFF> &get_gain_corrections() const;
 
+  bool set_gain_correction(uint8_t coeff_idx, const float correction);
   void set_gain_corrections(const std::array<float, NUM_COEFF> &corrections);
 
   void reset_gain_corrections();
-
-  bool set_gain_correction(uint8_t coeff_idx, const float correction);
 
   [[nodiscard]] bool write_to_hardware() override;
   void reset(bool keep_calibration) override;
