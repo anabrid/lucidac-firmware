@@ -151,17 +151,13 @@ protected:
   static bool _o_sanity_check(const uint8_t output);
   static bool _io_sanity_check(const uint8_t input, const uint8_t output);
 
-  //! Changes the transmission mode of the regular ublock switches. Returns the shift register value for
-  //! debugging purposes
+  //! Changes the transmission mode of the regular ublock switches.
   void change_a_side_transmission_mode(const Transmission_Mode mode);
-  //! Changes the transmission mode of the alternative ublock switches. Returns the shift register value for
-  //! debugging purposes
+  //! Changes the transmission mode of the alternative ublock switches.
   void change_b_side_transmission_mode(const Transmission_Mode mode);
-  //! Changes the transmission mode for all ublock switches. Returns the shift register value for debugging
-  //! purposes
+  //! Changes the transmission mode for all ublock switches.
   void change_all_transmission_modes(const Transmission_Mode mode);
-  //! Changes the transmission mode for all ublock switches. Returns the shift register value for debugging
-  //! purposes
+  //! Changes the transmission mode for all ublock switches.
   void change_all_transmission_modes(const std::pair<Transmission_Mode, Transmission_Mode> modes);
 
   Reference_Magnitude get_reference_magnitude();
