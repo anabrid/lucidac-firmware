@@ -8,7 +8,8 @@
 
 run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
   return {
-      .ic_time = json["ic_time"], .op_time = json["op_time"], .halt_on_overload = json["halt_on_overload"]};
+      .ic_time = json["ic_time"], .op_time = json["op_time"], .halt_on_overload = json["halt_on_overload"],
+      .no_streaming = json["no_streaming"]};
 }
 
 run::Run::Run(std::string id, const run::RunConfig &config)

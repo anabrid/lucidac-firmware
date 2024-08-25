@@ -36,6 +36,7 @@ public:
   unsigned int ic_time = 100'000;            ///< Requested Initial Conditions time in Nanoseconds
   unsigned long long op_time = 500'000'000;  ///< Requested Operations time in Nanoseconds
   bool halt_on_overload = true;              ///< Whether to halt the computation on an overload condition
+  bool no_streaming = false;                 ///< Request traditional inexact non-streaming run (Non-FlexIO/DMA)
 
   static RunConfig from_json(JsonObjectConst &json);
 };
