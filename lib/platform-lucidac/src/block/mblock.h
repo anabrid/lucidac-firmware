@@ -123,7 +123,7 @@ public:
   using MBlock::MBlock;
 
 protected:
-  bool config_self_from_json(JsonObjectConst cfg) override;
+  utils::status config_self_from_json(JsonObjectConst cfg) override;
 };
 
 // ██ ███    ██ ████████  █████       ██████ ██       █████  ███████ ███████
@@ -190,7 +190,7 @@ protected:
   std::array<float, NUM_INTEGRATORS> ic_values;
   std::array<unsigned int, NUM_INTEGRATORS> time_factors;
 
-  bool _config_elements_from_json(const JsonVariantConst &cfg);
+  utils::status _config_elements_from_json(const JsonVariantConst &cfg);
 
 public:
   explicit MIntBlock(bus::addr_t block_address, MIntBlockHAL *hardware);
@@ -222,7 +222,7 @@ public:
 
   [[nodiscard]] bool write_to_hardware() override;
 
-  bool config_self_from_json(JsonObjectConst cfg) override;
+  utils::status config_self_from_json(JsonObjectConst cfg) override;
 
 protected:
   void config_self_to_json(JsonObject &cfg) override;
@@ -304,8 +304,8 @@ public:
   [[nodiscard]] blocks::MultiplierCalibration get_calibration(uint8_t mul_idx) const;
 
 protected:
-  bool config_self_from_json(JsonObjectConst cfg) override;
-  bool _config_elements_from_json(const JsonVariantConst &cfg);
+  utils::status config_self_from_json(JsonObjectConst cfg) override;
+  utils::status _config_elements_from_json(const JsonVariantConst &cfg);
 };
 
 } // namespace blocks

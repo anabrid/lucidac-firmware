@@ -135,30 +135,23 @@ int LUCIDAC::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
   return 0;
 }
 
-bool platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
-  if (!this->carrier::Carrier::config_self_from_json(cfg))
-    return false;
+utils::status platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
+  auto res = this->carrier::Carrier::config_self_from_json(cfg);
+  if(!res) return res;
 
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "adc_channels") {
-      if (!_config_adc_from_json(cfgItr->value()))
-        return false;
+      auto res = _config_adc_from_json(cfgItr->value());
+      if(!res) return res;
     } else if (cfgItr->key() == "acl_select") {
-      if (!_config_acl_from_json(cfgItr->value()))
-        return false;
+      auto res = _config_acl_from_json(cfgItr->value());
+      if(!res) return res;
     } else {
-      // Unknown configuration key
-      return false;
+      return utils::status("LUCIDAC: Unknown configuration key");
     }
   }
 
-  if (cfg.containsKey("adc_channels")) {
-  }
-
-  if (cfg.containsKey("acl_select")) {
-  }
-
-  return true;
+  return utils::status::success();
 }
 
 bool platform::LUCIDAC::_config_adc_from_json(const JsonVariantConst &cfg) {

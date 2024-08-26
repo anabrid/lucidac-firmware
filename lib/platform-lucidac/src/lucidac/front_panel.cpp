@@ -196,51 +196,52 @@ platform::LUCIDACFrontPanel::from_entity_classifier(entities::EntityClassifier c
   return nullptr;
 }
 
-bool platform::LUCIDACFrontPanel::config_self_from_json(JsonObjectConst cfg) {
+utils::status platform::LUCIDACFrontPanel::config_self_from_json(JsonObjectConst cfg) {
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "leds") {
-      if (!_config_leds_from_json(cfgItr->value()))
-        return false;
+      auto res = _config_leds_from_json(cfgItr->value());
+      if(!res)
+        return res;
     } else if (cfgItr->key() == "signal_generator") {
-      if (!_config_signal_generator_from_json(cfgItr->value()))
-        return false;
+      auto res =_config_signal_generator_from_json(cfgItr->value());
+      if(!res)
+        return res;
     } else {
-      // Unknown configuration key
-      return false;
+      return utils::status("LUCIDACFrontPanel: Unknown configuration key");
     }
   }
 
-  return true;
+  return utils::status::success();
 }
 
-bool platform::LUCIDACFrontPanel::_config_leds_from_json(const JsonVariantConst &cfg) {
+utils::status platform::LUCIDACFrontPanel::_config_leds_from_json(const JsonVariantConst &cfg) {
   if (!cfg.is<uint8_t>())
-    return false;
+    return utils::status("LUCIDACFrontPanel LED configuration must be encoded as single integer");
   leds.set_all(cfg);
-  return true;
+  return utils::status::success();
 }
 
-bool platform::LUCIDACFrontPanel::_config_signal_generator_from_json(const JsonVariantConst &cfg) {
+utils::status platform::LUCIDACFrontPanel::_config_signal_generator_from_json(const JsonVariantConst &cfg) {
   if (!cfg.is<JsonObjectConst>())
-    return false;
+    return utils::status("LUCIDACFrontPanel signal generator configuration must be object");
 
   auto cfg_generator = cfg.as<JsonObjectConst>();
   for (auto cfgItr = cfg_generator.begin(); cfgItr != cfg_generator.end(); ++cfgItr) {
     if (cfgItr->key() == "frequency") {
       if (!cfgItr->value().is<float>())
-        return false;
+        return utils::status("LUCIDACFrontPanel frequency value must be float");
 
       signal_generator.set_frequency(cfgItr->value());
 
     } else if (cfgItr->key() == "phase") {
       if (!cfgItr->value().is<float>())
-        return false;
+        return utils::status("LUCIDACFrontPanel phase value must be float");
 
       signal_generator.set_phase(cfgItr->value());
 
     } else if (cfgItr->key() == "wave_form") {
       if (!cfgItr->value().is<std::string>())
-        return false;
+        return utils::status("LUCIDACFrontPanel wave form must be string");
 
       std::string wave_form = cfg_generator["wave_form"];
       if (wave_form == "sine")
@@ -250,35 +251,35 @@ bool platform::LUCIDACFrontPanel::_config_signal_generator_from_json(const JsonV
       else if (wave_form == "triangle")
         signal_generator.set_wave_form(functions::AD9834::WaveForm::TRIANGLE);
       else
-        return false;
+        return utils::status("LUCIDACFrontPanel wave form illegal value");
 
     } else if (cfgItr->key() == "amplitude") {
       if (!cfgItr->value().is<float>())
-        return false;
+        return utils::status("LUCIDACFrontPanel amplitude must be float");
 
       signal_generator.set_amplitude(cfgItr->value());
 
     } else if (cfgItr->key() == "square_voltage_low") {
       if (!cfgItr->value().is<float>())
-        return false;
+        return utils::status("LUCIDACFrontPanel square_voltage_low must be float");
 
       signal_generator.set_square_voltage_low(cfgItr->value());
 
     } else if (cfgItr->key() == "square_voltage_high") {
       if (!cfgItr->value().is<float>())
-        return false;
+        return utils::status("LUCIDACFrontPanel square_voltage_high must be float");
 
       signal_generator.set_square_voltage_high(cfgItr->value());
 
     } else if (cfgItr->key() == "offset") {
       if (!cfgItr->value().is<float>())
-        return false;
+        return utils::status("LUCIDACFrontPanel offset must be float");
 
       signal_generator.set_offset(cfgItr->value());
 
     } else if (cfgItr->key() == "sleep") {
       if (!cfgItr->value().is<bool>())
-        return false;
+        return utils::status("LUCIDACFrontPanel sleep must be bool");
 
       if (cfgItr->value())
         signal_generator.sleep();
@@ -287,27 +288,27 @@ bool platform::LUCIDACFrontPanel::_config_signal_generator_from_json(const JsonV
 
     } else if (cfgItr->key() == "dac_outputs") {
       if (!cfgItr->value().is<JsonArrayConst>())
-        return false;
+        return utils::status("LUCIDACFrontPanel dac_outputs must be array");
 
       auto dac_outputs = cfg_generator["dac_outputs"].as<JsonArrayConst>();
       if (dac_outputs.size() != 2)
-        return false;
+        return utils::status("LUCIDACFrontPanel dac_outputs must be array of size 2");
 
       if (!dac_outputs[0].is<float>())
-        return false;
+        return utils::status("LUCIDACFrontPanel dac_outputs[0] is not float");
       if (!dac_outputs[1].is<float>())
-        return false;
+        return utils::status("LUCIDACFrontPanel dac_outputs[1] is not float");
 
       if (!signal_generator.set_dac_out0(dac_outputs[0]))
-        return false;
+        return utils::status("LUCIDACFrontPanel dac_outputs[0] illegal value %d", dac_outputs[0]);
       if (!signal_generator.set_dac_out1(dac_outputs[1]))
-        return false;
+        return utils::status("LUCIDACFrontPanel dac_outputs[1] illegal value %d", dac_outputs[1]);
 
     } else {
-      return false;
+      return utils::status("LUCIDACFrontPanel: Unexpected keyword: %s", cfgItr->key().c_str());
     }
   }
-  return true;
+  return utils::status::success();
 }
 
 void platform::LUCIDACFrontPanel::config_self_to_json(JsonObject &cfg) {

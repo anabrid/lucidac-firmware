@@ -225,13 +225,13 @@ public:
 
   [[nodiscard]] bool write_to_hardware() override;
 
-  bool config_self_from_json(JsonObjectConst cfg) override;
+  utils::status config_self_from_json(JsonObjectConst cfg) override;
 
 protected:
   void config_self_to_json(JsonObject &cfg) override;
 
-  bool _config_outputs_from_json(const JsonVariantConst &cfg);
-  bool _config_constants_from_json(const JsonVariantConst &cfg);
+  utils::status _config_outputs_from_json(const JsonVariantConst &cfg);
+  utils::status _config_constants_from_json(const JsonVariantConst &cfg);
 
   friend class ::platform::Cluster;
   friend class ::blocks::MBlock;

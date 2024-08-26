@@ -289,13 +289,13 @@ entities::Entity *platform::Cluster::get_child_entity(const std::string &child_i
   return nullptr;
 }
 
-bool platform::Cluster::config_self_from_json(JsonObjectConst cfg) {
+utils::status platform::Cluster::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
   // Cluster has no own configuration parameters currently
   // TODO: Have an option to fail on unexpected configuration
-  return true;
+  return utils::status::success();
 }
 
 std::vector<entities::Entity *> platform::Cluster::get_child_entities() {

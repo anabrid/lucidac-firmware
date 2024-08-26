@@ -122,67 +122,66 @@ void blocks::MIntBlock::reset(bool keep_calibration) {
   reset_time_factors();
 }
 
-bool blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
+utils::status blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "elements") {
-      if (!_config_elements_from_json(cfgItr->value()))
-        return false;
+      auto res = _config_elements_from_json(cfgItr->value());
+      if(!res) return res;
     } else {
-      // Unknown configuration key
-      return false;
+      return utils::status("MIntBlock: Unknown configuration key");
     }
   }
-  return true;
+  return utils::status::success();
 }
 
-bool blocks::MIntBlock::_config_elements_from_json(const JsonVariantConst &cfg) {
+utils::status blocks::MIntBlock::_config_elements_from_json(const JsonVariantConst &cfg) {
   if (cfg.is<JsonArrayConst>()) {
     auto ints_cfg = cfg.as<JsonArrayConst>();
     if (ints_cfg.size() != NUM_INTEGRATORS) {
-      return false;
+      return utils::status("MIntBlock: Provided %d elments but NUM_INTEGRATORS=%d.", ints_cfg.size(), NUM_INTEGRATORS);
     }
     for (size_t i = 0; i < ints_cfg.size(); i++) {
       if (!ints_cfg[i].containsKey("ic") or !ints_cfg[i]["ic"].is<float>())
-        return false;
+        return utils::status("MIntBlock, element %d: Requiring IC as float", i);
       if (!set_ic_value(i, ints_cfg[i]["ic"]))
-        return false;
+        return utils::status("MIntBlock, element %d: Illegal IC %f", i, ints_cfg[i]["ic"]);
       if (ints_cfg[i].containsKey("k")) {
         if (!ints_cfg[i]["k"].is<unsigned int>())
-          return false;
+          return utils::status("MIntBlock, element %d: Requiring time factor 'k' as int", i);
         if (!set_time_factor(i, ints_cfg[i]["k"]))
-          return false;
+          return utils::status("MIntBlock, element %d: Illegal time factor %d", i, ints_cfg[i]["k"]);
       }
     }
-    return true;
+    return utils::status::success();
   } else if (cfg.is<JsonObjectConst>()) {
     for (JsonPairConst keyval : cfg.as<JsonObjectConst>()) {
       // Value is an object, with any key being optional
       if (!keyval.value().is<JsonObjectConst>())
-        return false;
+        return utils::status("MIntBlock configuration value needs to be an object");
       // TODO: Check conversion from string to number
       auto int_idx = std::stoul(keyval.key().c_str());
       if (int_idx >= NUM_INTEGRATORS)
-        return false;
+        return utils::status("MIntBlock: Integrator index %d >= NUM_INTEGRATORS = %d", int_idx, NUM_INTEGRATORS);
       auto int_cfg = keyval.value().as<JsonObjectConst>();
       if (int_cfg.containsKey("ic")) {
         if (!int_cfg["ic"].is<float>())
-          return false;
+          return utils::status("MIntBlock: Integrator %d IC must be float", int_idx);
         if (!set_ic_value(int_idx, int_cfg["ic"]))
-          return false;
+          return utils::status("MIntBlock: Integrator %d IC is illegal: %f", int_idx, int_cfg["ic"]);
       }
       if (int_cfg.containsKey("k")) {
         if (!int_cfg["k"].is<unsigned int>())
-          return false;
+          return utils::status("MIntBlock: Integrator %d k must be integer", int_idx);
         if (!set_time_factor(int_idx, int_cfg["k"]))
-          return false;
+          return utils::status("MIntBlock: Integrator %d time factor k illegal: %d", int_idx, int_cfg["k"]);
       }
     }
-    return true;
+    return utils::status::success();
   }
-  return false;
+  return utils::status("MIntBlock: Configuration must either be array or object");
 }
 
 void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
@@ -197,37 +196,23 @@ void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
 
 bool blocks::MMulBlock::write_to_hardware() { return true; }
 
-bool blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
+utils::status blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
   // MMulBlock does not expect any configuration currently.
   // But due to automation, some may still be sent.
   // Thus we accept any configuration containing only empty values or similar.
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "elements") {
-      if (!_config_elements_from_json(cfgItr->value()))
-        return false;
+      auto res = _config_elements_from_json(cfgItr->value());
+      if(!res) return res;
     } else {
-      // Unknown configuration key
-      return false;
+      return utils::status("MMulBlock: Unknown configuration key");
     }
   }
-  return true;
+  return utils::status::success();
 }
 
-bool blocks::MMulBlock::_config_elements_from_json(const JsonVariantConst &cfg) {
-  if (cfg.is<JsonObjectConst>()) {
-    // TODO: Implement
-    return false;
-  } else if (cfg.is<JsonArrayConst>()) {
-    auto elements_cfg = cfg.as<JsonArrayConst>();
-    if (elements_cfg.size() != NUM_MULTIPLIERS) {
-      return false;
-    }
-    // TODO: Check each element. But currently makes no sense
-    // for (const auto& element_cfg : elements_cfg) {
-    //}
-    return true;
-  }
-  return false;
+utils::status blocks::MMulBlock::_config_elements_from_json(const JsonVariantConst &cfg) {
+  return utils::status("MMulBlock currently does not accept configuration");
 }
 
 // ███████ ███    ██ ████████ ██ ████████ ██    ██     ███████  █████   ██████ ████████  ██████  ██████  ██
@@ -487,6 +472,6 @@ bool blocks::MMulBlockHAL_V_1_0_X::write_calibration_output_offset(uint8_t idx, 
 
 bool blocks::EmptyMBlock::write_to_hardware() { return true; }
 
-bool blocks::EmptyMBlock::config_self_from_json(JsonObjectConst cfg) { return true; }
+utils::status blocks::EmptyMBlock::config_self_from_json(JsonObjectConst cfg) { return utils::status::success(); }
 
 uint8_t blocks::EmptyMBlock::get_entity_type() const { return static_cast<uint8_t>(MBlock::TYPES::UNKNOWN); }

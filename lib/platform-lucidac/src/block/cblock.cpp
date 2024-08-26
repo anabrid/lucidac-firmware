@@ -80,36 +80,36 @@ bool blocks::CBlock::set_gain_correction(const uint8_t coeff_idx, const float co
   return true;
 };
 
-bool blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
+utils::status blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "elements") {
-      if (!_config_elements_form_json(cfgItr->value()))
-        return false;
+      auto res = _config_elements_form_json(cfgItr->value());
+      if(!res) return res;
     } else {
       // Unknown configuration key
-      return false;
+      return utils::status("Unknown CBlock configuration key");
     }
   }
-  return true;
+  return utils::status::success();
 }
 
-bool blocks::CBlock::_config_elements_form_json(const JsonVariantConst &cfg) {
+utils::status blocks::CBlock::_config_elements_form_json(const JsonVariantConst &cfg) {
   // Handle an array of factors
   if (cfg.is<JsonArrayConst>()) {
     auto factors = cfg.as<JsonArrayConst>();
     if (factors.size() != NUM_COEFF)
-      return false;
+      return utils::status("Expecting %d elements in CBlock", NUM_COEFF);
     uint8_t idx = 0;
     for (JsonVariantConst factor : factors) {
       if (!factor.is<float>())
-        return false;
+        return utils::status("CBlock: Cannot convert '%s' to float", factor.as<const char*>());
       if (!set_factor(idx++, factor.as<float>()))
-        return false;
+        return utils::status("CBlock factor %f is out of valid bounds", factor.as<float>());
     }
-    return true;
+    return utils::status::success();
   }
   // Handle a mapping of factors
   else if (cfg.is<JsonObjectConst>()) {
@@ -122,17 +122,17 @@ bool blocks::CBlock::_config_elements_form_json(const JsonVariantConst &cfg) {
       if (keyval.value().is<JsonObjectConst>() and
           keyval.value().as<JsonObjectConst>().containsKey("factor")) {
         if (!set_factor(idx, keyval.value().as<JsonObjectConst>()["factor"].as<float>()))
-          return false;
+          return utils::status("CBlock factor value is not a float or not within range");
       } else if (keyval.value().is<float>()) {
         if (!set_factor(idx, keyval.value().as<float>()))
-          return false;
+          return utils::status("CBlock factor value is not within range");
       } else {
-        return false;
+        return utils::status("CBlock factor value is not a float");
       }
     }
-    return true;
+    return utils::status::success();
   }
-  return false;
+  return utils::status("CBlock configuration must be an object or array.");
 }
 
 void blocks::CBlock::config_self_to_json(JsonObject &cfg) {

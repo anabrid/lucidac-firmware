@@ -86,26 +86,25 @@ void blocks::IBlock::reset(bool keep_calibration) {
   reset_upscaling();
 }
 
-bool blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
+utils::status blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "outputs") {
-      if (!_config_outputs_from_json(cfgItr->value()))
-        return false;
+      auto res = _config_outputs_from_json(cfgItr->value());
+      if(!res) return res;
     } else if (cfgItr->key() == "upscaling") {
-      if (!_config_upscaling_from_json(cfgItr->value()))
-        return false;
+      auto res = !_config_upscaling_from_json(cfgItr->value());
+      if(!res) return res;
     } else {
-      // Unknown configuration key
-      return false;
+      return utils::status("IBlock: Unknown configuration key");
     }
   }
-  return true;
+  return utils::status::success();
 }
 
-bool blocks::IBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
+utils::status blocks::IBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
   // Handle a mapping of output to list of inputs
   // This only overrides outputs that are specifically mentioned
   if (cfg.is<JsonObjectConst>()) {
@@ -115,81 +114,81 @@ bool blocks::IBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
 
       std::string output_str = keyval.key().c_str();
       if (!utils::is_number(output_str.begin(), output_str.end()))
-        return false;
+        return utils::status("IBlock: Expected number but key is '%s'", output_str);
 
       auto output = std::stoul(output_str);
       // Disconnect also sanity checks output index for us
       if (!disconnect(output))
-        return false;
+        return utils::status("IBlock: Could not disconnect output '%d', probably out of range", output);
       // Input may be given as list or as a single number
-      if (!_connect_from_json(keyval.value(), output))
-        return false;
+      auto res = _connect_from_json(keyval.value(), output);
+      if(!res) return res;
     }
-    return true;
+    return utils::status::success();
   }
   // Handle a list of outputs
   // This must overwrite all outputs, so we clear all of them
   else if (cfg.is<JsonArrayConst>()) {
     auto outputs_json = cfg.as<JsonArrayConst>();
     if (outputs_json.size() != NUM_OUTPUTS)
-      return false;
+      return utils::status("IBlock: Given array size %d does not meet expected %d", outputs_json.size(), NUM_OUTPUTS);
     reset_outputs();
     uint8_t idx = 0;
     for (JsonVariantConst input_spec : outputs_json) {
       // Input may be given as list or as a single number
-      if (!_connect_from_json(input_spec, idx++))
-        return false;
+      auto res = _connect_from_json(input_spec, idx++);
+      if(!res) return res;
     }
-    return true;
+    return utils::status::success();
   }
-  return false;
+  return utils::status("IBlock: Expected either array or object as configuration");
 }
 
-bool blocks::IBlock::_config_upscaling_from_json(const JsonVariantConst &cfg) {
+utils::status blocks::IBlock::_config_upscaling_from_json(const JsonVariantConst &cfg) {
   if (cfg.is<JsonObjectConst>()) {
     for (JsonPairConst keyval : cfg.as<JsonObjectConst>()) {
       if (!keyval.value().is<bool>())
-        return false;
+        return utils::status("IBlock upscaling must be boolean");
 
       auto input = std::stoul(keyval.key().c_str());
       if (input > NUM_INPUTS)
-        return false;
+        return utils::status("IBlock upscaling too many values");
 
       set_upscaling(input, keyval.value());
-      return true;
+      return utils::status::success();
     }
   } else if (cfg.is<JsonArrayConst>()) {
     auto array = cfg.as<JsonArrayConst>();
     if (array.size() != NUM_INPUTS)
-      return false;
+      return utils::status("IBlock upscaling wrong number of inputs");
 
     for (uint8_t input = 0; input < NUM_INPUTS; input++) {
       if (!array[input].is<bool>())
-        return false;
+        return utils::status("IBlock upscaling expecting boolean");
       set_upscaling(input, array[input]);
     }
-    return true;
+    return utils::status::success();
   }
-  return false;
+  return utils::status("IBlock upscaling: Either provide list or object");
 }
 
-bool blocks::IBlock::_connect_from_json(const JsonVariantConst &input_spec, uint8_t output) {
+utils::status blocks::IBlock::_connect_from_json(const JsonVariantConst &input_spec, uint8_t output) {
   if (input_spec.isNull()) {
     // Output is already disconnected from outer code
   } else if (input_spec.is<JsonArrayConst>()) {
     for (auto input : input_spec.as<JsonArrayConst>()) {
       if (!input.is<uint8_t>())
-        return false;
+        return utils::status("IBlock: input is not an integer");
       if (!connect(input, output))
-        return false;
+        return utils::status("IBlock: Could not connect %d -> %d, probably out of bounds", input, outputs);
     }
   } else if (input_spec.is<uint8_t>()) {
     if (!connect(input_spec, output))
-      return false;
+      return utils::status("IBlock: Could not connect %d -> %d.", input_spec, output);
   } else {
-    return false;
+    return utils::status("IBlock: Illegal data type in input specification");
   }
-  return true;
+  return utils::status::success();
 }
 
 bool blocks::IBlock::disconnect(uint8_t input, uint8_t output) {

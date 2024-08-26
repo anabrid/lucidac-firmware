@@ -33,15 +33,15 @@ public:
 
   entities::EntityClass get_entity_class() const final { return CLASS_; }
 
-  bool config_self_from_json(JsonObjectConst cfg) override;
+  utils::status config_self_from_json(JsonObjectConst cfg) override;
 
   Entity *get_child_entity(const std::string &child_id) override { return nullptr; }
 
   std::vector<Entity *> get_child_entities() override { return {}; };
 
 protected:
-  bool _config_leds_from_json(const JsonVariantConst &cfg);
-  bool _config_signal_generator_from_json(const JsonVariantConst &cfg);
+  utils::status _config_leds_from_json(const JsonVariantConst &cfg);
+  utils::status _config_signal_generator_from_json(const JsonVariantConst &cfg);
   void config_self_to_json(JsonObject &cfg) override;
 
 public:

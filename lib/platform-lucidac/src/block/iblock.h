@@ -116,10 +116,10 @@ public:
   };
 
 protected:
-  bool _connect_from_json(const JsonVariantConst &input_spec, uint8_t output);
+  utils::status _connect_from_json(const JsonVariantConst &input_spec, uint8_t output);
 
-  bool _config_outputs_from_json(const JsonVariantConst &cfg);
-  bool _config_upscaling_from_json(const JsonVariantConst &cfg);
+  utils::status _config_outputs_from_json(const JsonVariantConst &cfg);
+  utils::status _config_upscaling_from_json(const JsonVariantConst &cfg);
 
   void config_self_to_json(JsonObject &cfg) override;
 
@@ -195,7 +195,7 @@ public:
   //! Returns all input scales. A low bit indicates a factor of 1.0, a high bit indicates a factor of 10.0.
   const std::bitset<NUM_INPUTS> &get_upscales() const { return scaling_factors; }
 
-  bool config_self_from_json(JsonObjectConst cfg) override;
+  utils::status config_self_from_json(JsonObjectConst cfg) override;
 };
 
 } // namespace blocks

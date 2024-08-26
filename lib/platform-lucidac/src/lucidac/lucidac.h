@@ -88,9 +88,10 @@ public:
 
   int get_entities(JsonObjectConst msg_in, JsonObject &msg_out) override;
 
-  bool config_self_from_json(JsonObjectConst cfg) override;
+  utils::status config_self_from_json(JsonObjectConst cfg) override;
   void config_self_to_json(JsonObject &cfg) override;
 
+  // TODO TODO THIS CANNOT WORK. this is NOT a proper override!  
   // Error codes:
   // -1 Cluster write failed
   // -2 CTRL Block write failed

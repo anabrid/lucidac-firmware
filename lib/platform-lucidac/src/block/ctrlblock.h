@@ -83,7 +83,7 @@ public:
   bool set_adc_bus_to_cluster_gain(uint8_t cluster_idx);
 
 protected:
-  bool config_self_from_json(JsonObjectConst cfg) override;
+  utils::status config_self_from_json(JsonObjectConst cfg) override;
 };
 
 } // namespace blocks
