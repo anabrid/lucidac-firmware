@@ -114,7 +114,7 @@ utils::status blocks::IBlock::_config_outputs_from_json(const JsonVariantConst &
 
       std::string output_str = keyval.key().c_str();
       if (!utils::is_number(output_str.begin(), output_str.end()))
-        return utils::status("IBlock: Expected number but key is '%s'", output_str);
+        return utils::status("IBlock: Expected number but key is '%s'", output_str.c_str());
 
       auto output = std::stoul(output_str);
       // Disconnect also sanity checks output index for us

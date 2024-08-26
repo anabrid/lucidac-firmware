@@ -20,6 +20,10 @@ namespace utils {
     /**
      * A recoverable error, inspired from https://abseil.io/docs/cpp/guides/status
      * and https://github.com/abseil/abseil-cpp/blob/master/absl/status/status.h
+     * 
+     * This class should be used as immutable.
+     * 
+     * For making the success path cheap, use status::success.
      **/
     class status {
     public:
@@ -38,15 +42,13 @@ namespace utils {
 
         /// Usage like status("Foo %d bar %s baz", 3, "bling");
         template<typename... Args>
-        status(const char* format, Args... args) {
-            msg = small_sprintf(format, args...);
-        }
+        status(const char* format, Args... args) : status(small_sprintf(format, args...)) {}
 
         bool is_ok() const { return code == 0; }
         operator bool() const { return is_ok(); }
 
-        static status success() { return status(); } ///< Syntactic sugar
-        static status ok() { return status(); }      ///< Syntactic sugar
+        /// Syntactic sugar
+        static status success() { return status(0); }
     };
 } // end of namespace
 

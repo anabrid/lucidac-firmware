@@ -246,8 +246,8 @@ int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
   if (!res && msg_out["error"].isNull()) {
     msg_out["error"] =
         utils::small_sprintf("Could not apply configuration to entity '%s', error: %s",
-          resolved_entity->get_entity_id(),
-          res.msg
+          resolved_entity->get_entity_id().c_str(),
+          res.msg.c_str()
         );
     return error(10'000 + res.code);
   }
@@ -262,8 +262,9 @@ int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
     // This weird case captures the illegal code fact that write_to_hardware() per-interface
     // has a boolean return value but for a few classes an integer return value. This needs
     // to be fixed.
-    case true:  msg_out["error"] = "Generic write to hardware error"; return error(9);
+    case false:  msg_out["error"] = "Generic write to hardware error"; return error(9);
 
+    case true: /* boolean success */
     default: return success;
   }
 }
