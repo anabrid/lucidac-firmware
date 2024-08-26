@@ -52,6 +52,12 @@ size_t daq::BaseDAQ::raw_to_normalized(uint16_t raw) {
 }
 
 std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {
+  decltype(sample_raw()) data;
+  sample_raw(data.data());
+  return data;
+}
+
+void daq::OneshotDAQ::sample_raw(uint16_t* data) {
   // Trigger CNVST
   digitalWriteFast(PIN_CNVST, HIGH);
   delayNanoseconds(1500);
@@ -59,13 +65,14 @@ std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {
 
   delayNanoseconds(1000);
 
-  decltype(sample_raw()) data{0};
+  for(auto i = 0U; i < NUM_CHANNELS; i++)
+    data[i] = 0;
   for (auto clk_i = 0; clk_i < 14; clk_i++) {
     digitalWriteFast(PIN_CLK, HIGH);
     delayNanoseconds(100);
     // Sample data after rising edge, but only first 14 bits
     if (clk_i < 14) {
-      for (unsigned int pin_i = 0; pin_i < data.size(); pin_i++) {
+      for (unsigned int pin_i = 0; pin_i < NUM_CHANNELS; pin_i++) {
         data[pin_i] |= digitalReadFast(PINS_MISO[pin_i]) ? (1 << (13 - clk_i)) : 0;
       }
     }
@@ -73,8 +80,6 @@ std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {
     digitalWriteFast(PIN_CLK, LOW);
     delayNanoseconds(350);
   }
-
-  return data;
 }
 
 std::array<float, daq::NUM_CHANNELS> daq::OneshotDAQ::sample() {
