@@ -37,8 +37,6 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   auto buffer = (uint16_t*) malloc(num_buffer_entries * sizeof(uint16_t));
   if(!buffer) {
     LOG_ERROR("Could not allocated a large run buffer for a traditional Run.");
-    //auto change = run.to(RunState::ERROR, 0);
-    //state_change_handler->handle(change, run);
   }
   // we ignore run.daq_config.get_sample_rate() because it is much simpler to just always fill up the buffer
   uint32_t dt_sample_ns = /*math.ceil*/ run.config.op_time / num_buffer_entries;
@@ -76,18 +74,23 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
     auto num_chunk_entries = daq::dma::BUFFER_SIZE / sizeof(uint16_t);
     size_t outer_count = /*floor*/ num_chunk_entries / num_channels;
     size_t num_chunks = ceil((float)num_buffer_entries / num_chunk_entries);
-    size_t writeout_buffer_size = sizeof(uint32_t)*outer_count*num_channels;
     LOGMEV("Writing out num_chunks=%d, outer_count=%d", num_chunks, outer_count);
 
-    uint32_t converted[writeout_buffer_size] = {0};
-    for(size_t chunk=0; chunk < num_chunks; chunk++) {
-      for(size_t i=0; i < outer_count*num_channels; i++)
-        converted[i] = buffer[chunk*outer_count*num_channels + i];
-      run_data_handler->handle(converted, outer_count, num_channels, run);
+    auto converted = (uint32_t*)malloc(num_chunk_entries * sizeof(uint32_t));
+    if(!converted) {
+      LOG_ERROR("Could not allocated writeout buffer");
+      result = run.to(RunState::ERROR, 0);  
+    } else {
+      for(size_t chunk=0; chunk < num_chunks; chunk++) {
+        for(size_t i=0; i < num_chunk_entries; i++) {
+          converted[i] = buffer[chunk*num_chunk_entries + i];
+        }
+        run_data_handler->handle(converted, outer_count, num_channels, run);
+      }
+      free(converted);
+      result = run.to(RunState::DONE /*, actual_op_time*/);
     }
-
     free(buffer);
-    result = run.to(RunState::DONE /*, actual_op_time*/);
   } else {
     result = run.to(RunState::ERROR, 0);
   }

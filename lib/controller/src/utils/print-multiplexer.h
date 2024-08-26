@@ -46,7 +46,7 @@ public:
   void add(EthernetClient *target) { eth_targets.push_back(target); }
 
   void remove(Print *target) { print_targets.remove(target); }
-  void remove(EthernetClient *target) { eth_targets.push_back(target); }
+  void remove(EthernetClient *target) { eth_targets.remove(target); }
 
   size_t size() const { return print_targets.size() + eth_targets.size(); }
 
@@ -54,7 +54,7 @@ public:
   virtual size_t write(uint8_t b) override {
     bool success = true;
     for (auto &target : print_targets) if (target) success &= target->write(b) == 1;
-    for (auto &target :   eth_targets) if (target) success &= target->write(b) == 1;
+    for (auto &target :   eth_targets) if (target) success &= target->writeFully(b) == 1;
     return success ? 1 : (optimistic ? 1 : 0);
   }
 
