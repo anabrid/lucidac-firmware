@@ -323,6 +323,23 @@ void blocks::UBlock::config_self_to_json(JsonObject &cfg) {
     else
       outputs_cfg.add(nullptr);
   }
+  // Constant setting to JSON
+  if(b_side_mode == blocks::UBlock::Transmission_Mode::ANALOG_INPUT) {
+    cfg["constant"] = false;
+  } else {
+    float val = -123;
+    // we support here much more then at the setter side, because the firmware
+    // side has so much more states that simply have no representation at client side.
+    switch(b_side_mode) {
+      case blocks::UBlock::Transmission_Mode::POS_REF: val=+1.0; break;
+      case blocks::UBlock::Transmission_Mode::NEG_REF: val=-1.0; break;
+      case blocks::UBlock::Transmission_Mode::GROUND:  val=0;    break;
+    }
+    if(ref_magnitude == blocks::UBlock::Reference_Magnitude::ONE_TENTH) {
+      val *= 0.1;
+    }
+    cfg["constant"] = val;
+  }
 }
 
 blocks::UBlock *blocks::UBlock::from_entity_classifier(entities::EntityClassifier classifier,
