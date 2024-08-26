@@ -89,8 +89,7 @@ utils::status blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
       auto res = _config_elements_form_json(cfgItr->value());
       if(!res) return res;
     } else {
-      // Unknown configuration key
-      return utils::status("Unknown CBlock configuration key");
+      return utils::status("CBlock: Unknown configuration key");
     }
   }
   return utils::status::success();
