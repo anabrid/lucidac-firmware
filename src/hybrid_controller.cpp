@@ -27,6 +27,7 @@
 #include "net/settings.h"
 #include "net/settings.h"
 #include "utils/hashflash.h"
+#include "utils/crash_report.h"
 #include "web/server.h"
 #include "mode/mode.h"
 
@@ -67,6 +68,7 @@ void setup() {
 
   msg::Log::get().sinks.add(&Serial);
   msg::Log::get().sinks.add(&msg::StartupLog::get());
+  utils::check_and_log_crash();
 
   bus::init();
   net::register_settings();
