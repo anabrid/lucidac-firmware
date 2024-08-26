@@ -146,6 +146,9 @@ utils::status platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
     } else if (cfgItr->key() == "acl_select") {
       auto res = _config_acl_from_json(cfgItr->value());
       if(!res) return res;
+    } else if(strlen(cfgItr->key().c_str()) >= 1 && cfgItr->key().c_str()[0] == '/') {
+      // An sub-entity is refered to. This is already handled by 
+      // config_from_json() towards the children so it is ignored here.
     } else {
       return utils::status("LUCIDAC: Unknown configuration key");
     }
