@@ -22,7 +22,7 @@ namespace utils {
             // StringPrint buf;
             // crash.printTo(buf);
             // buf.str();
-            msg::Log::get().println("ALERT: System crash detected. Post Mortem Report:");
+            msg::Log::get().println("ALERT: Previous System crash detected. Post Mortem Report:");
             msg::Log::get().println(CrashReport);
         }
     }

@@ -68,7 +68,6 @@ void setup() {
 
   msg::Log::get().sinks.add(&Serial);
   msg::Log::get().sinks.add(&msg::StartupLog::get());
-  utils::check_and_log_crash();
 
   bus::init();
   net::register_settings();
@@ -78,6 +77,8 @@ void setup() {
       loader::flashimage::len(),
       loader::flashimage::sha256sum().to_string().c_str()
   );
+
+  utils::check_and_log_crash();
 
   // Initialize carrier board
   // TODO, _ERROR_OUT_ shall not be used, see #116
