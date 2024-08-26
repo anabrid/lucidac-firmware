@@ -11,20 +11,26 @@
 #include "daq/daq.h"
 #include "utils/logging.h"
 
+// This is an interim hacky solution to introduce another kind of RunDataHandler
+#include "protocol/protocol_oob.h"
+
 run::RunManager run::RunManager::_instance{};
 
-void run::RunManager::run_next(RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler) {
+void run::RunManager::run_next(
+    RunStateChangeHandler *state_change_handler,
+    RunDataHandler *run_data_handler,
+    client::StreamingRunDataNotificationHandler *alt_run_data_handler) {
   // TODO: Improve handling of queue, especially the queue.pop() later.
   auto run = queue.front();
   if(run.config.no_streaming)
-    run_next_traditional(run, state_change_handler, run_data_handler);
+    run_next_traditional(run, state_change_handler, run_data_handler, alt_run_data_handler);
   else
     run_next_flexio(run, state_change_handler, run_data_handler);
   queue.pop();
 }
 
-void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler) {
-  run_data_handler->prepare(run);
+void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler, client::StreamingRunDataNotificationHandler *alt_run_data_handler) {
+  //run_data_handler->prepare(run);
 
   daq::OneshotDAQ daq;
   daq.init(0);
@@ -95,7 +101,8 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   mode::RealManualControl::to_ic();
   delayNanoseconds(run.config.ic_time);
   mode::RealManualControl::to_op();
-  elapsedMicros actual_op_timer;
+  elapsedMicros actual_op_time_timer;
+
   if(buffer) {
     for(uint32_t sample=0; sample < num_samples; sample++) {
       // Assumption: The next line requires the time sampling_time_us to execute
@@ -108,66 +115,20 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   } else {
     delayMicroseconds(optime_us);
   }
+
+  uint32_t actual_op_time_us = actual_op_time_timer;
   mode::RealManualControl::to_halt();
-  uint32_t actual_op_time_us = actual_op_timer;
+  RunState res;
   
-  run::RunStateChange result;
   if(buffer) {
-    // Data transfer happens after the run finished.
-    run_data_handler->init();
-
-    // We abuse the existing infrastructure which can send buffer chunks of size
-    // daq::dma::BUFFER_SIZE but no more. Unfortunately, also this buffer has to be uint32_t,
-    // probably for DMA reasons at aquire time. So we have to call this repeatedly to have it
-    // write out our little buffer to the client, which we also have to convert to uint32_t.
-
-    // num_buffer_entries == num_chunks * writer_bufsize + last_outer_count
-    //                    == num_chunks * ()
-
-    size_t writer_bufsize    = daq::dma::BUFFER_SIZE / 2;
-    size_t num_chunks        = num_buffer_entries / writer_bufsize;
-    size_t last_chunk        = num_buffer_entries % writer_bufsize;
-    size_t outer_count       = writer_bufsize     / num_channels;
-    size_t last_outer_count  = last_chunk         / num_channels;
-
-    LOGMEV("Writing out num_chunks=%d, last_chunk=%d, outer_count=%d last_outer_count=%d", num_chunks, last_chunk, outer_count, last_outer_count);
-
-    CrashReport.breadcrumb(1, 1111111);
-    auto converted = (uint32_t*)malloc(writer_bufsize * sizeof(uint32_t));
-    if(!converted) {
-      LOG_ERROR("Could not allocated writeout buffer");
-      result = run.to(RunState::ERROR, 0);  
-    } else {
-      // full chunks to write out (with length outer_count each)
-      if(num_chunks) {
-        for(size_t chunk=0; chunk < num_chunks; chunk++) {
-          CrashReport.breadcrumb(2, chunk);
-          for(size_t i=0; i < writer_bufsize; i++) {
-            CrashReport.breadcrumb(3, i);
-            converted[i] = buffer[chunk*outer_count*num_channels + i];
-          }
-          CrashReport.breadcrumb(1, 22222222);
-          run_data_handler->handle(converted, outer_count, num_channels, run);
-          CrashReport.breadcrumb(1, 33333333);
-        }
-      }
-      // last partial chunk
-      if(last_chunk) {
-        for(size_t i=0; i < last_outer_count; i++) {
-          CrashReport.breadcrumb(3, i);
-          converted[i] = buffer[num_chunks*outer_count*num_channels + i];
-        }
-        CrashReport.breadcrumb(1, 444444444);
-        run_data_handler->handle(converted, last_outer_count, num_channels, run);
-        CrashReport.breadcrumb(1, 555555555);
-      }
-      free(converted);
-      result = run.to(RunState::DONE, actual_op_time_us*1000);
-    }
+    alt_run_data_handler->handle(buffer, num_samples, num_channels, run);
     free(buffer);
+    res = RunState::DONE;
   } else {
-    result = run.to(RunState::ERROR, 0);
+    res = RunState::ERROR;
   }
+  
+  auto result = run.to(res, actual_op_time_us*1000);
   state_change_handler->handle(result, run);
 }
 

@@ -115,6 +115,11 @@ namespace utils {
 
     template<typename V> void kv(const char* _key, V _val) { key(_key); val(_val); }
 
+    void endln() {
+      output.println();
+      output.flush();
+    }
+
     // scope handlers
   };
 

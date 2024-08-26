@@ -6,6 +6,10 @@
 
 #include "run/run.h"
 
+namespace client {
+  class StreamingRunDataNotificationHandler;
+} // namespace client
+
 namespace run {
 
 class RunManager {
@@ -23,10 +27,13 @@ public:
 
   static RunManager &get() { return _instance; }
 
-  void run_next(run::RunStateChangeHandler *state_change_handler, run::RunDataHandler *run_data_handler);
+  void run_next(
+    run::RunStateChangeHandler *state_change_handler,
+    run::RunDataHandler *run_data_handler,
+    client::StreamingRunDataNotificationHandler *alt_run_data_handler);
 
   void run_next_flexio(run::Run &run, run::RunStateChangeHandler *state_change_handler, run::RunDataHandler *run_data_handler);
-  void run_next_traditional(run::Run &run, run::RunStateChangeHandler *state_change_handler, run::RunDataHandler *run_data_handler);
+  void run_next_traditional(run::Run &run, run::RunStateChangeHandler *state_change_handler, run::RunDataHandler *run_data_handler, client::StreamingRunDataNotificationHandler *alt_run_data_handler);
 
   ///@ingroup User-Functions
   int start_run(JsonObjectConst msg_in, JsonObject &msg_out);

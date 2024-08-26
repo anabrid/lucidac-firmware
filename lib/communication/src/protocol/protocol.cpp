@@ -174,13 +174,14 @@ void msg::JsonLinesProtocol::process_string_input(const std::string &envelope_in
 void msg::JsonLinesProtocol::process_out_of_band_handlers(carrier::Carrier &carrier_) {
   // Currently, the following prints to all connected clients.
   static client::RunStateChangeNotificationHandler run_state_change_handler{broadcast, *envelope_out};
-  static client::RunDataNotificationHandler run_data_handler{carrier_, broadcast, *envelope_out};
+  static client::RunDataNotificationHandler run_data_handler{carrier_, broadcast};
+  static client::StreamingRunDataNotificationHandler alternative_run_data_handler{carrier_, broadcast};
 
   if (!run::RunManager::get().queue.empty()) {
     // TODO: Remove after debugging
     // LOGMEV("Protocol OOB RunManager now broadcasting to %d targets\n", broadcast.size());
     // broadcast.println("{'TEST':'TEST'}");
-    run::RunManager::get().run_next(&run_state_change_handler, &run_data_handler);
+    run::RunManager::get().run_next(&run_state_change_handler, &run_data_handler, &alternative_run_data_handler);
   }
 }
 
