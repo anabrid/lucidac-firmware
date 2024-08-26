@@ -260,3 +260,22 @@ template <> struct Converter<entities::EntityClassifier> {
 };
 
 } // namespace ArduinoJson
+
+// As this uses static variables, we only allow using this in test cases
+
+#ifdef PIO_UNIT_TESTING
+
+#include <ostream>
+
+inline std::ostream &operator<<(std::ostream &os, entities::Entity &entity) {
+  static StaticJsonDocument<2048> doc;
+  static JsonObject cfg = doc.to<JsonObject>();
+
+  entity.config_to_json(cfg, true);
+
+  os << cfg;
+
+  return os;
+}
+
+#endif
