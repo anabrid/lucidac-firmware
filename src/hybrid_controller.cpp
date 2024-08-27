@@ -89,12 +89,14 @@ void setup() {
   leds(0xFF);
 
   LOG(ANABRID_DEBUG_INIT, "Starting up Ethernet...");
-  int net_successful = netconf.begin_ip();
-  if(net_successful && netconf.enable_mdns)
+  int net_error = netconf.begin_ip();
+  if(!net_error && netconf.enable_mdns){
+    LOG_ALWAYS("mdns");
     netconf.begin_mdns();
-  if(net_successful && netconf.enable_jsonl)
+  }
+  if(!net_error && netconf.enable_jsonl)
     msg::JsonlServer::get().begin();
-  if(net_successful && netconf.enable_webserver)
+  if(!net_error && netconf.enable_webserver)
     web::LucidacWebServer::get().begin();
 
   //setup_remote_log();
