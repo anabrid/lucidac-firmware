@@ -269,7 +269,9 @@ template <> struct Converter<entities::EntityClassifier> {
 
 inline std::ostream &operator<<(std::ostream &os, entities::Entity &entity) {
   static StaticJsonDocument<2048> doc;
+  doc.clear();
   static JsonObject cfg = doc.to<JsonObject>();
+  cfg.clear();
 
   entity.config_to_json(cfg, true);
 
