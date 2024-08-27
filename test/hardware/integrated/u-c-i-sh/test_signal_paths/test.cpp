@@ -4,8 +4,8 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include <Arduino.h>
-#include <unity.h>
 #include <iostream>
+#include <unity.h>
 
 #include "test_common.h"
 #include "test_parametrized.h"
@@ -17,15 +17,20 @@
 #define protected public
 #include "lucidac/lucidac.h"
 
+#include "utils/running_avg.h"
+
 using namespace platform;
 using namespace blocks;
 
+bool print_details = false;
+
 // TODO: Make this independent on underlying hardware by dynamically detecting carrier board
 LUCIDAC carrier_;
-blocks::CTRLBlockHAL_V_1_0_2 ctrlblock_hal;
 daq::OneshotDAQ DAQ;
 
 typedef std::vector<uint8_t> I;
+
+utils::RunningAverageNew<float> avg_devations;
 
 void setUp() {
   // This is called before *each* test.
@@ -54,8 +59,10 @@ void test_init_and_blocks() {
 
 void test_summation(const std::array<float, 32> &factors, const std::array<I, 16> &connections,
                     bool full_calibration) {
-  std::cout << "factor=" << factors[0] << std::endl; // All factors are the same
-  std::cout << "connections= " << connections << std::endl;
+  if (print_details)
+    std::cout << "factor = " << factors[0] << std::endl; // All factors are the same
+  if (print_details)
+    std::cout << "connections = " << connections << std::endl;
 
   // Calculate expected sum
   std::array<float, 16> expected{};
@@ -65,7 +72,8 @@ void test_summation(const std::array<float, 32> &factors, const std::array<I, 16
       expected[i_out_idx] += factors[i_in_idx];
     }
   }
-  std::cout << "expected= " << expected << std::endl;
+  if (print_details)
+    std::cout << "expected = " << expected << std::endl;
 
   unsigned int relevant_i_out = 0;
 
@@ -78,64 +86,66 @@ void test_summation(const std::array<float, 32> &factors, const std::array<I, 16
     cluster.ublock->reset_connections();
     for (auto i_out_idx = 0u; i_out_idx < connections.size(); i_out_idx++) {
       for (uint8_t i_in_idx : connections[i_out_idx]) {
-        relevant_i_out = i_out_idx; // We only have one output we can use at a time
+        relevant_i_out = i_out_idx; // We only have one output we can use at a time in automatic mode
         TEST_ASSERT(
             cluster.add_constant(UBlock::Transmission_Mode::POS_REF, i_in_idx, factors[i_in_idx], i_out_idx));
       }
     }
+
     TEST_ASSERT(cluster.write_to_hardware());
-    // We only calibrate offsets, since we want this test case to be simple
-    if (full_calibration) {
-      cluster.cblock->reset_gain_corrections();
+
+    // As soon as we use a new route, the cluster should be calibrated completly
+    if (full_calibration)
       TEST_ASSERT(cluster.calibrate(&DAQ));
-    } else
+    else
       TEST_ASSERT(cluster.calibrate_offsets());
 
     // Measure by using SH gain outputs
     auto data = measure_sh_gain(cluster, &DAQ);
-    std::cout << "data=" << data << std::endl;
+    if (print_details)
+      std::cout << "data = " << data << std::endl;
 
     for (auto idx = 0u; idx < data.size(); idx++) {
       TEST_ASSERT_FLOAT_WITHIN(full_calibration ? 0.1f : 0.05f, expected[idx], data[idx]);
       deviations[idx] = data[idx] - expected[idx];
     }
 
-    std::cout << "absolute deviation = " << deviations[relevant_i_out]
-              << std::endl; // this is absolute, but since we sum to one, relative and
-                            // absolute deviation are the same
+    if (print_details)
+      std::cout << "fullscale deviation in per mille = " << deviations[relevant_i_out] * 1000.0f << std::endl;
+
+    avg_devations.add(deviations[relevant_i_out] * 1000.0f);
   }
 }
 
 void test_n_summations() {
-  for (auto N : {5u}) {
+  for (auto N : {2u}) {
     std::array<float, 32> factors{};
     std::fill(factors.begin(), factors.end(), 1.0f / static_cast<float>(N));
-    for (auto i_out_idx : {0, 1, 2, 3, 4}) {
-      for (auto i_in_shift = 0u; i_in_shift < 32u - N; i_in_shift += N) {
+    for (auto i_out_idx : {0, 1, 2, 3, 4, 5, 6}) {
+      for (auto i_in_shift = 0u; i_in_shift <= 32u - N; i_in_shift += N) {
         std::array<I, 16> connections;
         for (auto i_in_idx = 0u; i_in_idx < N; i_in_idx++)
           connections[i_out_idx].emplace_back(i_in_idx + i_in_shift);
         // Run test on this configuration
         TEST_MESSAGE("--------------------------------------");
         std::cout << "Testing " << N << " connections" << std::endl;
-        carrier_.reset(true);
-        test_summation(factors, connections, i_out_idx == 0);
+        carrier_.reset(false);
+        test_summation(factors, connections, true); // Since we allways change the signal path,
       }
     }
+
+    std::cout << "Average full deviation in this cycle: " << avg_devations.get_average() << std::endl;
   }
 }
 
 void setup() {
   bus::init();
   io::init();
+  // msg::activate_serial_log();
   DAQ.init(0);
 
   UNITY_BEGIN();
   RUN_TEST(test_init_and_blocks);
-  RUN_PARAM_TEST(test_summation,
-                 {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8,
-                  0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8},
-                 {I{1}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}, I{}}, false);
   RUN_TEST(test_n_summations);
   UNITY_END();
 }

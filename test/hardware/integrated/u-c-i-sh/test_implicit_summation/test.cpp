@@ -20,6 +20,8 @@
 
 #include "lucidac/lucidac.h"
 
+#include "utils/running_avg.h"
+
 using namespace platform;
 using namespace blocks;
 
@@ -53,34 +55,30 @@ void test_init_and_blocks() {
   TEST_ASSERT(carrier_.write_to_hardware());
 }
 
+utils::RunningAverageNew<float> avg_devations;
+
 void test_finished_summation(float x, float y) {
   cluster.reset(true);
   TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, 0, x, 0));
   TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, 1, y, 0));
 
+  TEST_ASSERT(cluster.write_to_hardware());
+
   // Correct offset
-  cluster.ublock->change_b_side_transmission_mode(UBlock::Transmission_Mode::GROUND);
-  TEST_ASSERT(cluster.write_to_hardware());
-  delay(10);
-  cluster.shblock->set_track.trigger();
-  delay(10);
-  cluster.shblock->set_inject.trigger();
+  cluster.calibrate_offsets();
 
   cluster.shblock->set_gain.trigger();
-  delay(5);
-  // std::cout << "Offset correction: " << measure_sh_gain(cluster, &DAQ, 4, 10) << std::endl;
-
-  cluster.ublock->change_b_side_transmission_mode(UBlock::Transmission_Mode::POS_REF);
-  TEST_ASSERT(cluster.write_to_hardware());
-
-  cluster.shblock->set_gain.trigger();
+  cluster.shblock->set_gain_channels_zero_to_seven.trigger();
 
   TEST_ASSERT(carrier_.write_to_hardware());
+
+  // std::cout << cluster << std::endl;
 
   auto data = measure_sh_gain(cluster, &DAQ, 4, 10);
   std::cout << std::fixed << std::setprecision(4) << x << " + " << y << ": \t\t read in = " << data[0]
             << " \t\t expected result: " << x + y
             << " \t\t full scale deviation in per mille: " << (data[0] - (x + y)) * 1000.0f << std::endl;
+  avg_devations.add((data[0] - (x + y)) * 1000.0f);
 
   delay(10);
 }
@@ -96,22 +94,11 @@ void test_summation() {
 
   TEST_ASSERT(cluster.write_to_hardware());
   // Correct offset
-  cluster.ublock->change_b_side_transmission_mode(UBlock::Transmission_Mode::GROUND);
-  TEST_ASSERT(cluster.write_to_hardware());
-  delay(10);
-  cluster.shblock->set_track.trigger();
-  delay(10);
-  cluster.shblock->set_inject.trigger();
-
-  cluster.shblock->set_gain.trigger();
-  delay(5);
-  std::cout << "Offset correction: " << measure_sh_gain(cluster, &DAQ, 4, 10) << std::endl;
+  cluster.calibrate_offsets();
 
   // Correct gain
-  cluster.ublock->change_b_side_transmission_mode(UBlock::Transmission_Mode::POS_REF);
-  TEST_ASSERT(cluster.write_to_hardware());
-
   cluster.shblock->set_gain.trigger();
+  cluster.shblock->set_gain_channels_zero_to_seven.trigger();
 
   TEST_ASSERT(carrier_.write_to_hardware());
 
@@ -138,23 +125,13 @@ void test_summation() {
   TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, 1, 1.0f, 0));
 
   TEST_ASSERT(cluster.write_to_hardware());
-  // Correct offset
-  cluster.ublock->change_b_side_transmission_mode(UBlock::Transmission_Mode::GROUND);
-  TEST_ASSERT(cluster.write_to_hardware());
-  delay(10);
-  cluster.shblock->set_track.trigger();
-  delay(10);
-  cluster.shblock->set_inject.trigger();
 
-  cluster.shblock->set_gain.trigger();
-  delay(5);
-  std::cout << "Offset correction: " << measure_sh_gain(cluster, &DAQ, 4, 10) << std::endl;
+  // Correct offset
+  cluster.calibrate_offsets();
 
   // Correct gain
-  cluster.ublock->change_b_side_transmission_mode(UBlock::Transmission_Mode::POS_REF);
-  TEST_ASSERT(cluster.write_to_hardware());
-
   cluster.shblock->set_gain.trigger();
+  cluster.shblock->set_gain_channels_zero_to_seven.trigger();
 
   TEST_ASSERT(carrier_.write_to_hardware());
 
@@ -175,6 +152,7 @@ void test_summation() {
 
   // Restore summation route
   test_finished_summation(0.5f, 0.5f);
+  // return;
   test_finished_summation(1.0f, 0.0f);
   test_finished_summation(0.5f, 0.0f);
   test_finished_summation(0.3f, 0.0f);
@@ -210,6 +188,8 @@ void test_summation() {
   test_finished_summation(0.1f * 0.33f, 0.1f * 0.67f);
   test_finished_summation(0.1f * 0.2f, 0.1f * 0.8f);
   test_finished_summation(0.0f, 0.0f);
+
+  std::cout << "Mean deviation: " << avg_devations.get_average() << std::endl;
 }
 
 void setup() {
@@ -231,7 +211,13 @@ void loop() {
   std::cout << "Read In = " << data << std::endl;
 }
 
-// both 0,9807
-// only 1 0.4952
-// only 0 0.4936
-// none -0.0008
+/*
+
+-0.0238
+-0.0086
+0.0258
+
+
+-0.0353
+
+*/
