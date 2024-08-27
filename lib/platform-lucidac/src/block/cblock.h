@@ -140,8 +140,12 @@ public:
    *
    * @returns false in case of invalid input, true else.
    **/
-  [[nodiscard]] bool set_factor(uint8_t idx, float factor);
+
   float get_factor(uint8_t idx);
+  const std::array<float, NUM_COEFF> &get_factors() const;
+
+  void set_factors(const std::array<float, NUM_COEFF> &factors);
+  [[nodiscard]] bool set_factor(uint8_t idx, float factor);
 
   float get_gain_correction(uint8_t idx) const;
   const std::array<float, NUM_COEFF> &get_gain_corrections() const;

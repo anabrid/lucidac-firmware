@@ -31,15 +31,15 @@ blocks::SHBlock *blocks::SHBlock::from_entity_classifier(entities::EntityClassif
 
 void blocks::SHBlock::compensate_hardware_offsets() {
   set_track.trigger();
-  delay(100);
+  delay(10);
   set_inject.trigger();
-  delay(100);
+  delay(5);
 }
 
 void blocks::SHBlock::to_gain(blocks::SHBlock::GainChannels channels) {
   state = State::GAIN;
   set_gain.trigger();
-  switch(channels) {
+  switch (channels) {
   case GainChannels::ZERO_TO_SEVEN:
     set_gain_channels_zero_to_seven.trigger();
     break;
