@@ -120,7 +120,7 @@ int net::StartupConfig::begin_ip() {
       return 1;
     }
     LOG(ANABRID_DEBUG_INIT, "Waiting for IP address on ethernet...");
-    if (!net::Ethernet.waitForLocalIP(2 * 1000 /* ms*/)) {
+    if (!net::Ethernet.waitForLocalIP(10 * 1000 /* ms*/)) {
       LOG_ERROR("Error getting IP address.");
       return 2;
     }
