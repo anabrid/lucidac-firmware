@@ -153,7 +153,7 @@ void client::StreamingRunDataNotificationHandler::handle(uint16_t *data, size_t 
     for(size_t inner = 0; inner < inner_count; inner++) {
       //doc.val(data[outer * inner_count + inner]);
       const uint32_t number = data[outer * inner_count + inner];
-      const char *float_repr = daq::BaseDAQ::raw_to_str(number);
+      const char *float_repr = nullptr; // daq::BaseDAQ::raw_to_str(number); //<- is just buggy! cf #168
       if(float_repr) {
         doc.json(float_repr);
       } else {
