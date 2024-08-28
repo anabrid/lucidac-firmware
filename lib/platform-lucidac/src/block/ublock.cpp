@@ -298,8 +298,14 @@ utils::status blocks::UBlock::_config_outputs_from_json(const JsonVariantConst &
 }
 
 utils::status blocks::UBlock::_config_constants_from_json(const JsonVariantConst &cfg) {
-  float constant = cfg.as<float>(); // bools cast to +1.0 or 0.0, Null to 0
+  float constant = cfg.as<float>();
+  if(cfg.is<bool>())
+    constant = cfg.as<bool>() ? 1 : 0;
+  if(cfg.isNull())
+    constant = 0;
   if(constant == 0) {
+    // Turn OFF constant usage. We don't use Transmission_Mode::GROUND because
+    // that's really pointless, we then also can just not connect the relevant UBlock switch.
     change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::ANALOG_INPUT);
     reset_reference_magnitude();
   }
