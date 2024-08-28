@@ -298,18 +298,21 @@ utils::status blocks::UBlock::_config_outputs_from_json(const JsonVariantConst &
 }
 
 utils::status blocks::UBlock::_config_constants_from_json(const JsonVariantConst &cfg) {
-  if ((cfg.is<bool>() && cfg == false) || cfg.isNull()) {
+  float constant = cfg.as<float>(); // bools cast to +1.0 or 0.0, Null to 0
+  if(constant == 0) {
     change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::ANALOG_INPUT);
     reset_reference_magnitude();
-  } else if (cfg.is<float>() && cfg == 0.1f) {
-    change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::POS_REF);
-    change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE_TENTH);
-  } else if ((cfg.is<float>() && cfg == 1.0f) || (cfg.is<bool>() && cfg == true)) {
-    change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::POS_REF);
-    change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE);
-  } else {
-    return utils::status("UBlock::config_self_from_json: Cannot understand value 'constant'");
   }
+  if(constant > 0)
+    change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::POS_REF);
+  if(constant < 0)
+    change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::NEG_REF);
+  if(abs(constant) == 0.1f)
+    change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE_TENTH);
+  else if(abs(constant) == 1.0f)
+    change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE);
+  else
+    return utils::status("UBlock::config_self_from_json: Pass +-0.1 or +-1.");
   return utils::status::success();
 }
 
