@@ -12,12 +12,6 @@
 #include "block/mblock.h"
 #include "block/ublock.h"
 
-#include <iostream>
-
-#define RETURN_FALSE_IF_FAILED(x)                                                                             \
-  if (!(x))                                                                                                   \
-    return false;
-
 std::array<blocks::FunctionBlock *, 6> platform::Cluster::get_blocks() const {
   return {m0block, m1block, ublock, cblock, iblock, shblock};
 }
