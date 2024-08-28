@@ -16,6 +16,13 @@ namespace utils {
      * such as null pointer references or other pointer arithmetics gone bad.
      * In order to have this work, the microcontroller needs to do a "soft-reboot"
      * which preserves the RAM content so the "post-mortem report" is available.
+     * 
+     * In order to understand the error codes, have a loook at the IMXRT1060
+     * processor architecture manual, for instance at
+     * https://www.pjrc.com/teensy/DDI0403Ee_arm_v7m_ref_manual.pdf
+     * at page 611
+     * 
+     * 
      **/
     void check_and_log_crash() {
         if(CrashReport) {

@@ -53,15 +53,21 @@ public:
   /// Printables which go to all clients
   virtual size_t write(uint8_t b) override {
     bool success = true;
+    CrashReport.breadcrumb(1, 1);
     for (auto &target : print_targets) if (target) success &= target->write(b) == 1;
+    CrashReport.breadcrumb(1, 2);
     for (auto &target :   eth_targets) if (target) success &= target->writeFully(b) == 1;
+    CrashReport.breadcrumb(1, 3);
     return success ? 1 : (optimistic ? 1 : 0);
   }
 
   size_t write(const uint8_t *buffer, size_t size) override {
     bool success = true;
+    CrashReport.breadcrumb(1, 4);
     for (auto &target : print_targets) if (target) success &= qindesign::network::util::writeFully(*target, buffer, size) == size;
+    CrashReport.breadcrumb(1, 5);
     for (auto &target :   eth_targets) if (target) success &= target->writeFully(buffer, size) == size;
+    CrashReport.breadcrumb(1, 6);
     // so do all this extra work of print_targets + eth_targets just to exploit that
     // EthernetClient::write_fully internally does a "still connected" check and if
     // not, fails. This way we avoid an endless loop if a client disconnects during printout.
@@ -70,8 +76,11 @@ public:
   }
 
   virtual void flush() override {
+    CrashReport.breadcrumb(1, 7);
     for (auto &target : print_targets) if (target) target->flush();
+    CrashReport.breadcrumb(1, 8);
     for (auto &target :   eth_targets) if (target) target->flush();
+    CrashReport.breadcrumb(1, 9);
   }
 };
 

@@ -37,12 +37,12 @@ void msg::JsonlServer::loop() {
   // so we use list::erase instead of list::remove.
   for (auto client = clients.begin(); client != clients.end(); client++) {
     const auto client_idx = std::distance(clients.begin(), client);
-    if (client->socket) {
+    if (client->socket.connected()) {
       if (client->socket.available() > 0) {
+        LOG_ALWAYS("Going into process_tcp_input");
         msg::JsonLinesProtocol::get().process_tcp_input(client->socket, client->user_context);
+        LOG_ALWAYS("Going out of process_tcp_input");
         client->last_contact.reset();
-      } else if (!client->socket.connected()) {
-        client->socket.stop();
       } else if (client->last_contact.expired(net::StartupConfig::get().connection_timeout_ms)) {
         LOG5("Client ", client_idx, ", timed out after ", net::StartupConfig::get().connection_timeout_ms,
              " ms of idling");
@@ -50,9 +50,12 @@ void msg::JsonlServer::loop() {
       }
     } else {
       LOG5("Client ", client_idx, ", was ", client->user_context, ", disconnected");
-      client->socket.close();
       msg::JsonLinesProtocol::get().broadcast.remove(&client->socket);
+      LOG_ALWAYS("Broadcast removed");
+      client->socket.stop(); // important, stop waits
+      LOG_ALWAYS("Sock closed");
       clients.erase(client);
+      LOG_ALWAYS("Sock erased");
       return; // iterator invalidated, better start loop() freshly.
     }
   }

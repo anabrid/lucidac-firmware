@@ -89,9 +89,14 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   const int num_buffer_entries = num_samples * num_channels;
   LOGMEV("optime_us=%d, sampling_time_us=%d, sampling_sleep_us=%d, num_samples=%d, num_channels=%d", optime_us, sampling_time_us, sampling_sleep_us, num_samples, num_channels);
 
+  // just to be able to use daq.sample_raw(uint16_t*) instead of copying over to an intermediate buffer
+  // of size std::vector, we add a bit safety padding to the right for the last datum obtained.
+  // Actually needed only if num_samples < daq::NUM_CHANNELS = 8.
+  constexpr int padding = daq::NUM_CHANNELS;
+
   // we use malloc because new[] raises an exception if allocation fails but we cannot catch it with -fno-exception.
   // we don't use the stack because we expect the heap to have more memory left...
-  auto buffer = (uint16_t*) malloc(num_buffer_entries * sizeof(uint16_t));
+  auto buffer = (uint16_t*) malloc((num_buffer_entries + padding) * sizeof(uint16_t));
   if(!buffer) {
     LOG_ERROR("Could not allocated a large run buffer for a traditional Run.");
   }
@@ -105,7 +110,7 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
 
   if(buffer) {
     for(uint32_t sample=0; sample < num_samples; sample++) {
-      // Assumption: The next line requires the time sampling_time_us to execute
+      // Assumption: Passing the next line requires the amount of time "sampling_time_us"
       daq.sample_raw(buffer + sample*num_channels);
       if(sampling_sleep_us)
         delayMicroseconds(sampling_sleep_us);
@@ -121,7 +126,9 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   RunState res;
   
   if(buffer) {
+    LOG_ALWAYS("RunDataHandler");
     alt_run_data_handler->handle(buffer, num_samples, num_channels, run);
+    LOG_ALWAYS("Free");
     free(buffer);
     res = RunState::DONE;
   } else {
@@ -129,7 +136,9 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   }
   
   auto result = run.to(res, actual_op_time_us*1000);
+  LOG_ALWAYS("StateChangeHandler");
   state_change_handler->handle(result, run);
+  LOG_ALWAYS("Return");
 }
 
 void run::RunManager::run_next_flexio(run::Run &run, RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler) {
