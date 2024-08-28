@@ -1,3 +1,8 @@
+// Copyright (c) 2024 anabrid GmbH
+// Contact: https://www.anabrid.com/licensing/
+//
+// SPDX-License-Identifier: MIT OR GPL-2.0-or-later
+
 #include <Arduino.h>
 
 namespace utils {
@@ -10,24 +15,25 @@ public:
 
   bool echo = true; ///< whether to give immediate feedback on typing or not.
 
-  char* line_available() {
-    if(Serial.available() > 0) {
+  char *line_available() {
+    if (Serial.available() > 0) {
       char in = Serial.read();
 
-      if(echo) {
-        Serial.print(in); Serial.flush();
+      if (echo) {
+        Serial.print(in);
+        Serial.flush();
       }
 
-      if(in == '\n') {
+      if (in == '\n') {
         serial_buffer[serial_buffer_pos] = '\0';
         serial_buffer_pos = 0;
         return serial_buffer;
-      } else if (serial_buffer_pos < serial_buffer_size - 1) {  // Avoid buffer overflow
+      } else if (serial_buffer_pos < serial_buffer_size - 1) { // Avoid buffer overflow
         serial_buffer[serial_buffer_pos++] = in;
       } else {
         // buffer is full, flush it anyway.
-        serial_buffer[serial_buffer_pos-2] = '\n';
-        serial_buffer[serial_buffer_pos-1] = '\0';
+        serial_buffer[serial_buffer_pos - 2] = '\n';
+        serial_buffer[serial_buffer_pos - 1] = '\0';
         serial_buffer_pos = 0;
         return serial_buffer;
       }
@@ -36,4 +42,4 @@ public:
   }
 };
 
-}
+} // namespace utils
