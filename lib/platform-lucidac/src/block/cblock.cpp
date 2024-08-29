@@ -17,6 +17,8 @@ float blocks::CBlock::get_factor(uint8_t idx) {
   return factors_[idx];
 }
 
+const std::array<float, blocks::CBlock::NUM_COEFF> &blocks::CBlock::get_factors() const { return factors_; }
+
 bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   if (idx >= NUM_COEFF)
     return false;
@@ -26,6 +28,8 @@ bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   factors_[idx] = factor;
   return true;
 }
+
+void blocks::CBlock::set_factors(const std::array<float, NUM_COEFF> &factors) { factors_ = factors; }
 
 bool blocks::CBlock::write_to_hardware() {
   if (!write_factors_to_hardware()) {
@@ -74,7 +78,7 @@ bool blocks::CBlock::set_gain_correction(const uint8_t coeff_idx, const float co
   if (coeff_idx > NUM_COEFF)
     return false;
   // Gain correction must be positive and close to 1
-  if (signbit(correction) or fabs(1.0f - correction) > MAX_GAIN_CORRECTION_ABS)
+  if (fabs(1.0f - correction) > MAX_GAIN_CORRECTION_ABS)
     return false;
   gain_corrections_[coeff_idx] = correction;
   return true;

@@ -59,6 +59,11 @@ public:
     sum = sum + data;
   };
 
+  void clear() {
+    n = 0;
+    sum = {};
+  }
+
   T get_average() const { return 1.0f / static_cast<float>(n) * sum; }
 };
 

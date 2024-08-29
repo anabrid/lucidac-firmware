@@ -7,14 +7,10 @@
 #include "utils/logging.h"
 #include "utils/running_avg.h"
 
-#include "block/mblock.h"
-#include "block/ublock.h"
 #include "block/cblock.h"
 #include "block/iblock.h"
-
-#define RETURN_FALSE_IF_FAILED(x)                                                                             \
-  if (!(x))                                                                                                   \
-    return false;
+#include "block/mblock.h"
+#include "block/ublock.h"
 
 std::array<blocks::FunctionBlock *, 6> platform::Cluster::get_blocks() const {
   return {m0block, m1block, ublock, cblock, iblock, shblock};
@@ -94,6 +90,7 @@ bool platform::Cluster::calibrate_offsets() {
   if (!ublock->write_to_hardware())
     return false;
 
+  delay(10);
   shblock->compensate_hardware_offsets();
 
   ublock->change_all_transmission_modes(old_transmission_modes);
@@ -110,14 +107,14 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
   LOG_ANABRID_DEBUG_CALIBRATION("Starting calibration");
   auto old_transmission_modes = ublock->get_all_transmission_modes();
   auto old_reference_magnitude = ublock->get_reference_magnitude();
-  ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::GROUND);
-  // Save and reset I-block connections
-  // This is necessary as we can not calibrate sums and we want to calibrate lanes individually
-  const auto saved_iblock = *iblock;
-  iblock->reset_outputs();
+
+  // Save C-Block factors
+  auto c_block_factors = cblock->get_factors();
+  cblock->set_factors({});
+
   // Actually write to hardware
-  LOG_ANABRID_DEBUG_CALIBRATION("Reset ublock and i block");
-  if (!ublock->write_to_hardware() and iblock->write_to_hardware()) {
+  LOG_ANABRID_DEBUG_CALIBRATION("Reset c-block");
+  if (!cblock->write_to_hardware()) {
     // TODO: Restore configuration in this and other failure cases
     return false;
   }
@@ -128,27 +125,12 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
   for (auto i_out_idx : blocks::IBlock::OUTPUT_IDX_RANGE()) {
     for (auto i_in_idx : blocks::IBlock::INPUT_IDX_RANGE()) {
       // Only do something is this lane is used in the original I-block configuration
-      if (!saved_iblock.is_connected(i_in_idx, i_out_idx))
-        continue;
-      // Only do something is this lane is actually receiving a signal
-      if (!ublock->is_output_connected(i_in_idx))
+      if (!iblock->is_connected(i_in_idx, i_out_idx))
         continue;
 
-      // Restore this connection
-      if (!iblock->connect(i_in_idx, i_out_idx))
-        return false;
-      // Actually write to hardware
-      if (!iblock->write_to_hardware())
-        return false;
-
-      // Chill for a bit
-      delay(20);
       LOG_ANABRID_DEBUG_CALIBRATION("Calibrating connection: ");
       LOG_ANABRID_DEBUG_CALIBRATION(i_in_idx);
       LOG_ANABRID_DEBUG_CALIBRATION(i_out_idx);
-
-      // First step is always to calibrate offsets
-      calibrate_offsets();
 
       // Depending on whether upscaling is enabled for this lane, we apply +1 or +0.1 reference
       // This is done on all lanes (but no other I-block connection exists, so no other current flows)
@@ -161,6 +143,16 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
       if (!ublock->write_to_hardware())
         return false;
 
+      // Allow this connection to go up to full scale
+      cblock->set_factor(i_in_idx, 1.0f);
+      cblock->set_gain_correction(i_in_idx, 1.0f);
+      // Actually write to hardware
+      if (!cblock->write_to_hardware())
+        return false;
+
+      // Calibrate offsets for this specific route
+      calibrate_offsets();
+
       // Change SH-block into gain mode and select correct gain channel group
       shblock->set_gain.trigger();
       if (i_out_idx < 8)
@@ -169,14 +161,13 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
         shblock->set_gain_channels_eight_to_fifteen.trigger();
 
       // Chill for a bit
-      delay(20);
+      delay(10);
 
       // Measure gain output
-      auto m_adc = daq->sample_avg(10, 1000)[i_out_idx % 8];
+      auto m_adc = daq->sample_avg(4, 10)[i_out_idx % 8];
       LOG_ANABRID_DEBUG_CALIBRATION(m_adc);
       // Calculate necessary gain correction
-      auto wanted_factor = cblock->get_factor(i_in_idx);
-      auto gain_correction = wanted_factor / m_adc;
+      auto gain_correction = 1.0f / m_adc;
       LOG_ANABRID_DEBUG_CALIBRATION(gain_correction);
       // Set gain correction on C-block, which will automatically get applied when writing to hardware
       if (!cblock->set_gain_correction(i_in_idx, gain_correction)) {
@@ -184,26 +175,17 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
         return false;
       }
 
-      // Disconnect this lane again
-      iblock->disconnect(i_in_idx, i_out_idx);
-      if (!iblock->write_to_hardware())
+      // Deactivate this lane again
+      cblock->set_factor(i_in_idx, 0.0f);
+      if (!cblock->write_to_hardware()) // This write_to_hardware could be left out, but it's a nice safety
+                                        // measure
         return false;
       LOG_ANABRID_DEBUG_CALIBRATION(" ");
     }
   }
-
-  // For "safety", set all U-block inputs to zero before restoring I-block connections
-  LOG_ANABRID_DEBUG_CALIBRATION("Setting ublock to ground for safety");
-  ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::GROUND);
-  if (!ublock->write_to_hardware())
-    return false;
-  // Restore I-block connections
-  iblock->set_outputs(saved_iblock.get_outputs());
-  LOG_ANABRID_DEBUG_CALIBRATION("Restoring iblock");
-  if (!iblock->write_to_hardware())
-    return false;
-
-  // Write C-block to hardware to apply gain corrections
+  // Restore C-block factors
+  cblock->set_factors(c_block_factors);
+  LOG_ANABRID_DEBUG_CALIBRATION("Restoring c-block");
   if (!cblock->write_to_hardware())
     return false;
 
@@ -215,7 +197,7 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
   ublock->change_all_transmission_modes(old_transmission_modes);
   ublock->change_reference_magnitude(old_reference_magnitude);
   // Write them to hardware
-  LOG_ANABRID_DEBUG_CALIBRATION("Restoring ublock");
+  LOG_ANABRID_DEBUG_CALIBRATION("Restoring u-block");
   if (!ublock->write_to_hardware())
     return false;
 

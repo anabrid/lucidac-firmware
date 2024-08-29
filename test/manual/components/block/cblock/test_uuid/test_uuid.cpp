@@ -6,6 +6,8 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#include <iostream>
+
 #include "entity/entity.h"
 #include "metadata/74LVC138AD.tpl.hpp"
 
