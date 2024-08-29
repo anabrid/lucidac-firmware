@@ -73,13 +73,16 @@ public:
 class OneshotDAQ : public BaseDAQ {
 public:
   bool init(__attribute__((unused)) unsigned int sample_rate_unused) override;
-  std::array<uint16_t, NUM_CHANNELS> sample_raw() override;
-  std::array<float, NUM_CHANNELS> sample() override;
 
   /// Extracts a single number of a full word capture.
+  /// This takes about 15usec at the time of writing.
+  /// @arg data Pointer to storage with at least NUM_CHANNELS size
+  void sample_raw(uint16_t* data);
+
+  std::array<uint16_t, NUM_CHANNELS> sample_raw() override;
+  std::array<float, NUM_CHANNELS> sample() override;
   uint16_t sample_raw(uint8_t index);
   float sample(uint8_t index) override;
-
   std::array<uint16_t, NUM_CHANNELS> sample_avg_raw(size_t samples, unsigned int delay_us);
 
   // Call via protocol

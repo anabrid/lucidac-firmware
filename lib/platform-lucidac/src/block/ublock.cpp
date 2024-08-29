@@ -231,32 +231,31 @@ void blocks::UBlock::reset(const bool keep_offsets) {
   reset_reference_magnitude();
 }
 
-bool blocks::UBlock::config_self_from_json(JsonObjectConst cfg) {
+utils::status blocks::UBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "outputs") {
-      if (!_config_outputs_from_json(cfgItr->value()))
-        return false;
+      auto ret =_config_outputs_from_json(cfgItr->value());
+      if(!ret) return ret;
     } else if (cfgItr->key() == "constant") {
-      if (!_config_constants_from_json(cfgItr->value()))
-        return false;
+      auto ret = _config_constants_from_json(cfgItr->value());
+      if(!ret) return ret;
     } else {
-      // Unknown configuration key
-      return false;
+      return utils::status("UBlock: Unknown configuration key");
     }
   }
-  return true;
+  return utils::status::success();
 }
 
-bool blocks::UBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
+utils::status blocks::UBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
   // Handle an array of outputs
   // In this case, all outputs are reset
   if (cfg.is<JsonArrayConst>()) {
     auto outputs = cfg.as<JsonArrayConst>();
     if (outputs.size() != NUM_OF_OUTPUTS)
-      return false;
+      return utils::status("Nblock: Wrong number of configuration elements. Given %d, expected %d", outputs.size(), NUM_OF_OUTPUTS);
     reset_connections();
     uint8_t idx = 0;
     for (JsonVariantConst input : outputs) {
@@ -264,12 +263,12 @@ bool blocks::UBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
         idx++;
         continue;
       } else if (!input.is<uint8_t>()) {
-        return false;
+        return utils::status("UBlock: Input is not an integer");
       }
       if (!connect(input.as<uint8_t>(), idx++))
-        return false;
+        return utils::status("UBlock: Cannot connect input at idx");
     }
-    return true;
+    return utils::status::success();
   }
   // Handle a mapping of outputs
   // In this case, only explicitly passed outputs are changed
@@ -278,10 +277,10 @@ bool blocks::UBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
     for (JsonPairConst keyval : cfg.as<JsonObjectConst>()) {
       // Sanity check that any input passed is a number
       if (!(keyval.value().is<uint8_t>() or keyval.value().isNull()))
-        return false;
+        return utils::status("UBlock: Given input is not a number '%s'", keyval.value().as<const char*>());
       // TODO: Check conversion from string to number
       auto output = std::stoul(keyval.key().c_str());
-      disconnect(output);
+      !disconnect(output);
     }
     for (JsonPairConst keyval : cfg.as<JsonObjectConst>()) {
       // TODO: Check conversion from string to number
@@ -291,30 +290,36 @@ bool blocks::UBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
         continue;
       auto input = keyval.value().as<uint8_t>();
       if (!connect(input, output))
-        return false;
+        return utils::status("UBlock: Could not connect %d -> %d", input, output);
     }
-    return true;
+    return utils::status::success();
   }
-  return false;
+  return utils::status("UBlock either requires array or object configuration");
 }
 
-bool blocks::UBlock::_config_constants_from_json(const JsonVariantConst &cfg) {
-  if ((cfg.is<bool>() && cfg == false) || cfg.isNull()) {
+utils::status blocks::UBlock::_config_constants_from_json(const JsonVariantConst &cfg) {
+  float constant = cfg.as<float>();
+  if(cfg.is<bool>())
+    constant = cfg.as<bool>() ? 1 : 0;
+  if(cfg.isNull())
+    constant = 0;
+  if(constant == 0) {
+    // Turn OFF constant usage. We don't use Transmission_Mode::GROUND because
+    // that's really pointless, we then also can just not connect the relevant UBlock switch.
     change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::ANALOG_INPUT);
     reset_reference_magnitude();
-    return true;
-  } else if (cfg.is<float>() && cfg == 0.1f) {
-    change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::POS_REF);
-    change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE_TENTH);
-    return true;
-  } else if ((cfg.is<float>() && cfg == 1.0f) || (cfg.is<bool>() && cfg == true)) {
-    change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::POS_REF);
-    change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE);
-    return true;
-  } else {
-    LOG_ALWAYS("UBlock::config_self_from_json: Cannot understand value 'constant'");
-    return false;
   }
+  if(constant > 0)
+    change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::POS_REF);
+  if(constant < 0)
+    change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::NEG_REF);
+  if(abs(constant) == 0.1f)
+    change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE_TENTH);
+  else if(abs(constant) == 1.0f)
+    change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE);
+  else
+    return utils::status("UBlock::config_self_from_json: Pass +-0.1 or +-1.");
+  return utils::status::success();
 }
 
 void blocks::UBlock::config_self_to_json(JsonObject &cfg) {
@@ -326,6 +331,23 @@ void blocks::UBlock::config_self_to_json(JsonObject &cfg) {
       outputs_cfg.add(output);
     else
       outputs_cfg.add(nullptr);
+  }
+  // Constant setting to JSON
+  if(b_side_mode == blocks::UBlock::Transmission_Mode::ANALOG_INPUT) {
+    cfg["constant"] = false;
+  } else {
+    float val = -123;
+    // we support here much more then at the setter side, because the firmware
+    // side has so much more states that simply have no representation at client side.
+    switch(b_side_mode) {
+      case blocks::UBlock::Transmission_Mode::POS_REF: val=+1.0; break;
+      case blocks::UBlock::Transmission_Mode::NEG_REF: val=-1.0; break;
+      case blocks::UBlock::Transmission_Mode::GROUND:  val=0;    break;
+    }
+    if(ref_magnitude == blocks::UBlock::Reference_Magnitude::ONE_TENTH) {
+      val *= 0.1;
+    }
+    cfg["constant"] = val;
   }
 }
 

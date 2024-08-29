@@ -11,6 +11,8 @@
 #include "daq/daq.h"
 #include "run/run.h"
 #include "utils/logging.h"
+#include "utils/streaming_json.h"
+#include "protocol_oob.h"
 
 void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange change, const run::Run &run) {
   envelope_out.clear();
@@ -25,9 +27,8 @@ void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange
   target.flush();
 }
 
-client::RunDataNotificationHandler::RunDataNotificationHandler(carrier::Carrier &carrier, Print &target,
-                                                               DynamicJsonDocument &envelopeOut)
-    : carrier(carrier), target(target), envelope_out(envelopeOut) {}
+client::RunDataNotificationHandler::RunDataNotificationHandler(carrier::Carrier &carrier, Print &target)
+    : carrier(carrier), target(target) {}
 
 void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t outer_count,
                                                 size_t inner_count, const run::Run &run) {
@@ -80,11 +81,6 @@ void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t 
   // digitalWriteFast(18, LOW);
 }
 
-void client::RunDataNotificationHandler::init() {
-  envelope_out.clear();
-  envelope_out.createNestedArray("data");
-}
-
 void client::RunDataNotificationHandler::stream(volatile uint32_t *buffer, run::Run &run) {
   // TODO: Remove
 }
@@ -133,6 +129,47 @@ size_t client::RunDataNotificationHandler::calculate_total_buffer_length(size_t 
   // For message end, we need a few more bytes.
   return BUFFER_LENGTH_STATIC + outer_count * inner_length - sizeof(',' /* trailing comma */) +
          sizeof(MESSAGE_END) - sizeof('\0' /* null byte in MESSAGE_END */) + sizeof('\n' /* newline */);
+}
+
+void client::StreamingRunDataNotificationHandler::handle(uint16_t *data, size_t outer_count,
+                                                         size_t inner_count, const run::Run &run) {
+  utils::StreamingJson doc(target);
+  doc.begin_dict(); // envelope
+  doc.kv("type", "run_data");
+  doc.key("msg");
+  doc.begin_dict(); // msg
+  doc.kv("id", run.id);
+
+  doc.key("entity");
+  doc.begin_list();
+  doc.val(carrier.get_entity_id());
+  doc.val("0"); // cluster
+  doc.end_list();
+
+  doc.key("data");
+  doc.begin_list(); // data
+  for(size_t outer = 0; outer < outer_count; outer++) {
+    doc.begin_list(); // outer
+    for(size_t inner = 0; inner < inner_count; inner++) {
+      //doc.val(data[outer * inner_count + inner]);
+      const uint32_t number = data[outer * inner_count + inner];
+      const char *float_repr = nullptr; // daq::BaseDAQ::raw_to_str(number); //<- is just buggy! cf #168
+      if(float_repr) {
+        doc.json(float_repr);
+      } else {
+        doc.check_comma();
+        target.printf("% 1.3f", daq::BaseDAQ::raw_to_float(number));
+        doc.needs_comma();
+      }
+    }
+    doc.end_list(); // outer
+    if(outer != outer_count-1) doc.check_comma();
+  }
+  doc.end_list(); // data
+
+  doc.end_dict(); // msg
+  doc.end_dict(); // envelope
+  doc.endln();
 }
 
 #endif // ARDUINO

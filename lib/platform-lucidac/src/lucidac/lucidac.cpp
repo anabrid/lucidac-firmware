@@ -135,30 +135,26 @@ int LUCIDAC::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
   return 0;
 }
 
-bool platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
-  if (!this->carrier::Carrier::config_self_from_json(cfg))
-    return false;
+utils::status platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
+  auto res = this->carrier::Carrier::config_self_from_json(cfg);
+  if(!res) return res;
 
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "adc_channels") {
-      if (!_config_adc_from_json(cfgItr->value()))
-        return false;
+      auto res = _config_adc_from_json(cfgItr->value());
+      if(!res) return res;
     } else if (cfgItr->key() == "acl_select") {
-      if (!_config_acl_from_json(cfgItr->value()))
-        return false;
+      auto res = _config_acl_from_json(cfgItr->value());
+      if(!res) return res;
+    } else if(strlen(cfgItr->key().c_str()) >= 1 && cfgItr->key().c_str()[0] == '/') {
+      // An sub-entity is refered to. This is already handled by 
+      // config_from_json() towards the children so it is ignored here.
     } else {
-      // Unknown configuration key
-      return false;
+      return utils::status("LUCIDAC: Unknown configuration key");
     }
   }
 
-  if (cfg.containsKey("adc_channels")) {
-  }
-
-  if (cfg.containsKey("acl_select")) {
-  }
-
-  return true;
+  return utils::status::success();
 }
 
 bool platform::LUCIDAC::_config_adc_from_json(const JsonVariantConst &cfg) {
@@ -166,12 +162,8 @@ bool platform::LUCIDAC::_config_adc_from_json(const JsonVariantConst &cfg) {
     return false;
 
   auto cfg_adc_channels = cfg.as<JsonArrayConst>();
-  /*if(cfg_adc_channels.size() != adc_channels.size()) {
-    LOG_ALWAYS("platform::LUCIDAC::config_self_from_json: Error, given adc_channels has wrong size");
-    return false;
-  }*/
   for (size_t i = 0; i < cfg_adc_channels.size() && i < adc_channels.size(); i++) {
-    adc_channels[i] = cfg_adc_channels[i];
+    adc_channels[i] = cfg_adc_channels[i].isNull() ? ADC_CHANNEL_DISABLED : cfg_adc_channels[i];
   }
   return hardware->write_adc_bus_mux(adc_channels);
 }
@@ -198,11 +190,15 @@ bool platform::LUCIDAC::_config_acl_from_json(const JsonVariantConst &cfg) {
 void platform::LUCIDAC::config_self_to_json(JsonObject &cfg) {
   // TODO: This code is very quick and dirty. Use JSON custom converters to make nicer.
 
-  auto cfg_acl_channels = cfg.createNestedArray("acl_channels");
+  auto cfg_adc_channels = cfg.createNestedArray("adc_channels");
   auto cfg_acl_select = cfg.createNestedArray("acl_select");
 
-  for (size_t i = 0; i < adc_channels.size(); i++)
-    cfg_acl_channels.add(adc_channels[i]);
+  for (size_t i = 0; i < adc_channels.size(); i++) {
+    if(adc_channels[i] == ADC_CHANNEL_DISABLED) 
+      cfg_adc_channels.add(nullptr); // json "none"
+    else
+      cfg_adc_channels.add(adc_channels[i]);
+  }
 
   for (size_t i = 0; i < acl_select.size(); i++)
     cfg_acl_select.add(acl_select[i] == platform::LUCIDAC_HAL::ACL::INTERNAL_ ? "internal" : "external");

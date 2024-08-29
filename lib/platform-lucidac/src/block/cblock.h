@@ -158,12 +158,12 @@ public:
   [[nodiscard]] bool write_to_hardware() override;
   void reset(bool keep_calibration) override;
 
-  bool config_self_from_json(JsonObjectConst cfg) override;
+  utils::status config_self_from_json(JsonObjectConst cfg) override;
 
 protected:
   void config_self_to_json(JsonObject &cfg) override;
 
-  bool _config_elements_form_json(const JsonVariantConst &cfg);
+  utils::status _config_elements_form_json(const JsonVariantConst &cfg);
 
   friend class ::platform::Calibration;
 };

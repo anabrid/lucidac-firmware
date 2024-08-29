@@ -53,9 +53,9 @@ entities::Entity *carrier::Carrier::get_child_entity(const std::string &child_id
   return nullptr;
 }
 
-bool carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
+utils::status carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
   // TODO: Have an option to fail on unexpected configuration
-  return true;
+  return utils::status::success();
 }
 
 int carrier::Carrier::write_to_hardware() {
@@ -238,20 +238,35 @@ int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
   // Path may be to one of our sub-entities
   auto resolved_entity = resolve_child_entity(path + 1, path_depth - 1);
   if (!resolved_entity) {
-    msg_out["error"] = "No entity at that path.";
+    msg_out["error"] = utils::small_sprintf("Carrier: No entity named '%s'", path[1].c_str());
     return error(4);
   }
 
-  bool write_success = resolved_entity->config_from_json(msg_in["config"]);
-  if (!write_success && msg_out["error"].isNull()) {
+  utils::status res = resolved_entity->config_from_json(msg_in["config"]);
+  if (!res && msg_out["error"].isNull()) {
     msg_out["error"] =
-        std::string("Error applying configuration to entity ") + resolved_entity->get_entity_id();
-    return error(5);
+        utils::small_sprintf("Could not apply configuration to entity '%s', error: %s",
+          resolved_entity->get_entity_id().c_str(),
+          res.msg.c_str()
+        );
+    return error(10'000 + res.code);
   }
 
   // Actually write to hardware
-  write_to_hardware();
-  return write_success ? success : error(6);
+  int hw_res = write_to_hardware();
+  switch(hw_res) {
+    case -1: msg_out["error"] = "Cluster write failed"; return error(6);
+    case -2: msg_out["error"] = "CTRL Block write failed"; return error(7);
+    case -3: msg_out["error"] = "ADC Bus write failed"; return error(8);
+
+    // This weird case captures the illegal code fact that write_to_hardware() per-interface
+    // has a boolean return value but for a few classes an integer return value. This needs
+    // to be fixed.
+    case false:  msg_out["error"] = "Generic write to hardware error"; return error(9);
+
+    case true: /* boolean success */
+    default: return success;
+  }
 }
 
 int carrier::Carrier::get_config(JsonObjectConst msg_in, JsonObject &msg_out) {

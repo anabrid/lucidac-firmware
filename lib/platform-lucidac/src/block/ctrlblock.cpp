@@ -47,7 +47,7 @@ blocks::CTRLBlock *blocks::CTRLBlock::from_entity_classifier(entities::EntityCla
 
 entities::EntityClass blocks::CTRLBlock::get_entity_class() const { return CLASS_; }
 
-bool blocks::CTRLBlock::config_self_from_json(JsonObjectConst cfg) { return true; }
+utils::status blocks::CTRLBlock::config_self_from_json(JsonObjectConst cfg) { return true; }
 
 bool blocks::CTRLBlock::write_to_hardware() { return hardware->write_adc_bus_muxers(adc_bus); }
 

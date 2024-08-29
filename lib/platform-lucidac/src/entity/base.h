@@ -13,6 +13,7 @@
 #include <ArduinoJson.h>
 
 #include "version.h"
+#include "utils/error.h"
 
 namespace entities {
 
@@ -157,17 +158,19 @@ public:
    * Deserialize a new configuration for this entity and all its children from a JsonObject.
    * @returns true in case of success, else false
    **/
-  bool config_from_json(JsonObjectConst cfg) {
+  utils::status config_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
     Serial.println(__PRETTY_FUNCTION__);
 #endif
     if (cfg.isNull())
-      return false;
-    if (!config_self_from_json(cfg))
-      return false;
-    if (!config_children_from_json(cfg))
-      return false;
-    return true;
+      return utils::status("Configuration is Null at entity %s", get_entity_id().c_str());
+    auto res = config_self_from_json(cfg);
+    if(!res)
+      return res;
+    res = config_children_from_json(cfg);
+    if(!res)
+      return res;
+    return utils::status::success();
   }
 
   /**
@@ -186,25 +189,25 @@ protected:
    * Implementations shall not traverse to children, @see config_children_from_json() instead.
    * @returns true in case of success, else false
    **/
-  virtual bool config_self_from_json(JsonObjectConst cfg) = 0;
+  virtual utils::status config_self_from_json(JsonObjectConst cfg) = 0;
 
   /**
    * Deserialize a new configuration for all child entities from a JsonObject.
    * Does not include own configuration, @see config_self_from_json() instead.
    * @returns true in case of success, else false
    **/
-  bool config_children_from_json(JsonObjectConst &cfg) {
+  utils::status config_children_from_json(JsonObjectConst &cfg) {
     for (JsonPairConst keyval : cfg) {
       if (keyval.key().c_str()[0] == '/' and keyval.key().size() > 1) {
         std::string child_id(keyval.key().c_str() + 1);
         auto child_entity = get_child_entity(child_id);
         if (!child_entity)
-          return false;
-        if (!child_entity->config_from_json(keyval.value()))
-          return false;
+          return utils::status("Child entity '%s' does not exist at entity '%s'", child_id, get_entity_id().c_str());
+        auto res = child_entity->config_from_json(keyval.value());
+        if(!res) return res;
       }
     }
-    return true;
+    return utils::status::success();
   }
 
   /**

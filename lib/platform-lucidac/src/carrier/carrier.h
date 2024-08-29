@@ -14,6 +14,7 @@
 #include "cluster.h"
 #include "daq/base.h"
 #include "entity/entity.h"
+#include "utils/error.h"
 
 using namespace platform;
 
@@ -66,7 +67,7 @@ public:
 
   Entity *get_child_entity(const std::string &child_id) override;
 
-  bool config_self_from_json(JsonObjectConst cfg) override;
+  utils::status config_self_from_json(JsonObjectConst cfg) override;
 
   // Error codes:
   // -1 Cluster write failed

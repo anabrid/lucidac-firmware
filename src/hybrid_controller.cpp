@@ -27,6 +27,7 @@
 #include "net/settings.h"
 #include "net/settings.h"
 #include "utils/hashflash.h"
+#include "utils/crash_report.h"
 #include "web/server.h"
 #include "mode/mode.h"
 
@@ -76,6 +77,8 @@ void setup() {
       loader::flashimage::len(),
       loader::flashimage::sha256sum().to_string().c_str()
   );
+
+  utils::check_and_log_crash();
 
   // Initialize carrier board
   // TODO, _ERROR_OUT_ shall not be used, see #116

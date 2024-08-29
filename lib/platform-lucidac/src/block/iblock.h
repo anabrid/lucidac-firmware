@@ -82,11 +82,13 @@ public:
  * The Lucidac I-Block (I for Current; the Implicit Summing Block) is
  * represented by this class.
  *
- * This class provides an in-memory representation of the bit matrix,
- * neat way of manipulating it and flushing it out to the hardware.
+ * This class provides an in-memory representation of the bit matrix.
+ * All operations are *delayed* and only take place when flushing out to
+ * the hardware, which is done via the corresponding HAL pointer.
  *
- * As a Lucidac can only have a single I-Block, this is kind of a singleton.
- * Typical usage happens via the Lucidac class.
+ * One cluster can only have a single I-Block. Usage typically happens over
+ * the Cluster class, which itself can be accessed via the Carrier or LUCIDAC
+ * class.
  *
  **/
 class IBlock : public FunctionBlock {
@@ -116,10 +118,10 @@ public:
   };
 
 protected:
-  bool _connect_from_json(const JsonVariantConst &input_spec, uint8_t output);
+  utils::status _connect_from_json(const JsonVariantConst &input_spec, uint8_t output);
 
-  bool _config_outputs_from_json(const JsonVariantConst &cfg);
-  bool _config_upscaling_from_json(const JsonVariantConst &cfg);
+  utils::status _config_outputs_from_json(const JsonVariantConst &cfg);
+  utils::status _config_upscaling_from_json(const JsonVariantConst &cfg);
 
   void config_self_to_json(JsonObject &cfg) override;
 
@@ -195,7 +197,7 @@ public:
   //! Returns all input scales. A low bit indicates a factor of 1.0, a high bit indicates a factor of 10.0.
   const std::bitset<NUM_INPUTS> &get_upscales() const { return scaling_factors; }
 
-  bool config_self_from_json(JsonObjectConst cfg) override;
+  utils::status config_self_from_json(JsonObjectConst cfg) override;
 };
 
 } // namespace blocks

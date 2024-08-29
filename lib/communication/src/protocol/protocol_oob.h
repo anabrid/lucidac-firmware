@@ -47,7 +47,6 @@ public:
   // TODO: Possibly needs locking/synchronizing with other writes
   carrier::Carrier &carrier;
   Print &target; // net::EthernetClient &client;
-  DynamicJsonDocument &envelope_out;
 
 private:
   // TODO: At least de-duplicate some strings, so it doesn't explode the second someone touches it.
@@ -66,16 +65,27 @@ private:
   size_t actual_buffer_length = BUFFER_LENGTH;
 
 public:
-  RunDataNotificationHandler(carrier::Carrier &carrier, Print &target, DynamicJsonDocument &envelopeOut);
+  RunDataNotificationHandler(carrier::Carrier &carrier, Print &target);
 
   static size_t calculate_inner_buffer_length(size_t inner_count);
   static size_t calculate_outer_buffer_position(size_t outer_count, size_t inner_count);
   static size_t calculate_total_buffer_length(size_t outer_count, size_t inner_count);
 
-  void init() override;
   void prepare(run::Run &run) override;
   void handle(volatile uint32_t *data, size_t outer_count, size_t inner_count, const run::Run &run) override;
   void stream(volatile uint32_t *buffer, run::Run &run) override;
+};
+
+/**
+ * Variant of RunDataNotificationHandler using utils::StreamingJson.
+ * Thus, it is not bound to a fixed length string buffer (BUFFER_LENGTH).
+ * Since the method signature change, we do not inherit of the run::RunDataHandler.
+ **/
+struct StreamingRunDataNotificationHandler {
+  carrier::Carrier &carrier;
+  Print &target;
+
+  void handle(uint16_t* data, size_t outer_count, size_t inner_count, const run::Run &run);
 };
 
 } // namespace client

@@ -59,7 +59,7 @@ public:
   void to_gain(GainChannels channels);
 
 protected:
-  bool config_self_from_json(JsonObjectConst cfg) override;
+  utils::status config_self_from_json(JsonObjectConst cfg) override;
 
   friend class ::platform::Cluster;
 };

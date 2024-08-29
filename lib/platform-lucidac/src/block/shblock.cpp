@@ -9,7 +9,7 @@ blocks::SHBlock::SHBlock(const bus::addr_t block_address) : FunctionBlock("SH", 
 
 blocks::SHBlock::SHBlock() : SHBlock(bus::BLOCK_BADDR(0, bus::SH_BLOCK_IDX)) {}
 
-bool blocks::SHBlock::config_self_from_json(JsonObjectConst cfg) { return false; }
+utils::status blocks::SHBlock::config_self_from_json(JsonObjectConst cfg) { return utils::status("SHBlock does not accept configuration"); }
 
 bool blocks::SHBlock::write_to_hardware() { return true; }
 
