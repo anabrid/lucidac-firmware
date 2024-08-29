@@ -228,6 +228,8 @@ protected:
   void config_self_to_json(JsonObject &cfg) override;
 };
 
+// TODO: Change this comment -- This is rather a MUL4 not MUL8
+//
 // ███    ███ ██    ██ ██       █████       ██████ ██       █████  ███████ ███████
 // ████  ████ ██    ██ ██      ██   ██     ██      ██      ██   ██ ██      ██
 // ██ ████ ██ ██    ██ ██       █████      ██      ██      ███████ ███████ ███████
@@ -263,11 +265,23 @@ public:
   bool reset_calibration_output_offsets() override;
 };
 
-typedef struct MultiplierCalibration {
+/**
+ * Calibration data per each multiplier. There are NUM_MULTIPLIERS on an MMulBlock.
+ **/
+struct MultiplierCalibration {
   float offset_x = 0.0f, offset_y = 0.0f, offset_z = 0.0f;
-} MultiplierCalibration;
+};
 
-class MMulBlock : public MBlock {
+/**
+ * Multplier Math Block (or: Math Multplier Block, hence MMulBlock).
+ * Holds 4 analog multpliers. Furthermore, the first inputs are always mapped on the
+ * last four outputs as identity elements. Therefore this block can "implicitely"
+ * serve as a "Math identity block" (something which also exists for 8-to-8 identities,
+ * but purely passive). The identity part is not configurable.
+ * The multipliers itself are also not user-configurable. They are, however,
+ * digitally configurable with respect to their offset calibration.
+ **/
+class MMulBlock : public MBlock::MBlock {
 public:
   // Entity hardware identifier information.
   static constexpr auto TYPE = MBlock::TYPES::M_MUL4_BLOCK;
