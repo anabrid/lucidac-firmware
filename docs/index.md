@@ -48,6 +48,7 @@ tutorial/how-to manner. These topics are organized on the following sub-pages:
 - \subpage entities
 - \subpage protocol
 - \subpage nvmconf
+- \subpage calibration
 
 \page various Various topics
 

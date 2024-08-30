@@ -1,10 +1,20 @@
 \page calibration REDAC calibration process
 
-Before the REDAC/LUCIDAC can start its calculations, it has to undergo several calibration procedures to ensure, that the upcoming calculations are delivered with the highest amount of precision.
+The REDAC computer uses a digitally steered calibration process to reduce offset and gain errors of the involved stages in the analog compute elements. Calibration can be thought of as "analog computing error correction" which only scales thanks to the automatization possible with the digital hybrid controller. Continously applied error correction can reduce long term shifts such as temperature drifts or aging as well as constant noise levels. In particular, offset and gain errors can be understood as the first parts of a tailor approximation of unwanted non-linearities such as hysteresis.
+
+This way, the exactness and bandwith can be significantly improved (at the order of 10% of relative exactness). In order to make calibration possible in the first place, many additional hardware parts have been added. Example hardware additions are:
+
+- the *SH block* (short for *sample and hold block*)
+- MDACs on the math blocks
+- particular reconfigurability of the U-block in order to feed in well-known voltages
+
+Calibration happens completely within the firmware and transparently to the end user. It happens at startup and before user-submitted *runs* are starting.
+
+This document shall give a short overview about the calibration scheme. More documentation is available at other places and shall be evventually merged here.
 
 ## General idea of calibrating the U-C-I path
 
-The U-C-I path is responsible for scaling up and adding together signals. Because every signal has to pass through the U-C-I path at least once, reducing error here is a necessity for achieving accurate calculations. Therefore, the U-C-I path gets freshly calibrated before every run.
+The U, C and I blocks are the heart of the interconnection system. The circuit path throught this system, refered here to as *U-C-I path*, is, amongst others, responsible for scaling up and adding together signals. Because every signal has to pass through the U-C-I path at least once, reducing error here is a necessity for achieving accurate calculations. Therefore, the U-C-I path gets freshly calibrated before every run.
 
 Mathematically, every output of the U-C-I path represents a linear combination of the inputs. Consequently, the errors that occur in this path are constant gain and offset errors, that get corrected by a three-phase calibration algorithm:
 
