@@ -5,6 +5,7 @@
 #include "carrier.h"
 #include "net/settings.h"
 #include "utils/is_number.h"
+#include "daq/daq.h"
 
 entities::EntityClass carrier::Carrier::get_entity_class() const { return entities::EntityClass::CARRIER; }
 
@@ -235,6 +236,19 @@ int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
     return error(3);
   }
 
+  daq::OneshotDAQ daq;
+  if(msg_in.containsKey("calibrate_mblock")) {
+    bool ret = true;
+    if(clusters[0].m0block && clusters[0].m0block->is_entity_type(blocks::MBlock::TYPES::M_MUL4_BLOCK))
+      ret = calibrate_mblock(clusters[0], *clusters[0].m0block, &daq);
+    if(clusters[0].m1block && clusters[0].m1block->is_entity_type(blocks::MBlock::TYPES::M_MUL4_BLOCK))
+      ret = calibrate_mblock(clusters[0], *clusters[0].m1block, &daq);
+    if(!ret) {
+      msg_out["error"] = "Calibrate MBlock failed";
+      return error(10);
+    }
+  }
+
   // Path may be to one of our sub-entities
   auto resolved_entity = resolve_child_entity(path + 1, path_depth - 1);
   if (!resolved_entity) {
@@ -266,6 +280,16 @@ int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
 
     case true: /* boolean success */
     default: return success;
+  }
+
+  if(msg_in.containsKey("calibrate_offset") && !calibrate_offset()) {
+      msg_out["error"] = "Calibrate-offset failed";
+      return error(10);
+  }
+
+  if(msg_in.containsKey("calibrate_routes") && !calibrate_routes(&daq)) {
+      msg_out["error"] = "Calibrate-Routes failed";
+      return error(10);
   }
 }
 
