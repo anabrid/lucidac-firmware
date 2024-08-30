@@ -308,6 +308,7 @@ utils::status blocks::UBlock::_config_constants_from_json(const JsonVariantConst
     // that's really pointless, we then also can just not connect the relevant UBlock switch.
     change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::ANALOG_INPUT);
     reset_reference_magnitude();
+    utils::status::success();
   }
   if(constant > 0)
     change_b_side_transmission_mode(blocks::UBlock::Transmission_Mode::POS_REF);
