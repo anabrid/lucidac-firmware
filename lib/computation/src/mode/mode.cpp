@@ -6,6 +6,7 @@
 
 #include <Arduino.h>
 
+#include "utils/factorize.h"
 #include "utils/logging.h"
 
 void mode::ManualControl::init() {
@@ -33,16 +34,16 @@ void mode::ManualControl::to_halt() {
 }
 
 void mode::RealManualControl::enable() {
-  if(mode::FlexIOControl::is_initialized()) {
-    if(mode::FlexIOControl::is_enabled()) {
+  if (mode::FlexIOControl::is_initialized()) {
+    if (mode::FlexIOControl::is_enabled()) {
       mode::FlexIOControl::disable();
     }
   }
 }
 
 void mode::RealManualControl::disable() {
-  if(mode::FlexIOControl::is_initialized()) {
-    if(!mode::FlexIOControl::is_enabled()) {
+  if (mode::FlexIOControl::is_initialized()) {
+    if (!mode::FlexIOControl::is_enabled()) {
       mode::FlexIOControl::enable();
     } else {
       // this should not happen.
@@ -52,7 +53,7 @@ void mode::RealManualControl::disable() {
 
 void mode::RealManualControl::to_ic() {
   enable();
-  if(mode::FlexIOControl::is_initialized()) {
+  if (mode::FlexIOControl::is_initialized()) {
     mode::FlexIOControl::to_ic();
   } else {
     mode::ManualControl::to_ic();
@@ -61,7 +62,7 @@ void mode::RealManualControl::to_ic() {
 
 void mode::RealManualControl::to_op() {
   enable();
-  if(mode::FlexIOControl::is_initialized()) {
+  if (mode::FlexIOControl::is_initialized()) {
     mode::FlexIOControl::to_op();
   } else {
     mode::ManualControl::to_op();
@@ -70,7 +71,7 @@ void mode::RealManualControl::to_op() {
 
 void mode::RealManualControl::to_halt() {
   enable();
-  if(mode::FlexIOControl::is_initialized()) {
+  if (mode::FlexIOControl::is_initialized()) {
     mode::FlexIOControl::to_idle();
   } else {
     mode::ManualControl::to_halt();
@@ -195,9 +196,8 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   //
 
   // Sanity check op_time_ns, which we will count with two 16bit timers (=32bit) at CLK_FREQ
-  // Just limit to 1 second for now, the actual math is slightly more complicated
   // Also, we don't really want to do extremely short OP times (for now?)
-  if (op_time_ns < 100 or op_time_ns > 1'000'000'000) {
+  if (op_time_ns < 100 or op_time_ns > 9'000'000'000) {
     LOG_ERROR("FlexIOControl: Requested op_time_ns cannot be represented by 32bit.");
     return false;
   }
@@ -225,14 +225,11 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
     // Configure first timer as pre-scaler
     // But we want to pre-scale as much as possible, even though we then lose resolution
     // But for op times in the range of seconds, we don't need microseconds resolution
-    auto order_of_magnitude = static_cast<unsigned int>(log10(op_time_ns));
-    // Don't use float-type pow
-    // Also divider can't be larger than 273, otherwise pre-scaler > 2^16
-    unsigned int divider = 1;
-    if (order_of_magnitude >= 6)
-      divider = 10;
-    if (order_of_magnitude >= 8)
-      divider = 100;
+
+    auto factors = utils::factorize(op_time_ns * CLK_FREQ_MHz / 1000);
+    if (factors.first >= 1 << 16 ||
+        factors.second >= 1 << 16) // Factror even is too big for two cascaded timers
+      return false;
 
     auto t_op = ++_t_idx;
     if (t_op >= 8)
@@ -241,7 +238,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
         FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) | FLEXIO_TIMCTL_PINPOL;
     flexio->port().TIMCFG[t_op] =
         FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(0b110) | FLEXIO_TIMCFG_TIMENA(6);
-    flexio->port().TIMCMP[t_op] = divider * 240 - 1;
+    flexio->port().TIMCMP[t_op] = factors.first - 1;
     // Configure second timer for 32bit total
     auto t_op_second = ++_t_idx;
     if (t_op_second >= 8)
@@ -254,7 +251,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
                                          FLEXIO_TIMCTL_PINSEL(12) | FLEXIO_TIMCTL_PINPOL;
     flexio->port().TIMCFG[t_op_second] =
         FLEXIO_TIMCFG_TIMDEC(1) | FLEXIO_TIMCFG_TIMRST(0) | FLEXIO_TIMCFG_TIMDIS(1) | FLEXIO_TIMCFG_TIMENA(1);
-    flexio->port().TIMCMP[t_op_second] = (op_time_ns / (divider * 1000ull)) * 2 - 1;
+    flexio->port().TIMCMP[t_op_second] = factors.second;
   }
 
   // Configure state change check timer as fast as possible
