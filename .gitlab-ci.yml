@@ -1,12 +1,5 @@
-stages:
-  - test
-  - build
-  - release
-
-
 test_native_job:
   # Run all native tests
-  stage: test
   image:
     name: $CI_REGISTRY/lucidac/firmware/hybrid-controller/platformio-build
   script:
@@ -14,21 +7,17 @@ test_native_job:
     - apt install git build-essential -y
     - pio test -e native --filter native/* --filter emulated/*
 
-
 test_others_job:
   # Compile all non-native test cases to check for incompatible changes in the codebase
   # This helps with noticing that a change breaks an old test case
   # This takes a fairly long time and may be disabled if it becomes too annoying
-  stage: test
   allow_failure: true
   image:
     name: $CI_REGISTRY/lucidac/firmware/hybrid-controller/platformio-build
   script:
     - pio test -e testing --without-uploading --without-testing --filter hardware/* --filter manual/* --ignore manual/teensy_basics/*
 
-
 build_job:
-  stage: build
   image:
     name: $CI_REGISTRY/lucidac/firmware/hybrid-controller/platformio-build
   script:
@@ -46,7 +35,6 @@ build_docs:
   variables:
     # clone submodules which are currently only relevant for docs
     GIT_SUBMODULE_STRATEGY: normal
-  stage: build
   image: alpine # suggested in https://gitlab.com/pages/doxygen but shitty
   script:
     - apk update && apk add doxygen # TODO: this is slow, use proper image
@@ -56,20 +44,18 @@ build_docs:
       - docs/html
       
 upload_docs:
-  stage: release
+  needs: build_docs
   # TODO: Change to a specialized image
   image: svenk/latex
   needs: # instead of "dependencies:", should go faster
-    - build_docs
+    - job: build_docs
+      artifacts: true
   script:
     - chmod 600 "$SSH_PRIVATE_KEY_FILE_STAGING"
     - echo "ai.svenk.org ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBE2YTwpWWq4ceRXHbCFHlw5kmRVLQjKbdYeFAAyYUDXFRhCjRknE6DKlGIIciKOqzAMiFGz5/vxb6tKMCKBeFU0=" > ~/userknown.txt
     - echo -e "cd anabrid.dev/docs/hybrid-controller/\nput -R docs/html/*" | sftp -o "UserKnownHostsFile=~/userknown.txt" -i"$SSH_PRIVATE_KEY_FILE_STAGING" $DEPLOY_STAGING_SSH_HOST
 
-
-
 release_job:
-  stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   rules:
     - if: $CI_COMMIT_TAG
