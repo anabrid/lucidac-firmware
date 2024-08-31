@@ -117,6 +117,8 @@ public:
     return EntityClassifier::DEFAULT_;
   }
 
+  virtual std::array<uint8_t, 8> get_entity_eui() const = 0;
+
   bool is_entity_class(EntityClass class_) { return get_entity_class() == class_; }
 
   bool is_entity_type(uint8_t type_) { return get_entity_type() == type_; }

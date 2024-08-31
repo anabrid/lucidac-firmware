@@ -54,6 +54,8 @@ public:
 
   entities::EntityClass get_entity_class() const final;
 
+  std::array<uint8_t, 8> get_entity_eui() const final;
+
   virtual bool init();
 
   virtual bool calibrate_offset();

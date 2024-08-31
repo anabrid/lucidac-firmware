@@ -9,6 +9,9 @@
 
 entities::EntityClass carrier::Carrier::get_entity_class() const { return entities::EntityClass::CARRIER; }
 
+// Carrier lacks EEPROM
+std::array<uint8_t, 8> carrier::Carrier::get_entity_eui() const { return {0}; }
+
 carrier::Carrier::Carrier(std::vector<Cluster> clusters, carrier::Carrier_HAL *hardware)
     : Entity(""), hardware(hardware), clusters(std::move(clusters)) {}
 
@@ -340,8 +343,10 @@ int carrier::Carrier::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) 
   for (const auto &cluster : clusters) {
     auto cluster_obj = carrier_obj["/" + cluster.get_entity_id()] = cluster.get_entity_classifier();
     for (auto *block : cluster.get_blocks()) {
-      if (block)
-        cluster_obj["/" + block->get_entity_id()] = block->get_entity_classifier();
+      if (block) {
+        auto block_obj = cluster_obj["/" + block->get_entity_id()] = block->get_entity_classifier();
+        block_obj["eui"] = utils::toString(block->get_entity_eui());
+      }
     }
   }
   return success;

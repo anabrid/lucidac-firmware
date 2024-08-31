@@ -35,6 +35,14 @@ std::string utils::toString(const MacAddress &mac, char sep) {
   return mac_str;
 }
 
+std::string utils::toString(const std::array<uint8_t, 8> &mac, char sep) {
+  char mac_str[26];
+  sprintf(mac_str, "%02X%c%02X%c%02X%c%02X%c%02X%c%02X%c%02X%c%02X",
+    mac[0], sep, mac[1], sep, mac[2], sep, mac[3], sep,
+    mac[4], sep, mac[5], sep, mac[6], sep, mac[7]);
+  return mac_str;
+}
+
 std::string utils::toString(const IPAddress &ip) {
   char ip_str[16];
   sprintf(ip_str, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);

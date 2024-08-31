@@ -196,6 +196,10 @@ platform::LUCIDACFrontPanel::from_entity_classifier(entities::EntityClassifier c
   return nullptr;
 }
 
+std::array<uint8_t, 8> platform::LUCIDACFrontPanel::get_entity_eui() const {
+  return metadata::MetadataEditor(bus::address_from_tuple(2, 0)).read_eui();
+}
+
 utils::status platform::LUCIDACFrontPanel::config_self_from_json(JsonObjectConst cfg) {
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "leds") {

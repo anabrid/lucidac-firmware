@@ -37,6 +37,10 @@ public:
 
   [[nodiscard]] virtual bool write_to_hardware() = 0;
 
+  virtual std::array<uint8_t, 8> get_entity_eui() const override {
+    return metadata::MetadataEditor(block_address).read_eui();
+  }
+
   std::vector<Entity *> get_child_entities() override {
 #ifdef ANABRID_DEBUG_ENTITY
     Serial.println(__PRETTY_FUNCTION__);

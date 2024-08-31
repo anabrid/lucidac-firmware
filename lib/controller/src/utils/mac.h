@@ -16,8 +16,10 @@
 
 namespace utils {
 
+
 /**
- * Represents Ethernet Mac address
+ * Represents Ethernet Mac address.
+ * A MAC Adress corresponds to a EUI-48 standard.
  * Converts from/to canonical representation AA-BB-CC-DD-EE-FF
  **/
 struct MacAddress {
@@ -41,8 +43,12 @@ struct MacAddress {
 void convertFromJson(JsonVariantConst serialized_mac, MacAddress &mac);
 void convertToJson(const MacAddress &mac, JsonVariant serialized_mac);
 
-std::string toString(const MacAddress &mac, char sep = '-'); ///< Canonical Format AA-BB-CC-DD-EE-FF
-std::string toString(const IPAddress &ip);                   ///< Canonical Format 123.45.6.7
+/// EUI48/MAC Canonical Format AA-BB-CC-DD-EE-FF
+std::string toString(const MacAddress &mac, char sep = '-');
+/// EUI64/Extended MAC Canonical Format AA-BB-CC-DD-EE-FF-00-11
+std::string toString(const std::array<uint8_t, 8> &eui64, char sep='-');
+/// Canonical Format 123.123.123.123
+std::string toString(const IPAddress &ip);
 
 bool valid(const MacAddress &mac); ///< All zero mac bytes considered invalid (0-0-0-0-0-0)
 bool valid(const IPAddress &ip);   ///< All zero IP bytes considered invalid (0.0.0.0)

@@ -33,6 +33,8 @@ public:
 
   entities::EntityClass get_entity_class() const final { return CLASS_; }
 
+  std::array<uint8_t, 8> get_entity_eui() const override;
+
   utils::status config_self_from_json(JsonObjectConst cfg) override;
 
   Entity *get_child_entity(const std::string &child_id) override { return nullptr; }

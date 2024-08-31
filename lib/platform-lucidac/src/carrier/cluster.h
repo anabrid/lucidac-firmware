@@ -37,6 +37,8 @@ public:
 
   entities::EntityClass get_entity_class() const final { return entities::EntityClass::CLUSTER; }
 
+  std::array<uint8_t, 8> get_entity_eui() const override { return {0}; }
+
   bool init();
   std::array<blocks::FunctionBlock *, 6> get_blocks() const;
 

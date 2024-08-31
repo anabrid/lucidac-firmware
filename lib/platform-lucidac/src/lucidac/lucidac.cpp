@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include "lucidac.h"
+#include "utils/mac.h"
 
 const SPISettings platform::LUCIDAC_HAL::F_ADC_SWITCHER_PRG_SPI_SETTINGS{
     4'000'000, MSBFIRST, SPI_MODE2 /* chip expects SPI MODE0, but CLK is inverted on the way */};
@@ -130,8 +131,10 @@ int LUCIDAC::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
   auto carrier_res = this->carrier::Carrier::get_entities(msg_in, msg_out);
   if (carrier_res != 0)
     return carrier_res;
-  if (front_panel)
-    msg_out["entities"]["/FP"] = front_panel->get_entity_classifier();
+  if (front_panel) {
+    auto fp_obj = msg_out["entities"]["/FP"] = front_panel->get_entity_classifier();
+    fp_obj["eui"] = utils::toString(front_panel->get_entity_eui());
+  }
   return 0;
 }
 
