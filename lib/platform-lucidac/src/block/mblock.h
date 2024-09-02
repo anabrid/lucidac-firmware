@@ -210,12 +210,14 @@ public:
 
   [[nodiscard]] const std::array<float, 8> &get_ic_values() const;
   [[nodiscard]] float get_ic_value(uint8_t idx) const;
+  bool set_ic_values(float value);
   bool set_ic_values(const std::array<float, 8> &ic_values_);
   bool set_ic_value(uint8_t idx, float value);
   void reset_ic_values();
 
   [[nodiscard]] const std::array<unsigned int, 8> &get_time_factors() const;
   unsigned int get_time_factor(uint8_t idx) const;
+  bool set_time_factors(unsigned int k);
   bool set_time_factors(const std::array<unsigned int, 8> &time_factors_);
   bool set_time_factor(uint8_t int_idx, unsigned int k);
   void reset_time_factors();

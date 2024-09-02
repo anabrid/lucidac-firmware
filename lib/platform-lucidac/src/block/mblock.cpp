@@ -57,6 +57,13 @@ bool blocks::MIntBlock::set_ic_values(const std::array<float, 8> &ic_values_) {
   return true;
 }
 
+bool blocks::MIntBlock::set_ic_values(float value) {
+  for (auto idx = 0u; idx < ic_values.size(); idx++)
+    if (!set_ic_value(idx, value))
+      return false;
+  return true;
+}
+
 bool blocks::MIntBlock::set_ic_value(uint8_t idx, float value) {
   if (idx >= ic_values.size())
     return false;
@@ -79,6 +86,13 @@ unsigned int blocks::MIntBlock::get_time_factor(uint8_t idx) const {
 bool blocks::MIntBlock::set_time_factors(const std::array<unsigned int, 8> &time_factors_) {
   for (auto idx = 0u; idx < time_factors_.size(); idx++)
     if (!set_time_factor(idx, time_factors_[idx]))
+      return false;
+  return true;
+}
+
+bool blocks::MIntBlock::set_time_factors(unsigned int k) {
+  for (auto idx = 0u; idx < time_factors.size(); idx++)
+    if (!set_time_factor(idx, k))
       return false;
   return true;
 }
@@ -129,7 +143,8 @@ utils::status blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "elements") {
       auto res = _config_elements_from_json(cfgItr->value());
-      if(!res) return res;
+      if (!res)
+        return res;
     } else {
       return utils::status("MIntBlock: Unknown configuration key");
     }
@@ -141,7 +156,8 @@ utils::status blocks::MIntBlock::_config_elements_from_json(const JsonVariantCon
   if (cfg.is<JsonArrayConst>()) {
     auto ints_cfg = cfg.as<JsonArrayConst>();
     if (ints_cfg.size() != NUM_INTEGRATORS) {
-      return utils::status("MIntBlock: Provided %d elments but NUM_INTEGRATORS=%d.", ints_cfg.size(), NUM_INTEGRATORS);
+      return utils::status("MIntBlock: Provided %d elments but NUM_INTEGRATORS=%d.", ints_cfg.size(),
+                           NUM_INTEGRATORS);
     }
     for (size_t i = 0; i < ints_cfg.size(); i++) {
       if (!ints_cfg[i].containsKey("ic") or !ints_cfg[i]["ic"].is<float>())
@@ -164,7 +180,8 @@ utils::status blocks::MIntBlock::_config_elements_from_json(const JsonVariantCon
       // TODO: Check conversion from string to number
       auto int_idx = std::stoul(keyval.key().c_str());
       if (int_idx >= NUM_INTEGRATORS)
-        return utils::status("MIntBlock: Integrator index %d >= NUM_INTEGRATORS = %d", int_idx, NUM_INTEGRATORS);
+        return utils::status("MIntBlock: Integrator index %d >= NUM_INTEGRATORS = %d", int_idx,
+                             NUM_INTEGRATORS);
       auto int_cfg = keyval.value().as<JsonObjectConst>();
       if (int_cfg.containsKey("ic")) {
         if (!int_cfg["ic"].is<float>())
@@ -203,7 +220,8 @@ utils::status blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "elements") {
       auto res = _config_elements_from_json(cfgItr->value());
-      if(!res) return res;
+      if (!res)
+        return res;
     } else {
       return utils::status("MMulBlock: Unknown configuration key");
     }
@@ -472,6 +490,8 @@ bool blocks::MMulBlockHAL_V_1_0_X::write_calibration_output_offset(uint8_t idx, 
 
 bool blocks::EmptyMBlock::write_to_hardware() { return true; }
 
-utils::status blocks::EmptyMBlock::config_self_from_json(JsonObjectConst cfg) { return utils::status::success(); }
+utils::status blocks::EmptyMBlock::config_self_from_json(JsonObjectConst cfg) {
+  return utils::status::success();
+}
 
 uint8_t blocks::EmptyMBlock::get_entity_type() const { return static_cast<uint8_t>(MBlock::TYPES::UNKNOWN); }
