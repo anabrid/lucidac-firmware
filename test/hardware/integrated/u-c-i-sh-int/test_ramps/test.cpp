@@ -62,23 +62,35 @@ void test_init_and_blocks() {
   TEST_ASSERT(carrier_.write_to_hardware());
 }
 
-void setup_and_measure(uint8_t channel) {
-  // Setup path
+bool error = false;
+
+void setup_and_measure() {
+  // Setup paths
   carrier_.ctrl_block->set_adc_bus_to_cluster_gain(cluster.get_cluster_idx());
   cluster.reset(false);
 
-  TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, channel, 0.1f, channel));
-
   auto int_block = static_cast<MIntBlock *>(cluster.m0block);
-  TEST_ASSERT(int_block->set_time_factor(channel, 10000));
-  TEST_ASSERT(int_block->set_ic_value(channel, 0.0f));
+
+  for (uint8_t int_channel : MIntBlock::INTEGRATORS_INPUT_RANGE())
+    TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF,
+                                     int_block->slot_to_global_io_index(int_channel), 0.1f,
+                                     int_block->slot_to_global_io_index(int_channel)));
+
+  TEST_ASSERT(int_block->set_time_factors(10000));
+  TEST_ASSERT(int_block->set_ic_values(0.0f));
 
   TEST_ASSERT(carrier_.write_to_hardware());
 
   TEST_ASSERT(cluster.calibrate(&DAQ));
 
   carrier_.ctrl_block->set_adc_bus(CTRLBlock::ADCBus::ADC);
-  TEST_ASSERT(carrier_.set_adc_channel(channel, channel));
+
+  auto adc_channels = carrier_.get_adc_channels();
+  for (unsigned int i = 0; i < adc_channels.size(); i++)
+    adc_channels[i] = i; // identity connection only works for m0
+
+  TEST_ASSERT(carrier_.set_adc_channels(adc_channels));
+
   TEST_ASSERT(carrier_.write_to_hardware());
 
   // Measure end value
@@ -88,17 +100,16 @@ void setup_and_measure(uint8_t channel) {
   while (!FlexIOControl::is_done()) {
   }
 
-  float reading = DAQ.sample_avg(4, 10)[channel];
+  auto readings = DAQ.sample_avg(4, 10);
 
-  TEST_ASSERT_FLOAT_WITHIN(target_precision, -1.0f, reading);
-  std::cout << "channel " << +channel << " passed!" << std::endl;
-}
-
-void check_all_integrators() {
-  for (uint8_t i : MIntBlock::INTEGRATORS_OUTPUT_RANGE()) {
-    std::cout << "Testing channel " << +i << std::endl;
-    setup_and_measure(i);
+  for (int i = 0; i < 8; i++) {
+    if (fabs(readings[i] + 1.0f) > target_precision) {
+      error = true;
+      std::cout << "Channel " << i << " failed!  Read value: " << readings[i] << std::endl;
+    } else
+      std::cout << "Channel " << i << " passed!" << std::endl;
   }
+  TEST_ASSERT_FALSE(error);
 }
 
 void setup() {
@@ -110,7 +121,7 @@ void setup() {
 
   UNITY_BEGIN();
   RUN_TEST(test_init_and_blocks);
-  RUN_TEST(check_all_integrators);
+  RUN_TEST(setup_and_measure);
   UNITY_END();
 }
 
