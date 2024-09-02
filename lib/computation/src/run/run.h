@@ -37,6 +37,7 @@ public:
   unsigned long long op_time = 500'000'000;  ///< Requested Operations time in Nanoseconds
   bool halt_on_overload = true;              ///< Whether to halt the computation on an overload condition
   bool no_streaming = false;                 ///< Request traditional inexact non-streaming run (Non-FlexIO/DMA)
+  bool repetitive = false;                   ///< "Rep-Mode": Start run after it has finished.
 
   static RunConfig from_json(JsonObjectConst &json);
 };
@@ -57,6 +58,7 @@ public:
   static Run from_json(JsonObjectConst &json);
 
   RunStateChange to(RunState new_state, unsigned int t = 0);
+
 };
 
 class RunStateChangeHandler {

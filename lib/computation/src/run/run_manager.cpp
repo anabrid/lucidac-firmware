@@ -26,7 +26,9 @@ void run::RunManager::run_next(
     run_next_traditional(run, state_change_handler, run_data_handler, alt_run_data_handler);
   else
     run_next_flexio(run, state_change_handler, run_data_handler);
-  queue.pop();
+
+  if(!run.config.repetitive)
+    queue.pop();
 }
 
 void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler, client::StreamingRunDataNotificationHandler *alt_run_data_handler) {

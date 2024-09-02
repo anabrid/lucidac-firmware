@@ -13,14 +13,17 @@ namespace handlers {
 
 /// @ingroup MessageHandlers
 class StartRunRequestHandler : public MessageHandler {
-protected:
-  run::RunManager &manager;
-
 public:
-  explicit StartRunRequestHandler(run::RunManager &run_manager) : manager(run_manager) {}
-
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
-    return error(manager.start_run(msg_in, msg_out));
+    return error(run::RunManager::get().start_run(msg_in, msg_out));
+  }
+};
+
+class StopRunRequestHandler : public MessageHandler {
+public:
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
+    auto success = run::RunManager::get().end_repetitive_runs();
+    return error(success ? 0 : 1);
   }
 };
 
