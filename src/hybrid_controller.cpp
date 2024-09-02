@@ -62,11 +62,11 @@ void indicate_led_error() {
 void setup() {
   // Initialize serial communication
   Serial.begin(0);
-  while (!Serial && millis() < 4000) {
+  //while (!Serial && millis() < 4000) {
     // Wait for Serial, but not forever
-  }
+  //}
 
-  msg::Log::get().sinks.add(&Serial);
+  msg::Log::get().sinks.add_Serial();
   msg::Log::get().sinks.add(&msg::StartupLog::get());
 
   bus::init();

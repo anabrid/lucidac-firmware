@@ -36,6 +36,7 @@ using qindesign::network::EthernetClient;
  * more sane.
  */
 class PrintMultiplexer : public Print {
+  bool serial = false; ///< whether to write to SerialPort
   std::list<Print *> print_targets;
   std::list<EthernetClient*> eth_targets;
 
@@ -44,6 +45,7 @@ public:
 
   void add(Print *target) { print_targets.push_back(target); }
   void add(EthernetClient *target) { eth_targets.push_back(target); }
+  void add_Serial() { serial = true; }
 
   void remove(Print *target) { print_targets.remove(target); }
   void remove(EthernetClient *target) { eth_targets.remove(target); }
@@ -53,6 +55,7 @@ public:
   /// Printables which go to all clients
   virtual size_t write(uint8_t b) override {
     bool success = true;
+    if(serial && Serial.availableForWrite())       success &= Serial.write(b) == 1;
     for (auto &target : print_targets) if (target) success &= target->write(b) == 1;
     for (auto &target :   eth_targets) if (target) success &= target->writeFully(b) == 1;
     return success ? 1 : (optimistic ? 1 : 0);
@@ -60,6 +63,7 @@ public:
 
   size_t write(const uint8_t *buffer, size_t size) override {
     bool success = true;
+    if(serial && Serial.availableForWrite())       success &= Serial.write(buffer,size) == size; // do not use writeFully
     for (auto &target : print_targets) if (target) success &= qindesign::network::util::writeFully(*target, buffer, size) == size;
     for (auto &target :   eth_targets) if (target) success &= target->writeFully(buffer, size) == size;
     // so do all this extra work of print_targets + eth_targets just to exploit that
@@ -70,6 +74,7 @@ public:
   }
 
   virtual void flush() override {
+    if(serial && Serial) Serial.flush();
     for (auto &target : print_targets) if (target) target->flush();
     for (auto &target :   eth_targets) if (target) target->flush();
   }
