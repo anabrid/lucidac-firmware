@@ -35,20 +35,25 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   //run_data_handler->prepare(run);
 
   daq::OneshotDAQ daq;
-  daq.init(0);
 
-  // measure how long an single ADC sampling takes with the current implementation.
-  // This is right now around 15us.
-  elapsedMicros sampling_time_us_counter; // class from teensy elpasedMillis.h
-  daq.sample_raw();
-  uint32_t sampling_time_us = sampling_time_us_counter;
-  // TODO: There is a slight dither around 15us -- 16us, could do the averaging call to
-  //       improve the statistics.
 
   // here, one sample is one data aquisition which always yields all channels.
   constexpr uint32_t max_num_samples = 16'384;
   const int num_channels = run.daq_config.get_num_channels();
   const uint32_t optime_us = run.config.op_time / 1000;
+
+  uint32_t sampling_time_us = 0;
+  if(num_channels) {
+    daq.init(0);
+
+    // measure how long an single ADC sampling takes with the current implementation.
+    // This is right now around 15us.
+    elapsedMicros sampling_time_us_counter; // class from teensy elpasedMillis.h
+    daq.sample_raw();
+    sampling_time_us = sampling_time_us_counter;
+    // TODO: There is a slight dither around 15us -- 16us, could do the averaging call to
+    //       improve the statistics.
+  }
 
   /*
     The guiding principle of the following math is this:
@@ -89,7 +94,8 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   if(num_samples > max_num_samples) num_samples = max_num_samples;
 
   const int num_buffer_entries = num_samples * num_channels;
-  LOGMEV("optime_us=%d, sampling_time_us=%d, sampling_sleep_us=%d, num_samples=%d, num_channels=%d", optime_us, sampling_time_us, sampling_sleep_us, num_samples, num_channels);
+  if(num_channels)
+    LOGMEV("optime_us=%d, sampling_time_us=%d, sampling_sleep_us=%d, num_samples=%d, num_channels=%d", optime_us, sampling_time_us, sampling_sleep_us, num_samples, num_channels);
 
   // just to be able to use daq.sample_raw(uint16_t*) instead of copying over to an intermediate buffer
   // of size std::vector, we add a bit safety padding to the right for the last datum obtained.
@@ -98,7 +104,11 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
 
   // we use malloc because new[] raises an exception if allocation fails but we cannot catch it with -fno-exception.
   // we don't use the stack because we expect the heap to have more memory left...
-  auto buffer = (uint16_t*) malloc((num_buffer_entries + padding) * sizeof(uint16_t));
+  uint16_t *buffer;
+  if(num_channels) {
+    // allocate only if any data aquisition was asked for
+    buffer = (uint16_t*) malloc((num_buffer_entries + padding) * sizeof(uint16_t));
+  }
   if(!buffer) {
     LOG_ERROR("Could not allocated a large run buffer for a traditional Run.");
   }
@@ -138,9 +148,7 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   }
   
   auto result = run.to(res, actual_op_time_us*1000);
-  LOG_ALWAYS("StateChangeHandler");
   state_change_handler->handle(result, run);
-  LOG_ALWAYS("Return");
 }
 
 void run::RunManager::run_next_flexio(run::Run &run, RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler) {
