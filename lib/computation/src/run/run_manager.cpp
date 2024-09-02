@@ -108,9 +108,9 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   if(num_channels) {
     // allocate only if any data aquisition was asked for
     buffer = (uint16_t*) malloc((num_buffer_entries + padding) * sizeof(uint16_t));
-  }
-  if(!buffer) {
-    LOG_ERROR("Could not allocated a large run buffer for a traditional Run.");
+    if(!buffer) {
+      LOG_ERROR("Could not allocated a large run buffer for a traditional Run.");
+    }
   }
 
   mode::RealManualControl::enable();
@@ -138,15 +138,11 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   RunState res;
   
   if(buffer) {
-    LOG_ALWAYS("RunDataHandler");
     alt_run_data_handler->handle(buffer, num_samples, num_channels, run);
-    LOG_ALWAYS("Free");
     free(buffer);
-    res = RunState::DONE;
-  } else {
-    res = RunState::ERROR;
   }
-  
+
+  res = num_channels && !buffer ? RunState::ERROR : RunState::DONE;
   auto result = run.to(res, actual_op_time_us*1000);
   state_change_handler->handle(result, run);
 }
