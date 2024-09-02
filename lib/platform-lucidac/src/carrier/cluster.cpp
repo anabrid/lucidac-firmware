@@ -19,16 +19,6 @@ std::array<blocks::FunctionBlock *, 6> platform::Cluster::get_blocks() const {
 bool platform::Cluster::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
 
-  // Manually register blocks, avoiding autodetection
-  /*
-  m0block = new blocks::MIntBlock{cluster_idx};
-  m1block = new blocks::MMulBlock{cluster_idx};
-  ublock  = new blocks::UBlock{cluster_idx};
-  cblock  = new blocks::CBlock_SequentialAddresses{cluster_idx};
-  iblock  = new blocks::IBlock{cluster_idx};
-  shblock = new blocks::SHBlock{cluster_idx};
-  */
-
   // Dynamically detect installed blocks
   // Check if a block is already set, which may happen with a special constructor in the future
   LOG(ANABRID_DEBUG_INIT, "Detecting installed blocks...");
