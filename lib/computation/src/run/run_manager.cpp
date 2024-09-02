@@ -104,7 +104,7 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
 
   // we use malloc because new[] raises an exception if allocation fails but we cannot catch it with -fno-exception.
   // we don't use the stack because we expect the heap to have more memory left...
-  uint16_t *buffer;
+  uint16_t *buffer = nullptr;
   if(num_channels) {
     // allocate only if any data aquisition was asked for
     buffer = (uint16_t*) malloc((num_buffer_entries + padding) * sizeof(uint16_t));
@@ -130,19 +130,18 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
     if(optime_left_us)
       delayMicroseconds(optime_left_us);
   } else {
-    delayMicroseconds(optime_us);
+    delayNanoseconds(run.config.op_time);
   }
 
   uint32_t actual_op_time_us = actual_op_time_timer;
   mode::RealManualControl::to_halt();
-  RunState res;
   
   if(buffer) {
     alt_run_data_handler->handle(buffer, num_samples, num_channels, run);
     free(buffer);
   }
 
-  res = num_channels && !buffer ? RunState::ERROR : RunState::DONE;
+  auto res = (num_channels && !buffer) ? RunState::ERROR : RunState::DONE;
   auto result = run.to(res, actual_op_time_us*1000);
   state_change_handler->handle(result, run);
 }
