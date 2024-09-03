@@ -123,6 +123,8 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   // an overlap will happen instead.
   if(run.config.ic_time > 100'000'000) // 100ms
     delay(run.config.ic_time / 1'000'000); // milisecond resolution sleep
+  else if(run.config.ic_time > 65'000) // 16bit nanoseconds
+    delayMicroseconds(run.config.ic_time / 1000);
   else
     delayNanoseconds(run.config.ic_time);
   mode::RealManualControl::to_op();
@@ -140,6 +142,8 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   } else {
     if(run.config.op_time > 100'000'000) // 100ms
       delay(run.config.op_time / 1'000'000); // millisecond resolution sleep
+    else if(run.config.op_time > 65'000) // 16bit nanoseconds
+      delayMicroseconds(run.config.op_time / 1000);
     else
       delayNanoseconds(run.config.op_time);
   }
