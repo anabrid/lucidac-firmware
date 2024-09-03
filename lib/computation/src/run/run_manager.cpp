@@ -116,7 +116,12 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   mode::RealManualControl::enable();
 
   mode::RealManualControl::to_ic();
-  delayNanoseconds(run.config.ic_time);
+  // 32bit nanosecond delay can sleep maximum 4sec, however
+  // an overlap will happen instead.
+  if(run.config.ic_time > 100'000'000) // 100ms
+    delay(run.config.ic_time / 1'000'000); // milisecond resolution sleep
+  else
+    delayNanoseconds(run.config.ic_time);
   mode::RealManualControl::to_op();
   elapsedMicros actual_op_time_timer;
 
@@ -130,7 +135,10 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
     if(optime_left_us)
       delayMicroseconds(optime_left_us);
   } else {
-    delayNanoseconds(run.config.op_time);
+    if(run.config.op_time > 100'000'000) // 100ms
+      delay(run.config.op_time / 1'000'000); // millisecond resolution sleep
+    else
+      delayNanoseconds(run.config.op_time);
   }
 
   uint32_t actual_op_time_us = actual_op_time_timer;

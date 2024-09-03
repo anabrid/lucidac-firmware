@@ -29,7 +29,7 @@ run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
   uint64_t ic_time = ic_time_def + ic_time_ns + us*ic_time_us + ms*ic_time_ms;
   uint64_t op_time = op_time_def + op_time_ns + us*op_time_us + ms*op_time_ms;
 
-  LOG_MEV("ic_time_ns = %lld, op_time_ns=%lld", ic_time, op_time);
+  //LOG_MEV("ic_time_ns = %lld, op_time_ns=%lld", ic_time, op_time);
 
   return {
       .ic_time = ic_time,
