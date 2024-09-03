@@ -33,8 +33,8 @@ public:
  **/
 class RunConfig {
 public:
-  uint32_t ic_time = 100'000;            ///< Requested Initial Conditions time in Nanoseconds
-  uint32_t op_time = 500'000'000;  ///< Requested Operations time in Nanoseconds
+  uint64_t ic_time = 100'000;                ///< Requested Initial Conditions time in Nanoseconds
+  uint64_t op_time = 500'000'000;            ///< Requested Operations time in Nanoseconds
   bool halt_on_overload = true;              ///< Whether to halt the computation on an overload condition
   bool no_streaming = false;                 ///< Request traditional inexact non-streaming run (Non-FlexIO/DMA)
   bool repetitive = false;                   ///< "Rep-Mode": Start run after it has finished.
