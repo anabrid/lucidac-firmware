@@ -4,6 +4,7 @@
 
 #include "run/run.h"
 
+#include "utils/logging.h"
 #include <utility>
 
 run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
@@ -12,7 +13,7 @@ run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
   // Therefore, client libraries should make use of appropriate units
   // which are summed here together.
 
-  uint32_t
+  uint64_t
     ic_time_ms  = json["ic_time_ms"],
     ic_time_us  = json["ic_time_us"],
     ic_time_ns  = json["ic_time_ns"],
@@ -25,9 +26,14 @@ run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
 
   uint64_t us = 1000, ms = 1'000'000;
 
+  uint64_t ic_time = ic_time_def + ic_time_ns + us*ic_time_us + ms*ic_time_ms;
+  uint64_t op_time = op_time_def + op_time_ns + us*op_time_us + ms*op_time_ms;
+
+  LOG_MEV("ic_time_ns = %lld, op_time_ns=%lld", ic_time, op_time);
+
   return {
-      .ic_time = ic_time_def + ic_time_ns + us*ic_time_us + ms*ic_time_ms,
-      .op_time = op_time_def + op_time_ns + us*op_time_us + ms*op_time_ms,
+      .ic_time = ic_time,
+      .op_time = op_time,
       .halt_on_overload = json["halt_on_overload"],
       .no_streaming = json["no_streaming"],
       .repetitive = json["repetitive"]
