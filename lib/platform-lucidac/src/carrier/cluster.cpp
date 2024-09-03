@@ -133,9 +133,10 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
       if (!ublock->write_to_hardware())
         return false;
 
-      // Allow this connection to go up to full scale
-      cblock->set_factor(i_in_idx, 1.0f);
-      cblock->set_gain_correction(i_in_idx, 1.0f);
+      // Allow this connection to go up to full scale. Those values are allways legal so we can ignore the
+      // return value
+      (void)cblock->set_factor(i_in_idx, 1.0f);
+      (void)cblock->set_gain_correction(i_in_idx, 1.0f);
       // Actually write to hardware
       if (!cblock->write_to_hardware())
         return false;
@@ -144,11 +145,12 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
       calibrate_offsets();
 
       // Change SH-block into gain mode and select correct gain channel group
-      shblock->set_gain.trigger();
       if (i_out_idx < 8)
-        shblock->set_gain_channels_zero_to_seven.trigger();
+        shblock->set_state(blocks::SHBlock::State::GAIN_ZERO_TO_SEVEN);
       else
-        shblock->set_gain_channels_eight_to_fifteen.trigger();
+        shblock->set_state(blocks::SHBlock::State::GAIN_EIGHT_TO_FIFTEEN);
+      if (!shblock->write_to_hardware())
+        return false;
 
       // Chill for a bit
       delay(10);
@@ -166,7 +168,7 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
       }
 
       // Deactivate this lane again
-      cblock->set_factor(i_in_idx, 0.0f);
+      (void)cblock->set_factor(i_in_idx, 0.0f);
       if (!cblock->write_to_hardware()) // This write_to_hardware could be left out, but it's a nice safety
                                         // measure
         return false;
@@ -189,6 +191,11 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
   // Write them to hardware
   LOG_ANABRID_DEBUG_CALIBRATION("Restoring u-block");
   if (!ublock->write_to_hardware())
+    return false;
+
+  // Switch SHBlock into inject mode
+  shblock->set_state(blocks::SHBlock::State::INJECT);
+  if (!shblock->write_to_hardware())
     return false;
 
   return true;

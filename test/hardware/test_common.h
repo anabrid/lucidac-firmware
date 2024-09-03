@@ -22,10 +22,12 @@ std::array<float, 16> measure_sh_gain(platform::Cluster &cluster, daq::BaseDAQ *
   std::array<float, 16> data{};
 
   // Measure all channels by using SH gain outputs and switching channels
-  cluster.shblock->to_gain(blocks::SHBlock::GainChannels::ZERO_TO_SEVEN);
+  cluster.shblock->set_state(blocks::SHBlock::State::GAIN_ZERO_TO_SEVEN);
+  (void)cluster.shblock->write_to_hardware();
   delay(100);
   auto data_zero_to_seven = DAQ->sample_avg(averages, averages_delay);
-  cluster.shblock->to_gain(blocks::SHBlock::GainChannels::EIGHT_TO_FIFTEEN);
+  cluster.shblock->set_state(blocks::SHBlock::State::GAIN_EIGHT_TO_FIFTEEN);
+  (void)cluster.shblock->write_to_hardware();
   delay(100);
   auto data_eight_to_fifteen = DAQ->sample_avg(averages, averages_delay);
 
