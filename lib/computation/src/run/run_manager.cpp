@@ -158,7 +158,7 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
 
   auto res = (num_channels && !buffer) ? RunState::ERROR : RunState::DONE;
   auto result = run.to(res, actual_op_time_us*1000);
-  if(run.write_run_state_changes)
+  if(run.config.write_run_state_changes)
     state_change_handler->handle(result, run);
 }
 
