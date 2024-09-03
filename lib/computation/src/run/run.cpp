@@ -26,18 +26,25 @@ run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
 
   uint64_t us = 1000, ms = 1'000'000;
 
-  uint64_t ic_time = ic_time_def + ic_time_ns + us*ic_time_us + ms*ic_time_ms;
-  uint64_t op_time = op_time_def + op_time_ns + us*op_time_us + ms*op_time_ms;
+  run::RunConfig run;
 
-  //LOG_MEV("ic_time_ns = %lld, op_time_ns=%lld", ic_time, op_time);
+  run.ic_time = ic_time_def + ic_time_ns + us*ic_time_us + ms*ic_time_ms;
+  run.op_time = op_time_def + op_time_ns + us*op_time_us + ms*op_time_ms;
 
-  return {
-      .ic_time = ic_time,
-      .op_time = op_time,
-      .halt_on_overload = json["halt_on_overload"],
-      .no_streaming = json["no_streaming"],
-      .repetitive = json["repetitive"]
-    };
+  //LOG_MEV("ic_time_ns = %lld, op_time_ns=%lld", run.ic_time, run.op_time);
+
+  // Treat booleans so defaults apply if not given
+
+  run.halt_on_overload = json["halt_on_overload"];
+  run.no_streaming = json["no_streaming"];
+  run.repetitive = json["repetitive"];
+
+  // TODO Make consistent
+
+  if(json.containsKey("write_run_state_changes"))
+    run.write_run_state_changes = json["write_run_state_changes"];
+
+  return run;
 }
 
 run::Run::Run(std::string id, const run::RunConfig &config)

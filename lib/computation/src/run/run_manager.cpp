@@ -115,6 +115,9 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
 
   mode::RealManualControl::enable();
 
+  LOGMEV("IC TIME: %lld", run.config.ic_time);
+  LOGMEV("OP TIME: %lld", run.config.op_time);
+
   mode::RealManualControl::to_ic();
   // 32bit nanosecond delay can sleep maximum 4sec, however
   // an overlap will happen instead.
@@ -151,7 +154,8 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
 
   auto res = (num_channels && !buffer) ? RunState::ERROR : RunState::DONE;
   auto result = run.to(res, actual_op_time_us*1000);
-  state_change_handler->handle(result, run);
+  if(run.write_run_state_changes)
+    state_change_handler->handle(result, run);
 }
 
 void run::RunManager::run_next_flexio(run::Run &run, RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler) {

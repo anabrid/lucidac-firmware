@@ -38,6 +38,7 @@ public:
   bool halt_on_overload = true;              ///< Whether to halt the computation on an overload condition
   bool no_streaming = false;                 ///< Request traditional inexact non-streaming run (Non-FlexIO/DMA)
   bool repetitive = false;                   ///< "Rep-Mode": Start run after it has finished.
+  bool write_run_state_changes = true;       ///< Whether client is interested in run state change messages
 
   static RunConfig from_json(JsonObjectConst &json);
 };
