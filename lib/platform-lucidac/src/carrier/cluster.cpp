@@ -245,6 +245,22 @@ bool platform::Cluster::add_constant(blocks::UBlock::Transmission_Mode signal_ty
   return true;
 }
 
+bool platform::Cluster::route_in_external(uint8_t in, uint8_t i_out) {
+  if (in > 7)
+    return false;
+
+  return iblock->connect(in + 24, i_out);
+}
+
+bool platform::Cluster::route_out_external(uint8_t u_in, uint8_t out, float c_factor) {
+  if (out > 7)
+    return false;
+
+  if (!ublock->connect(u_in, out + 24))
+    return false;
+  return cblock->set_factor(out + 24, c_factor);
+}
+
 void platform::Cluster::reset(bool keep_calibration) {
   for (auto block : get_blocks()) {
     if (block)
