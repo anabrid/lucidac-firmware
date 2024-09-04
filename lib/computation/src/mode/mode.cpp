@@ -82,7 +82,7 @@ void mode::RealManualControl::to_halt() {
 bool mode::FlexIOControl::_is_initialized = false;
 bool mode::FlexIOControl::_is_enabled = false;
 
-bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_time_ns,
+bool mode::FlexIOControl::init(unsigned long long ic_time_ns, unsigned long long op_time_ns,
                                mode::OnOverload on_overload, mode::OnExtHalt on_ext_halt, mode::Sync sync) {
   // Initialize and reset QTMR
   _init_qtmr_op();
@@ -90,11 +90,6 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
 
   // Get FlexIO handler for initialization
   auto flexio = FlexIOHandler::flexIOHandler_list[2];
-
-  // We hardcode timer indices, otherwise we would need to use freeTimers all the time
-  int _t_idx = -1;
-  // TODO: Hand-tune constraints
-  ++_t_idx;
 
   // Set clock settings
   // For (3, 0, 0) the clock frequency is 480'000'000
@@ -108,9 +103,6 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   // Configure sync matcher
   //
 
-  uint8_t t_sync_clk = ++_t_idx;
-  if (t_sync_clk >= 8)
-    return false;
   // Get internal FlexIO pins from external pins
   uint8_t _sck_flex_pin = flexio->mapIOPinToFlexPin(PIN_SYNC_CLK);
   if (_sck_flex_pin == 0xff)
@@ -134,9 +126,6 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   flexio->port().SHIFTBUF[z_sync_match] = 0b01010101'00001111'00000000'00000000;
 
   // Get a timer which is enabled when there is a match
-  auto t_sync_trigger = ++_t_idx;
-  if (t_sync_trigger >= 8)
-    return false;
   // Configure timer
   flexio->port().TIMCTL[t_sync_trigger] =
       FLEXIO_TIMCTL_TRGSEL(4 * z_sync_match + 1) | FLEXIO_TIMCTL_TRGSRC | FLEXIO_TIMCTL_TIMOD(1);
@@ -160,33 +149,65 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   flexio->port().SHIFTCFG[s_idle] = 0;
 
   //
+  //  Configure state check timer
+  //
+
+  // Some states are changed not by timer triggers, but by continuously checking of the inputs
+  // Configure state change check timer as fast as possible
+  flexio->port().TIMCTL[t_state_check] = FLEXIO_TIMCTL_TIMOD(3);
+  flexio->port().TIMCFG[t_state_check] = FLEXIO_TIMCFG_TIMDIS(0) | FLEXIO_TIMCFG_TIMENA(0);
+  flexio->port().TIMCMP[t_state_check] = 0x0000'0001;
+
+  //
   //  Configure IC state
   //
 
-  // Sanity check ic_time_ns, which must be countable by a 16bit timer at CLK_FREQ
-  // TODO: Change IC timer to a two-stage timer like the OP timer to increase maximum IC time
-  if (ic_time_ns < 100 or ic_time_ns >= 270001) {
-    LOG_ERROR("FlexIOControl: Requested ic_time_ns cannot be represented by 16bit.");
+  // Sanity check ic_time_ns
+  if (ic_time_ns < 100 or ic_time_ns >= 9'000'000'000) {
+    LOG_ERROR("FlexIOControl: Requested ic_time_ns cannot be represented by 32bit.");
     return false;
   }
-  // We can change FLEXIO_SHIFTCTL_TIMPOL to only have to divide by 1000, but it does not matter much.
-  uint32_t num_ic_clocks = ic_time_ns * CLK_FREQ_MHz / 2000;
-  // There is a constant delay (1-2 FlexIO cycles) before enabling the timer, which we correct here
-  num_ic_clocks -= 1;
 
-  // Configure state timer
-  auto t_ic = ++_t_idx;
-  if (t_ic >= 8)
-    return false;
-  flexio->port().TIMCTL[t_ic] = FLEXIO_TIMCTL_TRGSEL_STATE(s_ic) | FLEXIO_TIMCTL_TIMOD(3);
-  flexio->port().TIMCFG[t_ic] = FLEXIO_TIMCFG_TIMDIS(6) | FLEXIO_TIMCFG_TIMENA(6);
-  flexio->port().TIMCMP[t_ic] = num_ic_clocks & 0xFFFF;
+  if (ic_time_ns < 0xFFFFull * 1000ull / CLK_FREQ_MHz) {
+    // One 16bit timer is enough actually
+    flexio->port().TIMCTL[t_ic] = FLEXIO_TIMCTL_TRGSEL_STATE(s_ic) | FLEXIO_TIMCTL_TIMOD(3) |
+                                  FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(17);
+    flexio->port().TIMCFG[t_ic] =
+        FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(0b110) | FLEXIO_TIMCFG_TIMENA(6) | FLEXIO_TIMCFG_TIMOUT(1);
+    flexio->port().TIMCMP[t_ic] = ic_time_ns * CLK_FREQ_MHz / 1000;
+
+    // Reset second timer used when going towards higher times
+    flexio->port().TIMCTL[t_ic_second] = 0;
+    flexio->port().TIMCFG[t_ic_second] = 0;
+    flexio->port().TIMCMP[t_ic_second] = 0;
+  } else {
+    // We split counting to two chained timers
+    auto factors = utils::factorize(ic_time_ns * CLK_FREQ_MHz / 1000);
+    if (factors.first >= 1 << 16 ||
+        factors.second >= 1 << 16) // Factror even is too big for two cascaded timers
+      return false;
+
+    // Configure state timer
+    flexio->port().TIMCTL[t_ic] = FLEXIO_TIMCTL_TRGSEL_STATE(s_ic) | FLEXIO_TIMCTL_TIMOD(3) |
+                                  FLEXIO_TIMCTL_PINPOL;
+    flexio->port().TIMCFG[t_ic] = FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(6) | FLEXIO_TIMCFG_TIMENA(6);
+    flexio->port().TIMCMP[t_ic] = factors.first - 1;
+    // Configure second timer
+    flexio->port().TIMCTL[t_ic_second] = FLEXIO_TIMCTL_TRGSEL(4 * t_ic + 3) | FLEXIO_TIMCTL_TRGSRC |
+                                         FLEXIO_TIMCTL_TIMOD(3) | FLEXIO_TIMCTL_PINCFG(3) |
+                                         FLEXIO_TIMCTL_PINSEL(17);
+    flexio->port().TIMCFG[t_ic_second] = FLEXIO_TIMCFG_TIMDEC(1) | FLEXIO_TIMCFG_TIMRST(0) |
+                                         FLEXIO_TIMCFG_TIMDIS(1) | FLEXIO_TIMCFG_TIMENA(1) |
+                                         FLEXIO_TIMCFG_TIMOUT(1);
+    flexio->port().TIMCMP[t_ic_second] = factors.second;
+  }
 
   // Configure state shifter
   flexio->port().SHIFTCTL[s_ic] =
-      FLEXIO_SHIFTCTL_TIMSEL(t_ic) | FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_SMOD_STATE;
+      FLEXIO_SHIFTCTL_TIMSEL(t_state_check) | FLEXIO_SHIFTCTL_PINCFG(3) | FLEXIO_SHIFTCTL_PINSEL(15) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_ic] = 0;
-  flexio->port().SHIFTBUF[s_ic] = FLEXIO_STATE_SHIFTBUF(0b11101111, s_op);
+  flexio->port().SHIFTBUF[s_ic] =
+      FLEXIO_STATE_SHIFTBUF(0b11101111, s_ic, s_ic, s_ic, s_ic, s_op, s_op, s_op, s_op);
 
   //
   // Configure OP state.
@@ -205,19 +226,13 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   // Configure a timer to set an input pin high, signaling end of op_time
   if (op_time_ns < 0xFFFFull * 1000ull / CLK_FREQ_MHz) {
     // One 16bit timer is enough actually
-    auto t_op = ++_t_idx;
-    if (t_op >= 8)
-      return false;
     flexio->port().TIMCTL[t_op] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) |
-                                  FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(12) | FLEXIO_TIMCTL_PINPOL;
+                                  FLEXIO_TIMCTL_PINCFG(3) | FLEXIO_TIMCTL_PINSEL(12);
     flexio->port().TIMCFG[t_op] =
-        FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(0b110) | FLEXIO_TIMCFG_TIMENA(6);
+        FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(0b110) | FLEXIO_TIMCFG_TIMENA(6) | FLEXIO_TIMCFG_TIMOUT(1);
     flexio->port().TIMCMP[t_op] = op_time_ns * CLK_FREQ_MHz / 1000;
 
     // Reset second timer used when going towards higher op_times
-    auto t_op_second = ++_t_idx;
-    if (t_op_second >= 8)
-      return false;
     flexio->port().TIMCTL[t_op_second] = 0;
     flexio->port().TIMCFG[t_op_second] = 0;
     flexio->port().TIMCMP[t_op_second] = 0;
@@ -231,39 +246,22 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
         factors.second >= 1 << 16) // Factror even is too big for two cascaded timers
       return false;
 
-    auto t_op = ++_t_idx;
-    if (t_op >= 8)
-      return false;
     flexio->port().TIMCTL[t_op] =
         FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3) | FLEXIO_TIMCTL_PINPOL;
     flexio->port().TIMCFG[t_op] =
         FLEXIO_TIMCFG_TIMRST(6) | FLEXIO_TIMCFG_TIMDIS(0b110) | FLEXIO_TIMCFG_TIMENA(6);
     flexio->port().TIMCMP[t_op] = factors.first - 1;
     // Configure second timer for 32bit total
-    auto t_op_second = ++_t_idx;
-    if (t_op_second >= 8)
-      return false;
-    // There are constraints when using "when timer N-1 does something"
-    if (t_op_second != t_op + 1 or t_op_second % 4 == 0)
-      return false;
     flexio->port().TIMCTL[t_op_second] = FLEXIO_TIMCTL_TRGSEL(4 * t_op + 3) | FLEXIO_TIMCTL_TRGSRC |
                                          FLEXIO_TIMCTL_TIMOD(3) | FLEXIO_TIMCTL_PINCFG(3) |
-                                         FLEXIO_TIMCTL_PINSEL(12) | FLEXIO_TIMCTL_PINPOL;
+                                         FLEXIO_TIMCTL_PINSEL(12);
     flexio->port().TIMCFG[t_op_second] =
-        FLEXIO_TIMCFG_TIMDEC(1) | FLEXIO_TIMCFG_TIMRST(0) | FLEXIO_TIMCFG_TIMDIS(1) | FLEXIO_TIMCFG_TIMENA(1);
+        FLEXIO_TIMCFG_TIMDEC(1) | FLEXIO_TIMCFG_TIMRST(0) | FLEXIO_TIMCFG_TIMDIS(1) | FLEXIO_TIMCFG_TIMENA(1) | FLEXIO_TIMCFG_TIMOUT(1);
     flexio->port().TIMCMP[t_op_second] = factors.second;
   }
 
-  // Configure state change check timer as fast as possible
-  auto t_check = ++_t_idx;
-  if (t_check >= 8)
-    return false;
-  flexio->port().TIMCTL[t_check] = FLEXIO_TIMCTL_TRGSEL_STATE(s_op) | FLEXIO_TIMCTL_TIMOD(3);
-  flexio->port().TIMCFG[t_check] = FLEXIO_TIMCFG_TIMDIS(0) | FLEXIO_TIMCFG_TIMENA(6);
-  flexio->port().TIMCMP[t_check] = 0x0000'0001;
-
   // Configure state shifter
-  flexio->port().SHIFTCTL[s_op] = FLEXIO_SHIFTCTL_TIMSEL(t_check) | FLEXIO_SHIFTCTL_PINCFG(3) |
+  flexio->port().SHIFTCTL[s_op] = FLEXIO_SHIFTCTL_TIMSEL(t_state_check) | FLEXIO_SHIFTCTL_PINCFG(3) |
                                   FLEXIO_SHIFTCTL_PINSEL(10) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_op] = 0;
   // Next state after OP depends on FlexIO inputs 10 (0 if overload), 11 (0 if exthalt), 12 (1 if op time over)
@@ -288,7 +286,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
     next_if_overload_and_exthalt = s_overload;
     break;
   }
-  flexio->port().SHIFTBUF[s_op] = FLEXIO_STATE_SHIFTBUF(0b11011111,                   // Inputs [11-10-9]
+  flexio->port().SHIFTBUF[s_op] = FLEXIO_STATE_SHIFTBUF(0b11011111,                   // Inputs [12-11-10]
                                                         next_if_overload_and_exthalt, // [0-0-0] = [t-E-O]
                                                         next_if_exthalt,              // [0-0-1] = [t-E-o]
                                                         next_if_overload,             // [0-1-0] = [t-e-O]
@@ -325,7 +323,7 @@ bool mode::FlexIOControl::init(unsigned int ic_time_ns, unsigned long long op_ti
   // This can be solved similarly to the ADC by gating a timer with the OP signal,
   // but that requires additional connections on the PCB.
   // For all currently envisioned EXT HALT applications (e.g. control-systems), this is okay.
-  flexio->port().SHIFTCTL[s_exthalt] = FLEXIO_SHIFTCTL_TIMSEL(t_check) | FLEXIO_SHIFTCTL_PINCFG(3) |
+  flexio->port().SHIFTCTL[s_exthalt] = FLEXIO_SHIFTCTL_TIMSEL(t_state_check) | FLEXIO_SHIFTCTL_PINCFG(3) |
                                        FLEXIO_SHIFTCTL_PINSEL(10) | FLEXIO_SHIFTCTL_SMOD_STATE;
   flexio->port().SHIFTCFG[s_exthalt] = 0;
   // When selecting next state based on inputs [12-11-10], ignore anything but EXT HALT (11).
