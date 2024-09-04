@@ -22,31 +22,38 @@ void run::RunManager::run_next(
     client::StreamingRunDataNotificationHandler *alt_run_data_handler) {
   // TODO: Improve handling of queue, especially the queue.pop() later.
   auto run = queue.front();
-  if(run.config.no_streaming)
-    run_next_traditional(run, state_change_handler, run_data_handler, alt_run_data_handler);
-  else
+  if(run.config.streaming)
     run_next_flexio(run, state_change_handler, run_data_handler);
-  queue.pop();
+  else
+    run_next_traditional(run, state_change_handler, run_data_handler, alt_run_data_handler);
+
+  if(!run.config.repetitive)
+    queue.pop();
 }
 
 void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler, client::StreamingRunDataNotificationHandler *alt_run_data_handler) {
   //run_data_handler->prepare(run);
 
   daq::OneshotDAQ daq;
-  daq.init(0);
 
-  // measure how long an single ADC sampling takes with the current implementation.
-  // This is right now around 15us.
-  elapsedMicros sampling_time_us_counter; // class from teensy elpasedMillis.h
-  daq.sample_raw();
-  uint32_t sampling_time_us = sampling_time_us_counter;
-  // TODO: There is a slight dither around 15us -- 16us, could do the averaging call to
-  //       improve the statistics.
 
   // here, one sample is one data aquisition which always yields all channels.
   constexpr uint32_t max_num_samples = 16'384;
   const int num_channels = run.daq_config.get_num_channels();
   const uint32_t optime_us = run.config.op_time / 1000;
+
+  uint32_t sampling_time_us = 0;
+  if(num_channels) {
+    daq.init(0);
+
+    // measure how long an single ADC sampling takes with the current implementation.
+    // This is right now around 15us.
+    elapsedMicros sampling_time_us_counter; // class from teensy elpasedMillis.h
+    daq.sample_raw();
+    sampling_time_us = sampling_time_us_counter;
+    // TODO: There is a slight dither around 15us -- 16us, could do the averaging call to
+    //       improve the statistics.
+  }
 
   /*
     The guiding principle of the following math is this:
@@ -87,7 +94,8 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
   if(num_samples > max_num_samples) num_samples = max_num_samples;
 
   const int num_buffer_entries = num_samples * num_channels;
-  LOGMEV("optime_us=%d, sampling_time_us=%d, sampling_sleep_us=%d, num_samples=%d, num_channels=%d", optime_us, sampling_time_us, sampling_sleep_us, num_samples, num_channels);
+  if(num_channels)
+    LOGMEV("optime_us=%d, sampling_time_us=%d, sampling_sleep_us=%d, num_samples=%d, num_channels=%d", optime_us, sampling_time_us, sampling_sleep_us, num_samples, num_channels);
 
   // just to be able to use daq.sample_raw(uint16_t*) instead of copying over to an intermediate buffer
   // of size std::vector, we add a bit safety padding to the right for the last datum obtained.
@@ -96,15 +104,29 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
 
   // we use malloc because new[] raises an exception if allocation fails but we cannot catch it with -fno-exception.
   // we don't use the stack because we expect the heap to have more memory left...
-  auto buffer = (uint16_t*) malloc((num_buffer_entries + padding) * sizeof(uint16_t));
-  if(!buffer) {
-    LOG_ERROR("Could not allocated a large run buffer for a traditional Run.");
+  uint16_t *buffer = nullptr;
+  if(num_channels) {
+    // allocate only if any data aquisition was asked for
+    buffer = (uint16_t*) malloc((num_buffer_entries + padding) * sizeof(uint16_t));
+    if(!buffer) {
+      LOG_ERROR("Could not allocated a large run buffer for a traditional Run.");
+    }
   }
 
   mode::RealManualControl::enable();
 
+  LOGMEV("IC TIME: %lld", run.config.ic_time);
+  LOGMEV("OP TIME: %lld", run.config.op_time);
+
   mode::RealManualControl::to_ic();
-  delayNanoseconds(run.config.ic_time);
+  // 32bit nanosecond delay can sleep maximum 4sec, however
+  // an overlap will happen instead.
+  if(run.config.ic_time > 100'000'000) // 100ms
+    delay(run.config.ic_time / 1'000'000); // milisecond resolution sleep
+  else if(run.config.ic_time > 65'000) // 16bit nanoseconds
+    delayMicroseconds(run.config.ic_time / 1000);
+  else
+    delayNanoseconds(run.config.ic_time);
   mode::RealManualControl::to_op();
   elapsedMicros actual_op_time_timer;
 
@@ -118,27 +140,26 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
     if(optime_left_us)
       delayMicroseconds(optime_left_us);
   } else {
-    delayMicroseconds(optime_us);
+    if(run.config.op_time > 100'000'000) // 100ms
+      delay(run.config.op_time / 1'000'000); // millisecond resolution sleep
+    else if(run.config.op_time > 65'000) // 16bit nanoseconds
+      delayMicroseconds(run.config.op_time / 1000);
+    else
+      delayNanoseconds(run.config.op_time);
   }
 
   uint32_t actual_op_time_us = actual_op_time_timer;
   mode::RealManualControl::to_halt();
-  RunState res;
   
   if(buffer) {
-    LOG_ALWAYS("RunDataHandler");
     alt_run_data_handler->handle(buffer, num_samples, num_channels, run);
-    LOG_ALWAYS("Free");
     free(buffer);
-    res = RunState::DONE;
-  } else {
-    res = RunState::ERROR;
   }
-  
+
+  auto res = (num_channels && !buffer) ? RunState::ERROR : RunState::DONE;
   auto result = run.to(res, actual_op_time_us*1000);
-  LOG_ALWAYS("StateChangeHandler");
-  state_change_handler->handle(result, run);
-  LOG_ALWAYS("Return");
+  if(run.config.write_run_state_changes)
+    state_change_handler->handle(result, run);
 }
 
 void run::RunManager::run_next_flexio(run::Run &run, RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler) {
@@ -207,6 +228,12 @@ void run::RunManager::run_next_flexio(run::Run &run, RunStateChangeHandler *stat
 int run::RunManager::start_run(JsonObjectConst msg_in, JsonObject &msg_out) {
   if (!msg_in.containsKey("id") or !msg_in["id"].is<std::string>())
     return 1;
+
+  // Cancel any runs if instruction is given
+  if(msg_in.containsKey("end_repetitive") && msg_in["end_repetitive"].as<bool>()) {
+    end_repetitive_runs();
+  }
+
   // Create run and put it into queue
   auto run = run::Run::from_json(msg_in);
   queue.push(std::move(run));

@@ -37,7 +37,7 @@ public:
   DynamicJsonDocument *envelope_in, *envelope_out;
   utils::PrintMultiplexer broadcast;
 
-  JsonLinesProtocol() { broadcast.add(&Serial); }
+  JsonLinesProtocol() { broadcast.add_Serial(); }
 
   void init(size_t envelope_size); ///< Allocates storage
   static JsonLinesProtocol &get(); ///< Singleton

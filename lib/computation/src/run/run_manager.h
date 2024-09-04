@@ -27,6 +27,15 @@ public:
 
   static RunManager &get() { return _instance; }
 
+  /// Returns true on success
+  bool end_repetitive_runs() {
+    if (!queue.empty()) {
+      queue.front().config.repetitive = false;
+      return true;
+    }
+    return false;
+  }
+
   void run_next(
     run::RunStateChangeHandler *state_change_handler,
     run::RunDataHandler *run_data_handler,
