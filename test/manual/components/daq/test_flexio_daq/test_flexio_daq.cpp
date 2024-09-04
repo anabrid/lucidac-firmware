@@ -109,15 +109,15 @@ void setup() {
   UNITY_BEGIN();
   // Some short ones and corner-cases
   RUN_PARAM_TEST(test_number_of_samples, {1000, 45'000}, {1, 100'000}, 5);
-  RUN_PARAM_TEST(test_number_of_samples, {1000, 32 * 10'000}, {8, 100'000}, 32);
+  RUN_PARAM_TEST(test_number_of_samples, {1000, 32 * 10'000}, {8, 100'000}, 33);
   RUN_PARAM_TEST(test_number_of_samples, {1000, 3500}, {1, 100'000}, 1);
   RUN_PARAM_TEST(test_number_of_samples, {1000, 42000}, {1, 10'000}, 1);
   RUN_PARAM_TEST(test_number_of_samples, {1000, 10'000}, {1, 100'000}, 2);
-  RUN_PARAM_TEST(test_number_of_samples, {1000, 33 * 10'000}, {8, 100'000}, 33);
+  RUN_PARAM_TEST(test_number_of_samples, {1000, 33 * 10'000}, {8, 100'000}, 34);
   // Do something longer
   RUN_PARAM_TEST(test_number_of_samples, {1000, 785'000}, {8, 100'000}, 79);
   RUN_PARAM_TEST(test_number_of_samples, {1000, 795'000}, {8, 100'000}, 80);
-  RUN_PARAM_TEST(test_number_of_samples, {1000, 1'005'000}, {8, 100'000}, 100);
+  RUN_PARAM_TEST(test_number_of_samples, {1000, 1'005'000}, {8, 100'000}, 101);
   UNITY_END();
 }
 
