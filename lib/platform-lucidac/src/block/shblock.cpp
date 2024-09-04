@@ -9,9 +9,39 @@ blocks::SHBlock::SHBlock(const bus::addr_t block_address) : FunctionBlock("SH", 
 
 blocks::SHBlock::SHBlock() : SHBlock(bus::BLOCK_BADDR(0, bus::SH_BLOCK_IDX)) {}
 
-utils::status blocks::SHBlock::config_self_from_json(JsonObjectConst cfg) { return utils::status("SHBlock does not accept configuration"); }
+void blocks::SHBlock::set_state(State state_) { state = state_; }
 
-bool blocks::SHBlock::write_to_hardware() { return true; }
+blocks::SHBlock::State blocks::SHBlock::get_state() const { return state; }
+
+void blocks::SHBlock::reset(const bool keep_offsets) { state = State::TRACK; }
+
+bool blocks::SHBlock::write_to_hardware() {
+  if (state == State::TRACK)
+    set_track.trigger();
+  else if (state == State::INJECT)
+    set_inject.trigger();
+  else if (state == State::GAIN_ZERO_TO_SEVEN) {
+    set_gain.trigger();
+    set_gain_channels_zero_to_seven.trigger();
+  } else if (state == State::GAIN_EIGHT_TO_FIFTEEN) {
+    set_gain.trigger();
+    set_gain_channels_eight_to_fifteen.trigger();
+  }
+
+  return true;
+}
+
+void blocks::SHBlock::compensate_hardware_offsets(uint32_t track_time, uint32_t inject_time) {
+  set_track.trigger();
+  delayMicroseconds(track_time);
+  set_inject.trigger();
+  delayMicroseconds(inject_time);
+  state = State::INJECT;
+}
+
+utils::status blocks::SHBlock::config_self_from_json(JsonObjectConst cfg) {
+  return utils::status("SHBlock does not accept configuration");
+}
 
 blocks::SHBlock *blocks::SHBlock::from_entity_classifier(entities::EntityClassifier classifier,
                                                          bus::addr_t block_address) {
@@ -27,24 +57,4 @@ blocks::SHBlock *blocks::SHBlock::from_entity_classifier(entities::EntityClassif
   if (classifier.version < entities::Version(0, 2))
     return new SHBlock(block_address);
   return nullptr;
-}
-
-void blocks::SHBlock::compensate_hardware_offsets() {
-  set_track.trigger();
-  delay(10);
-  set_inject.trigger();
-  delay(5);
-}
-
-void blocks::SHBlock::to_gain(blocks::SHBlock::GainChannels channels) {
-  state = State::GAIN;
-  set_gain.trigger();
-  switch (channels) {
-  case GainChannels::ZERO_TO_SEVEN:
-    set_gain_channels_zero_to_seven.trigger();
-    break;
-  case GainChannels::EIGHT_TO_FIFTEEN:
-    set_gain_channels_eight_to_fifteen.trigger();
-    break;
-  }
 }

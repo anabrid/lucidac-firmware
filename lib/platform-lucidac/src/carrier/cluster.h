@@ -14,7 +14,7 @@ namespace platform {
  * The Lucidac class represents a single cluster. A cluster holds a number of
  * "blocks" (also refered to as DIMM modules) where the interconnection matrix
  * is composed by the U/C/I blocks and the computing elements by the M blocks.
- * 
+ *
  * \ingroup Singletons
  **/
 class Cluster : public entities::Entity {
@@ -73,6 +73,12 @@ public:
 
   bool add_constant(blocks::UBlock::Transmission_Mode signal_type, uint8_t u_out, float c_factor,
                     uint8_t i_out);
+
+  //! Allows to route in an external signal from the lucidac front panel. input can be between 0 - 7
+  bool route_in_external(uint8_t input, uint8_t i_out);
+  //! Allows to route an signal to the external outputs on the lucidac front panel. output can be between 0
+  //! - 7. C block scales to 0.5 on default, to ensure the output signals are in the default -1V to 1V range.
+  bool route_out_external(uint8_t u_in, uint8_t output, float c_factor = 0.5f);
 
   void reset(bool keep_calibration);
 

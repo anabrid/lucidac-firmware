@@ -176,6 +176,8 @@ int platform::LUCIDACFrontPanel::SignalGenerator::write_to_hardware() {
     return -5;
   if (!digital_analog_converter.set_channel(DAC_OUT1_CH, _map_dac_levelshift(_dac_out1)))
     return -6;
+
+  delay(50);
   return true;
 }
 
@@ -204,11 +206,11 @@ utils::status platform::LUCIDACFrontPanel::config_self_from_json(JsonObjectConst
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "leds") {
       auto res = _config_leds_from_json(cfgItr->value());
-      if(!res)
+      if (!res)
         return res;
     } else if (cfgItr->key() == "signal_generator") {
-      auto res =_config_signal_generator_from_json(cfgItr->value());
-      if(!res)
+      auto res = _config_signal_generator_from_json(cfgItr->value());
+      if (!res)
         return res;
     } else {
       return utils::status("LUCIDACFrontPanel: Unknown configuration key");

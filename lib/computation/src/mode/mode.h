@@ -8,6 +8,8 @@
 #include <array>
 #include <cstdint>
 
+#include "utils/helpers.h"
+
 namespace mode {
 
 constexpr uint8_t PIN_MODE_IC = 40;       // FlexIO 3:4
@@ -68,8 +70,22 @@ public:
 class FlexIOControl {
 private:
   static constexpr uint8_t CLK_SEL = 3, CLK_PRED = 0, CLK_PODF = 0;
+  // Hand-tuned assignments of shifters/states
   static constexpr uint8_t s_idle = 0, s_ic = 1, s_op = 2, s_exthalt = 3, s_end = 4, s_overload = 5,
                            z_sync_match = 7;
+  // Hand-tuned assignments of timers
+  static constexpr uint8_t t_sync_clk = 0, t_sync_trigger = 1, t_ic = 2, t_ic_second = 3, t_op = 4, t_op_second = 5, t_state_check = 6;
+  // Check constraints just to be safe
+  static_assert(t_sync_clk <= 7 and t_sync_trigger <= 7 and t_ic <= 7 and t_op <= 7 and t_op_second <= 7 and
+                    t_state_check <= 7,
+                "Timer index out of range.");
+  static_assert(all_unique(std::make_tuple(t_sync_clk, t_sync_trigger, t_ic, t_ic_second, t_op, t_op_second,
+                                           t_state_check)),
+                "All values must be unique.");
+  static_assert(t_op_second == t_op + 1 and t_op_second % 4,
+                "Chained timers must have consecutive indices, but not 3->4.");
+  static_assert(t_ic_second == t_ic + 1 and t_ic_second % 4,
+                "Chained timers must have consecutive indices, but not 3->4.");
 
   static constexpr std::array<uint8_t, 6> get_states() {
     return {s_idle, s_ic, s_op, s_exthalt, s_end, s_overload};
@@ -110,7 +126,7 @@ private:
   static bool _is_initialized, _is_enabled;
 
 public:
-  static bool init(unsigned int ic_time_ns, unsigned long long op_time_ns,
+  static bool init(unsigned long long ic_time_ns, unsigned long long op_time_ns,
                    mode::OnOverload on_overload = mode::OnOverload::HALT,
                    mode::OnExtHalt on_ext_halt = mode::OnExtHalt::IGNORE,
                    mode::Sync sync = mode::Sync::NONE);
