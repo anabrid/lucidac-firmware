@@ -91,7 +91,7 @@ public:
   utils::status config_self_from_json(JsonObjectConst cfg) override;
   void config_self_to_json(JsonObject &cfg) override;
 
-  // TODO TODO THIS CANNOT WORK. this is NOT a proper override!  
+  // TODO TODO THIS CANNOT WORK. this is NOT a proper override!
   // Error codes:
   // -1 Cluster write failed
   // -2 CTRL Block write failed
@@ -104,6 +104,8 @@ public:
   void set_acl_select(const std::array<ACL, 8> &acl_select_);
   [[nodiscard]] bool set_acl_select(uint8_t idx, ACL acl);
   void reset_acl_select();
+
+  bool calibrate_routes(daq::BaseDAQ *daq_) override;
 };
 
 } // namespace platform

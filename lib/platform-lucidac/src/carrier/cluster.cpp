@@ -118,6 +118,11 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
       if (!iblock->is_connected(i_in_idx, i_out_idx))
         continue;
 
+      // If we don't have a complete connection through the u block, we don't need / we can't calibrate this
+      // route from here
+      if (!ublock->is_output_connected(i_in_idx))
+        continue;
+
       LOG_ANABRID_DEBUG_CALIBRATION("Calibrating connection: ");
       LOG_ANABRID_DEBUG_CALIBRATION(i_in_idx);
       LOG_ANABRID_DEBUG_CALIBRATION(i_out_idx);

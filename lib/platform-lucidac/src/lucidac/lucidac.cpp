@@ -127,6 +127,19 @@ bool LUCIDAC::set_acl_select(uint8_t idx, LUCIDAC::ACL acl) {
 
 void LUCIDAC::reset_acl_select() { std::fill(acl_select.begin(), acl_select.end(), ACL::INTERNAL_); }
 
+bool LUCIDAC::calibrate_routes(daq::BaseDAQ *daq_) {
+  auto old_acl_selection = get_acl_select();
+  reset_acl_select();
+  if (!hardware->write_acl(acl_select))
+    return false;
+
+  if (!Carrier::calibrate_routes(daq_))
+    return false;
+
+  set_acl_select(old_acl_selection);
+  return hardware->write_acl(acl_select);
+}
+
 int LUCIDAC::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
   auto carrier_res = this->carrier::Carrier::get_entities(msg_in, msg_out);
   if (carrier_res != 0)
@@ -140,17 +153,20 @@ int LUCIDAC::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
 
 utils::status platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
   auto res = this->carrier::Carrier::config_self_from_json(cfg);
-  if(!res) return res;
+  if (!res)
+    return res;
 
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "adc_channels") {
       auto res = _config_adc_from_json(cfgItr->value());
-      if(!res) return res;
+      if (!res)
+        return res;
     } else if (cfgItr->key() == "acl_select") {
       auto res = _config_acl_from_json(cfgItr->value());
-      if(!res) return res;
-    } else if(strlen(cfgItr->key().c_str()) >= 1 && cfgItr->key().c_str()[0] == '/') {
-      // An sub-entity is refered to. This is already handled by 
+      if (!res)
+        return res;
+    } else if (strlen(cfgItr->key().c_str()) >= 1 && cfgItr->key().c_str()[0] == '/') {
+      // An sub-entity is refered to. This is already handled by
       // config_from_json() towards the children so it is ignored here.
     } else {
       return utils::status("LUCIDAC: Unknown configuration key");
@@ -197,7 +213,7 @@ void platform::LUCIDAC::config_self_to_json(JsonObject &cfg) {
   auto cfg_acl_select = cfg.createNestedArray("acl_select");
 
   for (size_t i = 0; i < adc_channels.size(); i++) {
-    if(adc_channels[i] == ADC_CHANNEL_DISABLED) 
+    if (adc_channels[i] == ADC_CHANNEL_DISABLED)
       cfg_adc_channels.add(nullptr); // json "none"
     else
       cfg_adc_channels.add(adc_channels[i]);
