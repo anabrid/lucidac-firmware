@@ -23,8 +23,8 @@ bool extra_logs = false;
 const float target_precision = 0.01f; // Replace with something from test_common.h
 
 // This test case is doing some double integration of a constant, which yields a parabola. Currently there
-// isn't much variety or automation, but this is planned, once FlexIO allows for IC setting in slow integration
-// mode Currently this only tests the M0 slot
+// isn't much variety or automation.
+// You can also test an multiplication block with this testcase without any changes to the code.
 
 using namespace platform;
 using namespace blocks;
@@ -69,12 +69,18 @@ void setup_and_measure() {
 
   auto int_block = static_cast<MIntBlock *>(cluster.m0block);
 
-  TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, 0, 0.1f, 0));
-  TEST_ASSERT(cluster.route(0, 24, 0.5f, 2));
-  TEST_ASSERT(cluster.route(2, 25, 1.0f, 1)); // just for measurement
+  TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, 0, 0.5f, 0)); // This creates y = -1/2*x
+  TEST_ASSERT(cluster.route(0, 24, 1.0f, 2));
+  TEST_ASSERT(cluster.route(2, 25, 1.0f, 1)); // just for measurement of int block
+
+  TEST_ASSERT(cluster.route(0, 26, 1.0f, 8)); // Mul x0
+  TEST_ASSERT(cluster.route(0, 27, 1.0f, 9)); // Mul y0
+
+  TEST_ASSERT(cluster.route(8, 28, 1.0f, 3)); // just for measurement of mul block
 
   TEST_ASSERT(int_block->set_time_factors(10000));
-  TEST_ASSERT(int_block->set_ic_values(0.0f));
+  TEST_ASSERT(int_block->set_ic_value(0, -1.0f));
+  TEST_ASSERT(int_block->set_ic_value(2, -1.0f));
 
   TEST_ASSERT(carrier_.write_to_hardware());
 
@@ -91,8 +97,8 @@ void setup_and_measure() {
   TEST_ASSERT(carrier_.write_to_hardware());
 
   // Measure end value
-  TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, 1'000'000, mode::OnOverload::IGNORE,
-                                  mode::OnExtHalt::IGNORE));
+  TEST_ASSERT(
+      FlexIOControl::init(mode::DEFAULT_IC_TIME, 4'00'000, mode::OnOverload::IGNORE, mode::OnExtHalt::IGNORE));
   FlexIOControl::force_start();
   while (!FlexIOControl::is_done()) {
   }

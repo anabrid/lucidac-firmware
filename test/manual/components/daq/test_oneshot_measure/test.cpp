@@ -26,14 +26,9 @@ void init() {
   TEST_ASSERT(lucidac_.init());
   Serial.println("Starting: ");
 
-  cluster.shblock->set_track.trigger();
-  delay(100);
-  cluster.shblock->set_inject.trigger();
-  delay(100);
+  cluster.shblock->compensate_hardware_offsets();
 
-  cluster.shblock->set_gain_channels_zero_to_seven.trigger();
-
-  cluster.shblock->set_gain.trigger();
+  cluster.shblock->set_state(SHBlock::State::GAIN_ZERO_TO_SEVEN);
 
   TEST_ASSERT(cluster.ublock->connect_alternative(UBlock::Transmission_Mode::POS_REF, 0));
   TEST_ASSERT(cluster.cblock->set_factor(0, 0.0f));

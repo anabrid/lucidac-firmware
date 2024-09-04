@@ -29,9 +29,7 @@ void tearDown() {
 }
 
 void test() {
-  cluster.shblock->set_track.trigger();
-  delay(100);
-  cluster.shblock->set_inject.trigger();
+  cluster.shblock->compensate_hardware_offsets();
 
   for (int i = 0; i < 32; i++) {
     TEST_ASSERT(cluster.ublock->connect_alternative(UBlock::Transmission_Mode::POS_REF, i));

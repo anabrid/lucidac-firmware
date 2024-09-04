@@ -68,7 +68,8 @@ void setup() {
   UNITY_BEGIN();
   RUN_TEST(configure_ublock);
   RUN_TEST(configure_iblock);
-  shblock.set_track.trigger();
+  shblock.set_state(SHBlock::State::TRACK);
+  shblock.write_to_hardware();
   UNITY_END();
 }
 
@@ -118,14 +119,15 @@ void writeTestValue() {
 }
 
 void enterTrackMode() {
-  shblock.set_track.trigger();
-
+  shblock.set_state(SHBlock::State::TRACK);
+  shblock.write_to_hardware();
   // MIN 1sec
   delay(1000);
 }
 
 void enterInjectMode() {
-  shblock.set_inject.trigger();
+  shblock.set_state(SHBlock::State::INJECT);
+  shblock.write_to_hardware();
 
   delay(10);
 }

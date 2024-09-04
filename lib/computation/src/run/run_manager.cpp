@@ -22,10 +22,10 @@ void run::RunManager::run_next(
     client::StreamingRunDataNotificationHandler *alt_run_data_handler) {
   // TODO: Improve handling of queue, especially the queue.pop() later.
   auto run = queue.front();
-  if(run.config.no_streaming)
-    run_next_traditional(run, state_change_handler, run_data_handler, alt_run_data_handler);
-  else
+  if(run.config.streaming)
     run_next_flexio(run, state_change_handler, run_data_handler);
+  else
+    run_next_traditional(run, state_change_handler, run_data_handler, alt_run_data_handler);
 
   if(!run.config.repetitive)
     queue.pop();
@@ -228,6 +228,12 @@ void run::RunManager::run_next_flexio(run::Run &run, RunStateChangeHandler *stat
 int run::RunManager::start_run(JsonObjectConst msg_in, JsonObject &msg_out) {
   if (!msg_in.containsKey("id") or !msg_in["id"].is<std::string>())
     return 1;
+
+  // Cancel any runs if instruction is given
+  if(msg_in.containsKey("end_repetitive") && msg_in["end_repetitive"].as<bool>()) {
+    end_repetitive_runs();
+  }
+
   // Create run and put it into queue
   auto run = run::Run::from_json(msg_in);
   queue.push(std::move(run));

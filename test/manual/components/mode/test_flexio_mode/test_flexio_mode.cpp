@@ -3,11 +3,13 @@
 //
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
+#include "test_parametrized.h"
 #include <Arduino.h>
 #include <SPI.h>
 #include <unity.h>
 
 #include "io/io.h"
+#include "protocol/jsonl_logging.h"
 
 #define protected public
 #define private public
@@ -51,7 +53,7 @@ void test_limits() {
       FlexIOControl::init(mode::DEFAULT_IC_TIME, 99, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE));
   // Too long
   TEST_ASSERT_FALSE(
-      FlexIOControl::init(275'000, mode::DEFAULT_OP_TIME, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE));
+      FlexIOControl::init(9'000'000'000, mode::DEFAULT_OP_TIME, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE));
   TEST_ASSERT_FALSE(FlexIOControl::init(mode::DEFAULT_IC_TIME, 9'000'000'000, mode::OnOverload::HALT,
                                         mode::OnExtHalt::IGNORE));
 }
@@ -59,6 +61,7 @@ void test_limits() {
 void test_simple_run() {
   TEST_ASSERT(
       FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE));
+  delayMicroseconds(10);
   FlexIOControl::force_start();
   while (!FlexIOControl::is_done()) {
   }
@@ -68,6 +71,7 @@ void test_simple_run() {
 void test_overload() {
   TEST_ASSERT(
       FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE));
+  delayMicroseconds(10);
   FlexIOControl::force_start();
 
   // Trigger a fake overload after some time in OP
@@ -85,12 +89,14 @@ void test_overload() {
 void test_exthalt() {
   TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000, mode::OnOverload::HALT,
                                   mode::OnExtHalt::PAUSE_THEN_RESTART));
+  delayMicroseconds(10);
   FlexIOControl::force_start();
 
   // Trigger an external halt after some time in OP.
   // EXT HALT is currently implemented as a faulty pause state.
   // Meaning it moves back into OP once EXT HALT is inactive,
   // but it resets the OP timer and thus stays in OP longer.
+  // TODO: Actually fixing this should just require changing FLEXIO_TIMCFG_TIMRST in TIMCFG of t_op timers.
   delayMicroseconds(200);
   digitalWriteFast(FAKE_EXTHALT_PIN, LOW);
   delayMicroseconds(1);
@@ -107,40 +113,47 @@ void test_exthalt() {
   TEST_ASSERT_FALSE(FlexIOControl::is_overloaded());
 }
 
-void test_approximate_run_time() {
-  for (auto op_time_ns :
-       {1'000'000ull, 500'000ull, 400'000ull, 300'000ull, 200'000ull, 100'000ull, 90'000ull, 80'000ull,
-        70'000ull,    60'000ull,  50'000ull,  40'000ull,  30'000ull,  20'000ull,  10'000ull, 9'000ull,
-        8'000ull,     7'000ull,   6'000ull,   5'000ull,   4'000ull,   3'000ull,   2'000ull,  1'000ull}) {
-    FlexIOControl::reset();
-    TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, op_time_ns, mode::OnOverload::HALT,
-                                    mode::OnExtHalt::IGNORE, Sync::MASTER));
-    delayMicroseconds(1);
+void test_approximate_run_time(mode::time_ns_t ic_time_ns, mode::time_ns_t op_time_ns) {
+  FlexIOControl::reset();
+  TEST_ASSERT(FlexIOControl::init(ic_time_ns, op_time_ns, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE,
+                                  Sync::MASTER));
+  delayMicroseconds(10);
 
-    auto t_start = micros();
-    FlexIOControl::force_start();
-    while (!FlexIOControl::is_done()) {
-    }
-    auto t_end = micros();
-    delayMicroseconds(1);
-    TEST_ASSERT_FALSE(FlexIOControl::is_overloaded());
-    TEST_ASSERT_FALSE(FlexIOControl::is_exthalt());
-
-    if (t_end < t_start)
-      TEST_FAIL_MESSAGE("micros timer overflow, just rerun :)");
-    TEST_ASSERT_UINT_WITHIN(10, (mode::DEFAULT_IC_TIME + op_time_ns) / 1000, t_end - t_start);
+  auto t_start = micros();
+  FlexIOControl::force_start();
+  delayMicroseconds(1);
+  while (!FlexIOControl::is_done()) {
   }
+  auto t_end = micros();
+  delayMicroseconds(1);
+  TEST_ASSERT_FALSE(FlexIOControl::is_overloaded());
+  TEST_ASSERT_FALSE(FlexIOControl::is_exthalt());
+
+  if (t_end < t_start)
+    TEST_FAIL_MESSAGE("micros timer overflow, just rerun :)");
+  TEST_ASSERT_UINT_WITHIN(10, (ic_time_ns + op_time_ns) / 1000, t_end - t_start);
 }
 
 void test_sync_master() {
+  //  !!!!!!!!!!!!
+  //   !!      !!
+  //    !!    !!
+  //     !!  !!
+  //      !!!!
+  //
+  //      !!!!
+  //      !!!!
+  //
+  // WARNING: This test case expects a manual connection of SPI outputs to SYNC inputs
+  //  SPI CLK pin 27 -> PIN_SYNC_CLK = 22
+  //  SPI MOSI pin 26 -> PIN_SYNC_ID = 23
+
   SPI1.begin();
   SPI1.beginTransaction(SPISettings(4'000'000, MSBFIRST, SPI_MODE0));
 
-  TEST_ASSERT(
-      FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE));
-
-  TEST_MESSAGE("Press button to trigger state machine.");
-  io::block_until_button_press();
+  TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, 200'000, mode::OnOverload::HALT,
+                                  mode::OnExtHalt::IGNORE, mode::Sync::MASTER));
+  delayMicroseconds(10);
 
   // Send 16 zeros, which should trigger nothing
   SPI1.transfer16(0b00000000'00000000);
@@ -165,6 +178,7 @@ void test_sync_slave() {
 }
 
 void setup() {
+  msg::activate_serial_log();
   io::init();
 
   // We use some pins as test/trigger signals in this test
@@ -178,7 +192,36 @@ void setup() {
   UNITY_BEGIN();
   RUN_TEST(test_limits);
   RUN_TEST(test_simple_run);
-  RUN_TEST(test_approximate_run_time);
+  RUN_PARAM_TEST(test_approximate_run_time, 1'000, 1'000'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 501'000, 500'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 601'000, 400'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 701'000, 300'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 801'000, 200'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 901'000, 100'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 911'000, 90'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 921'000, 80'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 931'000, 70'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 941'000, 60'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 951'000, 50'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 961'000, 40'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 971'000, 31'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 981'000, 20'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 991'000, 10'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 992'000, 9'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 993'000, 8'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 994'000, 7'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 995'000, 6'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 996'000, 5'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 997'000, 4'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 998'000, 3'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 999'000, 2'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 1'000'000, 1'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 2'000, 10'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 5'000, 10'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 50'000, 10'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 100'000, 10'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 200'000, 10'000);
+  RUN_PARAM_TEST(test_approximate_run_time, 300'000, 10'000);
   RUN_TEST(test_exthalt);
   RUN_TEST(test_overload);
   // RUN_TEST(test_sync_master);

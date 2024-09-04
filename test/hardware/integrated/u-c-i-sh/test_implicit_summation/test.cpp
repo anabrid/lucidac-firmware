@@ -67,8 +67,7 @@ void test_finished_summation(float x, float y) {
   // Correct offset
   cluster.calibrate_offsets();
 
-  cluster.shblock->set_gain.trigger();
-  cluster.shblock->set_gain_channels_zero_to_seven.trigger();
+  cluster.shblock->set_state(SHBlock::State::GAIN_ZERO_TO_SEVEN);
 
   TEST_ASSERT(carrier_.write_to_hardware());
 
@@ -97,8 +96,7 @@ void test_summation() {
   cluster.calibrate_offsets();
 
   // Correct gain
-  cluster.shblock->set_gain.trigger();
-  cluster.shblock->set_gain_channels_zero_to_seven.trigger();
+  cluster.shblock->set_state(SHBlock::State::GAIN_ZERO_TO_SEVEN);
 
   TEST_ASSERT(carrier_.write_to_hardware());
 
@@ -130,8 +128,7 @@ void test_summation() {
   cluster.calibrate_offsets();
 
   // Correct gain
-  cluster.shblock->set_gain.trigger();
-  cluster.shblock->set_gain_channels_zero_to_seven.trigger();
+  cluster.shblock->set_state(SHBlock::State::GAIN_ZERO_TO_SEVEN);
 
   TEST_ASSERT(carrier_.write_to_hardware());
 
