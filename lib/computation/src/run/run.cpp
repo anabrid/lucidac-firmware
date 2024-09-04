@@ -33,13 +33,14 @@ run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
 
   //LOG_MEV("ic_time_ns = %lld, op_time_ns=%lld", run.ic_time, run.op_time);
 
-  // Treat booleans so defaults apply if not given
+  if(json.containsKey("halt_on_overload"))
+    run.halt_on_overload = json["halt_on_overload"];
 
-  run.halt_on_overload = json["halt_on_overload"];
-  run.no_streaming = json["no_streaming"];
-  run.repetitive = json["repetitive"];
+  if(json.containsKey("streaming"))
+    run.streaming = json["streaming"];
 
-  // TODO Make consistent
+  if(json.containsKey("repetitive"))
+    run.repetitive = json["repetitive"];
 
   if(json.containsKey("write_run_state_changes"))
     run.write_run_state_changes = json["write_run_state_changes"];
