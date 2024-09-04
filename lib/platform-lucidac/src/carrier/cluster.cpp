@@ -109,6 +109,12 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
     return false;
   }
 
+  auto upscaling = iblock->get_upscales();
+  iblock->reset_upscaling();
+  if (!iblock->write_to_hardware()) {
+    return false;
+  }
+
   // Next, we iterate through all connections on the I-block and calibrate each lane individually.
   // This is suboptimal, as in principle we could measure 8 gain corrections at the same time.
   // Iterating over I-block connections is easier than iterating over U-block outputs.
@@ -129,11 +135,10 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
 
       // Depending on whether upscaling is enabled for this lane, we apply +1 or +0.1 reference
       // This is done on all lanes (but no other I-block connection exists, so no other current flows)
+      bool upscaled_channel = iblock->get_upscaling(i_in_idx);
       ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::POS_REF);
-      if (!iblock->get_upscaling(i_in_idx))
-        ublock->change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE);
-      else
-        ublock->change_reference_magnitude(blocks::UBlock::Reference_Magnitude::ONE_TENTH);
+      ublock->change_reference_magnitude(upscaled_channel ? blocks::UBlock::Reference_Magnitude::ONE_TENTH
+                                                          : blocks::UBlock::Reference_Magnitude::ONE);
       // Actually write to hardware
       if (!ublock->write_to_hardware())
         return false;
@@ -197,6 +202,11 @@ bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
   LOG_ANABRID_DEBUG_CALIBRATION("Restoring u-block");
   if (!ublock->write_to_hardware())
     return false;
+
+  iblock->set_upscaling(upscaling);
+  if (!iblock->write_to_hardware()) {
+    return false;
+  }
 
   // Switch SHBlock into inject mode
   shblock->set_state(blocks::SHBlock::State::INJECT);
