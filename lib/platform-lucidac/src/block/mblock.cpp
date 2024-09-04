@@ -388,7 +388,7 @@ bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_
       if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x, 0.0f))
         return false;
       calibration[mul_idx].offset_x += 0.01f;
-      delay(300);
+      delay(7);
     }
   }
 
@@ -416,7 +416,7 @@ bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_
                                                      calibration[mul_idx].offset_y))
         return false;
       calibration[mul_idx].offset_y += 0.01f;
-      delay(300);
+      delay(7);
     }
   }
 
