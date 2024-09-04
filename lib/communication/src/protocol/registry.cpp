@@ -36,7 +36,8 @@ void msg::handlers::DynamicRegistry::init(carrier::Carrier &c) {
   set("set_circuit", 400, new SetConfigMessageHandler(c), SecurityLevel::RequiresLogin);
   set("get_circuit", 500, new GetConfigMessageHandler(c), SecurityLevel::RequiresLogin);
   set("get_entities", 600, new GetEntitiesRequestHandler(c), SecurityLevel::RequiresLogin);
-  set("start_run", 700, new StartRunRequestHandler(run::RunManager::get()), SecurityLevel::RequiresLogin);
+  set("start_run", 700, new StartRunRequestHandler(), SecurityLevel::RequiresLogin);
+  set("stop_run", 780, new StopRunRequestHandler(), SecurityLevel::RequiresLogin);
 
   // manual hardware access
   set("one_shot_daq", 800, new OneshotDAQHandler(), SecurityLevel::RequiresNothing);
