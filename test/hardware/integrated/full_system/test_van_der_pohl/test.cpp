@@ -261,7 +261,13 @@ void setup_and_measure() {
   auto int_block = static_cast<MIntBlock *>(cluster.m0block);
   auto mul_block = static_cast<MMulBlock *>(cluster.m1block);
 
-  TEST_ASSERT(lucidac.calibrate_mblock(cluster, *mul_block, &DAQ));
+  auto res = lucidac.calibrate_mblock(cluster, *mul_block, &DAQ);
+
+  if(!res) {
+    LOGMEV("Calibrate mblock return code: %d -- message: %s", res.code, res.msg.c_str());
+  }
+
+  TEST_ASSERT(res);
 
   TEST_ASSERT(lucidac.config_from_json(cfg));
   TEST_ASSERT(lucidac.write_to_hardware());
