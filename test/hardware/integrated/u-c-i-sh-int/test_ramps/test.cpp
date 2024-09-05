@@ -65,7 +65,7 @@ void setup_and_measure(bool use_slow_integration) {
 
   auto adc_channels = carrier_.get_adc_channels();
   for (unsigned int i = 0; i < adc_channels.size(); i++)
-    adc_channels[i] = i;
+    adc_channels[i] = int_block->slot_to_global_io_index(i);
 
   TEST_ASSERT(carrier_.set_adc_channels(adc_channels));
 
