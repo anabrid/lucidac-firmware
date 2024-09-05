@@ -103,7 +103,7 @@ bool carrier::Carrier::calibrate_routes(daq::BaseDAQ *daq_) {
   return true;
 }
 
-utils::status carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock, daq::BaseDAQ *daq_) {
+utils::status carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock, daq::BaseDAQ *daq_, bool calibrate_cluster) {
   // CARE: This function does not preserve the currently configured routes
   LOG(ANABRID_DEBUG_CALIBRATION, __PRETTY_FUNCTION__);
 
@@ -134,9 +134,13 @@ utils::status carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBloc
     return utils::status(3);
 
   // Run calibration on the reference signals
-  LOG(ANABRID_DEBUG_CALIBRATION, "Calibrating calibration signals...");
-  if (!calibrate_routes_in_cluster(cluster, daq_))
-    return utils::status(4);
+  if(calibrate_cluster) {
+    LOG(ANABRID_DEBUG_CALIBRATION, "Calibrating calibration signals...");
+    if (!calibrate_routes_in_cluster(cluster, daq_))
+      return utils::status(4);
+  } else {
+    LOG(ANABRID_DEBUG_CALIBRATION, "Skipping error-prone Cluster calibration...");
+  }
 
   // Pass to calibration function
   LOG(ANABRID_DEBUG_CALIBRATION, "Passing control to M-block...");
