@@ -32,15 +32,6 @@ using namespace mode;
 LUCIDAC carrier_;
 daq::OneshotDAQ DAQ;
 
-void setUp() {
-  // This is called before *each* test.
-  carrier_.reset(true);
-}
-
-void tearDown() {
-  // This is called after *each* test.
-}
-
 void test_init_and_blocks() {
   // In carrier_.init(), missing blocks are ignored
   TEST_ASSERT(carrier_.init());
@@ -94,7 +85,7 @@ void setup_and_measure(bool use_slow_integration) {
   }
 
   // Analyse results
-  for (int ch = 0; ch < 8; ch++) {
+  for (int ch = 0; ch < MIntBlock::NUM_INTEGRATORS; ch++) {
     std::cout << "Channel " << ch << (use_slow_integration ? " slow" : " fast") << " mode ";
     bool local_error = false;
     for (int i = 0; i < num_ic_values; i++) {

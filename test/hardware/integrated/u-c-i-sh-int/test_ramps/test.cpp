@@ -83,14 +83,14 @@ void setup_and_measure(bool use_slow_integration) {
 
   auto readings = DAQ.sample_avg(4, 10);
 
-  for (int i = 0; i < 8; i++) {
-    if (fabs(readings[i] + 1.0f) > target_precision) {
+  for (int ch = 0; ch < MIntBlock::NUM_INTEGRATORS; ch++) {
+    if (fabs(readings[ch] + 1.0f) > target_precision) {
       error = true;
-      std::cout << "Channel " << i << (use_slow_integration ? " slow" : " fast")
-                << " mode failed!  Read value: " << readings[i] << std::endl;
+      std::cout << "Channel " << ch << (use_slow_integration ? " slow" : " fast")
+                << " mode failed!  Read value: " << readings[ch] << std::endl;
     } else
-      std::cout << "Channel " << i << (use_slow_integration ? " slow" : " fast")
-                << " mode passed!  Read value: " << readings[i] << std::endl;
+      std::cout << "Channel " << ch << (use_slow_integration ? " slow" : " fast")
+                << " mode passed!  Read value: " << readings[ch] << std::endl;
   }
   TEST_ASSERT_FALSE(error);
 }
