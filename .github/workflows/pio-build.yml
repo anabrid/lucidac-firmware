@@ -19,17 +19,26 @@ jobs:
           python-version: '3.11'
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
-
       - name: Build Main Firmware
-        run: pio run
-
+        run: BUILD_ELF_A=1 pio run
       - name: Latest Release (always)
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "latest"
           prerelease: true
           title: "Development Build"
           files: |
-            .pio/build/teensy41/firmware.elf
             .pio/build/teensy41/firmware.hex
+            .pio/build/teensy41/firmware.elf
+            .pio/build/teensy41/firmware.elf.a
+      - name: Proper Release (only on tagged)
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          generate_release_notes: true
+          name: LUCIDAC Firmware Release ${{ github.ref_name }}
+          make_latest: true
+          files: |
+            .pio/build/teensy41/firmware.hex
+            .pio/build/teensy41/firmware.elf
+            .pio/build/teensy41/firmware.elf.a

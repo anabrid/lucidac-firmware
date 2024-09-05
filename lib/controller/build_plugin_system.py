@@ -16,12 +16,13 @@
 # this is a POST script, cf. https://docs.platformio.org/en/latest/scripting/launch_types.html#scripting-launch-types
 # cf. ~/.platformio/platforms/teensy/builder/main.py
 
+import os
 from os.path import join, basename
 from SCons.Script import AlwaysBuild
 
 Import("env")
 
-understand_the_build_system = False
+understand_the_build_system = True
 if understand_the_build_system:
 
     fh = open(join("/tmp/", "dump.txt"), "w")
@@ -39,18 +40,24 @@ me = "controller/build_plugin_system.py"
 # Job 1) Build firmware.elf.a
 ###############################################################################
 
-# The following makes sure something like firmware.elf.a is produced,
-# which is required to have something to link against, because the static compiled
-# executable (firmware) contains no more symbol table.
 target_elf = join("$BUILD_DIR", "${PROGNAME}.elf")
 target_elf_a = target_elf + ".a"
-# This isnt working on mac, probably because there is no real gcc
-#env.Append(
-#    LINKFLAGS=[
-#        "-Wl,--out-implib," + target_elf_a
-#    ],
-#)
-print(me, "will also build", basename(env.subst(target_elf_a)))
+base_target_elf_a = basename(env.subst(target_elf_a))
+if "BUILD_ELF_A" in os.environ:
+    # The following makes sure something like firmware.elf.a is produced,
+    # which is required to have something to link against, because the static compiled
+    # executable (firmware) contains no more symbol table.
+    #
+    # Note: This is GCC Syntax and won't work with clang. Typically this means
+    #       that this isn't working on mac but linux only.
+    env.Append(
+        LINKFLAGS=[
+            "-Wl,--out-implib," + target_elf_a
+        ],
+    )
+    print(me, "will also build", base_target_elf_a)
+else:
+    print(me, "skips building", base_target_elf_a)
 
 ###############################################################################
 # Job 2) Build firmware.bin
