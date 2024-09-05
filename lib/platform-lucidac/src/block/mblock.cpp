@@ -333,7 +333,7 @@ bool blocks::MMulBlock::init() {
   return FunctionBlock::init() and hardware->init();
 }
 
-utils::status blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster) {
+utils::status blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster, bool calibrate_cluster) {
   LOG(ANABRID_DEBUG_CALIBRATION, __PRETTY_FUNCTION__);
   if (!MBlock::calibrate(daq_, carrier_, cluster))
     return utils::status("Mblock::calibrate failed");
@@ -359,7 +359,8 @@ utils::status blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier 
   if (!cluster.cblock->write_to_hardware())
     return false;
   // When changing a factor, we always have to calibrate offset
-  cluster.calibrate_offsets();
+  if (calibrate_cluster)
+    cluster.calibrate_offsets();
 
   // Measure offset_z and set it
   auto offset_zs = daq_->sample();
@@ -377,7 +378,8 @@ utils::status blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier 
   if (!cluster.cblock->write_to_hardware())
     return false;
   // When changing a factor, we always have to calibrate offset
-  cluster.calibrate_offsets();
+  if(calibrate_cluster)
+    cluster.calibrate_offsets();
   delay(100);
 
   // Start with a negative input offset and increase until we hit/cross zero
@@ -418,7 +420,8 @@ utils::status blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier 
   if (!cluster.cblock->write_to_hardware())
     return false;
   // When changing a factor, we always have to calibrate offset
-  cluster.calibrate_offsets();
+  if(calibrate_cluster)
+    cluster.calibrate_offsets();
   delay(100);
 
   // Start with a negative input offset and increase until we hit/cross zero

@@ -111,7 +111,7 @@ public:
 
   uint8_t slot_to_global_io_index(uint8_t local) const;
 
-  virtual utils::status calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster) {
+  virtual utils::status calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster, bool calibrate_cluster=false) {
     return true;
   }
 };
@@ -315,7 +315,7 @@ public:
 
   [[nodiscard]] bool write_to_hardware() override;
 
-  utils::status calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster) override;
+  utils::status calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster, bool calibrate_cluster=false) override;
 
   [[nodiscard]] const std::array<MultiplierCalibration, NUM_MULTIPLIERS> &get_calibration() const;
   [[nodiscard]] blocks::MultiplierCalibration get_calibration(uint8_t mul_idx) const;

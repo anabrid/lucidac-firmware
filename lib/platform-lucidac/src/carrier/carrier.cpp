@@ -144,7 +144,7 @@ utils::status carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBloc
 
   // Pass to calibration function
   LOG(ANABRID_DEBUG_CALIBRATION, "Passing control to M-block...");
-  auto res = mblock.calibrate(daq_, *this, cluster);
+  auto res = mblock.calibrate(daq_, *this, cluster, calibrate_cluster);
   if(!res) {
     return res;
   }
