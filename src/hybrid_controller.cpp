@@ -30,6 +30,7 @@
 #include "utils/crash_report.h"
 #include "web/server.h"
 #include "mode/mode.h"
+#include "daq/daq.h"
 
 platform::LUCIDAC carrier_;
 auto& netconf = net::StartupConfig::get();
@@ -121,6 +122,11 @@ void setup() {
 
   // Done.
   LOG(ANABRID_DEBUG_INIT, "Initialization done.");
+
+  // This should be called sometime at startup
+  // TODO: Find a better place.
+  daq::OneshotDAQ daq;
+  daq.init(0);
 
   // visual effect to show that booting has been done
   int val = 0xFF;
