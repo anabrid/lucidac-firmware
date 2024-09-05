@@ -23,13 +23,8 @@ bool extra_logs = false;
 const float target_precision = 0.001f; // Replace with something from test_common.h
 
 // This test case is dedicated to calibrating the MInt blocks with real potentiometers. Starting up the test
-// case basically tells you all you need to know. The Int block is expected to be placed in the 0 slot.
-// The CTRL-Block button should be pressed down for something like a second to be registered.
-
-// Currently this test case doesn't have much error handling, so broken hardware can result in a test failure
-// and manual (hardware) debugging is needed. In this case you can set extra_logs to true.
-// Also this test case currently only is able to calibrate the fast integration path, as the slow IC signals
-// can't be set with FlexIO.
+// case basically tells you all you need to do. The CTRL-Block button should be pressed down for something like
+// a second to be registered.
 
 using namespace platform;
 using namespace blocks;
@@ -40,17 +35,6 @@ int get_mint_potentiometer_number(uint8_t channel, bool slow) { return channel *
 LUCIDAC carrier_;
 daq::OneshotDAQ DAQ;
 
-auto &cluster = carrier_.clusters[0];
-
-void setUp() {
-  // This is called before *each* test.
-  carrier_.reset(true);
-}
-
-void tearDown() {
-  // This is called after *each* test.
-}
-
 void test_init_and_blocks() {
   // In carrier_.init(), missing blocks are ignored
   TEST_ASSERT(carrier_.init());
@@ -60,8 +44,6 @@ void test_init_and_blocks() {
     TEST_ASSERT_NOT_NULL(cluster.cblock);
     TEST_ASSERT_NOT_NULL(cluster.iblock);
     TEST_ASSERT_NOT_NULL(cluster.shblock);
-    TEST_ASSERT_NOT_NULL(cluster.m0block);
-    TEST_ASSERT(cluster.m0block->is_entity_type(MBlock::TYPES::M_INT8_BLOCK));
   }
   TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
 
@@ -69,12 +51,31 @@ void test_init_and_blocks() {
   TEST_ASSERT(carrier_.write_to_hardware());
 }
 
-void start_and_measure(uint8_t channel) {
-  while (true) {
-    TEST_ASSERT(cluster.calibrate_offsets());
+Cluster *cluster; // Workaround for unitys inability to have parametrised tests.
+MIntBlock *int_block;
 
-    TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, 1'000'000, mode::OnOverload::IGNORE,
+void setup_and_measure(uint8_t channel, bool use_slow_integration) {
+  carrier_.reset(false);
+
+  TEST_ASSERT(cluster->add_constant(UBlock::Transmission_Mode::POS_REF,
+                                    int_block->slot_to_global_io_index(channel), 1.0f,
+                                    int_block->slot_to_global_io_index(channel)));
+
+  TEST_ASSERT(int_block->set_time_factors(use_slow_integration ? 100 : 10000));
+  TEST_ASSERT(int_block->set_ic_value(channel, 0.0f));
+
+  TEST_ASSERT(carrier_.set_adc_channel(channel, int_block->slot_to_global_io_index(channel)));
+
+  TEST_ASSERT(carrier_.write_to_hardware());
+  TEST_ASSERT(carrier_.calibrate_routes(&DAQ));
+
+  while (true) {
+    TEST_ASSERT(cluster->calibrate_offsets());
+
+    TEST_ASSERT(FlexIOControl::init(use_slow_integration ? mode::DEFAULT_IC_TIME * 100 : mode::DEFAULT_IC_TIME,
+                                    use_slow_integration ? 10'000'000 : 100'000, mode::OnOverload::IGNORE,
                                     mode::OnExtHalt::IGNORE));
+
     FlexIOControl::force_start();
     while (!FlexIOControl::is_done()) {
     }
@@ -86,15 +87,16 @@ void start_and_measure(uint8_t channel) {
     else
       direction = "counterclockwise";
 
-    std::cout << "Reading channel " << +channel << ":  ";
+    std::cout << "Reading channel " << +channel << " in " << (use_slow_integration ? "slow" : "fast")
+              << " mode:  ";
     if (fabs(reading + 1.0f) < target_precision)
       std::cout << "Channel is within machine accurary. Press CTRL-block button to switch to next channel. ";
     else
-      std::cout << "Turn potentiometer RV" << get_mint_potentiometer_number(channel, false) << " " << direction
-                << ". ";
+      std::cout << "Turn potentiometer RV" << get_mint_potentiometer_number(channel, use_slow_integration)
+                << " " << direction << ". ";
     std::cout << " Read value: " << reading << std::endl;
 
-    delayMicroseconds(1000000);
+    delay(1000);
     FlexIOControl::reset();
 
     if (io::get_button()) {
@@ -105,30 +107,24 @@ void start_and_measure(uint8_t channel) {
   }
 }
 
-void setup_integration(uint8_t channel) {
-  carrier_.ctrl_block->set_adc_bus_to_cluster_gain(cluster.get_cluster_idx());
-  cluster.reset(false);
+void calibrate_all() {
+  for (Cluster &cluster_it : carrier_.clusters) {
+    for (MBlock *m_block : {cluster_it.m0block, cluster_it.m1block}) {
+      if (!m_block || !m_block->is_entity_type(MBlock::TYPES::M_INT8_BLOCK))
+        continue;
 
-  TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, channel, 0.1f, channel));
+      cluster = &cluster_it;
+      int_block = static_cast<MIntBlock *>(m_block);
 
-  auto int_block = static_cast<MIntBlock *>(cluster.m0block);
-  TEST_ASSERT(int_block->set_time_factor(channel, 10000));
-  TEST_ASSERT(int_block->set_ic_value(channel, 0.0f));
+      std::cout << "Testing cluster " << +cluster_it.get_cluster_idx() << " slot " << int(m_block->slot)
+                << ": " << std::endl;
 
-  TEST_ASSERT(carrier_.write_to_hardware());
-
-  TEST_ASSERT(cluster.calibrate(&DAQ));
-
-  carrier_.ctrl_block->set_adc_bus(CTRLBlock::ADCBus::ADC);
-  TEST_ASSERT(carrier_.set_adc_channel(channel, channel));
-  TEST_ASSERT(carrier_.write_to_hardware());
-
-  start_and_measure(channel);
-}
-
-void calibrate_all_integrators() {
-  for (uint8_t i : MIntBlock::INTEGRATORS_OUTPUT_RANGE())
-    setup_integration(i);
+      for (int ch = 0; ch < MIntBlock::NUM_INTEGRATORS; ch++) {
+        setup_and_measure(ch, false);
+        setup_and_measure(ch, true);
+      }
+    }
+  }
 }
 
 void setup() {
@@ -140,7 +136,7 @@ void setup() {
 
   UNITY_BEGIN();
   RUN_TEST(test_init_and_blocks);
-  RUN_TEST(calibrate_all_integrators);
+  RUN_TEST(calibrate_all);
   UNITY_END();
 }
 
