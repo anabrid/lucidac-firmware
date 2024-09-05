@@ -361,6 +361,8 @@ utils::status blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier 
   // When changing a factor, we always have to calibrate offset
   if (calibrate_cluster)
     cluster.calibrate_offsets();
+  else
+    LOG(ANABRID_DEBUG_CALIBRATION, "Skipping error-prone cluster calibration...");
 
   // Measure offset_z and set it
   auto offset_zs = daq_->sample();
@@ -380,6 +382,8 @@ utils::status blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier 
   // When changing a factor, we always have to calibrate offset
   if(calibrate_cluster)
     cluster.calibrate_offsets();
+  else
+    LOG(ANABRID_DEBUG_CALIBRATION, "Skipping error-prone cluster calibration...");
   delay(100);
 
   // Start with a negative input offset and increase until we hit/cross zero
@@ -422,6 +426,8 @@ utils::status blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier 
   // When changing a factor, we always have to calibrate offset
   if(calibrate_cluster)
     cluster.calibrate_offsets();
+  else
+    LOG(ANABRID_DEBUG_CALIBRATION, "Skipping error-prone cluster calibration...");
   delay(100);
 
   // Start with a negative input offset and increase until we hit/cross zero
