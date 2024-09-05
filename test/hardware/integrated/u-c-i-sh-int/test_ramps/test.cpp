@@ -22,9 +22,8 @@
 bool extra_logs = false;
 const float target_precision = 0.01f; // Replace with something from test_common.h
 
-// This test case is doing some simple ramp test cases, so it's integrating a constant. Currently there isn't
-// much variety or automation, but this is planned, once FlexIO allows for IC setting in slow integration mode
-// Currently this only tests the M0 slot
+// This test case is doing some simple ramp test cases, so it's integrating a constant. This is the easiest
+// automatic test you can do, to test the full functionality of the interators.
 
 using namespace platform;
 using namespace blocks;
@@ -32,17 +31,6 @@ using namespace mode;
 
 LUCIDAC carrier_;
 daq::OneshotDAQ DAQ;
-
-auto &cluster = carrier_.clusters[0];
-
-void setUp() {
-  // This is called before *each* test.
-  carrier_.reset(true);
-}
-
-void tearDown() {
-  // This is called after *each* test.
-}
 
 void test_init_and_blocks() {
   // In carrier_.init(), missing blocks are ignored
@@ -53,8 +41,6 @@ void test_init_and_blocks() {
     TEST_ASSERT_NOT_NULL(cluster.cblock);
     TEST_ASSERT_NOT_NULL(cluster.iblock);
     TEST_ASSERT_NOT_NULL(cluster.shblock);
-    TEST_ASSERT_NOT_NULL(cluster.m0block);
-    TEST_ASSERT(cluster.m0block->is_entity_type(MBlock::TYPES::M_INT8_BLOCK));
   }
   TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
 
@@ -63,39 +49,34 @@ void test_init_and_blocks() {
 }
 
 bool error = false;
+Cluster *cluster; // Workaround for unitys inability to have parametrised tests.
+MIntBlock *int_block;
 
-void setup_and_measure() {
+void setup_and_measure(bool use_slow_integration) {
   // Setup paths
-  carrier_.ctrl_block->set_adc_bus_to_cluster_gain(cluster.get_cluster_idx());
-  cluster.reset(false);
-
-  auto int_block = static_cast<MIntBlock *>(cluster.m0block);
-
+  carrier_.reset(false);
   for (uint8_t int_channel : MIntBlock::INTEGRATORS_INPUT_RANGE())
-    TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF,
-                                     int_block->slot_to_global_io_index(int_channel), 0.1f,
-                                     int_block->slot_to_global_io_index(int_channel)));
+    TEST_ASSERT(cluster->add_constant(UBlock::Transmission_Mode::POS_REF,
+                                      int_block->slot_to_global_io_index(int_channel), 1.0f,
+                                      int_block->slot_to_global_io_index(int_channel)));
 
-  TEST_ASSERT(int_block->set_time_factors(10000));
+  TEST_ASSERT(int_block->set_time_factors(use_slow_integration ? 100 : 10000));
   TEST_ASSERT(int_block->set_ic_values(0.0f));
-
-  TEST_ASSERT(carrier_.write_to_hardware());
-
-  TEST_ASSERT(cluster.calibrate(&DAQ));
-
-  carrier_.ctrl_block->set_adc_bus(CTRLBlock::ADCBus::ADC);
 
   auto adc_channels = carrier_.get_adc_channels();
   for (unsigned int i = 0; i < adc_channels.size(); i++)
-    adc_channels[i] = i; // identity connection only works for m0
+    adc_channels[i] = i;
 
   TEST_ASSERT(carrier_.set_adc_channels(adc_channels));
 
   TEST_ASSERT(carrier_.write_to_hardware());
+  TEST_ASSERT(carrier_.calibrate_routes(&DAQ));
 
   // Measure end value
-  TEST_ASSERT(FlexIOControl::init(mode::DEFAULT_IC_TIME, 1'000'000, mode::OnOverload::IGNORE,
+  TEST_ASSERT(FlexIOControl::init(use_slow_integration ? mode::DEFAULT_IC_TIME * 100 : mode::DEFAULT_IC_TIME,
+                                  use_slow_integration ? 10'000'000 : 100'000, mode::OnOverload::IGNORE,
                                   mode::OnExtHalt::IGNORE));
+
   FlexIOControl::force_start();
   while (!FlexIOControl::is_done()) {
   }
@@ -105,11 +86,31 @@ void setup_and_measure() {
   for (int i = 0; i < 8; i++) {
     if (fabs(readings[i] + 1.0f) > target_precision) {
       error = true;
-      std::cout << "Channel " << i << " failed!  Read value: " << readings[i] << std::endl;
+      std::cout << "Channel " << i << (use_slow_integration ? " slow" : " fast")
+                << " mode failed!  Read value: " << readings[i] << std::endl;
     } else
-      std::cout << "Channel " << i << " passed!" << std::endl;
+      std::cout << "Channel " << i << (use_slow_integration ? " slow" : " fast")
+                << " mode passed!  Read value: " << readings[i] << std::endl;
   }
   TEST_ASSERT_FALSE(error);
+}
+
+void test_all() {
+  for (Cluster &cluster_it : carrier_.clusters) {
+    for (MBlock *m_block : {cluster_it.m0block, cluster_it.m1block}) {
+      if (!m_block || !m_block->is_entity_type(MBlock::TYPES::M_INT8_BLOCK))
+        continue;
+
+      cluster = &cluster_it;
+      int_block = static_cast<MIntBlock *>(m_block);
+
+      std::cout << "Testing cluster " << +cluster_it.get_cluster_idx() << " slot " << int(m_block->slot)
+                << ": " << std::endl;
+
+      RUN_PARAM_TEST(setup_and_measure, false);
+      RUN_PARAM_TEST(setup_and_measure, true);
+    }
+  }
 }
 
 void setup() {
@@ -121,7 +122,7 @@ void setup() {
 
   UNITY_BEGIN();
   RUN_TEST(test_init_and_blocks);
-  RUN_TEST(setup_and_measure);
+  RUN_TEST(test_all);
   UNITY_END();
 }
 
