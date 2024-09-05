@@ -8,6 +8,7 @@
 #include "carrier/cluster.h"
 
 #include "io/io.h" // Just for testing TODO REMOVE
+#include "utils/logging.h"
 
 blocks::MBlock::MBlock(bus::addr_t block_address)
     : blocks::FunctionBlock{std::string("M") + std::string(
@@ -332,10 +333,10 @@ bool blocks::MMulBlock::init() {
   return FunctionBlock::init() and hardware->init();
 }
 
-bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster) {
+utils::status blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster) {
   LOG(ANABRID_DEBUG_CALIBRATION, __PRETTY_FUNCTION__);
   if (!MBlock::calibrate(daq_, carrier_, cluster))
-    return false;
+    return utils::status("Mblock::calibrate failed");
 
   // TODO: Potentially reset current calibration
 
@@ -382,13 +383,27 @@ bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_
   // Start with a negative input offset and increase until we hit/cross zero
   for (auto mul_idx = 0u; mul_idx < NUM_MULTIPLIERS; mul_idx++) {
     if (!hardware->write_calibration_input_offsets(mul_idx, -0.1f, 0.0f))
-      return false;
+      return utils::status("mblock write_calibration_input_offsets failed for (mul_idx=%d, -0.1f, 0.0f)", mul_idx);
     calibration[mul_idx].offset_x = -0.1f;
-    while (daq_->sample(mul_idx) < 0.0f) {
-      if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x, 0.0f))
-        return false;
-      calibration[mul_idx].offset_x += 0.01f;
-      delay(7);
+    for(;;) {
+       auto measured = daq_->sample(mul_idx);
+       if(measured >= 0.0) {
+        if(calibration[mul_idx].offset_x >= 0.1) {
+          LOGMEV("MBlock calibration mul_idx=%d at limit for offset_x=%f measured=%f",
+             mul_idx, calibration[mul_idx].offset_x, measured
+          );
+          break; // either raise an error here or continue "silently"
+        }
+        if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x, 0.0f))
+          return utils::status("mblock write_to_calibration for offset_x=%f failed.", calibration[mul_idx].offset_x);
+        calibration[mul_idx].offset_x += 0.01f;
+        delay(7);
+       } else {
+          LOGMEV("MBlock calibration mul_idx=%d completed for offset_x=%f measured=%f",
+             mul_idx,calibration[mul_idx].offset_x, measured
+          );
+        break;
+       }
     }
   }
 
@@ -409,14 +424,26 @@ bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_
   // Start with a negative input offset and increase until we hit/cross zero
   for (auto mul_idx = 0u; mul_idx < NUM_MULTIPLIERS; mul_idx++) {
     if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x, -0.1f))
-      return false;
+      return utils::status("mblock write_calibration_input_offsets failed for (mul_idx=%d, %f, -0.1f)", mul_idx, calibration[mul_idx].offset_x);
     calibration[mul_idx].offset_y = -0.1f;
-    while (daq_->sample(mul_idx) < 0.0f) {
-      if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x,
-                                                     calibration[mul_idx].offset_y))
-        return false;
-      calibration[mul_idx].offset_y += 0.01f;
-      delay(7);
+    for(;;) {
+      auto measured = daq_->sample(mul_idx);
+      if(measured >= 0.0) {
+        if(calibration[mul_idx].offset_y >= 0.1) {
+          LOGMEV("MBlock calibration mul_idx=%d at limit for offset_y=%f measured=%f with offset_x=%f",
+             mul_idx, calibration[mul_idx].offset_y, measured, calibration[mul_idx].offset_x);
+        }
+        if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x,
+                                                      calibration[mul_idx].offset_y))
+          return utils::status("mblock write_to_calibration for offset_y=%f with offset_x=%f failed",
+            calibration[mul_idx].offset_y, calibration[mul_idx].offset_x);
+        calibration[mul_idx].offset_y += 0.01f;
+        delay(7);
+      } else {
+          LOGMEV("MBlock calibration mul_idx=%d completed for offset_y=%f measured=%f with offset_x=%f",
+             mul_idx, calibration[mul_idx].offset_y, measured, calibration[mul_idx].offset_x);
+        break;
+      }
     }
   }
 
@@ -464,7 +491,7 @@ bool blocks::MMulBlockHAL_V_1_0_X::write_calibration_input_offsets(uint8_t idx, 
   //       Passing 0 gives 0V output, which is scaled and shifted to +0.1V
   //       It turns out the I/U-converters invert BL_IN, so we want to invert here as well.
   return f_calibration_dac_0.set_channel(idx * 2 + 1, (offset_x - 0.1f) * -12.5f) and
-         f_calibration_dac_0.set_channel(idx * 2, (offset_y - 0.1f) * -12.5f);
+         f_calibration_dac_0.set_channel(idx * 2,     (offset_y - 0.1f) * -12.5f);
 }
 
 bool blocks::MMulBlockHAL_V_1_0_X::reset_calibration_input_offsets() {
