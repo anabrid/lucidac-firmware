@@ -84,7 +84,7 @@ void setup_and_measure() {
 
   TEST_ASSERT(carrier_.write_to_hardware());
 
-  TEST_ASSERT(cluster.calibrate(&DAQ));
+  TEST_ASSERT(cluster.calibrate_routes(&DAQ));
 
   carrier_.ctrl_block->set_adc_bus(CTRLBlock::ADCBus::ADC);
 

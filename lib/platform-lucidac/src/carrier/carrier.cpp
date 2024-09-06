@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include "carrier.h"
+#include "daq/daq.h"
 #include "net/settings.h"
 #include "utils/is_number.h"
-#include "daq/daq.h"
 
 entities::EntityClass carrier::Carrier::get_entity_class() const { return entities::EntityClass::CARRIER; }
 
@@ -87,7 +87,7 @@ bool carrier::Carrier::calibrate_routes_in_cluster(Cluster &cluster, daq::BaseDA
   ctrl_block->set_adc_bus_to_cluster_gain(cluster.get_cluster_idx());
   if (!ctrl_block->write_to_hardware())
     return false;
-  if (!cluster.calibrate(daq_))
+  if (!cluster.calibrate_routes(daq_))
     return false;
   ctrl_block->reset_adc_bus();
   if (!ctrl_block->write_to_hardware())
@@ -240,13 +240,13 @@ int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
   }
 
   daq::OneshotDAQ daq;
-  if(msg_in.containsKey("calibrate_mblock")) {
+  if (msg_in.containsKey("calibrate_mblock")) {
     bool ret = true;
-    if(clusters[0].m0block && clusters[0].m0block->is_entity_type(blocks::MBlock::TYPES::M_MUL4_BLOCK))
+    if (clusters[0].m0block && clusters[0].m0block->is_entity_type(blocks::MBlock::TYPES::M_MUL4_BLOCK))
       ret = calibrate_mblock(clusters[0], *clusters[0].m0block, &daq);
-    if(clusters[0].m1block && clusters[0].m1block->is_entity_type(blocks::MBlock::TYPES::M_MUL4_BLOCK))
+    if (clusters[0].m1block && clusters[0].m1block->is_entity_type(blocks::MBlock::TYPES::M_MUL4_BLOCK))
       ret = calibrate_mblock(clusters[0], *clusters[0].m1block, &daq);
-    if(!ret) {
+    if (!ret) {
       msg_out["error"] = "Calibrate MBlock failed";
       return error(10);
     }
@@ -261,38 +261,44 @@ int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
 
   utils::status res = resolved_entity->config_from_json(msg_in["config"]);
   if (!res && msg_out["error"].isNull()) {
-    msg_out["error"] =
-        utils::small_sprintf("Could not apply configuration to entity '%s', error: %s",
-          resolved_entity->get_entity_id().c_str(),
-          res.msg.c_str()
-        );
+    msg_out["error"] = utils::small_sprintf("Could not apply configuration to entity '%s', error: %s",
+                                            resolved_entity->get_entity_id().c_str(), res.msg.c_str());
     return error(10'000 + res.code);
   }
 
   // Actually write to hardware
   int hw_res = write_to_hardware();
-  switch(hw_res) {
-    case -1: msg_out["error"] = "Cluster write failed"; return error(6);
-    case -2: msg_out["error"] = "CTRL Block write failed"; return error(7);
-    case -3: msg_out["error"] = "ADC Bus write failed"; return error(8);
+  switch (hw_res) {
+  case -1:
+    msg_out["error"] = "Cluster write failed";
+    return error(6);
+  case -2:
+    msg_out["error"] = "CTRL Block write failed";
+    return error(7);
+  case -3:
+    msg_out["error"] = "ADC Bus write failed";
+    return error(8);
 
-    // This weird case captures the illegal code fact that write_to_hardware() per-interface
-    // has a boolean return value but for a few classes an integer return value. This needs
-    // to be fixed.
-    case false:  msg_out["error"] = "Generic write to hardware error"; return error(9);
+  // This weird case captures the illegal code fact that write_to_hardware() per-interface
+  // has a boolean return value but for a few classes an integer return value. This needs
+  // to be fixed.
+  case false:
+    msg_out["error"] = "Generic write to hardware error";
+    return error(9);
 
-    case true: /* boolean success */
-    default: return success;
+  case true: /* boolean success */
+  default:
+    return success;
   }
 
-  if(msg_in.containsKey("calibrate_offset") && !calibrate_offset()) {
-      msg_out["error"] = "Calibrate-offset failed";
-      return error(10);
+  if (msg_in.containsKey("calibrate_offset") && !calibrate_offset()) {
+    msg_out["error"] = "Calibrate-offset failed";
+    return error(10);
   }
 
-  if(msg_in.containsKey("calibrate_routes") && !calibrate_routes(&daq)) {
-      msg_out["error"] = "Calibrate-Routes failed";
-      return error(10);
+  if (msg_in.containsKey("calibrate_routes") && !calibrate_routes(&daq)) {
+    msg_out["error"] = "Calibrate-Routes failed";
+    return error(10);
   }
 }
 

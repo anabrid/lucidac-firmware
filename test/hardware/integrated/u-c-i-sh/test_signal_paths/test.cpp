@@ -96,7 +96,7 @@ void test_summation(const std::array<float, 32> &factors, const std::array<I, 16
 
     // As soon as we use a new route, the cluster should be calibrated completly
     if (full_calibration)
-      TEST_ASSERT(cluster.calibrate(&DAQ));
+      TEST_ASSERT(cluster.calibrate_routes(&DAQ));
     else
       TEST_ASSERT(cluster.calibrate_offsets());
 

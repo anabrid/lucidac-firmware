@@ -42,7 +42,7 @@ public:
   bool init();
   std::array<blocks::FunctionBlock *, 6> get_blocks() const;
 
-  bool calibrate(daq::BaseDAQ *daq);
+  bool calibrate_routes(daq::BaseDAQ *daq);
   bool calibrate_offsets();
 
   [[nodiscard]] bool write_to_hardware();

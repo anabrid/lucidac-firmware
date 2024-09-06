@@ -41,7 +41,7 @@ void test_init() {
   // Calibrate
   TEST_ASSERT(daq_.init(0));
   delayMicroseconds(50);
-  TEST_ASSERT(cluster.calibrate(&daq_));
+  TEST_ASSERT(cluster.calibrate_routes(&daq_));
   delayMicroseconds(200);
 }
 

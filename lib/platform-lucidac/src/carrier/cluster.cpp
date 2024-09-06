@@ -90,7 +90,7 @@ bool platform::Cluster::calibrate_offsets() {
   return true;
 }
 
-bool platform::Cluster::calibrate(daq::BaseDAQ *daq) {
+bool platform::Cluster::calibrate_routes(daq::BaseDAQ *daq) {
   // CARE: This function assumes that certain preparations have been made, see Carrier::calibrate.
 
   // Save current U-block transmission modes and set them to zero
