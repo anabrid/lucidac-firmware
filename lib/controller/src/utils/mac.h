@@ -10,6 +10,7 @@
 #include "utils/json.h"
 #include <IPAddress.h>
 
+#include <array>
 #include <cstdint>
 #include <list>
 #include <string>

@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "base.h"
 
 #include "bus/bus.h"
