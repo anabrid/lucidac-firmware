@@ -72,25 +72,26 @@ platform::Cluster::Cluster(uint8_t cluster_idx)
 bool platform::Cluster::calibrate_offsets() {
   LOG_ANABRID_DEBUG_CALIBRATION("Calibrating offsets");
   if (!ublock or !shblock)
-    return false;
+    return false; // Fatal error preventing any further regular operation in the system
 
   auto old_transmission_modes = ublock->get_all_transmission_modes();
 
   ublock->change_all_transmission_modes(blocks::UBlock::Transmission_Mode::GROUND);
   if (!ublock->write_to_hardware())
-    return false;
+    return false; // Fatal error preventing any further regular operation in the system
 
   delay(10);
   shblock->compensate_hardware_offsets();
 
   ublock->change_all_transmission_modes(old_transmission_modes);
   if (!ublock->write_to_hardware())
-    return false;
+    return false; // Fatal error preventing any further regular operation in the system
 
   return true;
 }
 
 bool platform::Cluster::calibrate_routes(daq::BaseDAQ *daq) {
+  bool success = true;
   // CARE: This function assumes that certain preparations have been made, see Carrier::calibrate.
 
   // Save current U-block transmission modes and set them to zero
@@ -99,21 +100,18 @@ bool platform::Cluster::calibrate_routes(daq::BaseDAQ *daq) {
   auto old_reference_magnitude = ublock->get_reference_magnitude();
 
   // Save C-Block factors
-  auto c_block_factors = cblock->get_factors();
+  auto old_c_block_factors = cblock->get_factors();
   cblock->set_factors({});
 
   // Actually write to hardware
   LOG_ANABRID_DEBUG_CALIBRATION("Reset c-block");
-  if (!cblock->write_to_hardware()) {
-    // TODO: Restore configuration in this and other failure cases
-    return false;
-  }
+  if (!cblock->write_to_hardware())
+    return false; // Fatal error preventing any further regular operation in the system
 
-  auto upscaling = iblock->get_upscales();
+  auto old_i_block_upscaling = iblock->get_upscales();
   iblock->reset_upscaling();
-  if (!iblock->write_to_hardware()) {
-    return false;
-  }
+  if (!iblock->write_to_hardware())
+    return false; // Fatal error preventing any further regular operation in the system
 
   // Next, we iterate through all connections on the I-block and calibrate each lane individually.
   // This is suboptimal, as in principle we could measure 8 gain corrections at the same time.
@@ -141,7 +139,7 @@ bool platform::Cluster::calibrate_routes(daq::BaseDAQ *daq) {
                                                           : blocks::UBlock::Reference_Magnitude::ONE);
       // Actually write to hardware
       if (!ublock->write_to_hardware())
-        return false;
+        return false; // Fatal error preventing any further regular operation in the system
 
       // Allow this connection to go up to full scale. Those values are allways legal so we can ignore the
       // return value
@@ -149,10 +147,11 @@ bool platform::Cluster::calibrate_routes(daq::BaseDAQ *daq) {
       (void)cblock->set_gain_correction(i_in_idx, 1.0f);
       // Actually write to hardware
       if (!cblock->write_to_hardware())
-        return false;
+        return false; // Fatal error preventing any further regular operation in the system
 
       // Calibrate offsets for this specific route
-      calibrate_offsets();
+      if (!calibrate_offsets())
+        return false; // Fatal error preventing any further regular operation in the system
 
       // Change SH-block into gain mode and select correct gain channel group
       if (i_out_idx < 8)
@@ -160,7 +159,7 @@ bool platform::Cluster::calibrate_routes(daq::BaseDAQ *daq) {
       else
         shblock->set_state(blocks::SHBlock::State::GAIN_EIGHT_TO_FIFTEEN);
       if (!shblock->write_to_hardware())
-        return false;
+        return false; // Fatal error preventing any further regular operation in the system
 
       // Chill for a bit
       delay(10);
@@ -173,27 +172,30 @@ bool platform::Cluster::calibrate_routes(daq::BaseDAQ *daq) {
       LOG_ANABRID_DEBUG_CALIBRATION(gain_correction);
       // Set gain correction on C-block, which will automatically get applied when writing to hardware
       if (!cblock->set_gain_correction(i_in_idx, gain_correction)) {
-        LOG_ANABRID_DEBUG_CALIBRATION("Gain correction could not be set, possibly out of range.");
-        return false;
+        LOG_ANABRID_DEBUG_CALIBRATION("Gain correction could not be set as it is out of range. Resetting this "
+                                      "channel to default corretion");
+        (void)cblock->set_gain_correction(i_in_idx, 1.0f);
+        success = false;
       }
 
       // Deactivate this lane again
       (void)cblock->set_factor(i_in_idx, 0.0f);
       if (!cblock->write_to_hardware()) // This write_to_hardware could be left out, but it's a nice safety
                                         // measure
-        return false;
+        return false;                   // Fatal error preventing any further regular operation in the system
       LOG_ANABRID_DEBUG_CALIBRATION(" ");
     }
   }
+
   // Restore C-block factors
-  cblock->set_factors(c_block_factors);
+  cblock->set_factors(old_c_block_factors);
   LOG_ANABRID_DEBUG_CALIBRATION("Restoring c-block");
   if (!cblock->write_to_hardware())
-    return false;
+    return false; // Fatal error preventing any further regular operation in the system
 
   // Calibrate offsets again, since they have been changed by correcting the coefficients
   if (!calibrate_offsets())
-    return false;
+    return false; // Fatal error preventing any further regular operation in the system
 
   // Restore original U-block transmission modes and reference
   ublock->change_all_transmission_modes(old_transmission_modes);
@@ -201,19 +203,19 @@ bool platform::Cluster::calibrate_routes(daq::BaseDAQ *daq) {
   // Write them to hardware
   LOG_ANABRID_DEBUG_CALIBRATION("Restoring u-block");
   if (!ublock->write_to_hardware())
-    return false;
+    return false; // Fatal error preventing any further regular operation in the system
 
-  iblock->set_upscaling(upscaling);
+  iblock->set_upscaling(old_i_block_upscaling);
   if (!iblock->write_to_hardware()) {
-    return false;
+    return false; // Fatal error preventing any further regular operation in the system
   }
 
   // Switch SHBlock into inject mode
   shblock->set_state(blocks::SHBlock::State::INJECT);
   if (!shblock->write_to_hardware())
-    return false;
+    return false; // Fatal error preventing any further regular operation in the system
 
-  return true;
+  return success;
 }
 
 bool platform::Cluster::write_to_hardware() {
