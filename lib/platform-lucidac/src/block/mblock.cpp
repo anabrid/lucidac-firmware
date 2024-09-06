@@ -357,10 +357,12 @@ bool blocks::MMulBlock::init() {
 }
 
 void blocks::MMulBlock::reset(bool keep_calibration) {
-  for(auto idx=0u; idx < NUM_MULTIPLIERS; idx++) {
-    calibration[idx].offset_x = 0;
-    calibration[idx].offset_y = 0;
-    calibration[idx].offset_z = 0;
+  if(!keep_calibration) {
+    for(auto idx=0u; idx < NUM_MULTIPLIERS; idx++) {
+      calibration[idx].offset_x = 0;
+      calibration[idx].offset_y = 0;
+      calibration[idx].offset_z = 0;
+    }
   }
 }
 
