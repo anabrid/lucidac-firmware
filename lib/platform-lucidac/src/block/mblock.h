@@ -313,6 +313,8 @@ public:
 
   bool init() override;
 
+  void reset(bool keep_calibration) override;
+
   [[nodiscard]] bool write_to_hardware() override;
 
   utils::status calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster, bool calibrate_cluster=false) override;

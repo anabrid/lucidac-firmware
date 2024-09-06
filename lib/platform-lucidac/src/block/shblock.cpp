@@ -40,7 +40,17 @@ void blocks::SHBlock::compensate_hardware_offsets(uint32_t track_time, uint32_t 
 }
 
 utils::status blocks::SHBlock::config_self_from_json(JsonObjectConst cfg) {
-  return utils::status("SHBlock does not accept configuration");
+  //return utils::status("SHBlock does not accept configuration");
+
+  // FOR TESTING
+  if(cfg.containsKey("state")) {
+    if(cfg["state"] == "TRACK") set_state(blocks::SHBlock::State::TRACK);
+    else if(cfg["state"] == "INJECT") set_state(blocks::SHBlock::State::INJECT);
+    else if(cfg["state"] == "GAIN_ZERO_TO_SEVEN") set_state(blocks::SHBlock::State::GAIN_ZERO_TO_SEVEN);
+    else if(cfg["state"] == "GAIN_EIGHT_TO_FIFTEEN") set_state(blocks::SHBlock::State::GAIN_EIGHT_TO_FIFTEEN);
+    else return utils::status("Unknown target state for SH Block");
+  }
+  return utils::status(0);
 }
 
 blocks::SHBlock *blocks::SHBlock::from_entity_classifier(entities::EntityClassifier classifier,

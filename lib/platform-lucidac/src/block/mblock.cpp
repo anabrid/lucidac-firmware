@@ -219,7 +219,7 @@ utils::status blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
   // But due to automation, some may still be sent.
   // Thus we accept any configuration containing only empty values or similar.
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
-    if (cfgItr->key() == "elements") {
+    if (cfgItr->key() == "calibration") {
       auto res = _config_elements_from_json(cfgItr->value());
       if (!res)
         return res;
@@ -231,7 +231,30 @@ utils::status blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
 }
 
 utils::status blocks::MMulBlock::_config_elements_from_json(const JsonVariantConst &cfg) {
-  return utils::status("MMulBlock currently does not accept configuration");
+  //return utils::status("MMulBlock currently does not accept configuration");
+
+  // Note: The following is a hack.
+  //       We generally don't want clients to take over calibration.
+
+  auto map = cfg.as<JsonObjectConst>();
+  if(!map.containsKey("offset_x") || map["offset_x"].size() != MMulBlock::NUM_MULTIPLIERS)
+    return utils::status("Missing offset_x (need 4 entries)");
+  if(!map.containsKey("offset_y") || map["offset_y"].size() != MMulBlock::NUM_MULTIPLIERS)
+    return utils::status("Missing offset_y (need 4 entries)");
+  if(!map.containsKey("offset_z") || map["offset_z"].size() != MMulBlock::NUM_MULTIPLIERS)
+    return utils::status("Missing offset_z (need 4 entries)");
+  for(int i=0; i<MMulBlock::NUM_MULTIPLIERS; i++) {
+    calibration[i].offset_x = map["offset_x"][i];
+    calibration[i].offset_y = map["offset_y"][i];
+    calibration[i].offset_z = map["offset_z"][i];
+
+    if(!hardware->write_calibration_input_offsets(i, calibration[i].offset_x, calibration[i].offset_y))
+      return utils::status("MMulBlock::calibration from json for multiplier %d values offset_x, offset_y not accepted", i);
+    if(!hardware->write_calibration_output_offset(i, calibration[i].offset_z))
+      return utils::status("MMulBlock::calibration from json for multiplier %d values offset_z not accepted", i);
+  }
+
+  return 0;
 }
 
 // ███████ ███    ██ ████████ ██ ████████ ██    ██     ███████  █████   ██████ ████████  ██████  ██████  ██
@@ -332,6 +355,15 @@ bool blocks::MMulBlock::init() {
   // TODO: Remove once hardware pointer is part of FunctionBlock base class
   return FunctionBlock::init() and hardware->init();
 }
+
+void blocks::MMulBlock::reset(bool keep_calibration) {
+  for(auto idx=0u; idx < NUM_MULTIPLIERS; idx++) {
+    calibration[idx].offset_x = 0;
+    calibration[idx].offset_y = 0;
+    calibration[idx].offset_z = 0;
+  }
+}
+
 
 utils::status blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster, bool calibrate_cluster) {
   LOG(ANABRID_DEBUG_CALIBRATION, __PRETTY_FUNCTION__);
