@@ -106,7 +106,7 @@ void test_summation(const std::array<float, 32> &factors, const std::array<I, 16
       std::cout << "data = " << data << std::endl;
 
     for (auto idx = 0u; idx < data.size(); idx++) {
-      TEST_ASSERT_FLOAT_WITHIN(full_calibration ? 0.1f : 0.05f, expected[idx], data[idx]);
+      TEST_ASSERT_FLOAT_WITHIN(full_calibration ? 0.01f : 0.05f, expected[idx], data[idx]);
       deviations[idx] = data[idx] - expected[idx];
     }
 
@@ -118,10 +118,10 @@ void test_summation(const std::array<float, 32> &factors, const std::array<I, 16
 }
 
 void test_n_summations() {
-  for (auto N : {2u}) {
+  for (auto N : {1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u, 9u, 10u}) {
     std::array<float, 32> factors{};
     std::fill(factors.begin(), factors.end(), 1.0f / static_cast<float>(N));
-    for (auto i_out_idx : {0, 1, 2, 3, 4, 5, 6}) {
+    for (auto i_out_idx : IBlock::OUTPUT_IDX_RANGE()) {
       for (auto i_in_shift = 0u; i_in_shift <= 32u - N; i_in_shift += N) {
         std::array<I, 16> connections;
         for (auto i_in_idx = 0u; i_in_idx < N; i_in_idx++)
@@ -129,12 +129,14 @@ void test_n_summations() {
         // Run test on this configuration
         TEST_MESSAGE("--------------------------------------");
         std::cout << "Testing " << N << " connections" << std::endl;
+        std::cout << "connections = " << connections << std::endl;
         carrier_.reset(false);
         test_summation(factors, connections, true); // Since we allways change the signal path,
       }
     }
 
-    std::cout << "Average full deviation in this cycle: " << avg_devations.get_average() << std::endl;
+    std::cout << "Average full scale deviation in per mille in this cycle: " << avg_devations.get_average()
+              << std::endl;
   }
 }
 
