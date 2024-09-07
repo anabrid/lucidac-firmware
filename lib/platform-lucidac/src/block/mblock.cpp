@@ -7,6 +7,8 @@
 
 #include "carrier/cluster.h"
 
+#include "io/io.h" // Just for testing TODO REMOVE
+
 blocks::MBlock::MBlock(bus::addr_t block_address)
     : blocks::FunctionBlock{std::string("M") + std::string(
                                                    // Addresses 12, 20, 28 are M0

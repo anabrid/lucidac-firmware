@@ -11,7 +11,6 @@
 #include "chips/DAC60508.h"
 #include "chips/SR74HCT595.h"
 #include "daq/base.h"
-#include "utils/error.h"
 
 namespace platform {
 class Cluster;
@@ -111,7 +110,7 @@ public:
 
   uint8_t slot_to_global_io_index(uint8_t local) const;
 
-  virtual utils::status calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster, bool calibrate_cluster=false) {
+  virtual bool calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster) {
     return true;
   }
 };
@@ -313,11 +312,9 @@ public:
 
   bool init() override;
 
-  void reset(bool keep_calibration) override;
-
   [[nodiscard]] bool write_to_hardware() override;
 
-  utils::status calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster, bool calibrate_cluster=false) override;
+  bool calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster) override;
 
   [[nodiscard]] const std::array<MultiplierCalibration, NUM_MULTIPLIERS> &get_calibration() const;
   [[nodiscard]] blocks::MultiplierCalibration get_calibration(uint8_t mul_idx) const;

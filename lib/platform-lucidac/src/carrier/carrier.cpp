@@ -103,7 +103,7 @@ bool carrier::Carrier::calibrate_routes(daq::BaseDAQ *daq_) {
   return true;
 }
 
-utils::status carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock, daq::BaseDAQ *daq_, bool calibrate_cluster) {
+bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock, daq::BaseDAQ *daq_) {
   // CARE: This function does not preserve the currently configured routes
   LOG(ANABRID_DEBUG_CALIBRATION, __PRETTY_FUNCTION__);
 
@@ -117,37 +117,30 @@ utils::status carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBloc
   for (auto input_idx : blocks::MBlock::SLOT_INPUT_IDX_RANGE()) {
     auto lane_idx = mblock.slot_to_global_io_index(input_idx);
     if (!cluster.add_constant(blocks::UBlock::Transmission_Mode::POS_REF, lane_idx, 1.0f, lane_idx))
-      return utils::status(1);
+      return false;
   }
 
   LOG(ANABRID_DEBUG_CALIBRATION, "Connecting outputs to ADC...");
-  reset_adc_channels();
   for (auto output_idx : blocks::MBlock::SLOT_OUTPUT_IDX_RANGE()) {
     auto lane_idx = mblock.slot_to_global_io_index(output_idx);
     if (!set_adc_channel(output_idx, lane_idx))
-      return utils::status(2);
+      return false;
   }
 
   // Write to hardware
   // TODO: could be improved to not write every cluster
   if (!write_to_hardware())
-    return utils::status(3);
+    return false;
 
   // Run calibration on the reference signals
-  if(calibrate_cluster) {
-    LOG(ANABRID_DEBUG_CALIBRATION, "Calibrating calibration signals...");
-    if (!calibrate_routes_in_cluster(cluster, daq_))
-      return utils::status(4);
-  } else {
-    LOG(ANABRID_DEBUG_CALIBRATION, "Skipping error-prone Cluster calibration...");
-  }
+  LOG(ANABRID_DEBUG_CALIBRATION, "Calibrating calibration signals...");
+  if (!calibrate_routes_in_cluster(cluster, daq_))
+    return false;
 
   // Pass to calibration function
   LOG(ANABRID_DEBUG_CALIBRATION, "Passing control to M-block...");
-  auto res = mblock.calibrate(daq_, *this, cluster, calibrate_cluster);
-  if(!res) {
-    return res;
-  }
+  if (!mblock.calibrate(daq_, *this, cluster))
+    return false;
 
   // Clean up
   cluster.reset(true);
@@ -156,9 +149,9 @@ utils::status carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBloc
   // Write final clean-up to hardware
   // TODO: could be improved to not write every cluster
   if (!write_to_hardware())
-    return utils::status(5);
+    return false;
 
-  return utils::status(0);
+  return true;
 }
 
 void carrier::Carrier::reset(bool keep_calibration) {
@@ -247,15 +240,15 @@ int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
   }
 
   daq::OneshotDAQ daq;
-  if(msg_in.containsKey("calibrate_mblock")) {
-    utils::status ret(0);
-    if(clusters[0].m0block && clusters[0].m0block->is_entity_type(blocks::MBlock::TYPES::M_MUL4_BLOCK))
+  if (msg_in.containsKey("calibrate_mblock")) {
+    bool ret = true;
+    if (clusters[0].m0block && clusters[0].m0block->is_entity_type(blocks::MBlock::TYPES::M_MUL4_BLOCK))
       ret = calibrate_mblock(clusters[0], *clusters[0].m0block, &daq);
     if (clusters[0].m1block && clusters[0].m1block->is_entity_type(blocks::MBlock::TYPES::M_MUL4_BLOCK))
       ret = calibrate_mblock(clusters[0], *clusters[0].m1block, &daq);
-    if(!ret) {
-      msg_out["error"] = std::string("Calibrate MBlock failed: ") + std::string(ret.msg);
-      return error(100 + ret.code);
+    if (!ret) {
+      msg_out["error"] = "Calibrate MBlock failed";
+      return error(10);
     }
   }
 
