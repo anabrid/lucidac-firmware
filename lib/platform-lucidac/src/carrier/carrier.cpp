@@ -139,7 +139,7 @@ bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock
 
   // Pass to calibration function
   LOG(ANABRID_DEBUG_CALIBRATION, "Passing control to M-block...");
-  if (!mblock.calibrate(daq_, *this, cluster))
+  if (!mblock.calibrate(daq_, &cluster))
     return false;
 
   // Clean up

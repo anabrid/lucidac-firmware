@@ -7,8 +7,6 @@
 
 #include "carrier/cluster.h"
 
-bool blocks::MMulBlock::write_to_hardware() { return true; }
-
 utils::status blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
   // MMulBlock does not expect any configuration currently.
   // But due to automation, some may still be sent.
@@ -54,12 +52,26 @@ bool blocks::MMulBlock::init() {
   return FunctionBlock::init() and hardware->init();
 }
 
-bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster) {
+void blocks::MMulBlock::reset(bool keep_calibration) {
+  if (!keep_calibration) {
+    for (auto idx = 0u; idx < NUM_MULTIPLIERS; idx++) {
+      calibration[idx].offset_x = 0;
+      calibration[idx].offset_y = 0;
+      calibration[idx].offset_z = 0;
+    }
+  }
+}
+
+bool blocks::MMulBlock::write_to_hardware() { return true; }
+
+bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, platform::Cluster *cluster) {
   LOG(ANABRID_DEBUG_CALIBRATION, __PRETTY_FUNCTION__);
-  if (!MBlock::calibrate(daq_, carrier_, cluster))
+  bool success = true;
+
+  if (!MBlock::calibrate(daq_, cluster))
     return false;
 
-  // TODO: Potentially reset current calibration
+  reset(false); // We can't iterativly calibrate, so we need to delete the old calibration values.
 
   // Our first simple calibration process has been developed empirically and goes
   // 1. Set all inputs to zero
@@ -74,41 +86,50 @@ bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_
 
   // Connect zeros to all our inputs
   LOG(ANABRID_DEBUG_CALIBRATION, "Calibrating output offsets...");
+
+  // TODO: keep old circuits alive
+  cluster->reset(true);
+
   for (auto idx : SLOT_INPUT_IDX_RANGE())
-    if (!cluster.cblock->set_factor(slot_to_global_io_index(idx), 0.0f))
-      return false;
-  if (!cluster.cblock->write_to_hardware())
-    return false;
+    if (!cluster->add_constant(UBlock::Transmission_Mode::GROUND, slot_to_global_io_index(idx), 0.0f,
+                               slot_to_global_io_index(idx))) // TODO: find best method for applying zero volts
+      return false;                                           // Fatal error
+  if (!cluster->write_to_hardware())
+    return false; // Fatal error
+
   // When changing a factor, we always have to calibrate offset
-  cluster.calibrate_offsets();
+  if (!cluster->calibrate_offsets())
+    return false; // Fatal error
 
   // Measure offset_z and set it
   auto offset_zs = daq_->sample();
   for (auto idx = 0u; idx < NUM_MULTIPLIERS; idx++) {
     if (!hardware->write_calibration_output_offset(idx, -offset_zs[idx]))
-      return false;
+      success = false; // out of range
     calibration[idx].offset_z = -offset_zs[idx];
   }
 
   // Set some inputs to one
   LOG(ANABRID_DEBUG_CALIBRATION, "Calibrating input x offsets...");
   for (auto idx = 0u; idx < NUM_MULTIPLIERS; idx++)
-    if (!cluster.cblock->set_factor(slot_to_global_io_index(idx * 2), 1.0f))
-      return false;
-  if (!cluster.cblock->write_to_hardware())
-    return false;
+    if (!cluster->cblock->set_factor(slot_to_global_io_index(idx * 2), 1.0f))
+      return false; // fatal error
+  if (!cluster->cblock->write_to_hardware())
+    return false; // fatal error
   // When changing a factor, we always have to calibrate offset
-  cluster.calibrate_offsets();
+  if (!cluster->calibrate_offsets())
+    return false; // fatal error
+
   delay(100);
 
   // Start with a negative input offset and increase until we hit/cross zero
   for (auto mul_idx = 0u; mul_idx < NUM_MULTIPLIERS; mul_idx++) {
     if (!hardware->write_calibration_input_offsets(mul_idx, -0.1f, 0.0f))
-      return false;
+      success = false;
     calibration[mul_idx].offset_x = -0.1f;
     while (daq_->sample(mul_idx) < 0.0f) {
       if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x, 0.0f))
-        return false;
+        success = false;
       calibration[mul_idx].offset_x += 0.01f;
       delay(7);
     }
@@ -117,32 +138,33 @@ bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_
   // Set other inputs to one
   LOG(ANABRID_DEBUG_CALIBRATION, "Calibrating input y offsets...");
   for (auto idx = 0u; idx < NUM_MULTIPLIERS; idx++) {
-    if (!cluster.cblock->set_factor(slot_to_global_io_index(idx * 2), 0.0f))
-      return false;
-    if (!cluster.cblock->set_factor(slot_to_global_io_index(idx * 2 + 1), 1.0f))
-      return false;
+    if (!cluster->cblock->set_factor(slot_to_global_io_index(idx * 2), 0.0f))
+      return false; // fatal error
+    if (!cluster->cblock->set_factor(slot_to_global_io_index(idx * 2 + 1), 1.0f))
+      return false; // fatal error
   }
-  if (!cluster.cblock->write_to_hardware())
-    return false;
+  if (!cluster->cblock->write_to_hardware())
+    return false; // fatal error
   // When changing a factor, we always have to calibrate offset
-  cluster.calibrate_offsets();
+  if (!cluster->calibrate_offsets())
+    return false; // fatal error
   delay(100);
 
   // Start with a negative input offset and increase until we hit/cross zero
   for (auto mul_idx = 0u; mul_idx < NUM_MULTIPLIERS; mul_idx++) {
     if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x, -0.1f))
-      return false;
+      success = false;
     calibration[mul_idx].offset_y = -0.1f;
     while (daq_->sample(mul_idx) < 0.0f) {
       if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x,
                                                      calibration[mul_idx].offset_y))
-        return false;
+        success = false;
       calibration[mul_idx].offset_y += 0.01f;
       delay(7);
     }
   }
 
-  return true;
+  return success;
 }
 
 const std::array<blocks::MultiplierCalibration, blocks::MMulBlock::NUM_MULTIPLIERS> &

@@ -218,6 +218,16 @@ bool platform::Cluster::calibrate_routes(daq::BaseDAQ *daq) {
   return success;
 }
 
+bool platform::Cluster::calibrate_m_blocks(daq::BaseDAQ *daq) {
+  bool success = true;
+  for (auto mblock : {m0block, m1block}) {
+    if (mblock)
+      if (!mblock->calibrate(daq, this))
+        success = false;
+  }
+  return success;
+}
+
 bool platform::Cluster::write_to_hardware() {
   for (auto block : get_blocks()) {
     if (block)

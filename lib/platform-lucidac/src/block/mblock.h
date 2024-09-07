@@ -110,9 +110,8 @@ public:
 
   uint8_t slot_to_global_io_index(uint8_t local) const;
 
-  virtual bool calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster) {
-    return true;
-  }
+  // M Blocks generaly can't calibrate themselfs on their own, so they need the cluster they are installed in.
+  virtual bool calibrate(daq::BaseDAQ *daq_, platform::Cluster *cluster) { return true; }
 };
 
 class EmptyMBlock : public MBlock {
@@ -314,7 +313,9 @@ public:
 
   [[nodiscard]] bool write_to_hardware() override;
 
-  bool calibrate(daq::BaseDAQ *daq_, carrier::Carrier &carrier_, platform::Cluster &cluster) override;
+  bool calibrate(daq::BaseDAQ *daq_, platform::Cluster *cluster) override;
+
+  void reset(bool keep_calibration);
 
   [[nodiscard]] const std::array<MultiplierCalibration, NUM_MULTIPLIERS> &get_calibration() const;
   [[nodiscard]] blocks::MultiplierCalibration get_calibration(uint8_t mul_idx) const;

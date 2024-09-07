@@ -125,10 +125,10 @@ utils::status blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
       if (!res)
         return res;
     } else {
-      return utils::status("MIntBlock: Unknown configuration key");
+      return false;
     }
   }
-  return utils::status::success();
+  return true;
 }
 
 utils::status blocks::MIntBlock::_config_elements_from_json(const JsonVariantConst &cfg) {
