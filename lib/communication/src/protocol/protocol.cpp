@@ -186,7 +186,8 @@ void msg::JsonLinesProtocol::process_out_of_band_handlers(carrier::Carrier &carr
     // TODO: Remove after debugging
     // LOGMEV("Protocol OOB RunManager now broadcasting to %d targets\n", broadcast.size());
     // broadcast.println("{'TEST':'TEST'}");
-    run::RunManager::get().run_next(&run_state_change_handler, &run_data_handler, &alternative_run_data_handler);
+    run::RunManager::get().run_next(carrier_, &run_state_change_handler, &run_data_handler,
+                                    &alternative_run_data_handler);
   }
 }
 
