@@ -128,8 +128,10 @@ bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, platform::Cluster *cluster
       success = false;
     calibration[mul_idx].offset_x = -0.1f;
     while (daq_->sample(mul_idx) < 0.0f) {
-      if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x, 0.0f))
+      if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x, 0.0f)) {
         success = false;
+        break;
+      }
       calibration[mul_idx].offset_x += 0.01f;
       delay(7);
     }
@@ -157,8 +159,10 @@ bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, platform::Cluster *cluster
     calibration[mul_idx].offset_y = -0.1f;
     while (daq_->sample(mul_idx) < 0.0f) {
       if (!hardware->write_calibration_input_offsets(mul_idx, calibration[mul_idx].offset_x,
-                                                     calibration[mul_idx].offset_y))
+                                                     calibration[mul_idx].offset_y)) {
         success = false;
+        break;
+      }
       calibration[mul_idx].offset_y += 0.01f;
       delay(7);
     }
