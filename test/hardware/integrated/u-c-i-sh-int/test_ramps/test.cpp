@@ -73,6 +73,7 @@ void setup_and_measure(bool use_slow_integration) {
   TEST_ASSERT(carrier_.calibrate_routes(&DAQ));
 
   // Measure end value
+  FlexIOControl::reset();
   TEST_ASSERT(FlexIOControl::init(use_slow_integration ? mode::DEFAULT_IC_TIME * 100 : mode::DEFAULT_IC_TIME,
                                   use_slow_integration ? 10'000'000 : 100'000, mode::OnOverload::IGNORE,
                                   mode::OnExtHalt::IGNORE));
