@@ -120,13 +120,20 @@ void setup() {
 
   msg::JsonLinesProtocol::get().init(4096); // Envelope size
 
-  // Done.
-  LOG(ANABRID_DEBUG_INIT, "Initialization done.");
-
   // This should be called sometime at startup
   // TODO: Find a better place.
   daq::OneshotDAQ daq;
   daq.init(0);
+
+  // Run calibration
+  LOG(ANABRID_DEBUG_INIT, "Executing self-calibration, this may take a few moments...");
+  if (!carrier_.calibrate_m_blocks(&daq)){
+    LOG_ERROR("Error during self-calibration. Machine will continue with reduced accuracy.");
+    indicate_led_error();
+  }
+
+  // Done.
+  LOG(ANABRID_DEBUG_INIT, "Initialization done.");
 
   // visual effect to show that booting has been done
   int val = 0xFF;
