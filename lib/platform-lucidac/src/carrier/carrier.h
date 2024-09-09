@@ -62,6 +62,7 @@ public:
   virtual bool calibrate_routes_in_cluster(Cluster &cluster, daq::BaseDAQ *daq_);
   virtual bool calibrate_routes(daq::BaseDAQ *daq_);
   virtual bool calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock, daq::BaseDAQ *daq_);
+  virtual bool calibrate_m_blocks(daq::BaseDAQ *daq_);
 
   virtual void reset(bool keep_calibration);
 

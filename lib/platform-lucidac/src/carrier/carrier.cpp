@@ -154,6 +154,17 @@ bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock
   return true;
 }
 
+bool carrier::Carrier::calibrate_m_blocks(daq::BaseDAQ *daq_) {
+  bool success = true;
+  for (auto & cluster: clusters)
+    for (auto mblock : {cluster.m0block, cluster.m1block}) {
+      if (mblock)
+        if (!calibrate_mblock(cluster, *mblock, daq_))
+          success = false;
+    }
+  return success;
+}
+
 void carrier::Carrier::reset(bool keep_calibration) {
   for (auto &cluster : clusters) {
     cluster.reset(keep_calibration);
