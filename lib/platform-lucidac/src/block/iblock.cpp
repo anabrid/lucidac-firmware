@@ -95,7 +95,7 @@ utils::status blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
       auto res = _config_outputs_from_json(cfgItr->value());
       if(!res) return res;
     } else if (cfgItr->key() == "upscaling") {
-      auto res = !_config_upscaling_from_json(cfgItr->value());
+      auto res = _config_upscaling_from_json(cfgItr->value());
       if(!res) return res;
     } else {
       return utils::status("IBlock: Unknown configuration key");
