@@ -41,7 +41,7 @@ void setup() {
 
   UNITY_BEGIN();
   RUN_TEST(test_acl_prg);
-  io::block_until_button_press();
+  io::block_until_button_press_and_release();
   RUN_TEST(test_acl_clear);
   UNITY_END();
 }

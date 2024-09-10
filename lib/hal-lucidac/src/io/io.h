@@ -21,6 +21,6 @@ void init();
 
 bool get_button();
 
-void block_until_button_press();
+void block_until_button_press_and_release();
 
 } // namespace io
