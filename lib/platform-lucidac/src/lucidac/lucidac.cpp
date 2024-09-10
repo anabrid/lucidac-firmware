@@ -160,16 +160,16 @@ utils::status platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
     if (cfgItr->key() == "adc_channels") {
       auto res = _config_adc_from_json(cfgItr->value());
       if (!res)
-        return utils::status("Could not configure ADCs from configuration.");
+        return utils::status(530, "Could not configure ADCs from configuration.");
     } else if (cfgItr->key() == "acl_select") {
       auto res = _config_acl_from_json(cfgItr->value());
       if (!res)
-        return utils::status("Could not configure ACLs from configuration.");
+        return utils::status(531, "Could not configure ACLs from configuration.");
     } else if (strlen(cfgItr->key().c_str()) >= 1 && cfgItr->key().c_str()[0] == '/') {
       // An sub-entity is refered to. This is already handled by
       // config_from_json() towards the children so it is ignored here.
     } else {
-      return utils::status("LUCIDAC: Unknown configuration key");
+      return utils::status(532, "LUCIDAC: Unknown configuration key");
     }
   }
 

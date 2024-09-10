@@ -17,7 +17,7 @@ utils::status blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
       if (!res)
         return res;
     } else {
-      return utils::status("MMulBlock: Unknown configuration key");
+      return utils::status(771, "MMulBlock: Unknown configuration key");
     }
   }
   return utils::status::success();
@@ -31,20 +31,20 @@ utils::status blocks::MMulBlock::_config_elements_from_json(const JsonVariantCon
 
   auto map = cfg.as<JsonObjectConst>();
   if(!map.containsKey("offset_x") || map["offset_x"].size() != MMulBlock::NUM_MULTIPLIERS)
-    return utils::status("Missing offset_x (need 4 entries)");
+    return utils::status(772, "Missing offset_x (need 4 entries)");
   if(!map.containsKey("offset_y") || map["offset_y"].size() != MMulBlock::NUM_MULTIPLIERS)
-    return utils::status("Missing offset_y (need 4 entries)");
+    return utils::status(773, "Missing offset_y (need 4 entries)");
   if(!map.containsKey("offset_z") || map["offset_z"].size() != MMulBlock::NUM_MULTIPLIERS)
-    return utils::status("Missing offset_z (need 4 entries)");
+    return utils::status(774, "Missing offset_z (need 4 entries)");
   for(int i=0; i<MMulBlock::NUM_MULTIPLIERS; i++) {
     calibration[i].offset_x = map["offset_x"][i];
     calibration[i].offset_y = map["offset_y"][i];
     calibration[i].offset_z = map["offset_z"][i];
 
     if(!hardware->write_calibration_input_offsets(i, calibration[i].offset_x, calibration[i].offset_y))
-      return utils::status("MMulBlock::calibration from json for multiplier %d values offset_x, offset_y not accepted", i);
+      return utils::status(775, "MMulBlock::calibration from json for multiplier %d values offset_x, offset_y not accepted", i);
     if(!hardware->write_calibration_output_offset(i, calibration[i].offset_z))
-      return utils::status("MMulBlock::calibration from json for multiplier %d values offset_z not accepted", i);
+      return utils::status(776, "MMulBlock::calibration from json for multiplier %d values offset_z not accepted", i);
   }
 
   return 0;

@@ -7,6 +7,7 @@
 #include <Arduino.h>
 #include <cstdarg>
 #include <string>
+#include "utils/logging.h"
 
 namespace utils {
 constexpr unsigned int bufsize = 1000;
@@ -34,15 +35,23 @@ public:
 
   explicit status(int code) : code(code) {}
 
-  status(std::string msg) : code(-1), msg(msg) {} ///< Generic failure (without code)
+  /// Generic failure (without code)
+  status(std::string msg) : code(-1), msg(msg) {
+    LOG2("utils::status generic failure ", msg.c_str());
+  }
 
   status() : code(0) {} ///< Generic Success
 
-  status(const char *msg) : status(std::string(String(F(msg)).c_str())) {}
-
   /// Usage like status("Foo %d bar %s baz", 3, "bling");
   template <typename... Args>
-  status(const char *format, Args... args) : status(small_sprintf(String(F(format)).c_str(), args...)) {}
+  status(const char *format, Args... args) : status(small_sprintf(format, args...)) {
+    LOG2("utils::status: ", format);
+  }
+
+  template <typename... Args>
+  status(int code, const char *format, Args... args) : status(code,  small_sprintf(format, args...)) {
+    LOG3("utils::status with code ", code, format);
+  }
 
   bool is_ok() const { return code == 0; }
 
