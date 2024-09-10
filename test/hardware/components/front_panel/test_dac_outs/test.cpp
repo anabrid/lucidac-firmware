@@ -7,7 +7,9 @@
 #include <iostream>
 #include <unity.h>
 
-#include "protocol/jsonl_logging.h"
+#include "daq/daq.h"
+#include "lucidac/lucidac.h"
+
 #include "test_common.h"
 #include "test_parametrized.h"
 
@@ -15,30 +17,12 @@
 #error "This test requires pedantic mode."
 #endif
 
-#include "daq/daq.h"
-#include "lucidac/lucidac.h"
-
-#include <iostream>
-
 /**
  * How to use this test:
- *
- * - Use LUCIDAC with M1 = M-Block-ID
- *   (TODO: Extend test to be able to use any MMul/M-ID block at any M1/M0)
  *
  * - Patch MCX MANUALLY on Front panel:
  *   - Connect AUX0 to IN0
  *   - Connect AUX1 to IN1
- *
- * Typical output:
- *
- * DAC0 input: 0.75 Expected output: -0.0125 Raw output: 8110 ADC0 output: 0.0124367
- * DAC1 input: -0.25 Expected output: 0.0375 Raw output: 8437 ACD1 output: -0.0374626
- * DAC0 input: -1 Expected output: 0.05 Raw output: 8519 ADC0 output: -0.0496703
- * DAC1 input: 1 Expected output: -0.05 Raw output: 7867 ACD1 output: 0.0496704
- * DAC0 input: -0.5 Expected output: -0.025 Raw output: 8032 ADC0 output: 0.0244918
- * DAC1 input: -0.5 Expected output: -0.025 Raw output: 8033 ACD1 output: 0.0244918
- * test/hardware/integrated/dac-fp-i-adc/test_const_dac_adc/test.cpp:114:test_dac_adc_values:PASS
  *
  **/
 
@@ -69,17 +53,17 @@ void test_dac_adc(float val0 = 0.5, float val1 = -0.25) {
   TEST_ASSERT(lucidac.front_panel->signal_generator.set_dac_out0(2 * val0));
   TEST_ASSERT(lucidac.front_panel->signal_generator.set_dac_out1(2 * val1));
 
-  TEST_ASSERT(lucidac.set_acl_select(0, platform::LUCIDAC::ACL::EXTERNAL_));
-  TEST_ASSERT(lucidac.set_acl_select(1, platform::LUCIDAC::ACL::EXTERNAL_));
+  uint8_t acl0_lane = 0;
+  uint8_t acl1_lane = 1;
 
-  uint8_t acl0_lane = 24;
-  uint8_t acl1_lane = 25;
+  TEST_ASSERT(lucidac.set_acl_select(acl0_lane, platform::LUCIDAC::ACL::EXTERNAL_));
+  TEST_ASSERT(lucidac.set_acl_select(acl1_lane, platform::LUCIDAC::ACL::EXTERNAL_));
 
   // Connect ACL to I-Block outputs
   uint8_t adc_channel_val0 = 0;
   uint8_t adc_channel_val1 = 1;
-  TEST_ASSERT(lucidac.clusters[0].iblock->connect(acl0_lane, adc_channel_val0));
-  TEST_ASSERT(lucidac.clusters[0].iblock->connect(acl1_lane, adc_channel_val1));
+  TEST_ASSERT(lucidac.clusters[0].iblock->connect(acl0_lane + 24, adc_channel_val0));
+  TEST_ASSERT(lucidac.clusters[0].iblock->connect(acl1_lane + 24, adc_channel_val1));
 
   // Prepare measure data via SH-Block
   TEST_ASSERT(lucidac.ctrl_block->set_adc_bus_to_cluster_gain(0));
