@@ -47,7 +47,7 @@ FLASHMEM utils::status blocks::MMulBlock::_config_elements_from_json(const JsonV
       return utils::status(776, "MMulBlock::calibration from json for multiplier %d values offset_z not accepted", i);
   }
 
-  return 0;
+  return utils::status::success();
 }
 
 FLASHMEM void blocks::MMulBlock::config_self_to_json(JsonObject &cfg) {

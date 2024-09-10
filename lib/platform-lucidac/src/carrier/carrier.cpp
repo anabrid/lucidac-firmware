@@ -266,12 +266,14 @@ FLASHMEM int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &ms
   // Path may be to one of our sub-entities
   auto resolved_entity = resolve_child_entity(path + 1, path_depth - 1);
   if (!resolved_entity) {
+    // This is wrong, should be rather access path[2]. Please check.
     msg_out["error"] = utils::small_sprintf("Carrier: No entity named '%s'", path[1].c_str());
     return error(4);
   }
 
   utils::status res = resolved_entity->config_from_json(msg_in["config"]);
   if (!res && msg_out["error"].isNull()) {
+    // This error message is pointless if the configuration fails for applying to a nested entity.
     msg_out["error"] = utils::small_sprintf("Could not apply configuration to entity '%s', error: %s",
                                             resolved_entity->get_entity_id().c_str(), res.msg.c_str());
     return error(10'000 + res.code);

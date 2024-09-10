@@ -11,11 +11,13 @@
 
 namespace utils {
 constexpr unsigned int bufsize = 1000;
-extern char buf[bufsize];
+//extern char buf[bufsize];
 
 template <typename... Args> FLASHMEM std::string small_sprintf(const char *format, Args... args) {
+  char buf[bufsize];
   snprintf(buf, bufsize, format, args...);
-  return buf;
+  std::string ret = buf;
+  return ret;
 }
 
 /**
@@ -31,21 +33,29 @@ public:
   int code;
   std::string msg;
 
-  status(int code, std::string msg) : code(code), msg(msg) {}
-
-  explicit status(int code) : code(code), msg("No error message provided") {}
-
-  /// Generic failure (without code)
-  status(std::string msg) : code(-1), msg(msg) {
-    LOG2("utils::status generic failure ", msg.c_str());
+  status(int code, std::string msg) : code(code), msg(msg) {
+    if(code!=0) {
+      LOG4("utils::status error code=", code, " message=", msg.c_str());
+      if(msg.length() == 0) {
+        LOG_ALWAYS("Misuse of utils::status! Probably a casting problem.");
+      }
+    }
   }
 
-  status() : code(0) {} ///< Generic Success
+  status() : status(0, "success") {} ///< Generic Success
+
+  explicit status(int code) : status(code, "No error message provided") {}
+  explicit status(bool code) : status(code ? 0 : 1) {}
+
+  /// Generic failure (without code)
+  explicit status(std::string msg) : status(-1, msg) {}
+
+  // This constructor is neccessary to distinguish it from the status(*format, ...) constructor.
+  explicit status(const char *msg) : status(-2, msg) {}
 
   /// Usage like status("Foo %d bar %s baz", 3, "bling");
   template <typename... Args>
   status(const char *format, Args... args) : status(small_sprintf(format, args...)) {
-    LOG2("utils::status: ", format);
   }
 
   template <typename... Args>
