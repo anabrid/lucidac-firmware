@@ -323,6 +323,7 @@ public:
 protected:
   utils::status config_self_from_json(JsonObjectConst cfg) override;
   utils::status _config_elements_from_json(const JsonVariantConst &cfg);
+  void config_self_to_json(JsonObject &cfg) override;
 };
 
 } // namespace blocks

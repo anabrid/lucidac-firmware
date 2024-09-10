@@ -12,7 +12,7 @@ utils::status blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
   // But due to automation, some may still be sent.
   // Thus we accept any configuration containing only empty values or similar.
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
-    if (cfgItr->key() == "elements") {
+    if (cfgItr->key() == "calibration") {
       auto res = _config_elements_from_json(cfgItr->value());
       if (!res)
         return res;
@@ -24,7 +24,43 @@ utils::status blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
 }
 
 utils::status blocks::MMulBlock::_config_elements_from_json(const JsonVariantConst &cfg) {
-  return utils::status("MMulBlock currently does not accept configuration");
+  //return utils::status("MMulBlock currently does not accept configuration");
+
+  // Note: The following is a hack.
+  //       We generally don't want clients to take over calibration.
+
+  auto map = cfg.as<JsonObjectConst>();
+  if(!map.containsKey("offset_x") || map["offset_x"].size() != MMulBlock::NUM_MULTIPLIERS)
+    return utils::status("Missing offset_x (need 4 entries)");
+  if(!map.containsKey("offset_y") || map["offset_y"].size() != MMulBlock::NUM_MULTIPLIERS)
+    return utils::status("Missing offset_y (need 4 entries)");
+  if(!map.containsKey("offset_z") || map["offset_z"].size() != MMulBlock::NUM_MULTIPLIERS)
+    return utils::status("Missing offset_z (need 4 entries)");
+  for(int i=0; i<MMulBlock::NUM_MULTIPLIERS; i++) {
+    calibration[i].offset_x = map["offset_x"][i];
+    calibration[i].offset_y = map["offset_y"][i];
+    calibration[i].offset_z = map["offset_z"][i];
+
+    if(!hardware->write_calibration_input_offsets(i, calibration[i].offset_x, calibration[i].offset_y))
+      return utils::status("MMulBlock::calibration from json for multiplier %d values offset_x, offset_y not accepted", i);
+    if(!hardware->write_calibration_output_offset(i, calibration[i].offset_z))
+      return utils::status("MMulBlock::calibration from json for multiplier %d values offset_z not accepted", i);
+  }
+
+  return 0;
+}
+
+void blocks::MMulBlock::config_self_to_json(JsonObject &cfg) {
+  auto json_calibration = cfg.createNestedObject("calibration");
+  auto offset_x = json_calibration.createNestedArray("offset_x");
+  auto offset_y = json_calibration.createNestedArray("offset_y");
+  auto offset_z = json_calibration.createNestedArray("offset_z");
+
+  for(int i=0; i<MMulBlock::NUM_MULTIPLIERS; i++) {
+    offset_x.add(calibration[i].offset_x);
+    offset_y.add(calibration[i].offset_y);
+    offset_z.add(calibration[i].offset_z);
+  }
 }
 
 blocks::MMulBlock *blocks::MMulBlock::from_entity_classifier(entities::EntityClassifier classifier,
