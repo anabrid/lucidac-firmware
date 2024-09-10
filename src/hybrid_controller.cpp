@@ -43,7 +43,7 @@ void leds(uint8_t val) {
   }
 }
 
-void indicate_led_error() {
+FLASHMEM void indicate_led_error() {
   size_t num_blinks = 10;
   for(size_t i=0; i<num_blinks; i++) {
     leds(0x55);
@@ -60,7 +60,7 @@ void indicate_led_error() {
   msg::Log::get().sinks.add(&client);
 }*/
 
-void setup() {
+FLASHMEM void setup() {
   // Initialize serial communication
   Serial.begin(0);
   //while (!Serial && millis() < 4000) {
@@ -142,7 +142,7 @@ void setup() {
   }
 }
 
-void loop() {
+FLASHMEM void loop() {
   if(netconf.enable_jsonl)
     msg::JsonlServer::get().loop();
 

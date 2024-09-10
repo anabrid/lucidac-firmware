@@ -86,7 +86,7 @@ void blocks::IBlock::reset(bool keep_calibration) {
   reset_upscaling();
 }
 
-utils::status blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
+FLASHMEM utils::status blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
@@ -104,7 +104,7 @@ utils::status blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
   return utils::status::success();
 }
 
-utils::status blocks::IBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
+FLASHMEM utils::status blocks::IBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
   // Handle a mapping of output to list of inputs
   // This only overrides outputs that are specifically mentioned
   if (cfg.is<JsonObjectConst>()) {
@@ -144,7 +144,7 @@ utils::status blocks::IBlock::_config_outputs_from_json(const JsonVariantConst &
   return utils::status("IBlock: Expected either array or object as configuration");
 }
 
-utils::status blocks::IBlock::_config_upscaling_from_json(const JsonVariantConst &cfg) {
+FLASHMEM utils::status blocks::IBlock::_config_upscaling_from_json(const JsonVariantConst &cfg) {
   if (cfg.is<JsonObjectConst>()) {
     for (JsonPairConst keyval : cfg.as<JsonObjectConst>()) {
       if (!keyval.value().is<bool>())
@@ -172,7 +172,7 @@ utils::status blocks::IBlock::_config_upscaling_from_json(const JsonVariantConst
   return utils::status("IBlock upscaling: Either provide list or object");
 }
 
-utils::status blocks::IBlock::_connect_from_json(const JsonVariantConst &input_spec, uint8_t output) {
+FLASHMEM utils::status blocks::IBlock::_connect_from_json(const JsonVariantConst &input_spec, uint8_t output) {
   if (input_spec.isNull()) {
     // Output is already disconnected from outer code
   } else if (input_spec.is<JsonArrayConst>()) {
@@ -224,7 +224,7 @@ bool blocks::IBlock::get_upscaling(uint8_t output) const {
     return scaling_factors[output];
 }
 
-void blocks::IBlock::config_self_to_json(JsonObject &cfg) {
+FLASHMEM void blocks::IBlock::config_self_to_json(JsonObject &cfg) {
   Entity::config_self_to_json(cfg);
   // Save outputs into cfg
   auto outputs_cfg = cfg.createNestedArray("outputs");
@@ -248,7 +248,7 @@ void blocks::IBlock::config_self_to_json(JsonObject &cfg) {
   }
 }
 
-blocks::IBlock *blocks::IBlock::from_entity_classifier(entities::EntityClassifier classifier,
+FLASHMEM blocks::IBlock *blocks::IBlock::from_entity_classifier(entities::EntityClassifier classifier,
                                                        bus::addr_t block_address) {
   if (!classifier or classifier.class_enum != CLASS_)
     return nullptr;

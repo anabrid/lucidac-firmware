@@ -13,7 +13,7 @@ namespace utils {
 constexpr unsigned int bufsize = 1000;
 extern char buf[bufsize];
 
-template <typename... Args> std::string small_sprintf(const char *format, Args... args) {
+template <typename... Args> FLASHMEM std::string small_sprintf(const char *format, Args... args) {
   snprintf(buf, bufsize, format, args...);
   return buf;
 }

@@ -7,15 +7,15 @@
 #include "net/settings.h"
 #include "utils/is_number.h"
 
-entities::EntityClass carrier::Carrier::get_entity_class() const { return entities::EntityClass::CARRIER; }
+FLASHMEM entities::EntityClass carrier::Carrier::get_entity_class() const { return entities::EntityClass::CARRIER; }
 
 // Carrier lacks EEPROM
-std::array<uint8_t, 8> carrier::Carrier::get_entity_eui() const { return {0}; }
+FLASHMEM std::array<uint8_t, 8> carrier::Carrier::get_entity_eui() const { return {0}; }
 
-carrier::Carrier::Carrier(std::vector<Cluster> clusters, carrier::Carrier_HAL *hardware)
+FLASHMEM carrier::Carrier::Carrier(std::vector<Cluster> clusters, carrier::Carrier_HAL *hardware)
     : Entity(""), hardware(hardware), clusters(std::move(clusters)) {}
 
-bool carrier::Carrier::init() {
+FLASHMEM bool carrier::Carrier::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
 
 #ifdef ARDUINO
@@ -39,7 +39,7 @@ bool carrier::Carrier::init() {
   return true;
 }
 
-std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
+FLASHMEM std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
   std::vector<entities::Entity *> children;
   for (auto &cluster : clusters) {
     children.push_back(&cluster);
@@ -47,7 +47,7 @@ std::vector<entities::Entity *> carrier::Carrier::get_child_entities() {
   return children;
 }
 
-entities::Entity *carrier::Carrier::get_child_entity(const std::string &child_id) {
+FLASHMEM entities::Entity *carrier::Carrier::get_child_entity(const std::string &child_id) {
   if (utils::is_number(child_id.begin(), child_id.end())) {
     auto cluster_idx = std::stoul(child_id);
     if (cluster_idx < 0 or clusters.size() < cluster_idx)
@@ -57,12 +57,12 @@ entities::Entity *carrier::Carrier::get_child_entity(const std::string &child_id
   return nullptr;
 }
 
-utils::status carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
+FLASHMEM utils::status carrier::Carrier::config_self_from_json(JsonObjectConst cfg) {
   // TODO: Have an option to fail on unexpected configuration
   return utils::status::success();
 }
 
-int carrier::Carrier::write_to_hardware() {
+FLASHMEM int carrier::Carrier::write_to_hardware() {
   for (auto &cluster : clusters) {
     if (!cluster.write_to_hardware()) {
       LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
@@ -76,14 +76,14 @@ int carrier::Carrier::write_to_hardware() {
   return true;
 }
 
-bool carrier::Carrier::calibrate_offset() {
+FLASHMEM bool carrier::Carrier::calibrate_offset() {
   for (auto &cluster : clusters)
     if (!cluster.calibrate_offsets())
       return false;
   return true;
 }
 
-bool carrier::Carrier::calibrate_routes_in_cluster(Cluster &cluster, daq::BaseDAQ *daq_) {
+FLASHMEM bool carrier::Carrier::calibrate_routes_in_cluster(Cluster &cluster, daq::BaseDAQ *daq_) {
   ctrl_block->set_adc_bus_to_cluster_gain(cluster.get_cluster_idx());
   if (!ctrl_block->write_to_hardware())
     return false;
@@ -95,7 +95,7 @@ bool carrier::Carrier::calibrate_routes_in_cluster(Cluster &cluster, daq::BaseDA
   return true;
 }
 
-bool carrier::Carrier::calibrate_routes(daq::BaseDAQ *daq_) {
+FLASHMEM bool carrier::Carrier::calibrate_routes(daq::BaseDAQ *daq_) {
   for (auto &cluster : clusters) {
     if (!calibrate_routes_in_cluster(cluster, daq_))
       return false;
@@ -103,7 +103,7 @@ bool carrier::Carrier::calibrate_routes(daq::BaseDAQ *daq_) {
   return true;
 }
 
-bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock, daq::BaseDAQ *daq_) {
+FLASHMEM bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock, daq::BaseDAQ *daq_) {
   // CARE: This function does not preserve the currently configured routes
   LOG(ANABRID_DEBUG_CALIBRATION, __PRETTY_FUNCTION__);
 
@@ -154,7 +154,7 @@ bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock
   return true;
 }
 
-bool carrier::Carrier::calibrate_m_blocks(daq::BaseDAQ *daq_) {
+FLASHMEM bool carrier::Carrier::calibrate_m_blocks(daq::BaseDAQ *daq_) {
   bool success = true;
   for (auto & cluster: clusters)
     for (auto mblock : {cluster.m0block, cluster.m1block}) {
@@ -165,7 +165,7 @@ bool carrier::Carrier::calibrate_m_blocks(daq::BaseDAQ *daq_) {
   return success;
 }
 
-void carrier::Carrier::reset(bool keep_calibration) {
+FLASHMEM void carrier::Carrier::reset(bool keep_calibration) {
   for (auto &cluster : clusters) {
     cluster.reset(keep_calibration);
   }
@@ -176,7 +176,7 @@ void carrier::Carrier::reset(bool keep_calibration) {
 
 const std::array<int8_t, 8> &carrier::Carrier::get_adc_channels() const { return adc_channels; }
 
-bool carrier::Carrier::set_adc_channels(const std::array<int8_t, 8> &channels) {
+FLASHMEM bool carrier::Carrier::set_adc_channels(const std::array<int8_t, 8> &channels) {
   // Check that all inputs are < 15
   for (auto channel : channels) {
     if (channel > 15)
@@ -199,7 +199,7 @@ bool carrier::Carrier::set_adc_channels(const std::array<int8_t, 8> &channels) {
   return true;
 }
 
-bool carrier::Carrier::set_adc_channel(uint8_t idx, int8_t adc_channel) {
+FLASHMEM bool carrier::Carrier::set_adc_channel(uint8_t idx, int8_t adc_channel) {
   if (idx >= adc_channels.size())
     return false;
   if (adc_channel < 0)
@@ -216,7 +216,7 @@ bool carrier::Carrier::set_adc_channel(uint8_t idx, int8_t adc_channel) {
   return true;
 }
 
-void carrier::Carrier::reset_adc_channels() {
+FLASHMEM void carrier::Carrier::reset_adc_channels() {
   std::fill(adc_channels.begin(), adc_channels.end(), ADC_CHANNEL_DISABLED);
 }
 
@@ -224,7 +224,7 @@ constexpr int error(int i) { return i; } // just some syntactic sugar
 
 constexpr int success = 0;
 
-int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
+FLASHMEM int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
 #ifdef ANABRID_DEBUG_COMMS
   Serial.println(__PRETTY_FUNCTION__);
 #endif
@@ -313,7 +313,7 @@ int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
   }
 }
 
-int carrier::Carrier::get_config(JsonObjectConst msg_in, JsonObject &msg_out) {
+FLASHMEM int carrier::Carrier::get_config(JsonObjectConst msg_in, JsonObject &msg_out) {
 #ifdef ANABRID_DEBUG_COMMS
   Serial.println(__PRETTY_FUNCTION__);
 #endif

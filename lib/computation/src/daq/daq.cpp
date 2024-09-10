@@ -470,7 +470,7 @@ bool daq::FlexIODAQ::finalize() {
 
 #endif
 
-int daq::OneshotDAQ::sample(JsonObjectConst msg_in, JsonObject &msg_out) {
+FLASHMEM int daq::OneshotDAQ::sample(JsonObjectConst msg_in, JsonObject &msg_out) {
   std::array<float, daq::NUM_CHANNELS> data{};
 
   auto do_sample_avg = msg_in["sample_avg"];

@@ -7,13 +7,13 @@
 
 #include "carrier/cluster.h"
 
-blocks::MIntBlock::MIntBlock(bus::addr_t block_address, MIntBlockHAL *hardware)
+FLASHMEM blocks::MIntBlock::MIntBlock(bus::addr_t block_address, MIntBlockHAL *hardware)
     : blocks::MBlock{block_address}, hardware(hardware), ic_values{}, time_factors{} {
   reset_ic_values();
   reset_time_factors();
 }
 
-bool blocks::MIntBlock::init() {
+FLASHMEM bool blocks::MIntBlock::init() {
   if (!FunctionBlock::init())
     return false;
   if (!hardware->init())
@@ -21,29 +21,29 @@ bool blocks::MIntBlock::init() {
   return true;
 }
 
-const std::array<float, 8> &blocks::MIntBlock::get_ic_values() const { return ic_values; }
+FLASHMEM const std::array<float, 8> &blocks::MIntBlock::get_ic_values() const { return ic_values; }
 
-float blocks::MIntBlock::get_ic_value(uint8_t idx) const {
+FLASHMEM float blocks::MIntBlock::get_ic_value(uint8_t idx) const {
   if (idx >= ic_values.size())
     return 0.0f;
   return ic_values[idx];
 }
 
-bool blocks::MIntBlock::set_ic_values(const std::array<float, 8> &ic_values_) {
+FLASHMEM bool blocks::MIntBlock::set_ic_values(const std::array<float, 8> &ic_values_) {
   for (auto idx = 0u; idx < ic_values_.size(); idx++)
     if (!set_ic_value(idx, ic_values_[idx]))
       return false;
   return true;
 }
 
-bool blocks::MIntBlock::set_ic_values(float value) {
+FLASHMEM bool blocks::MIntBlock::set_ic_values(float value) {
   for (auto idx = 0u; idx < ic_values.size(); idx++)
     if (!set_ic_value(idx, value))
       return false;
   return true;
 }
 
-bool blocks::MIntBlock::set_ic_value(uint8_t idx, float value) {
+FLASHMEM bool blocks::MIntBlock::set_ic_value(uint8_t idx, float value) {
   if (idx >= ic_values.size())
     return false;
   if (value > 1.0f or value < -1.0f)
@@ -52,31 +52,31 @@ bool blocks::MIntBlock::set_ic_value(uint8_t idx, float value) {
   return true;
 }
 
-void blocks::MIntBlock::reset_ic_values() { std::fill(ic_values.begin(), ic_values.end(), 0.0f); }
+FLASHMEM void blocks::MIntBlock::reset_ic_values() { std::fill(ic_values.begin(), ic_values.end(), 0.0f); }
 
-const std::array<unsigned int, 8> &blocks::MIntBlock::get_time_factors() const { return time_factors; }
+FLASHMEM const std::array<unsigned int, 8> &blocks::MIntBlock::get_time_factors() const { return time_factors; }
 
-unsigned int blocks::MIntBlock::get_time_factor(uint8_t idx) const {
+FLASHMEM unsigned int blocks::MIntBlock::get_time_factor(uint8_t idx) const {
   if (idx >= time_factors.size())
     return 0;
   return time_factors[idx];
 }
 
-bool blocks::MIntBlock::set_time_factors(const std::array<unsigned int, 8> &time_factors_) {
+FLASHMEM bool blocks::MIntBlock::set_time_factors(const std::array<unsigned int, 8> &time_factors_) {
   for (auto idx = 0u; idx < time_factors_.size(); idx++)
     if (!set_time_factor(idx, time_factors_[idx]))
       return false;
   return true;
 }
 
-bool blocks::MIntBlock::set_time_factors(unsigned int k) {
+FLASHMEM bool blocks::MIntBlock::set_time_factors(unsigned int k) {
   for (auto idx = 0u; idx < time_factors.size(); idx++)
     if (!set_time_factor(idx, k))
       return false;
   return true;
 }
 
-bool blocks::MIntBlock::set_time_factor(uint8_t int_idx, unsigned int k) {
+FLASHMEM bool blocks::MIntBlock::set_time_factor(uint8_t int_idx, unsigned int k) {
   if (!(k == 100 or k == 10000))
     return false;
   if (int_idx >= NUM_INTEGRATORS)
@@ -85,13 +85,13 @@ bool blocks::MIntBlock::set_time_factor(uint8_t int_idx, unsigned int k) {
   return true;
 }
 
-void blocks::MIntBlock::reset_time_factors() {
+FLASHMEM void blocks::MIntBlock::reset_time_factors() {
   // Copying solves a strange linker issue "relocation against ... in read-only section `.text'"
   auto default_ = DEFAULT_TIME_FACTOR;
   std::fill(std::begin(time_factors), std::end(time_factors), default_);
 }
 
-bool blocks::MIntBlock::write_to_hardware() {
+FLASHMEM bool blocks::MIntBlock::write_to_hardware() {
   // Write IC values one channel at a time
   for (decltype(ic_values.size()) i = 0; i < ic_values.size(); i++) {
     if (!hardware->write_ic(i, ic_values[i])) {
@@ -109,13 +109,13 @@ bool blocks::MIntBlock::write_to_hardware() {
   return true;
 }
 
-void blocks::MIntBlock::reset(bool keep_calibration) {
+FLASHMEM void blocks::MIntBlock::reset(bool keep_calibration) {
   FunctionBlock::reset(keep_calibration);
   reset_ic_values();
   reset_time_factors();
 }
 
-utils::status blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
+FLASHMEM utils::status blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
@@ -131,7 +131,7 @@ utils::status blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {
   return utils::status::success();
 }
 
-utils::status blocks::MIntBlock::_config_elements_from_json(const JsonVariantConst &cfg) {
+FLASHMEM utils::status blocks::MIntBlock::_config_elements_from_json(const JsonVariantConst &cfg) {
   if (cfg.is<JsonArrayConst>()) {
     auto ints_cfg = cfg.as<JsonArrayConst>();
     if (ints_cfg.size() != NUM_INTEGRATORS) {
@@ -180,7 +180,7 @@ utils::status blocks::MIntBlock::_config_elements_from_json(const JsonVariantCon
   return utils::status("MIntBlock: Configuration must either be array or object");
 }
 
-void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
+FLASHMEM void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
   Entity::config_self_to_json(cfg);
   auto ints_cfg = cfg.createNestedArray("elements");
   for (size_t i = 0; i < NUM_INTEGRATORS; i++) {
@@ -190,7 +190,7 @@ void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
   }
 }
 
-blocks::MIntBlock *blocks::MIntBlock::from_entity_classifier(entities::EntityClassifier classifier,
+FLASHMEM blocks::MIntBlock *blocks::MIntBlock::from_entity_classifier(entities::EntityClassifier classifier,
                                                              const bus::addr_t block_address) {
   if (!classifier or classifier.class_enum != CLASS_ or classifier.type != static_cast<uint8_t>(TYPE))
     return nullptr;
@@ -208,19 +208,19 @@ blocks::MIntBlock *blocks::MIntBlock::from_entity_classifier(entities::EntityCla
 
 // Hardware abstraction layer
 
-blocks::MIntBlockHAL_V_1_0_X::MIntBlockHAL_V_1_0_X(bus::addr_t block_address)
+FLASHMEM blocks::MIntBlockHAL_V_1_0_X::MIntBlockHAL_V_1_0_X(bus::addr_t block_address)
     : f_ic_dac(bus::replace_function_idx(block_address, 4)),
       f_time_factor(bus::replace_function_idx(block_address, 5), true),
       f_time_factor_sync(bus::replace_function_idx(block_address, 6)),
       f_time_factor_reset(bus::replace_function_idx(block_address, 7)) {}
 
-bool blocks::MIntBlockHAL_V_1_0_X::init() {
+FLASHMEM bool blocks::MIntBlockHAL_V_1_0_X::init() {
   if (!MIntBlockHAL::init())
     return false;
   return f_ic_dac.init() and f_ic_dac.set_external_reference(true) and f_ic_dac.set_double_gain(true);
 }
 
-bool blocks::MIntBlockHAL_V_1_0_X::write_ic(uint8_t idx, float ic) {
+FLASHMEM bool blocks::MIntBlockHAL_V_1_0_X::write_ic(uint8_t idx, float ic) {
   if (idx >= MIntBlock::NUM_INTEGRATORS)
     return false;
   // Note: The DAC60508 implementation converts values assuming a 2.5V reference,
@@ -232,7 +232,7 @@ bool blocks::MIntBlockHAL_V_1_0_X::write_ic(uint8_t idx, float ic) {
   return f_ic_dac.set_channel(idx, (ic + 1.0f) * 1.25f);
 }
 
-bool blocks::MIntBlockHAL_V_1_0_X::write_time_factor_switches(std::bitset<8> switches) {
+FLASHMEM bool blocks::MIntBlockHAL_V_1_0_X::write_time_factor_switches(std::bitset<8> switches) {
   if (!f_time_factor.transfer8(static_cast<uint8_t>(switches.to_ulong())))
     return false;
   f_time_factor_sync.trigger();

@@ -12,11 +12,11 @@
 #include "block/mblock.h"
 #include "block/ublock.h"
 
-std::array<blocks::FunctionBlock *, 6> platform::Cluster::get_blocks() const {
+FLASHMEM std::array<blocks::FunctionBlock *, 6> platform::Cluster::get_blocks() const {
   return {m0block, m1block, ublock, cblock, iblock, shblock};
 }
 
-bool platform::Cluster::init() {
+FLASHMEM bool platform::Cluster::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
 
   // Dynamically detect installed blocks
@@ -66,10 +66,10 @@ bool platform::Cluster::init() {
   return true;
 }
 
-platform::Cluster::Cluster(uint8_t cluster_idx)
+FLASHMEM platform::Cluster::Cluster(uint8_t cluster_idx)
     : entities::Entity(std::to_string(cluster_idx)), cluster_idx(cluster_idx) {}
 
-bool platform::Cluster::calibrate_offsets() {
+FLASHMEM bool platform::Cluster::calibrate_offsets() {
   LOG_ANABRID_DEBUG_CALIBRATION("Calibrating offsets");
   if (!ublock or !shblock)
     return false; // Fatal error preventing any further regular operation in the system
@@ -90,7 +90,7 @@ bool platform::Cluster::calibrate_offsets() {
   return true;
 }
 
-bool platform::Cluster::calibrate_routes(daq::BaseDAQ *daq) {
+FLASHMEM bool platform::Cluster::calibrate_routes(daq::BaseDAQ *daq) {
   bool success = true;
   // CARE: This function assumes that certain preparations have been made, see Carrier::calibrate.
 
@@ -218,7 +218,7 @@ bool platform::Cluster::calibrate_routes(daq::BaseDAQ *daq) {
   return success;
 }
 
-bool platform::Cluster::calibrate_m_blocks(daq::BaseDAQ *daq) {
+FLASHMEM bool platform::Cluster::calibrate_m_blocks(daq::BaseDAQ *daq) {
   bool success = true;
   for (auto mblock : {m0block, m1block}) {
     if (mblock)
@@ -228,7 +228,7 @@ bool platform::Cluster::calibrate_m_blocks(daq::BaseDAQ *daq) {
   return success;
 }
 
-bool platform::Cluster::write_to_hardware() {
+FLASHMEM bool platform::Cluster::write_to_hardware() {
   for (auto block : get_blocks()) {
     if (block)
       if (!block->write_to_hardware()) {
@@ -239,7 +239,7 @@ bool platform::Cluster::write_to_hardware() {
   return true;
 }
 
-bool platform::Cluster::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out) {
+FLASHMEM bool platform::Cluster::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out) {
   if (fabs(c_factor) > 1.0f) {
     c_factor = c_factor * 0.1f;
     iblock->set_upscaling(u_out, true);
@@ -255,7 +255,7 @@ bool platform::Cluster::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8
   return true;
 }
 
-bool platform::Cluster::add_constant(blocks::UBlock::Transmission_Mode signal_type, uint8_t u_out,
+FLASHMEM bool platform::Cluster::add_constant(blocks::UBlock::Transmission_Mode signal_type, uint8_t u_out,
                                      float c_factor, uint8_t i_out) {
   if (fabs(c_factor) > 1.0f) {
     c_factor = c_factor * 0.1f;
@@ -272,14 +272,14 @@ bool platform::Cluster::add_constant(blocks::UBlock::Transmission_Mode signal_ty
   return true;
 }
 
-bool platform::Cluster::route_in_external(uint8_t in, uint8_t i_out) {
+FLASHMEM bool platform::Cluster::route_in_external(uint8_t in, uint8_t i_out) {
   if (in > 7)
     return false;
 
   return iblock->connect(in + 24, i_out);
 }
 
-bool platform::Cluster::route_out_external(uint8_t u_in, uint8_t out, float c_factor) {
+FLASHMEM bool platform::Cluster::route_out_external(uint8_t u_in, uint8_t out, float c_factor) {
   if (out > 7)
     return false;
 
@@ -288,14 +288,14 @@ bool platform::Cluster::route_out_external(uint8_t u_in, uint8_t out, float c_fa
   return cblock->set_factor(out + 24, c_factor);
 }
 
-void platform::Cluster::reset(bool keep_calibration) {
+FLASHMEM void platform::Cluster::reset(bool keep_calibration) {
   for (auto block : get_blocks()) {
     if (block)
       block->reset(keep_calibration);
   }
 }
 
-entities::Entity *platform::Cluster::get_child_entity(const std::string &child_id) {
+FLASHMEM entities::Entity *platform::Cluster::get_child_entity(const std::string &child_id) {
   if (child_id == "M0")
     return m0block;
   else if (child_id == "M1")
@@ -311,7 +311,7 @@ entities::Entity *platform::Cluster::get_child_entity(const std::string &child_i
   return nullptr;
 }
 
-utils::status platform::Cluster::config_self_from_json(JsonObjectConst cfg) {
+FLASHMEM utils::status platform::Cluster::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
@@ -320,11 +320,11 @@ utils::status platform::Cluster::config_self_from_json(JsonObjectConst cfg) {
   return utils::status::success();
 }
 
-std::vector<entities::Entity *> platform::Cluster::get_child_entities() {
+FLASHMEM std::vector<entities::Entity *> platform::Cluster::get_child_entities() {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
   return {m0block, m1block, ublock, cblock, iblock, shblock};
 }
 
-uint8_t platform::Cluster::get_cluster_idx() const { return cluster_idx; }
+FLASHMEM uint8_t platform::Cluster::get_cluster_idx() const { return cluster_idx; }

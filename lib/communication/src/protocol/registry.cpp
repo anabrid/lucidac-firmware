@@ -23,7 +23,7 @@
 // allocate singleton storage
 msg::handlers::DynamicRegistry msg::handlers::Registry;
 
-void msg::handlers::DynamicRegistry::init(carrier::Carrier &c) {
+FLASHMEM void msg::handlers::DynamicRegistry::init(carrier::Carrier &c) {
   using namespace net::auth;
   using namespace msg::handlers;
 
@@ -104,7 +104,7 @@ bool msg::handlers::DynamicRegistry::set(const std::string &msg_type, int result
   }
 }
 
-void msg::handlers::DynamicRegistry::dump() {
+FLASHMEM void msg::handlers::DynamicRegistry::dump() {
   Serial.print("Registered message handlers (msg::handlers::DynamicRegistry): ");
   for (auto const &kv : entries) {
     Serial.print(kv.first.c_str());
@@ -123,7 +123,7 @@ void msg::handlers::DynamicRegistry::dump() {
   Serial.println();
 }
 
-void msg::handlers::DynamicRegistry::write_handler_names_to(JsonArray &target) {
+FLASHMEM void msg::handlers::DynamicRegistry::write_handler_names_to(JsonArray &target) {
   for (auto const &kv : entries) {
     if (kv.second.handler)
       target.add(kv.first);

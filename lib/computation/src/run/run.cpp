@@ -7,7 +7,7 @@
 #include "utils/logging.h"
 #include <utility>
 
-run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
+FLASHMEM run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
   // ATTENTION: ArduinoJSON cannot easily handle 64bit integers,
   //        cf. https://arduinojson.org/v6/api/config/use_long_long/
   // Therefore, client libraries should make use of appropriate units

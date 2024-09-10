@@ -7,28 +7,28 @@
 
 platform::LUCIDACFrontPanel::LUCIDACFrontPanel() : entities::Entity("FP") {}
 
-bool platform::LUCIDACFrontPanel::init() {
+FLASHMEM bool platform::LUCIDACFrontPanel::init() {
   leds.reset();
   return signal_generator.init();
 }
 
-void platform::LUCIDACFrontPanel::reset() {
+FLASHMEM void platform::LUCIDACFrontPanel::reset() {
   leds.reset();
   signal_generator.sleep();
 }
 
-int platform::LUCIDACFrontPanel::write_to_hardware() {
+FLASHMEM int platform::LUCIDACFrontPanel::write_to_hardware() {
   if (!leds.write_to_hardware())
     return -1;
   return signal_generator.write_to_hardware();
 }
 
-platform::LUCIDACFrontPanel::LEDs::LEDs()
+FLASHMEM platform::LUCIDACFrontPanel::LEDs::LEDs()
     : led_register(bus::address_from_tuple(2, LED_REGISTER_IDX), true),
       led_register_store(bus::address_from_tuple(2, LED_REGISTER_STORE_IDX)),
       led_register_reset(bus::address_from_tuple(2, LED_REGISTER_RESET_IDX)) {}
 
-bool platform::LUCIDACFrontPanel::LEDs::set(const uint8_t led, bool on) {
+FLASHMEM bool platform::LUCIDACFrontPanel::LEDs::set(const uint8_t led, bool on) {
   if (led > 7)
     return false;
 
@@ -40,61 +40,61 @@ bool platform::LUCIDACFrontPanel::LEDs::set(const uint8_t led, bool on) {
   return true;
 }
 
-void platform::LUCIDACFrontPanel::LEDs::set_all(const uint8_t states) { led_states = states; }
+FLASHMEM void platform::LUCIDACFrontPanel::LEDs::set_all(const uint8_t states) { led_states = states; }
 
-void platform::LUCIDACFrontPanel::LEDs::reset() {
+FLASHMEM void platform::LUCIDACFrontPanel::LEDs::reset() {
   led_states = 0;
   led_register_reset.trigger();
 }
 
-uint8_t platform::LUCIDACFrontPanel::LEDs::get_all() const { return led_states; }
+FLASHMEM uint8_t platform::LUCIDACFrontPanel::LEDs::get_all() const { return led_states; }
 
-bool platform::LUCIDACFrontPanel::LEDs::write_to_hardware() const {
+FLASHMEM bool platform::LUCIDACFrontPanel::LEDs::write_to_hardware() const {
   bool ret = led_register.transfer8(led_states);
   led_register_store.trigger();
   return ret;
 }
 
-platform::LUCIDACFrontPanel::SignalGenerator::SignalGenerator()
+FLASHMEM platform::LUCIDACFrontPanel::SignalGenerator::SignalGenerator()
     : digital_analog_converter(bus::address_from_tuple(2, DAC_IDX)),
       function_generator(bus::address_from_tuple(2, FUNCTION_GENERATOR_IDX)) {}
 
-bool platform::LUCIDACFrontPanel::SignalGenerator::init() {
+FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::init() {
   return digital_analog_converter.init() && function_generator.init();
 }
 
-void platform::LUCIDACFrontPanel::SignalGenerator::set_frequency(float frequency) { _frequency = frequency; }
+FLASHMEM void platform::LUCIDACFrontPanel::SignalGenerator::set_frequency(float frequency) { _frequency = frequency; }
 
-void platform::LUCIDACFrontPanel::SignalGenerator::set_phase(float phase) { _phase = phase; }
+FLASHMEM void platform::LUCIDACFrontPanel::SignalGenerator::set_phase(float phase) { _phase = phase; }
 
-void platform::LUCIDACFrontPanel::SignalGenerator::set_wave_form(functions::AD9834::WaveForm wave_form) {
+FLASHMEM void platform::LUCIDACFrontPanel::SignalGenerator::set_wave_form(functions::AD9834::WaveForm wave_form) {
   _wave_form = wave_form;
 }
 
-bool platform::LUCIDACFrontPanel::SignalGenerator::set_amplitude(float amplitude) {
+FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::set_amplitude(float amplitude) {
   _amplitude = amplitude;
   return true;
 }
 
-bool platform::LUCIDACFrontPanel::SignalGenerator::set_square_voltage_levels(float low, float high) {
+FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::set_square_voltage_levels(float low, float high) {
   return set_square_voltage_low(low) && set_square_voltage_high(high);
 }
 
-bool platform::LUCIDACFrontPanel::SignalGenerator::set_square_voltage_low(float low) {
+FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::set_square_voltage_low(float low) {
   if (fabs(low) > 2.0f)
     return false;
   _square_low_voltage = low;
   return true;
 }
 
-bool platform::LUCIDACFrontPanel::SignalGenerator::set_square_voltage_high(float high) {
+FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::set_square_voltage_high(float high) {
   if (fabs(high) > 2.0f)
     return false;
   _square_high_voltage = high;
   return true;
 }
 
-bool platform::LUCIDACFrontPanel::SignalGenerator::set_offset(float offset) {
+FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::set_offset(float offset) {
   if (fabs(offset) > 2.0f)
     return false;
   _offset = offset;
@@ -154,7 +154,7 @@ bool platform::LUCIDACFrontPanel::SignalGenerator::set_dac_out1(float value) {
 }
 
 // TODO: Implement smart write to hardware for signal generator
-int platform::LUCIDACFrontPanel::SignalGenerator::write_to_hardware() {
+FLASHMEM int platform::LUCIDACFrontPanel::SignalGenerator::write_to_hardware() {
   if (_sleep)
     function_generator.sleep();
   else
@@ -181,6 +181,7 @@ int platform::LUCIDACFrontPanel::SignalGenerator::write_to_hardware() {
   return true;
 }
 
+FLASHMEM 
 platform::LUCIDACFrontPanel *
 platform::LUCIDACFrontPanel::from_entity_classifier(entities::EntityClassifier classifier,
                                                     __attribute__((__unused__)) bus::addr_t block_address) {
@@ -202,7 +203,7 @@ std::array<uint8_t, 8> platform::LUCIDACFrontPanel::get_entity_eui() const {
   return metadata::MetadataEditor(bus::address_from_tuple(2, 0)).read_eui();
 }
 
-utils::status platform::LUCIDACFrontPanel::config_self_from_json(JsonObjectConst cfg) {
+FLASHMEM utils::status platform::LUCIDACFrontPanel::config_self_from_json(JsonObjectConst cfg) {
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "leds") {
       auto res = _config_leds_from_json(cfgItr->value());
@@ -220,14 +221,14 @@ utils::status platform::LUCIDACFrontPanel::config_self_from_json(JsonObjectConst
   return utils::status::success();
 }
 
-utils::status platform::LUCIDACFrontPanel::_config_leds_from_json(const JsonVariantConst &cfg) {
+FLASHMEM utils::status platform::LUCIDACFrontPanel::_config_leds_from_json(const JsonVariantConst &cfg) {
   if (!cfg.is<uint8_t>())
     return utils::status("LUCIDACFrontPanel LED configuration must be encoded as single integer");
   leds.set_all(cfg);
   return utils::status::success();
 }
 
-utils::status platform::LUCIDACFrontPanel::_config_signal_generator_from_json(const JsonVariantConst &cfg) {
+FLASHMEM utils::status platform::LUCIDACFrontPanel::_config_signal_generator_from_json(const JsonVariantConst &cfg) {
   if (!cfg.is<JsonObjectConst>())
     return utils::status("LUCIDACFrontPanel signal generator configuration must be object");
 
@@ -317,7 +318,7 @@ utils::status platform::LUCIDACFrontPanel::_config_signal_generator_from_json(co
   return utils::status::success();
 }
 
-void platform::LUCIDACFrontPanel::config_self_to_json(JsonObject &cfg) {
+FLASHMEM void platform::LUCIDACFrontPanel::config_self_to_json(JsonObject &cfg) {
   Entity::config_self_to_json(cfg);
 
   cfg["leds"] = leds.get_all();

@@ -72,10 +72,7 @@ struct __attribute__((packed)) EntityClassifier {
 
   template <class Version_> Version_ version_as() const { return static_cast<Version_>(version); }
 
-  std::string to_string() const {
-    return "(" + std::to_string(class_) + ", " + std::to_string(type) + ", " + version.to_string() + ", " +
-           std::to_string(variant) + ")";
-  }
+  std::string to_string() const;
 
   explicit operator bool() const {
     // All fields of a valid EntityClassifier must not be zero.

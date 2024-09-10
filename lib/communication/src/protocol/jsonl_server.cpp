@@ -13,7 +13,7 @@
 
 void msg::JsonlServer::begin() { server.begin(net::StartupConfig::get().jsonl_port); }
 
-void msg::JsonlServer::loop() {
+FLASHMEM void msg::JsonlServer::loop() {
   net::EthernetClient client_socket = server.accept();
 
   if (client_socket) {

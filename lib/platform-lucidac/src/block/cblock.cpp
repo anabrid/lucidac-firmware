@@ -84,7 +84,7 @@ bool blocks::CBlock::set_gain_correction(const uint8_t coeff_idx, const float co
   return true;
 };
 
-utils::status blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
+FLASHMEM utils::status blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
@@ -99,7 +99,7 @@ utils::status blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
   return utils::status::success();
 }
 
-utils::status blocks::CBlock::_config_elements_form_json(const JsonVariantConst &cfg) {
+FLASHMEM utils::status blocks::CBlock::_config_elements_form_json(const JsonVariantConst &cfg) {
   // Handle an array of factors
   if (cfg.is<JsonArrayConst>()) {
     auto factors = cfg.as<JsonArrayConst>();
@@ -146,7 +146,7 @@ void blocks::CBlock::config_self_to_json(JsonObject &cfg) {
   }
 }
 
-blocks::CBlock *blocks::CBlock::from_entity_classifier(entities::EntityClassifier classifier,
+FLASHMEM blocks::CBlock *blocks::CBlock::from_entity_classifier(entities::EntityClassifier classifier,
                                                        const bus::addr_t block_address) {
   if (!classifier or classifier.class_enum != CLASS_ or classifier.type != TYPE)
     return nullptr;
@@ -163,7 +163,7 @@ blocks::CBlock *blocks::CBlock::from_entity_classifier(entities::EntityClassifie
 }
 
 std::array<const functions::AD5452, 32>
-blocks::CBlockHAL_Common::make_f_coeffs(bus::addr_t block_address, std::array<const uint8_t, 32> f_coeffs_cs) {
+FLASHMEM blocks::CBlockHAL_Common::make_f_coeffs(bus::addr_t block_address, std::array<const uint8_t, 32> f_coeffs_cs) {
   return {functions::AD5452(bus::replace_function_idx(block_address, f_coeffs_cs[0])),
           functions::AD5452(bus::replace_function_idx(block_address, f_coeffs_cs[1])),
           functions::AD5452(bus::replace_function_idx(block_address, f_coeffs_cs[2])),
@@ -198,11 +198,11 @@ blocks::CBlockHAL_Common::make_f_coeffs(bus::addr_t block_address, std::array<co
           functions::AD5452(bus::replace_function_idx(block_address, f_coeffs_cs[31]))};
 }
 
-blocks::CBlockHAL_Common::CBlockHAL_Common(bus::addr_t block_address,
+FLASHMEM blocks::CBlockHAL_Common::CBlockHAL_Common(bus::addr_t block_address,
                                            std::array<const uint8_t, 32> f_coeffs_cs)
     : f_coeffs(make_f_coeffs(block_address, f_coeffs_cs)) {}
 
-bool blocks::CBlockHAL_Common::write_factor(uint8_t idx, float value) {
+FLASHMEM bool blocks::CBlockHAL_Common::write_factor(uint8_t idx, float value) {
   if (idx >= 32)
     return false;
   // NOTE: The current hardware does not allow any error detection here.
@@ -210,11 +210,11 @@ bool blocks::CBlockHAL_Common::write_factor(uint8_t idx, float value) {
   return true;
 }
 
-blocks::CBlockHAL_V_1_1_X::CBlockHAL_V_1_1_X(bus::addr_t block_address)
+FLASHMEM blocks::CBlockHAL_V_1_1_X::CBlockHAL_V_1_1_X(bus::addr_t block_address)
     : CBlockHAL_Common(block_address, {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16,
                                        17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}) {}
 
-blocks::CBlockHAL_V_1_0_X::CBlockHAL_V_1_0_X(bus::addr_t block_address)
+FLASHMEM blocks::CBlockHAL_V_1_0_X::CBlockHAL_V_1_0_X(bus::addr_t block_address)
     : CBlockHAL_Common(block_address, {1,      2,       3,       4,       5,       6,       7,       8,
                                        9,      10,      11,      12,      13,      14,      15,      32 + 0,
                                        32 + 1, 32 + 2,  32 + 3,  32 + 4,  32 + 5,  32 + 6,  32 + 7,  32 + 8,
