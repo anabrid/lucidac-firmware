@@ -14,47 +14,49 @@
 
 using namespace platform;
 
-LUCIDACFrontPanel front;
+LUCIDACFrontPanel *front;
 
-void setUp() {
-  // This is called before *each* test.
-}
+void init() {
+  front = entities::detect<LUCIDACFrontPanel>(bus::address_from_tuple(2, 0));
+  if (!front)
+    TEST_FAIL_MESSAGE("Front plane could not be detected!"); // Avoid nullptr deref
 
-void tearDown() {
-  // This is called after *each* test.
+  front->leds.reset(); // Init just triggeres this function for the LEDs, as we don't want to assume having a
+                       // signal generator installed here
 }
 
 void test_all_on() {
-  front.leds.set_all(0xff);
-  TEST_ASSERT(front.leds.write_to_hardware());
+  front->leds.set_all(0xff);
+  TEST_ASSERT(front->leds.write_to_hardware());
 
   delay(3000);
 
-  front.leds.reset();
-  TEST_ASSERT(front.leds.write_to_hardware());
+  front->leds.reset();
+  TEST_ASSERT(front->leds.write_to_hardware());
 }
 
 void setup() {
   bus::init();
 
   UNITY_BEGIN();
+  RUN_TEST(init);
   RUN_TEST(test_all_on);
   UNITY_END();
 }
 
 void loop() {
   for (int i = 0; i < 8; i++) {
-    front.leds.set(i, true);
-    front.leds.write_to_hardware();
+    front->leds.set(i, true);
+    front->leds.write_to_hardware();
     delay(200);
-    front.leds.set(i, false);
-    front.leds.write_to_hardware();
+    front->leds.set(i, false);
+    front->leds.write_to_hardware();
   }
   for (int i = 7; i >= 0; i--) {
-    front.leds.set(i, true);
-    front.leds.write_to_hardware();
+    front->leds.set(i, true);
+    front->leds.write_to_hardware();
     delay(200);
-    front.leds.set(i, false);
-    front.leds.write_to_hardware();
+    front->leds.set(i, false);
+    front->leds.write_to_hardware();
   }
 }
