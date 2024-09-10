@@ -36,7 +36,7 @@ platform::LUCIDAC carrier_;
 auto& netconf = net::StartupConfig::get();
 bool network_working;
 
-void leds(uint8_t val) {
+FLASHMEM void leds(uint8_t val) {
   if(carrier_.front_panel) {
     carrier_.front_panel->leds.set_all(val);
     carrier_.front_panel->write_to_hardware();

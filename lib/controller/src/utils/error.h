@@ -33,7 +33,7 @@ public:
 
   status(int code, std::string msg) : code(code), msg(msg) {}
 
-  explicit status(int code) : code(code) {}
+  explicit status(int code) : code(code), msg("No error message provided") {}
 
   /// Generic failure (without code)
   status(std::string msg) : code(-1), msg(msg) {

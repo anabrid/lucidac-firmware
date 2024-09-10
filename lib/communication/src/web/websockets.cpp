@@ -20,6 +20,7 @@
       curl --verbose -H "Upgrade: websocket" -H "Connection: Upgrade" -H "Sec-Websocket-Version: 13"  -H "Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==" http://lucidac-17-40-f4.fritz.box/websocket
 
 */
+FLASHMEM
 std::string web::websocketsHandshakeEncodeKey(const char* key) {
     if(!key) return "";
 

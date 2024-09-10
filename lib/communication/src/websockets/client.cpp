@@ -12,6 +12,7 @@ WebsocketsClient::WebsocketsClient() : WebsocketsClient(std::make_shared<websock
   // Empty
 }
 
+FLASHMEM
 WebsocketsClient::WebsocketsClient(std::shared_ptr<network::TcpClient> client)
     : _client(client), _endpoint(client), _connectionOpen(client->available()),
       _messagesCallback([](WebsocketsClient &, WebsocketsMessage) {}),
@@ -19,6 +20,7 @@ WebsocketsClient::WebsocketsClient(std::shared_ptr<network::TcpClient> client)
   // Empty
 }
 
+FLASHMEM
 WebsocketsClient::WebsocketsClient(const WebsocketsClient &other)
     : _client(other._client), _endpoint(other._endpoint), _connectionOpen(other._client->available()),
       _messagesCallback(other._messagesCallback), _eventsCallback(other._eventsCallback),
@@ -29,6 +31,7 @@ WebsocketsClient::WebsocketsClient(const WebsocketsClient &other)
   const_cast<WebsocketsClient &>(other)._connectionOpen = false;
 }
 
+FLASHMEM
 WebsocketsClient::WebsocketsClient(const WebsocketsClient &&other)
     : _client(other._client), _endpoint(other._endpoint), _connectionOpen(other._client->available()),
       _messagesCallback(other._messagesCallback), _eventsCallback(other._eventsCallback),
@@ -39,6 +42,7 @@ WebsocketsClient::WebsocketsClient(const WebsocketsClient &&other)
   const_cast<WebsocketsClient &>(other)._connectionOpen = false;
 }
 
+FLASHMEM
 WebsocketsClient &WebsocketsClient::operator=(const WebsocketsClient &other) {
   // call endpoint's copy operator
   _endpoint = other._endpoint;
@@ -56,6 +60,7 @@ WebsocketsClient &WebsocketsClient::operator=(const WebsocketsClient &other) {
   return *this;
 }
 
+FLASHMEM
 WebsocketsClient &WebsocketsClient::operator=(const WebsocketsClient &&other) {
   // call endpoint's copy operator
   _endpoint = other._endpoint;
@@ -73,8 +78,10 @@ WebsocketsClient &WebsocketsClient::operator=(const WebsocketsClient &&other) {
   return *this;
 }
 
+FLASHMEM
 bool isWhitespace(char ch) { return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n'; }
 
+FLASHMEM
 bool isCaseInsensetiveEqual(const std::string lhs, const std::string rhs) {
   if (lhs.size() != rhs.size())
     return false;
@@ -89,6 +96,7 @@ bool isCaseInsensetiveEqual(const std::string lhs, const std::string rhs) {
   return true;
 }
 
+FLASHMEM
 bool doestStartsWith(std::string str, std::string prefix) {
   if (str.size() < prefix.size())
     return false;
@@ -100,24 +108,30 @@ bool doestStartsWith(std::string str, std::string prefix) {
   return true;
 }
 
+FLASHMEM
 void WebsocketsClient::addHeader(const std::string key, const std::string value) {
   _customHeaders.push_back({internals::fromInterfaceString(key), internals::fromInterfaceString(value)});
 }
 
+FLASHMEM
 void WebsocketsClient::onMessage(MessageCallback callback) { this->_messagesCallback = callback; }
 
+FLASHMEM
 void WebsocketsClient::onMessage(PartialMessageCallback callback) {
   this->_messagesCallback = [callback](WebsocketsClient &, WebsocketsMessage msg) { callback(msg); };
 }
 
+FLASHMEM
 void WebsocketsClient::onEvent(EventCallback callback) { this->_eventsCallback = callback; }
 
+FLASHMEM
 void WebsocketsClient::onEvent(PartialEventCallback callback) {
   this->_eventsCallback = [callback](WebsocketsClient &, WebsocketsEvent event, std::string data) {
     callback(event, data);
   };
 }
 
+FLASHMEM
 bool WebsocketsClient::poll() {
   bool messageReceived = false;
   while (available() && _endpoint.poll()) {
@@ -170,6 +184,7 @@ bool WebsocketsClient::send(const std::string &&data) {
 
 bool WebsocketsClient::send(const char *data) { return this->send(data, strlen(data)); }
 
+FLASHMEM
 bool WebsocketsClient::send(const char *data, const size_t len) {
   if (available()) {
     // if in normal mode
@@ -191,6 +206,7 @@ bool WebsocketsClient::sendBinary(std::string data) {
   return this->sendBinary(str.c_str(), str.size());
 }
 
+FLASHMEM
 bool WebsocketsClient::sendBinary(const char *data, const size_t len) {
   if (available()) {
     // if in normal mode
@@ -235,6 +251,7 @@ void WebsocketsClient::setFragmentsPolicy(const FragmentsPolicy newPolicy) {
   _endpoint.setFragmentsPolicy(newPolicy);
 }
 
+FLASHMEM
 bool WebsocketsClient::available(const bool activeTest) {
   if (activeTest) {
     _endpoint.ping("");

@@ -9,7 +9,7 @@
 
 #include "io/io.h" // Just for testing TODO REMOVE
 
-blocks::MBlock::MBlock(bus::addr_t block_address)
+FLASHMEM blocks::MBlock::MBlock(bus::addr_t block_address)
     : blocks::FunctionBlock{std::string("M") + std::string(
                                                    // Addresses 12, 20, 28 are M0
                                                    // Addresses 13, 21, 29 are M1
@@ -17,7 +17,7 @@ blocks::MBlock::MBlock(bus::addr_t block_address)
                             block_address},
       slot(block_address % 8 == 4 ? SLOT::M0 : SLOT::M1) {}
 
-uint8_t blocks::MBlock::slot_to_global_io_index(uint8_t local) const {
+FLASHMEM uint8_t blocks::MBlock::slot_to_global_io_index(uint8_t local) const {
   switch (slot) {
   case SLOT::M0:
     return local;
@@ -28,6 +28,7 @@ uint8_t blocks::MBlock::slot_to_global_io_index(uint8_t local) const {
   return local;
 }
 
+FLASHMEM 
 blocks::MBlock *blocks::MBlock::from_entity_classifier(entities::EntityClassifier classifier,
                                                        const bus::addr_t block_address) {
   if (!classifier or classifier.class_enum != entities::EntityClass::M_BLOCK)
@@ -48,10 +49,10 @@ blocks::MBlock *blocks::MBlock::from_entity_classifier(entities::EntityClassifie
   return nullptr;
 }
 
-bool blocks::EmptyMBlock::write_to_hardware() { return true; }
+FLASHMEM bool blocks::EmptyMBlock::write_to_hardware() { return true; }
 
-utils::status blocks::EmptyMBlock::config_self_from_json(JsonObjectConst cfg) {
+FLASHMEM utils::status blocks::EmptyMBlock::config_self_from_json(JsonObjectConst cfg) {
   return utils::status::success();
 }
 
-uint8_t blocks::EmptyMBlock::get_entity_type() const { return static_cast<uint8_t>(MBlock::TYPES::UNKNOWN); }
+FLASHMEM uint8_t blocks::EmptyMBlock::get_entity_type() const { return static_cast<uint8_t>(MBlock::TYPES::UNKNOWN); }

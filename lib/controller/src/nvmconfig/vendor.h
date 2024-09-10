@@ -31,18 +31,8 @@ namespace nvmconfig {
         bool is_valid() const { return serial_number != invalid_serial_number; }
 
         void reset_defaults() { /* No-OP by definition */ }
-        void fromJson(JsonObjectConst src, Context c = Context::Flash) override {
-            if(c == Context::User) return;
-            JSON_GET(src, serial_number);
-            JSON_GET(src, serial_uuid);
-            JSON_GET_AS(src, default_admin_password, std::string);
-        }
-        void toJson(JsonObject target, Context c = Context::Flash) const override {
-            if(c == Context::User) return;
-            JSON_SET(target, serial_number);
-            JSON_SET(target, serial_uuid);
-            JSON_SET(target, default_admin_password);
-        }
+        void fromJson(JsonObjectConst src, Context c = Context::Flash) override;
+        void toJson(JsonObject target, Context c = Context::Flash) const override;
         static VendorOTP& get() {
             static VendorOTP instance;
             return instance;

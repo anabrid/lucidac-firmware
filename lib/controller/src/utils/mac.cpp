@@ -15,11 +15,13 @@ using namespace utils;
 
 void utils::MacAddress::reset() { enet_get_mac(mac); }
 
+FLASHMEM
 utils::MacAddress::operator std::string() const {
   return toString(*this); // not inline to avoid forward declaration
 }
 
 /** required format AA-BB-CC-DD-EE-FF */
+FLASHMEM
 bool utils::MacAddress::fromString(const char *address) {
   if (strlen(address) != 17)
     return false;

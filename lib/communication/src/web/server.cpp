@@ -62,7 +62,7 @@ FLASHMEM void allocate_interesting_headers(awot::Application &app) {
   // programmer, please ensure at this line i < max_allocated_headers.
 }
 
-LucidacWebServer &web::LucidacWebServer::get() {
+FLASHMEM LucidacWebServer &web::LucidacWebServer::get() {
   static LucidacWebServer obj;
   return obj;
 }
@@ -313,7 +313,7 @@ FLASHMEM void web::LucidacWebServer::begin() {
 // It comes with its own Socket-handling logic. There, there is a TcpClient which holds a pointer
 // to our QNEthernet client. However, the TcpClient itself is a shared pointer for whatever reason.
 // So for letting websocket clients lookup client context informations, we have this link-loop
-web::LucidacWebsocketsClient::LucidacWebsocketsClient(const net::EthernetClient &other)
+FLASHMEM web::LucidacWebsocketsClient::LucidacWebsocketsClient(const net::EthernetClient &other)
     : socket(other),
       ws(std::shared_ptr<websockets::network::TcpClient>(new websockets::network::TcpClient(this))) {
   user_context.set_remote_identifier(net::auth::RemoteIdentifier{socket.remoteIP()});
@@ -328,7 +328,7 @@ web::LucidacWebsocketsClient::LucidacWebsocketsClient(const net::EthernetClient 
   Potential caveat: Users sending really large messages. Check if there is some safety net for that in
       our websockets library.
 */
-void onWebsocketMessageCallback(websockets::WebsocketsClient &wsclient, websockets::WebsocketsMessage msg) {
+FLASHMEM void onWebsocketMessageCallback(websockets::WebsocketsClient &wsclient, websockets::WebsocketsMessage msg) {
   LOGMEV("ws Role=%d, data=%s", msg.role(), msg.data().c_str());
   if (!msg.isComplete()) {
     LOG_ALWAYS("webSockets: Ignoring incomplete message");

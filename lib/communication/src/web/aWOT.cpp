@@ -25,15 +25,15 @@
 #include "aWOT.h"
 #include "QNEthernet.h"
 
-Response::Response(EthernetClient *client, uint8_t *writeBuffer, int writeBufferLength)
+FLASHMEM Response::Response(EthernetClient *client, uint8_t *writeBuffer, int writeBufferLength)
     : m_stream(client), m_headers(), m_contentLenghtSet(false), m_contentTypeSet(false), m_keepAlive(false),
       m_statusSent(0), m_headersSent(false), m_sendingStatus(false), m_sendingHeaders(false),
       m_headersCount(0), m_bytesSent(0), m_ended(false), m_buffer(writeBuffer),
       m_bufferLength(writeBufferLength), m_bufFill(0) {}
 
-int Response::availableForWrite() { return SERVER_OUTPUT_BUFFER_SIZE - m_bufFill - 1; }
+FLASHMEM int Response::availableForWrite() { return SERVER_OUTPUT_BUFFER_SIZE - m_bufFill - 1; }
 
-void Response::beginHeaders() {
+FLASHMEM void Response::beginHeaders() {
   if (!m_statusSent) {
     status(200);
   }
@@ -49,26 +49,26 @@ void Response::beginHeaders() {
   }
 }
 
-int Response::bytesSent() { return m_bytesSent; }
+FLASHMEM int Response::bytesSent() { return m_bytesSent; }
 
-void Response::end() { m_ended = true; }
+FLASHMEM void Response::end() { m_ended = true; }
 
-void Response::endHeaders() {
+FLASHMEM void Response::endHeaders() {
   m_printCRLF();
   m_flushBuf();
   m_sendingHeaders = false;
   m_headersSent = true;
 }
 
-bool Response::ended() { return m_ended; }
+FLASHMEM bool Response::ended() { return m_ended; }
 
-void Response::flush() {
+FLASHMEM void Response::flush() {
   m_flushBuf();
 
   m_stream->flush();
 }
 
-const char *Response::get(const char *name) {
+FLASHMEM const char *Response::get(const char *name) {
   for (int i = 0; i < m_headersCount; i++) {
     if (Application::strcmpi(name, m_headers[i].name) == 0) {
       return m_headers[m_headersCount].value;
@@ -78,9 +78,9 @@ const char *Response::get(const char *name) {
   return NULL;
 }
 
-bool Response::headersSent() { return m_headersSent; }
+FLASHMEM bool Response::headersSent() { return m_headersSent; }
 
-void Response::printP(const unsigned char *string) {
+FLASHMEM void Response::printP(const unsigned char *string) {
   if (m_shouldPrintHeaders()) {
     m_printHeaders();
   }
@@ -90,9 +90,9 @@ void Response::printP(const unsigned char *string) {
   }
 }
 
-void Response::printP(const char *string) { printP((unsigned char *)string); }
+FLASHMEM void Response::printP(const char *string) { printP((unsigned char *)string); }
 
-void Response::sendStatus(int code) {
+FLASHMEM void Response::sendStatus(int code) {
   status(code);
 
   m_printHeaders();
@@ -102,7 +102,7 @@ void Response::sendStatus(int code) {
   }
 }
 
-void Response::set(const char *name, const char *value) {
+FLASHMEM void Response::set(const char *name, const char *value) {
   if (m_headersCount >= SERVER_MAX_HEADERS) {
     return;
   }
@@ -128,7 +128,7 @@ void Response::set(const char *name, const char *value) {
   }
 }
 
-void Response::setDefaults() {
+FLASHMEM void Response::setDefaults() {
   if (!m_contentTypeSet) {
     set("Content-Type", "text/plain");
   }
@@ -143,7 +143,7 @@ void Response::setDefaults() {
   }
 }
 
-void Response::status(int code) {
+FLASHMEM void Response::status(int code) {
   if (m_statusSent) {
     return;
   }
@@ -172,9 +172,9 @@ void Response::status(int code) {
   m_sendingStatus = false;
 }
 
-int Response::statusSent() { return m_statusSent; }
+FLASHMEM int Response::statusSent() { return m_statusSent; }
 
-size_t Response::write(uint8_t data) {
+FLASHMEM size_t Response::write(uint8_t data) {
   if (m_shouldPrintHeaders()) {
     m_printHeaders();
   }
@@ -201,7 +201,7 @@ size_t Response::write(uint8_t data) {
   return bytesSent;
 }
 
-size_t Response::write(uint8_t *buffer, size_t bufferLength) {
+FLASHMEM size_t Response::write(uint8_t *buffer, size_t bufferLength) {
   if (m_shouldPrintHeaders()) {
     m_printHeaders();
   }
@@ -223,7 +223,7 @@ size_t Response::write(uint8_t *buffer, size_t bufferLength) {
   return bufferLength;
 }
 
-void Response::writeP(const unsigned char *data, size_t length) {
+FLASHMEM void Response::writeP(const unsigned char *data, size_t length) {
   if (m_shouldPrintHeaders()) {
     m_printHeaders();
   }
@@ -233,7 +233,7 @@ void Response::writeP(const unsigned char *data, size_t length) {
   }
 }
 
-void Response::m_printStatus(int code) {
+FLASHMEM void Response::m_printStatus(int code) {
   switch (code) {
 #ifndef LOW_MEMORY_MCU
   case 100: {
@@ -646,17 +646,17 @@ void Response::m_printStatus(int code) {
   }
 }
 
-bool Response::m_shouldPrintHeaders() { return (!m_headersSent && !m_sendingHeaders && !m_sendingStatus); }
+FLASHMEM bool Response::m_shouldPrintHeaders() { return (!m_headersSent && !m_sendingHeaders && !m_sendingStatus); }
 
-void Response::m_printHeaders() {
+FLASHMEM void Response::m_printHeaders() {
   setDefaults();
   beginHeaders();
   endHeaders();
 }
 
-void Response::m_printCRLF() { print(CRLF); }
+FLASHMEM void Response::m_printCRLF() { print(CRLF); }
 
-void Response::m_flushBuf() {
+FLASHMEM void Response::m_flushBuf() {
   if (m_bufFill > 0) {
     if (m_headersSent && !m_contentLenghtSet) {
       // m_stream->print(m_bufFill, HEX); // do the fucking not mess in my lovely output, aWOT.
@@ -673,7 +673,7 @@ void Response::m_flushBuf() {
   };
 }
 
-void Response::m_finalize() {
+FLASHMEM void Response::m_finalize() {
   m_flushBuf();
 
   if (m_headersSent && !m_contentLenghtSet) {
@@ -683,7 +683,7 @@ void Response::m_finalize() {
   }
 }
 
-Request::Request(EthernetClient *client, Response *m_response, HeaderNode *headerTail, char *urlBuffer,
+FLASHMEM Request::Request(EthernetClient *client, Response *m_response, HeaderNode *headerTail, char *urlBuffer,
                  int urlBufferLength, unsigned long timeout, void *context)
     : context(context), m_stream(client), m_response(m_response), m_method(UNKNOWN), m_minorVersion(-1),
       m_pushback(), m_pushbackDepth(0), m_readingContent(false), m_left(0), m_bytesRead(0),
@@ -692,15 +692,15 @@ Request::Request(EthernetClient *client, Response *m_response, HeaderNode *heade
   _timeout = timeout;
 }
 
-int Request::availableForWrite() { return m_response->availableForWrite(); }
+FLASHMEM int Request::availableForWrite() { return m_response->availableForWrite(); }
 
-int Request::available() { return min(m_stream->available(), m_left + m_pushbackDepth); }
+FLASHMEM int Request::available() { return min(m_stream->available(), m_left + m_pushbackDepth); }
 
-int Request::bytesRead() { return m_bytesRead; }
+FLASHMEM int Request::bytesRead() { return m_bytesRead; }
 
-Stream *Request::stream() { return m_stream; }
+FLASHMEM Stream *Request::stream() { return m_stream; }
 
-char *Request::get(const char *name) {
+FLASHMEM char *Request::get(const char *name) {
   HeaderNode *headerNode = m_headerTail;
 
   while (headerNode != NULL) {
@@ -714,9 +714,9 @@ char *Request::get(const char *name) {
   return NULL;
 }
 
-void Request::flush() { return m_response->flush(); }
+FLASHMEM void Request::flush() { return m_response->flush(); }
 
-bool Request::form(char *name, int nameLength, char *value, int valueLength) {
+FLASHMEM bool Request::form(char *name, int nameLength, char *value, int valueLength) {
   int ch;
   bool foundSomething = false;
   bool readingName = true;
@@ -769,13 +769,13 @@ bool Request::form(char *name, int nameLength, char *value, int valueLength) {
   return foundSomething && nameLength > 0 && valueLength > 0;
 }
 
-int Request::left() { return m_left + m_pushbackDepth; }
+FLASHMEM int Request::left() { return m_left + m_pushbackDepth; }
 
-Request::MethodType Request::method() { return m_method; }
+FLASHMEM Request::MethodType Request::method() { return m_method; }
 
-char *Request::path() { return m_path; }
+FLASHMEM char *Request::path() { return m_path; }
 
-int Request::peek() {
+FLASHMEM int Request::peek() {
   int ch = read();
 
   if (ch != -1) {
@@ -785,7 +785,7 @@ int Request::peek() {
   return ch;
 }
 
-void Request::push(uint8_t ch) {
+FLASHMEM void Request::push(uint8_t ch) {
   m_pushback[m_pushbackDepth++] = ch;
 
   // can't raise error here, so just replace last char over and over
@@ -794,9 +794,9 @@ void Request::push(uint8_t ch) {
   }
 }
 
-char *Request::query() { return m_query; }
+FLASHMEM char *Request::query() { return m_query; }
 
-bool Request::query(const char *name, char *buffer, int bufferLength) {
+FLASHMEM bool Request::query(const char *name, char *buffer, int bufferLength) {
   memset(buffer, 0, bufferLength);
 
   char *position = m_query;
@@ -868,7 +868,7 @@ int Request::read(uint8_t *buf, size_t size) {
   return ret;
 }
 
-bool Request::route(const char *name, char *buffer, int bufferLength) {
+FLASHMEM bool Request::route(const char *name, char *buffer, int bufferLength) {
   int part = 0;
   int i = 1;
 
@@ -894,7 +894,7 @@ bool Request::route(const char *name, char *buffer, int bufferLength) {
   return false;
 }
 
-bool Request::route(int number, char *buffer, int bufferLength) {
+FLASHMEM bool Request::route(int number, char *buffer, int bufferLength) {
   memset(buffer, 0, bufferLength);
   int part = -1;
   const char *routeStart = m_route;
@@ -916,13 +916,13 @@ bool Request::route(int number, char *buffer, int bufferLength) {
   return false;
 }
 
-int Request::minorVersion() { return m_minorVersion; }
+FLASHMEM int Request::minorVersion() { return m_minorVersion; }
 
-size_t Request::write(uint8_t data) { return m_response->write(data); }
+FLASHMEM size_t Request::write(uint8_t data) { return m_response->write(data); }
 
-size_t Request::write(uint8_t *buffer, size_t bufferLength) { return m_response->write(buffer, bufferLength); }
+FLASHMEM size_t Request::write(uint8_t *buffer, size_t bufferLength) { return m_response->write(buffer, bufferLength); }
 
-bool Request::m_processMethod() {
+FLASHMEM bool Request::m_processMethod() {
   P(GET_VERB) = "GET ";
   P(HEAD_VERB) = "HEAD ";
   P(POST_VERB) = "POST ";
@@ -952,7 +952,7 @@ bool Request::m_processMethod() {
   return true;
 }
 
-bool Request::m_readURL() {
+FLASHMEM bool Request::m_readURL() {
   char *request = m_path;
   int bufferLeft = m_pathLength;
   int ch;
@@ -992,7 +992,7 @@ bool Request::m_readURL() {
   return bufferLeft > 0;
 }
 
-bool Request::m_readVersion() {
+FLASHMEM bool Request::m_readVersion() {
   while (!m_expect(CRLF)) {
     P(HTTP_10) = "1.0";
     P(HTTP_11) = "1.1";
@@ -1009,7 +1009,7 @@ bool Request::m_readVersion() {
   return true;
 }
 
-void Request::m_processURL() {
+FLASHMEM void Request::m_processURL() {
   char *qmLocation = strchr(m_path, '?');
   int qmOffset = (qmLocation == NULL) ? 0 : 1;
 
@@ -1022,7 +1022,7 @@ void Request::m_processURL() {
   }
 }
 
-bool Request::m_processHeaders() {
+FLASHMEM bool Request::m_processHeaders() {
   bool canEnd = true;
 
   while (!(canEnd && m_expect(CRLF))) {
@@ -1068,7 +1068,7 @@ bool Request::m_processHeaders() {
   return true;
 }
 
-bool Request::m_headerValue(char *buffer, int bufferLength) {
+FLASHMEM bool Request::m_headerValue(char *buffer, int bufferLength) {
   int ch;
 
   if (buffer[0] != '\0') {
@@ -1096,7 +1096,7 @@ bool Request::m_headerValue(char *buffer, int bufferLength) {
   return false;
 }
 
-bool Request::m_readInt(int &number) {
+FLASHMEM bool Request::m_readInt(int &number) {
   bool negate = false;
   bool gotNumber = false;
 
@@ -1137,14 +1137,14 @@ bool Request::m_readInt(int &number) {
   return gotNumber;
 }
 
-void Request::m_setRoute(const char *route, const char *pattern) {
+FLASHMEM void Request::m_setRoute(const char *route, const char *pattern) {
   m_route = route;
   m_pattern = pattern;
 }
 
-int Request::m_getUrlPathLength() { return m_pathLength; }
+FLASHMEM int Request::m_getUrlPathLength() { return m_pathLength; }
 
-bool Request::m_expect(const char *expected) {
+FLASHMEM bool Request::m_expect(const char *expected) {
   const char *candidate = expected;
 
   while (*candidate != 0) {
@@ -1167,7 +1167,7 @@ bool Request::m_expect(const char *expected) {
   return true;
 }
 
-bool Request::m_expectP(const unsigned char *expected) {
+FLASHMEM bool Request::m_expectP(const unsigned char *expected) {
   const unsigned char *candidate = expected;
 
   while (pgm_read_byte(candidate) != 0) {
@@ -1190,7 +1190,7 @@ bool Request::m_expectP(const unsigned char *expected) {
   return true;
 }
 
-bool Request::m_skipSpace() {
+FLASHMEM bool Request::m_skipSpace() {
   int ch;
 
   while ((ch = m_timedRead()) != -1 && (ch == ' ' || ch == '\t'))
@@ -1205,7 +1205,7 @@ bool Request::m_skipSpace() {
   return true;
 }
 
-void Request::m_reset() {
+FLASHMEM void Request::m_reset() {
   HeaderNode *headerNode = m_headerTail;
   while (headerNode != NULL) {
     headerNode->buffer[0] = '\0';
@@ -1213,9 +1213,9 @@ void Request::m_reset() {
   }
 }
 
-bool Request::m_timedout() { return m_readTimedout; }
+FLASHMEM bool Request::m_timedout() { return m_readTimedout; }
 
-int Request::m_timedRead() {
+FLASHMEM int Request::m_timedRead() {
   int ch = timedRead();
   if (ch == -1) {
     m_readTimedout = true;
@@ -1224,9 +1224,9 @@ int Request::m_timedRead() {
   return ch;
 }
 
-Router::Router() : m_head(NULL) {}
+FLASHMEM Router::Router() : m_head(NULL) {}
 
-Router::~Router() {
+FLASHMEM Router::~Router() {
   MiddlewareNode *current = m_head;
   MiddlewareNode *next;
 
@@ -1240,55 +1240,55 @@ Router::~Router() {
   m_head = NULL;
 }
 
-void Router::del(const char *path, MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Router::del(const char *path, MIDDLEWARE_PARAM middleware) {
   m_addMiddleware(Request::DELETE, path, middleware);
 }
 
-void Router::del(MIDDLEWARE_PARAM middleware) { del(NULL, middleware); }
+FLASHMEM void Router::del(MIDDLEWARE_PARAM middleware) { del(NULL, middleware); }
 
-void Router::get(const char *path, MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Router::get(const char *path, MIDDLEWARE_PARAM middleware) {
   m_addMiddleware(Request::GET, path, middleware);
 }
 
-void Router::get(MIDDLEWARE_PARAM middleware) { get(NULL, middleware); }
+FLASHMEM void Router::get(MIDDLEWARE_PARAM middleware) { get(NULL, middleware); }
 
-void Router::head(const char *path, MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Router::head(const char *path, MIDDLEWARE_PARAM middleware) {
   m_addMiddleware(Request::HEAD, path, middleware);
 }
 
-void Router::head(MIDDLEWARE_PARAM middleware) { head(NULL, middleware); }
+FLASHMEM void Router::head(MIDDLEWARE_PARAM middleware) { head(NULL, middleware); }
 
-void Router::options(const char *path, MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Router::options(const char *path, MIDDLEWARE_PARAM middleware) {
   m_addMiddleware(Request::OPTIONS, path, middleware);
 }
 
-void Router::options(MIDDLEWARE_PARAM middleware) { options(NULL, middleware); }
+FLASHMEM void Router::options(MIDDLEWARE_PARAM middleware) { options(NULL, middleware); }
 
-void Router::post(const char *path, MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Router::post(const char *path, MIDDLEWARE_PARAM middleware) {
   m_addMiddleware(Request::POST, path, middleware);
 }
 
-void Router::post(MIDDLEWARE_PARAM middleware) { post(NULL, middleware); }
+FLASHMEM void Router::post(MIDDLEWARE_PARAM middleware) { post(NULL, middleware); }
 
-void Router::put(const char *path, MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Router::put(const char *path, MIDDLEWARE_PARAM middleware) {
   m_addMiddleware(Request::PUT, path, middleware);
 }
 
-void Router::put(MIDDLEWARE_PARAM middleware) { put(NULL, middleware); }
+FLASHMEM void Router::put(MIDDLEWARE_PARAM middleware) { put(NULL, middleware); }
 
-void Router::patch(const char *path, MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Router::patch(const char *path, MIDDLEWARE_PARAM middleware) {
   m_addMiddleware(Request::PATCH, path, middleware);
 }
 
-void Router::patch(MIDDLEWARE_PARAM middleware) { patch(NULL, middleware); }
+FLASHMEM void Router::patch(MIDDLEWARE_PARAM middleware) { patch(NULL, middleware); }
 
-void Router::use(const char *path, MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Router::use(const char *path, MIDDLEWARE_PARAM middleware) {
   m_addMiddleware(Request::ALL, path, middleware);
 }
 
-void Router::use(MIDDLEWARE_PARAM middleware) { use(NULL, middleware); }
+FLASHMEM void Router::use(MIDDLEWARE_PARAM middleware) { use(NULL, middleware); }
 
-void Router::use(const char *path, Router *router) {
+FLASHMEM void Router::use(const char *path, Router *router) {
   MiddlewareNode *tail = new MiddlewareNode();
   tail->path = path;
   tail->middleware = NULL;
@@ -1297,9 +1297,9 @@ void Router::use(const char *path, Router *router) {
   m_mountMiddleware(tail);
 }
 
-void Router::use(Router *router) { use(NULL, router); }
+FLASHMEM void Router::use(Router *router) { use(NULL, router); }
 
-void Router::m_addMiddleware(Request::MethodType type, const char *path, MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Router::m_addMiddleware(Request::MethodType type, const char *path, MIDDLEWARE_PARAM middleware) {
   MiddlewareNode *tail = new MiddlewareNode();
   tail->path = path;
   tail->middleware = middleware;
@@ -1310,7 +1310,7 @@ void Router::m_addMiddleware(Request::MethodType type, const char *path, MIDDLEW
   m_mountMiddleware(tail);
 }
 
-void Router::m_mountMiddleware(MiddlewareNode *tail) {
+FLASHMEM void Router::m_mountMiddleware(MiddlewareNode *tail) {
   if (m_head == NULL) {
     m_head = tail;
   } else {
@@ -1324,7 +1324,7 @@ void Router::m_mountMiddleware(MiddlewareNode *tail) {
   }
 }
 
-void Router::m_dispatchMiddleware(Request &request, Response &response, int urlShift) {
+FLASHMEM void Router::m_dispatchMiddleware(Request &request, Response &response, int urlShift) {
   MiddlewareNode *middleware = m_head;
 
   while (middleware != NULL && !response.ended()) {
@@ -1347,7 +1347,7 @@ void Router::m_dispatchMiddleware(Request &request, Response &response, int urlS
   }
 }
 
-bool Router::m_routeMatch(const char *route, const char *pattern) {
+FLASHMEM bool Router::m_routeMatch(const char *route, const char *pattern) {
   if (pattern[0] == '\0' && route[0] == '\0') {
     return true;
   }
@@ -1386,9 +1386,9 @@ bool Router::m_routeMatch(const char *route, const char *pattern) {
   return match;
 }
 
-Application::Application() : m_final(NULL), m_notFound(NULL), m_headerTail(NULL), m_timeout(1000) {}
+FLASHMEM Application::Application() : m_final(NULL), m_notFound(NULL), m_headerTail(NULL), m_timeout(1000) {}
 
-int Application::strcmpi(const char *s1, const char *s2) {
+FLASHMEM int Application::strcmpi(const char *s1, const char *s2) {
   int i;
 
   for (i = 0; s1[i] && s2[i]; ++i) {
@@ -1410,7 +1410,7 @@ int Application::strcmpi(const char *s1, const char *s2) {
   return 1;
 }
 
-int Application::strcmpiP(const char *s1, const unsigned char *s2) {
+FLASHMEM int Application::strcmpiP(const char *s1, const unsigned char *s2) {
   int i = 0;
 
   for (i = 0; s1[i] && pgm_read_byte(s2 + i); ++i) {
@@ -1432,7 +1432,7 @@ int Application::strcmpiP(const char *s1, const unsigned char *s2) {
   return 1;
 }
 
-Application::~Application() {
+FLASHMEM Application::~Application() {
   Request::HeaderNode *current = m_headerTail;
   Request::HeaderNode *next;
 
@@ -1445,53 +1445,53 @@ Application::~Application() {
   m_headerTail = NULL;
 }
 
-void Application::del(const char *path, Router::MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Application::del(const char *path, Router::MIDDLEWARE_PARAM middleware) {
   m_defaultRouter.m_addMiddleware(Request::DELETE, path, middleware);
 }
 
-void Application::del(Router::MIDDLEWARE_PARAM middleware) { del(NULL, middleware); }
+FLASHMEM void Application::del(Router::MIDDLEWARE_PARAM middleware) { del(NULL, middleware); }
 
-void Application::finally(Router::MIDDLEWARE_PARAM final) { m_final = final; }
+FLASHMEM void Application::finally(Router::MIDDLEWARE_PARAM final) { m_final = final; }
 
-void Application::get(const char *path, Router::MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Application::get(const char *path, Router::MIDDLEWARE_PARAM middleware) {
   m_defaultRouter.m_addMiddleware(Request::GET, path, middleware);
 }
 
-void Application::get(Router::MIDDLEWARE_PARAM middleware) { get(NULL, middleware); }
+FLASHMEM void Application::get(Router::MIDDLEWARE_PARAM middleware) { get(NULL, middleware); }
 
-void Application::head(const char *path, Router::MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Application::head(const char *path, Router::MIDDLEWARE_PARAM middleware) {
   m_defaultRouter.m_addMiddleware(Request::HEAD, path, middleware);
 }
 
-void Application::head(Router::MIDDLEWARE_PARAM middleware) { head(NULL, middleware); }
+FLASHMEM void Application::head(Router::MIDDLEWARE_PARAM middleware) { head(NULL, middleware); }
 
-void Application::notFound(Router::MIDDLEWARE_PARAM notFound) { m_notFound = notFound; }
+FLASHMEM void Application::notFound(Router::MIDDLEWARE_PARAM notFound) { m_notFound = notFound; }
 
-void Application::options(const char *path, Router::MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Application::options(const char *path, Router::MIDDLEWARE_PARAM middleware) {
   m_defaultRouter.m_addMiddleware(Request::OPTIONS, path, middleware);
 }
 
-void Application::options(Router::MIDDLEWARE_PARAM middleware) { options(NULL, middleware); }
+FLASHMEM void Application::options(Router::MIDDLEWARE_PARAM middleware) { options(NULL, middleware); }
 
-void Application::patch(const char *path, Router::MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Application::patch(const char *path, Router::MIDDLEWARE_PARAM middleware) {
   m_defaultRouter.m_addMiddleware(Request::PATCH, path, middleware);
 }
 
-void Application::patch(Router::MIDDLEWARE_PARAM middleware) { patch(NULL, middleware); }
+FLASHMEM void Application::patch(Router::MIDDLEWARE_PARAM middleware) { patch(NULL, middleware); }
 
-void Application::post(const char *path, Router::MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Application::post(const char *path, Router::MIDDLEWARE_PARAM middleware) {
   m_defaultRouter.m_addMiddleware(Request::POST, path, middleware);
 }
 
-void Application::post(Router::MIDDLEWARE_PARAM middleware) { post(NULL, middleware); }
+FLASHMEM void Application::post(Router::MIDDLEWARE_PARAM middleware) { post(NULL, middleware); }
 
-void Application::put(const char *path, Router::MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Application::put(const char *path, Router::MIDDLEWARE_PARAM middleware) {
   m_defaultRouter.m_addMiddleware(Request::PUT, path, middleware);
 }
 
-void Application::put(Router::MIDDLEWARE_PARAM middleware) { put(NULL, middleware); }
+FLASHMEM void Application::put(Router::MIDDLEWARE_PARAM middleware) { put(NULL, middleware); }
 
-void Application::process(EthernetClient *client, void *context) {
+FLASHMEM void Application::process(EthernetClient *client, void *context) {
   if (!client) {
     return;
   }
@@ -1500,7 +1500,7 @@ void Application::process(EthernetClient *client, void *context) {
   process(client, urlBuffer, SERVER_URL_BUFFER_SIZE, context);
 }
 
-void Application::process(EthernetClient *client, char *urlBuffer, int urlBufferLength, void *context) {
+FLASHMEM void Application::process(EthernetClient *client, char *urlBuffer, int urlBufferLength, void *context) {
   if (!client) {
     return;
   }
@@ -1509,7 +1509,7 @@ void Application::process(EthernetClient *client, char *urlBuffer, int urlBuffer
   process(client, urlBuffer, urlBufferLength, writeBuffer, SERVER_OUTPUT_BUFFER_SIZE, context);
 }
 
-void Application::process(EthernetClient *client, char *urlBuffer, int urlBufferLength, uint8_t *writeBuffer,
+FLASHMEM void Application::process(EthernetClient *client, char *urlBuffer, int urlBufferLength, uint8_t *writeBuffer,
                           int writeBufferLength, void *context) {
   if (!client) {
     return;
@@ -1533,7 +1533,7 @@ void Application::process(EthernetClient *client, char *urlBuffer, int urlBuffer
   }
 }
 
-void Application::process(Stream *stream, void *context) {
+FLASHMEM void Application::process(Stream *stream, void *context) {
   if (!stream) {
     return;
   }
@@ -1542,7 +1542,7 @@ void Application::process(Stream *stream, void *context) {
   process(&client, context);
 }
 
-void Application::process(Stream *stream, char *buffer, int bufferLength, void *context) {
+FLASHMEM void Application::process(Stream *stream, char *buffer, int bufferLength, void *context) {
   if (!stream) {
     return;
   }
@@ -1551,7 +1551,7 @@ void Application::process(Stream *stream, char *buffer, int bufferLength, void *
   process(&client, buffer, bufferLength, context);
 }
 
-void Application::process(Stream *stream, char *urlBuffer, int urlBufferLength, uint8_t *writeBuffer,
+FLASHMEM void Application::process(Stream *stream, char *urlBuffer, int urlBufferLength, uint8_t *writeBuffer,
                           int writeBufferLength, void *context) {
   if (!stream) {
     return;
@@ -1561,19 +1561,19 @@ void Application::process(Stream *stream, char *urlBuffer, int urlBufferLength, 
   process(&client, urlBuffer, urlBufferLength, writeBuffer, writeBufferLength, context);
 }
 
-void Application::use(const char *path, Router::MIDDLEWARE_PARAM middleware) {
+FLASHMEM void Application::use(const char *path, Router::MIDDLEWARE_PARAM middleware) {
   m_defaultRouter.m_addMiddleware(Request::ALL, path, middleware);
 }
 
-void Application::use(Router::MIDDLEWARE_PARAM middleware) { use(NULL, middleware); }
+FLASHMEM void Application::use(Router::MIDDLEWARE_PARAM middleware) { use(NULL, middleware); }
 
-void Application::setTimeout(unsigned long timeoutMillis) { m_timeout = timeoutMillis; }
+FLASHMEM void Application::setTimeout(unsigned long timeoutMillis) { m_timeout = timeoutMillis; }
 
-void Application::use(const char *path, Router *router) { m_defaultRouter.use(path, router); }
+FLASHMEM void Application::use(const char *path, Router *router) { m_defaultRouter.use(path, router); }
 
-void Application::use(Router *router) { use(NULL, router); }
+FLASHMEM void Application::use(Router *router) { use(NULL, router); }
 
-void Application::m_process(Request &request, Response &response) {
+FLASHMEM void Application::m_process(Request &request, Response &response) {
   if (!request.m_processMethod()) {
     if (request.m_timedout()) {
       return response.sendStatus(408);
@@ -1624,7 +1624,7 @@ void Application::m_process(Request &request, Response &response) {
   }
 }
 
-void Application::header(const char *name, char *buffer, int bufferLength) {
+FLASHMEM void Application::header(const char *name, char *buffer, int bufferLength) {
   Request::HeaderNode *newNode = new Request::HeaderNode();
 
   buffer[0] = '\0';

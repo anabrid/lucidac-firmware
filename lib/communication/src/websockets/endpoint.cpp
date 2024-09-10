@@ -6,6 +6,7 @@
 
 namespace websockets {
 
+FLASHMEM
 CloseReason GetCloseReason(uint16_t reasonCode) {
   switch (reasonCode) {
   case CloseReason_NormalClosure:
@@ -67,6 +68,7 @@ uint64_t swapEndianess(uint64_t num) {
   return upperLong | (lowerLong << 32);
 }
 
+FLASHMEM
 WebsocketsEndpoint::WebsocketsEndpoint(std::shared_ptr<network::TcpClient> client,
                                        FragmentsPolicy fragmentsPolicy)
     : _client(client), _fragmentsPolicy(fragmentsPolicy), _recvMode(RecvMode_Normal),
@@ -89,6 +91,7 @@ WebsocketsEndpoint::WebsocketsEndpoint(const WebsocketsEndpoint &&other)
   const_cast<WebsocketsEndpoint &>(other)._client = nullptr;
 }
 
+FLASHMEM
 WebsocketsEndpoint &WebsocketsEndpoint::operator=(const WebsocketsEndpoint &other) {
   this->_client = other._client;
   this->_fragmentsPolicy = other._fragmentsPolicy;
@@ -102,6 +105,7 @@ WebsocketsEndpoint &WebsocketsEndpoint::operator=(const WebsocketsEndpoint &othe
   return *this;
 }
 
+FLASHMEM
 WebsocketsEndpoint &WebsocketsEndpoint::operator=(const WebsocketsEndpoint &&other) {
   this->_client = other._client;
   this->_fragmentsPolicy = other._fragmentsPolicy;
@@ -115,10 +119,12 @@ WebsocketsEndpoint &WebsocketsEndpoint::operator=(const WebsocketsEndpoint &&oth
   return *this;
 }
 
+FLASHMEM
 void WebsocketsEndpoint::setInternalSocket(std::shared_ptr<network::TcpClient> socket) {
   this->_client = socket;
 }
 
+FLASHMEM
 bool WebsocketsEndpoint::poll() { return this->_client->poll(); }
 
 uint32_t readUntilSuccessfullOrError(network::TcpClient &socket, uint8_t *buffer, const uint32_t len) {
@@ -136,6 +142,7 @@ Header readHeaderFromSocket(network::TcpClient &socket) {
   return header;
 }
 
+FLASHMEM
 uint64_t readExtendedPayloadLength(network::TcpClient &socket, const Header &header) {
   uint64_t extendedPayload = header.payload;
   // in case of extended payload length
@@ -158,6 +165,7 @@ void readMaskingKey(network::TcpClient &socket, uint8_t *outputBuffer) {
   readUntilSuccessfullOrError(socket, reinterpret_cast<uint8_t *>(outputBuffer), 4);
 }
 
+FLASHMEM
 std::string readData(network::TcpClient &socket, uint64_t extendedPayload) {
   const uint64_t BUFFER_SIZE = _WS_BUFFER_SIZE;
 
@@ -188,6 +196,7 @@ void remaskData(std::string &data, const uint8_t *const maskingKey, uint64_t pay
   }
 }
 
+FLASHMEM
 WebsocketsFrame WebsocketsEndpoint::_recv() {
   auto header = readHeaderFromSocket(*this->_client);
   if (!_client->available())
@@ -237,6 +246,7 @@ WebsocketsFrame WebsocketsEndpoint::_recv() {
   return (frame);
 }
 
+FLASHMEM
 WebsocketsMessage WebsocketsEndpoint::handleFrameInStreamingMode(WebsocketsFrame &frame) {
   if (frame.isControlFrame()) {
     auto msg = WebsocketsMessage::CreateFromFrame((frame));
@@ -286,6 +296,7 @@ WebsocketsMessage WebsocketsEndpoint::handleFrameInStreamingMode(WebsocketsFrame
   return {};
 }
 
+FLASHMEM
 WebsocketsMessage WebsocketsEndpoint::handleFrameInStandardMode(WebsocketsFrame &frame) {
   // Normal (unfragmented) frames are handled as a complete message
   if (frame.isNormalUnfragmentedMessage() || frame.isControlFrame()) {
@@ -314,6 +325,7 @@ WebsocketsMessage WebsocketsEndpoint::recv() {
   }
 }
 
+FLASHMEM
 void WebsocketsEndpoint::handleMessageInternally(WebsocketsMessage &msg) {
   if (msg.isPing()) {
     pong(internals::fromInterfaceString(msg.data()));
@@ -343,6 +355,7 @@ bool WebsocketsEndpoint::send(const std::string &data, const uint8_t opcode, con
   return send(data.c_str(), data.size(), opcode, fin, mask, maskingKey);
 }
 
+FLASHMEM
 std::string WebsocketsEndpoint::getHeader(uint64_t len, uint8_t opcode, bool fin, bool mask) {
   std::string header_data;
 

@@ -8,7 +8,7 @@
 
 SPIClass &bus::spi = BUS_SPI_INTERFACE;
 
-void bus::init() {
+FLASHMEM void bus::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
 
   pinMode(PIN_ADDR_CS, OUTPUT);

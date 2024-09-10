@@ -16,6 +16,7 @@
 
 run::RunManager run::RunManager::_instance{};
 
+FLASHMEM
 void run::RunManager::run_next(carrier::Carrier &carrier_, run::RunStateChangeHandler *state_change_handler,
                                run::RunDataHandler *run_data_handler,
                                client::StreamingRunDataNotificationHandler *alt_run_data_handler) {
@@ -39,6 +40,7 @@ void run::RunManager::run_next(carrier::Carrier &carrier_, run::RunStateChangeHa
     queue.pop();
 }
 
+// NOT FLASHMEM
 void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler, client::StreamingRunDataNotificationHandler *alt_run_data_handler) {
   //run_data_handler->prepare(run);
 
@@ -170,6 +172,7 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
     state_change_handler->handle(result, run);
 }
 
+// NOT FLASHMEM
 void run::RunManager::run_next_flexio(run::Run &run, RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler) {
   run_data_handler->prepare(run);
   bool daq_error = false;

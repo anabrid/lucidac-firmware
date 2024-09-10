@@ -9,9 +9,9 @@
 const SPISettings platform::LUCIDAC_HAL::F_ADC_SWITCHER_PRG_SPI_SETTINGS{
     4'000'000, MSBFIRST, SPI_MODE2 /* chip expects SPI MODE0, but CLK is inverted on the way */};
 
-LUCIDAC::LUCIDAC(LUCIDAC_HAL *hardware) : Carrier({Cluster(0)}, hardware), hardware(hardware) {}
+FLASHMEM LUCIDAC::LUCIDAC(LUCIDAC_HAL *hardware) : Carrier({Cluster(0)}, hardware), hardware(hardware) {}
 
-LUCIDAC::LUCIDAC() : LUCIDAC(new LUCIDAC_HAL()) {}
+FLASHMEM LUCIDAC::LUCIDAC() : LUCIDAC(new LUCIDAC_HAL()) {}
 
 FLASHMEM LUCIDAC_HAL::LUCIDAC_HAL()
     : f_acl_prg(bus::address_from_tuple(CARRIER_MADDR, ACL_PRG_FADDR), true),
@@ -114,7 +114,7 @@ FLASHMEM int LUCIDAC::write_to_hardware() {
   return true;
 }
 
-const std::array<LUCIDAC::ACL, 8> &LUCIDAC::get_acl_select() const { return acl_select; }
+FLASHMEM const std::array<LUCIDAC::ACL, 8> &LUCIDAC::get_acl_select() const { return acl_select; }
 
 FLASHMEM void LUCIDAC::set_acl_select(const std::array<ACL, 8> &acl_select_) { acl_select = acl_select_; }
 

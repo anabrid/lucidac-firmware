@@ -93,9 +93,7 @@ public:
 
   const std::string &get_entity_id() const { return entity_id; }
 
-  virtual EntityClassifier get_entity_classifier() const {
-    return {get_entity_class(), get_entity_type(), get_entity_version(), get_entity_variant()};
-  }
+  virtual EntityClassifier get_entity_classifier() const;
 
   virtual EntityClass get_entity_class() const = 0;
 
@@ -128,28 +126,9 @@ public:
 
   virtual Entity *get_child_entity(const std::string &child_id) = 0;
 
-  Entity *resolve_child_entity(std::string paths[], size_t len) {
-    auto resolved_entity = this;
-    for (size_t path_depth = 0; path_depth < len; path_depth++) {
-      resolved_entity = resolved_entity->get_child_entity(paths[path_depth]);
-      if (!resolved_entity) {
-        return nullptr;
-      }
-    }
-    return resolved_entity;
-  }
+  Entity *resolve_child_entity(std::string paths[], size_t len);
 
-  Entity *resolve_child_entity(JsonArrayConstIterator begin, JsonArrayConstIterator end) {
-    auto resolved_entity = this;
-    for (auto sub_path = begin; sub_path != end; ++sub_path) {
-      std::string child_entity_id = (*sub_path).as<const char *>();
-      resolved_entity = resolved_entity->get_child_entity(child_entity_id);
-      if (!resolved_entity) {
-        return nullptr;
-      }
-    }
-    return resolved_entity;
-  }
+  Entity *resolve_child_entity(JsonArrayConstIterator begin, JsonArrayConstIterator end);
 
   Entity *resolve_child_entity(JsonArrayConst path) { return resolve_child_entity(path.begin(), path.end()); }
 
@@ -157,20 +136,7 @@ public:
    * Deserialize a new configuration for this entity and all its children from a JsonObject.
    * @returns true in case of success, else false
    **/
-  utils::status config_from_json(JsonObjectConst cfg) {
-#ifdef ANABRID_DEBUG_ENTITY_CONFIG
-    Serial.println(__PRETTY_FUNCTION__);
-#endif
-    if (cfg.isNull())
-      return utils::status("Configuration is Null at entity %s", get_entity_id().c_str());
-    auto res = config_self_from_json(cfg);
-    if(!res)
-      return res;
-    res = config_children_from_json(cfg);
-    if(!res)
-      return res;
-    return utils::status::success();
-  }
+  utils::status config_from_json(JsonObjectConst cfg);
 
   /**
    * Serialize the configuration for this entity to a JsonObject.
@@ -195,19 +161,7 @@ protected:
    * Does not include own configuration, @see config_self_from_json() instead.
    * @returns true in case of success, else false
    **/
-  utils::status config_children_from_json(JsonObjectConst &cfg) {
-    for (JsonPairConst keyval : cfg) {
-      if (keyval.key().c_str()[0] == '/' and keyval.key().size() > 1) {
-        std::string child_id(keyval.key().c_str() + 1);
-        auto child_entity = get_child_entity(child_id);
-        if (!child_entity)
-          return utils::status("Child entity '%s' does not exist at entity '%s'", child_id, get_entity_id().c_str());
-        auto res = child_entity->config_from_json(keyval.value());
-        if(!res) return res;
-      }
-    }
-    return utils::status::success();
-  }
+  utils::status config_children_from_json(JsonObjectConst &cfg);
 
   /**
    * Serialize the configuration of this entity to a JsonObject.
@@ -223,14 +177,7 @@ protected:
    * Serialize the configuration of the child entities of this entity to a JsonObject.
    * Does not include own configuration, @see config_self_to_json() instead.
    **/
-  void config_children_to_json(JsonObject &cfg) {
-    for (auto child : get_child_entities()) {
-      if (child) {
-        auto child_cfg = cfg.createNestedObject(std::string("/") + child->get_entity_id());
-        child->config_to_json(child_cfg, true);
-      }
-    }
-  }
+  void config_children_to_json(JsonObject &cfg);
 };
 
 } // namespace entities
@@ -238,27 +185,9 @@ protected:
 namespace ArduinoJson {
 
 template <> struct Converter<entities::EntityClassifier> {
-  static bool toJson(const entities::EntityClassifier &src, JsonVariant dst) {
-    dst["class"] = src.class_;
-    dst["type"] = src.type;
-    dst["variant"] = src.variant;
-
-    auto versions_arr = dst.createNestedArray("version");
-    versions_arr.add(src.version.major);
-    versions_arr.add(src.version.minor);
-    versions_arr.add(src.version.patch);
-    return true;
-  }
-
-  static entities::EntityClassifier fromJson(JsonVariantConst src) {
-    return {src["class"].as<uint8_t>(), src["type"],       src["version"][0],
-            src["version"][1],          src["version"][2], src["variant"]};
-  }
-
-  static bool checkJson(JsonVariantConst src) {
-    return src["class"].is<uint8_t>() and src["type"].is<uint8_t>() and src["variant"].is<uint8_t>() and
-           src["version"].is<JsonArrayConst>() and src["version"].as<JsonArrayConst>().size() == 3;
-  }
+  static bool toJson(const entities::EntityClassifier &src, JsonVariant dst);
+  static entities::EntityClassifier fromJson(JsonVariantConst src);
+  static bool checkJson(JsonVariantConst src);
 };
 
 } // namespace ArduinoJson

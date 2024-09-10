@@ -48,12 +48,15 @@ FLASHMEM run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
   return run;
 }
 
+FLASHMEM
 run::Run::Run(std::string id, const run::RunConfig &config)
     : id(std::move(id)), config(config), daq_config{} {}
 
+FLASHMEM
 run::Run::Run(std::string id, const run::RunConfig &config, const daq::DAQConfig &daq_config)
     : id(std::move(id)), config(config), daq_config(daq_config) {}
 
+FLASHMEM
 run::Run run::Run::from_json(JsonObjectConst &json) {
   auto json_run_config = json["config"].as<JsonObjectConst>();
   auto run_config = RunConfig::from_json(json_run_config);
@@ -65,6 +68,7 @@ run::Run run::Run::from_json(JsonObjectConst &json) {
   return {id, run_config, daq_config};
 }
 
+FLASHMEM
 run::RunStateChange run::Run::to(run::RunState new_state, unsigned int t) {
   auto old = state;
   state = new_state;

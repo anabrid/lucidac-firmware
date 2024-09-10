@@ -67,6 +67,7 @@ FLASHMEM void msg::handlers::DynamicRegistry::init(carrier::Carrier &c) {
   set("ota_update_complete", 5300, new FlasherCompleteHandler(), SecurityLevel::RequiresAdmin);
 }
 
+FLASHMEM
 msg::handlers::MessageHandler *msg::handlers::DynamicRegistry::get(const std::string &msg_type) {
   auto found = entries.find(msg_type);
   if (found != entries.end()) {
@@ -76,6 +77,7 @@ msg::handlers::MessageHandler *msg::handlers::DynamicRegistry::get(const std::st
   }
 }
 
+FLASHMEM
 net::auth::SecurityLevel msg::handlers::DynamicRegistry::requiredClearance(const std::string &msg_type) {
   auto found = entries.find(msg_type);
   if (found != entries.end()) {
@@ -85,11 +87,13 @@ net::auth::SecurityLevel msg::handlers::DynamicRegistry::requiredClearance(const
   }
 }
 
+FLASHMEM
 bool msg::handlers::DynamicRegistry::set(const std::string &msg_type, msg::handlers::MessageHandler *handler,
                                          net::auth::SecurityLevel minimumClearance) {
   return set(msg_type, result_code_counter, handler, minimumClearance);
 }
 
+FLASHMEM
 bool msg::handlers::DynamicRegistry::set(const std::string &msg_type, int result_code_prefix,
                                          msg::handlers::MessageHandler *handler,
                                          net::auth::SecurityLevel minimumClearance) {

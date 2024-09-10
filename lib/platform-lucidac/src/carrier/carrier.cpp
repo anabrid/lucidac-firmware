@@ -354,7 +354,7 @@ FLASHMEM int carrier::Carrier::get_config(JsonObjectConst msg_in, JsonObject &ms
   return success;
 }
 
-int carrier::Carrier::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
+FLASHMEM int carrier::Carrier::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
   auto entities_obj = msg_out.createNestedObject("entities");
   auto carrier_obj = entities_obj[get_entity_id()] = get_entity_classifier();
   for (const auto &cluster : clusters) {
@@ -369,7 +369,7 @@ int carrier::Carrier::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) 
   return success;
 }
 
-int carrier::Carrier::reset(JsonObjectConst msg_in, JsonObject &msg_out) {
+FLASHMEM int carrier::Carrier::reset(JsonObjectConst msg_in, JsonObject &msg_out) {
   for (auto &cluster : clusters) {
     cluster.reset(msg_in["keep_calibration"] | true);
   }
