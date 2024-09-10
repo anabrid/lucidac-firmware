@@ -258,10 +258,7 @@ void setup_and_measure() {
   JsonObject cfg = doc.as<JsonObject>();
   TEST_ASSERT_FALSE(cfg.isNull());
 
-  auto int_block = static_cast<MIntBlock *>(cluster.m0block);
-  auto mul_block = static_cast<MMulBlock *>(cluster.m1block);
-
-  TEST_ASSERT(lucidac.calibrate_mblock(cluster, *mul_block, &DAQ));
+  lucidac.calibrate_m_blocks(&DAQ); // Calibration can be false if out of range
 
   TEST_ASSERT(lucidac.config_from_json(cfg));
   TEST_ASSERT(lucidac.write_to_hardware());
