@@ -31,6 +31,11 @@ float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
          1.25f;
 }
 
+namespace helpers {
+  // declaration of global variable within serializer.cpp
+  const std::array<char[7], 2501> normalized_to_float_str_arr;
+}
+
 const char *daq::BaseDAQ::raw_to_str(uint16_t raw) {
   size_t idx = raw_to_normalized(raw);
   if (idx > helpers::normalized_to_float_str_arr.size())

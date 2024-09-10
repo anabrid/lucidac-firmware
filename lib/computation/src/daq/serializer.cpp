@@ -2,13 +2,13 @@
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
-#pragma once
 
 #include <array>
+#include <Arduino.h> // FLASHMEM
 
 namespace helpers {
 
-constexpr std::array<char[7], 2501> normalized_to_float_str_arr = {
+PROGMEM const std::array<char[7], 2501> normalized_to_float_str_arr = {
     " 1.250", " 1.249", " 1.248", " 1.247", " 1.246", " 1.245", " 1.244", " 1.243", " 1.242", " 1.241",
     " 1.240", " 1.239", " 1.238", " 1.237", " 1.236", " 1.235", " 1.234", " 1.233", " 1.232", " 1.231",
     " 1.230", " 1.229", " 1.228", " 1.227", " 1.226", " 1.225", " 1.224", " 1.223", " 1.222", " 1.221",
