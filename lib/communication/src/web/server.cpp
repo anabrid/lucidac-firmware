@@ -62,11 +62,6 @@ FLASHMEM void allocate_interesting_headers(awot::Application &app) {
   // programmer, please ensure at this line i < max_allocated_headers.
 }
 
-FLASHMEM LucidacWebServer &web::LucidacWebServer::get() {
-  static LucidacWebServer obj;
-  return obj;
-}
-
 FLASHMEM void notfound(awot::Request &req, awot::Response &res) {
   res.status(404);
   res.set("Server", SERVER_VERSION);

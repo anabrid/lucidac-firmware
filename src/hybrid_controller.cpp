@@ -113,7 +113,7 @@ FLASHMEM void setup() {
     indicate_led_error();
   }
 
-  msg::handlers::Registry.init(carrier_); // registers all commonly known messages
+  msg::handlers::Registry::get().init(carrier_); // registers all commonly known messages
 
   //LOG("msg::handlers::DynamicRegistry set up with handlers")
   //msg::handlers::DynamicRegistry::dump();

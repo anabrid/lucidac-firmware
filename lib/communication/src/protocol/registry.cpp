@@ -20,9 +20,6 @@
 #include "handlers/run_manager.h"
 #include "handlers/sys.h"
 
-// allocate singleton storage
-msg::handlers::DynamicRegistry msg::handlers::Registry;
-
 FLASHMEM void msg::handlers::DynamicRegistry::init(carrier::Carrier &c) {
   using namespace net::auth;
   using namespace msg::handlers;
@@ -68,7 +65,7 @@ FLASHMEM void msg::handlers::DynamicRegistry::init(carrier::Carrier &c) {
 }
 
 FLASHMEM
-msg::handlers::MessageHandler *msg::handlers::DynamicRegistry::get(const std::string &msg_type) {
+msg::handlers::MessageHandler *msg::handlers::DynamicRegistry::lookup(const std::string &msg_type) {
   auto found = entries.find(msg_type);
   if (found != entries.end()) {
     return found->second.handler;

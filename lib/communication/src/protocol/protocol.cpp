@@ -52,11 +52,6 @@ FLASHMEM void msg::JsonLinesProtocol::init(size_t envelope_size) {
   envelope_out = new DynamicJsonDocument(envelope_size);
 }
 
-FLASHMEM msg::JsonLinesProtocol &msg::JsonLinesProtocol::get() {
-  static JsonLinesProtocol obj;
-  return obj;
-}
-
 FLASHMEM void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &user_context, Print &output) {
   auto envelope_out = this->envelope_out->to<JsonObject>();
   auto envelope_in = this->envelope_in->as<JsonObjectConst>();
@@ -72,8 +67,8 @@ FLASHMEM void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationC
   auto msg_out = envelope_out.createNestedObject("msg");
 
   // Select message handler
-  auto msg_handler = msg::handlers::Registry.get(msg_type);
-  auto requiredClearance = msg::handlers::Registry.requiredClearance(msg_type);
+  auto msg_handler = msg::handlers::Registry::get().lookup(msg_type);
+  auto requiredClearance = msg::handlers::Registry::get().requiredClearance(msg_type);
   int return_code = 0;
   if (!msg_handler) {
     return_code = -10; // No handler for message known

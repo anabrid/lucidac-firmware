@@ -9,6 +9,7 @@
 
 #include "nvmconfig/persistent.h"
 #include "utils/uuid.h"
+#include "utils/singleton.h"
 
 namespace nvmconfig {
 
@@ -20,7 +21,7 @@ namespace nvmconfig {
      * This kind of information was previously stored in @file(../build/distrubutor.h).
      * 
      */
-    struct VendorOTP : nvmconfig::PersistentSettings {
+    struct VendorOTP : nvmconfig::PersistentSettings, utils::HeapSingleton<VendorOTP> {
         constexpr static uint16_t invalid_serial_number = 0;
         uint16_t serial_number = invalid_serial_number;
         utils::UUID serial_uuid;
@@ -33,10 +34,6 @@ namespace nvmconfig {
         void reset_defaults() { /* No-OP by definition */ }
         void fromJson(JsonObjectConst src, Context c = Context::Flash) override;
         void toJson(JsonObject target, Context c = Context::Flash) const override;
-        static VendorOTP& get() {
-            static VendorOTP instance;
-            return instance;
-        }
     };
 
     JSON_CONVERT_SUGAR(VendorOTP);
