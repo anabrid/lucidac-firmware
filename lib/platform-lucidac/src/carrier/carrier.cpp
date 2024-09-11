@@ -56,6 +56,8 @@ FLASHMEM entities::Entity *carrier::Carrier::get_child_entity(const std::string 
       return nullptr;
     return &clusters[cluster_idx];
   }
+  if(child_id == "CTRL")
+    return ctrl_block;
   return nullptr;
 }
 
@@ -352,25 +354,9 @@ FLASHMEM int carrier::Carrier::get_config(JsonObjectConst msg_in, JsonObject &ms
   return success;
 }
 
-FLASHMEM int carrier::Carrier::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
-  auto entities_obj = msg_out.createNestedObject("entities");
-  auto carrier_obj = entities_obj[get_entity_id()] = get_entity_classifier();
-  for (const auto &cluster : clusters) {
-    auto cluster_obj = carrier_obj["/" + cluster.get_entity_id()] = cluster.get_entity_classifier();
-    for (auto *block : cluster.get_blocks()) {
-      if (block) {
-        auto block_obj = cluster_obj["/" + block->get_entity_id()] = block->get_entity_classifier();
-        block_obj["eui"] = utils::toString(block->get_entity_eui());
-      }
-    }
-  }
-  return success;
-}
-
 FLASHMEM int carrier::Carrier::reset(JsonObjectConst msg_in, JsonObject &msg_out) {
-  for (auto &cluster : clusters) {
-    cluster.reset(msg_in["keep_calibration"] | true);
-  }
+  reset(msg_in["keep_calibration"] | true);
+
   if (msg_in["sync"] | true) {
     auto status = write_to_hardware();
     if(!status) {

@@ -148,6 +148,9 @@ public:
       config_children_to_json(cfg);
   }
 
+  /** Provide recursive entity information in a tree */
+  void classifier_to_json(JsonObject& out) const;
+
 protected:
   /**
    * Deserialize a new configuration for this entity from a JsonObject.

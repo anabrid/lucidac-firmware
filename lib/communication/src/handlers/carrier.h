@@ -49,7 +49,9 @@ public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
 
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
-    return error(carrier.get_entities(msg_in, msg_out));
+    auto entities_obj = msg_out.createNestedObject("entities");
+    carrier.classifier_to_json(entities_obj);
+    return success;
   }
 };
 

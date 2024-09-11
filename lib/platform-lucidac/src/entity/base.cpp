@@ -1,4 +1,5 @@
 #include "entity/base.h"
+#include "utils/mac.h" // toString(eui64)
 
 FLASHMEM std::string entities::EntityClassifier::to_string() const {
     return "(" + std::to_string(class_) + ", " + std::to_string(type) + ", " + version.to_string() + ", " +
@@ -68,7 +69,7 @@ utils::status entities::Entity::config_children_from_json(JsonObjectConst &cfg) 
 
 FLASHMEM
 void entities::Entity::config_children_to_json(JsonObject &cfg) {
-    for (auto child : get_child_entities()) {
+    for (const auto& child : get_child_entities()) {
       if (child) {
         auto child_cfg = cfg.createNestedObject(std::string("/") + child->get_entity_id());
         child->config_to_json(child_cfg, true);
@@ -99,4 +100,16 @@ FLASHMEM
 bool Converter<entities::EntityClassifier>::checkJson(JsonVariantConst src) {
     return src["class"].is<uint8_t>() and src["type"].is<uint8_t>() and src["variant"].is<uint8_t>() and
            src["version"].is<JsonArrayConst>() and src["version"].as<JsonArrayConst>().size() == 3;
+}
+
+FLASHMEM
+void entities::Entity::classifier_to_json(JsonObject& out) const {
+  auto jsonvar = out["/" + get_entity_id()] = get_entity_classifier();
+  auto jsonobj = jsonvar.as<JsonObject>();
+  jsonobj["eui"] = utils::toString(get_entity_eui());
+
+  for(const auto& child_ptr : get_child_entities()) {
+    if(child_ptr)
+      child_ptr->classifier_to_json(jsonobj);
+  }
 }

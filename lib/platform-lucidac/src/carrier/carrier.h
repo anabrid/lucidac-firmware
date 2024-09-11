@@ -87,7 +87,6 @@ public:
   ///@{
   int set_config(JsonObjectConst msg_in, JsonObject &msg_out);
   int get_config(JsonObjectConst msg_in, JsonObject &msg_out);
-  virtual int get_entities(JsonObjectConst msg_in, JsonObject &msg_out);
   int reset(JsonObjectConst msg_in, JsonObject &msg_out);
   ///@}
 };

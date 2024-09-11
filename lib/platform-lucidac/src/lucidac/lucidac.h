@@ -86,8 +86,6 @@ public:
 
   Entity *get_child_entity(const std::string &child_id) override;
 
-  int get_entities(JsonObjectConst msg_in, JsonObject &msg_out) override;
-
   utils::status config_self_from_json(JsonObjectConst cfg) override;
   void config_self_to_json(JsonObject &cfg) override;
 

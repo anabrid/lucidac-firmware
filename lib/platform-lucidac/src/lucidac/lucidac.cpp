@@ -142,17 +142,6 @@ FLASHMEM bool LUCIDAC::calibrate_routes(daq::BaseDAQ *daq_) {
   return hardware->write_acl(acl_select);
 }
 
-FLASHMEM int LUCIDAC::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
-  auto carrier_res = this->carrier::Carrier::get_entities(msg_in, msg_out);
-  if (carrier_res != 0)
-    return carrier_res;
-  if (front_panel) {
-    auto fp_obj = msg_out["entities"]["/FP"] = front_panel->get_entity_classifier();
-    fp_obj["eui"] = utils::toString(front_panel->get_entity_eui());
-  }
-  return 0;
-}
-
 FLASHMEM utils::status platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
   auto res = this->carrier::Carrier::config_self_from_json(cfg);
   if (!res)
