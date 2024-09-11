@@ -242,9 +242,12 @@ int run::RunManager::start_run(JsonObjectConst msg_in, JsonObject &msg_out) {
   if (!msg_in.containsKey("id") or !msg_in["id"].is<std::string>())
     return 1;
 
-  // Cancel any runs if instruction is given
   if(msg_in.containsKey("end_repetitive") && msg_in["end_repetitive"].as<bool>()) {
     end_repetitive_runs();
+  }
+
+  if(msg_in.containsKey("clear_queue") && msg_in["clear_queue"].as<bool>()) {
+    clear_queue();
   }
 
   // Create run and put it into queue

@@ -40,6 +40,12 @@ public:
     return false;
   }
 
+  /// Clears the run queue
+  void clear_queue() {
+    queue = {};
+    // if this does not work, try while(!Q.empty()) Q.pop();
+  }
+
   void run_next(carrier::Carrier &carrier_, run::RunStateChangeHandler *state_change_handler,
                 run::RunDataHandler *run_data_handler,
                 client::StreamingRunDataNotificationHandler *alt_run_data_handler);
