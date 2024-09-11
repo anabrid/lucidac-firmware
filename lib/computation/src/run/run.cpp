@@ -45,6 +45,9 @@ FLASHMEM run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
   if(json.containsKey("write_run_state_changes"))
     run.write_run_state_changes = json["write_run_state_changes"];
 
+  if(json.containsKey("calibrate"))
+    run.calibrate = json["calibrate"];
+
   return run;
 }
 

@@ -20,17 +20,19 @@ FLASHMEM
 void run::RunManager::run_next(carrier::Carrier &carrier_, run::RunStateChangeHandler *state_change_handler,
                                run::RunDataHandler *run_data_handler,
                                client::StreamingRunDataNotificationHandler *alt_run_data_handler) {
-  // Run calibration
-  // TODO: In principle, we could do this slightly more efficient when we initialize the DAQ
-  //       for the runs anyway, but the FlexIODAQ currently does not support a simple sample().
-  LOG_ALWAYS("Calibrating routes for run...")
-  daq::OneshotDAQ daq_;
-  daq_.init(0);
-  if (!carrier_.calibrate_routes(&daq_))
-    LOG_ERROR("Error during self-calibration. Machine will continue with reduced accuracy.");
-
   // TODO: Improve handling of queue, especially the queue.pop() later.
   auto run = queue.front();
+
+  if(run.config.calibrate) {
+    // TODO: In principle, we could do this slightly more efficient when we initialize the DAQ
+    //       for the runs anyway, but the FlexIODAQ currently does not support a simple sample().
+    LOG_ALWAYS("Calibrating routes for run...")
+    daq::OneshotDAQ daq_;
+    daq_.init(0);
+    if (!carrier_.calibrate_routes(&daq_))
+      LOG_ERROR("Error during self-calibration. Machine will continue with reduced accuracy.");
+  }
+
   if(run.config.streaming)
     run_next_flexio(run, state_change_handler, run_data_handler);
   else
