@@ -105,14 +105,10 @@ FLASHMEM entities::Entity *LUCIDAC::get_child_entity(const std::string &child_id
 
 FLASHMEM utils::status LUCIDAC::write_to_hardware() {
   utils::status error = Carrier::write_to_hardware();
-  if (front_panel and !front_panel->write_to_hardware()) {
-    error.code |= 1<<4;
-    error.msg += "Front Panel write failed.";
-  }
-  if (!hardware->write_acl(acl_select)) {
-    error.code |= 1<<5;
-    error.msg += "Write ACL failed.";
-  }
+  if (front_panel)
+    front_panel->write_to_hardware().attach_to(error, "Front Panel write failed.");
+  if(!hardware->write_acl(acl_select))
+    error.attach(1<<5, "Write ACL failed");
   return error;
 }
 

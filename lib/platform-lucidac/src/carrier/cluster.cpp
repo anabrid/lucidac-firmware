@@ -228,15 +228,15 @@ FLASHMEM bool platform::Cluster::calibrate_m_blocks(daq::BaseDAQ *daq) {
   return success;
 }
 
-FLASHMEM bool platform::Cluster::write_to_hardware() {
+FLASHMEM utils::status platform::Cluster::write_to_hardware() {
   for (auto block : get_blocks()) {
     if (block)
       if (!block->write_to_hardware()) {
         LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
-        return false;
+        return utils::status::failure();
       }
   }
-  return true;
+  return utils::status::success();
 }
 
 FLASHMEM bool platform::Cluster::route(uint8_t u_in, uint8_t u_out, float c_factor, uint8_t i_out) {

@@ -213,13 +213,13 @@ FLASHMEM void blocks::UBlock::change_reference_magnitude(blocks::UBlock::Referen
   ref_magnitude = ref;
 }
 
-FLASHMEM bool blocks::UBlock::write_to_hardware() {
+FLASHMEM utils::status blocks::UBlock::write_to_hardware() {
   if (!hardware->write_outputs(output_input_map) or
       !hardware->write_transmission_modes_and_ref({a_side_mode, b_side_mode}, ref_magnitude)) {
     LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
-    return false;
+    return utils::status::failure();
   }
-  return true;
+  return utils::status::success();
 }
 
 FLASHMEM void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), end(output_input_map), -1); }

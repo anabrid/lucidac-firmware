@@ -49,7 +49,7 @@ blocks::MBlock *blocks::MBlock::from_entity_classifier(entities::EntityClassifie
   return nullptr;
 }
 
-FLASHMEM bool blocks::EmptyMBlock::write_to_hardware() { return true; }
+FLASHMEM utils::status blocks::EmptyMBlock::write_to_hardware() { return utils::status::success(); }
 
 FLASHMEM utils::status blocks::EmptyMBlock::config_self_from_json(JsonObjectConst cfg) {
   return utils::status::success();

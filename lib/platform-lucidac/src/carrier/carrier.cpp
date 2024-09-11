@@ -234,135 +234,25 @@ FLASHMEM void carrier::Carrier::reset_adc_channels() {
   std::fill(adc_channels.begin(), adc_channels.end(), ADC_CHANNEL_DISABLED);
 }
 
-constexpr int error(int i) { return i; } // just some syntactic sugar
-
-constexpr int success = 0;
-
-FLASHMEM int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &msg_out) {
+FLASHMEM utils::status carrier::Carrier::user_set_calibrated_config(JsonObjectConst msg_in, JsonObject &msg_out) {
 #ifdef ANABRID_DEBUG_COMMS
   Serial.println(__PRETTY_FUNCTION__);
 #endif
-  auto self_entity_id = get_entity_id();
-  if (!msg_in.containsKey("entity") or !msg_in.containsKey("config")) {
-    msg_out["error"] = "Malformed message.";
-    return error(1);
-  }
-
-  // Convert JSON array of possible anything to string array
-  auto path_json = msg_in["entity"].as<JsonArrayConst>();
-  auto path_depth = path_json.size();
-  std::string path[path_depth];
-  copyArray(path_json, path, path_depth);
-
-  // Sanity check path, which must at least be addressed to us
-  if (!path_depth) {
-    msg_out["error"] = "Invalid entity path.";
-    return error(2);
-  }
-  if (path[0] != self_entity_id) {
-    msg_out["error"] = "Message intended for another carrier.";
-    return error(3);
-  }
-
-  daq::OneshotDAQ daq;
-  if (msg_in.containsKey("calibrate_mblock")) {
-    bool ret = true;
-    if (clusters[0].m0block && clusters[0].m0block->is_entity_type(blocks::MBlock::TYPES::M_MUL4_BLOCK))
-      ret = calibrate_mblock(clusters[0], *clusters[0].m0block, &daq);
-    if (clusters[0].m1block && clusters[0].m1block->is_entity_type(blocks::MBlock::TYPES::M_MUL4_BLOCK))
-      ret = calibrate_mblock(clusters[0], *clusters[0].m1block, &daq);
-    if (!ret) {
-      msg_out["error"] = "Calibrate MBlock failed";
-      return error(10);
-    }
-  }
-
-  // Path may be to one of our sub-entities
-  auto resolved_entity = resolve_child_entity(path + 1, path_depth - 1);
-  if (!resolved_entity) {
-    // This is wrong, should be rather access path[2]. Please check.
-    msg_out["error"] = utils::small_sprintf("Carrier: No entity named '%s'", path[1].c_str());
-    return error(4);
-  }
-
-  utils::status res = resolved_entity->config_from_json(msg_in["config"]);
-  if (!res && msg_out["error"].isNull()) {
-    // This error message is pointless if the configuration fails for applying to a nested entity.
-    msg_out["error"] = utils::small_sprintf("Could not apply configuration to entity '%s', error: %s",
-                                            resolved_entity->get_entity_id().c_str(), res.msg.c_str());
-    return error(10'000 + res.code);
-  }
-
-  // Actually write to hardware
-  utils::status hw_res = write_to_hardware();
-  if(!hw_res) {
-    msg_out["error"] = hw_res.msg;
-    return error(hw_res.code);
-  }
   
-  if (msg_in.containsKey("calibrate_offset") && !calibrate_offset()) {
-    msg_out["error"] = "Calibrate-offset failed";
-    return error(10);
-  }
+  daq::OneshotDAQ daq;
+  if ((msg_in["calibrate_mblock"]|true) && !calibrate_m_blocks(&daq))
+    return utils::status(10, "Calibrate MBlocks failed");
 
-  if (msg_in.containsKey("calibrate_routes") && !calibrate_routes(&daq)) {
-    msg_out["error"] = "Calibrate-Routes failed";
-    return error(10);
-  }
+  auto res = user_set_config(msg_in, msg_out);
 
-  return success;
-}
+  if(!res)
+    return res;
+  
+  if ((msg_in["calibrate_offset"]|true) && !calibrate_offset())
+    return utils::status(10, "Calibrate-offset failed");
 
-FLASHMEM int carrier::Carrier::get_config(JsonObjectConst msg_in, JsonObject &msg_out) {
-#ifdef ANABRID_DEBUG_COMMS
-  Serial.println(__PRETTY_FUNCTION__);
-#endif
-  auto recursive = true;
-  if (msg_in.containsKey("recursive"))
-    recursive = msg_in["recursive"].as<bool>();
+  if ((msg_in["calibrate_routes"]|true) && !calibrate_routes(&daq))
+    return utils::status(10, "Calibrate-Routes failed");
 
-  // Message may contain path to sub-entity
-  entities::Entity *entity = nullptr;
-  if (!msg_in.containsKey("entity") or msg_in["entity"].isNull()) {
-    entity = this;
-  } else if (msg_in["entity"].is<JsonArrayConst>()) {
-    auto path = msg_in["entity"].as<JsonArrayConst>();
-    if (!path.size()) {
-      entity = this;
-    } else if (path[0].as<std::string>() != get_entity_id()) {
-      msg_out["error"] = "Entity lives on another carrier.";
-      return error(1);
-    } else {
-      auto path_begin = path.begin();
-      ++path_begin;
-      entity = resolve_child_entity(path_begin, path.end());
-      if (!entity) {
-        msg_out["error"] = "Invalid entity path.";
-        return error(2);
-      }
-    }
-  } else {
-    msg_out["error"] = "Invalid entity path.";
-    return error(3);
-  }
-
-  // Save entity path back into response
-  msg_out["entity"] = msg_in["entity"];
-  // Save config into response
-  auto cfg = msg_out.createNestedObject("config");
-  entity->config_to_json(cfg, recursive);
-  return success;
-}
-
-FLASHMEM int carrier::Carrier::reset(JsonObjectConst msg_in, JsonObject &msg_out) {
-  reset(msg_in["keep_calibration"] | true);
-
-  if (msg_in["sync"] | true) {
-    auto status = write_to_hardware();
-    if(!status) {
-      msg_out["error"] = status.msg;
-      error(status.code);
-    }
-  }
-  return success;
+  return utils::status::success();
 }

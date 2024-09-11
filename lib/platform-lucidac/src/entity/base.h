@@ -132,6 +132,14 @@ public:
 
   Entity *resolve_child_entity(JsonArrayConst path) { return resolve_child_entity(path.begin(), path.end()); }
 
+  /// returns true in case of success
+  virtual bool init() { return true; }
+
+  virtual void reset(bool keep_calibration) {}
+
+  /// returns true in case of success
+  [[nodiscard]] virtual utils::status write_to_hardware() { return utils::status::success(); }
+
   /**
    * Deserialize a new configuration for this entity and all its children from a JsonObject.
    * @returns true in case of success, else false
@@ -148,8 +156,15 @@ public:
       config_children_to_json(cfg);
   }
 
+  ///@addtogroup User-Functions
+  ///@{
+  utils::status user_set_config(JsonObjectConst msg_in, JsonObject &msg_out);
+  utils::status user_get_config(JsonObjectConst msg_in, JsonObject &msg_out);
+  utils::status user_reset_config(JsonObjectConst msg_in, JsonObject &msg_out);
+  ///@}
+
   /** Provide recursive entity information in a tree */
-  void classifier_to_json(JsonObject& out) const;
+  void classifier_to_json(JsonObject& out);
 
 protected:
   /**

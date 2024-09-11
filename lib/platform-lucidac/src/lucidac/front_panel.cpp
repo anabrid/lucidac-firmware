@@ -17,10 +17,11 @@ FLASHMEM void platform::LUCIDACFrontPanel::reset() {
   signal_generator.sleep();
 }
 
-FLASHMEM int platform::LUCIDACFrontPanel::write_to_hardware() {
-  if (!leds.write_to_hardware())
-    return -1;
-  return signal_generator.write_to_hardware();
+FLASHMEM utils::status platform::LUCIDACFrontPanel::write_to_hardware() {
+  utils::status ret;
+  ret.attach(leds.write_to_hardware(), "FP LED failure");
+  ret.attach(signal_generator.write_to_hardware(), "Signal generator failure");
+  return ret;
 }
 
 FLASHMEM platform::LUCIDACFrontPanel::LEDs::LEDs()
@@ -49,10 +50,10 @@ FLASHMEM void platform::LUCIDACFrontPanel::LEDs::reset() {
 
 FLASHMEM uint8_t platform::LUCIDACFrontPanel::LEDs::get_all() const { return led_states; }
 
-FLASHMEM bool platform::LUCIDACFrontPanel::LEDs::write_to_hardware() const {
+FLASHMEM utils::status platform::LUCIDACFrontPanel::LEDs::write_to_hardware() const {
   bool ret = led_register.transfer8(led_states);
   led_register_store.trigger();
-  return ret;
+  return utils::status(ret);
 }
 
 FLASHMEM platform::LUCIDACFrontPanel::SignalGenerator::SignalGenerator()
@@ -154,7 +155,7 @@ FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::set_dac_out1(float v
 }
 
 // TODO: Implement smart write to hardware for signal generator
-FLASHMEM int platform::LUCIDACFrontPanel::SignalGenerator::write_to_hardware() {
+FLASHMEM utils::status platform::LUCIDACFrontPanel::SignalGenerator::write_to_hardware() {
   if (_sleep)
     function_generator.sleep();
   else
@@ -165,20 +166,20 @@ FLASHMEM int platform::LUCIDACFrontPanel::SignalGenerator::write_to_hardware() {
   function_generator.write_wave_form(_wave_form);
 
   if (!digital_analog_converter.set_channel(DAC_AMPLITUDE_CH, _amplitude))
-    return -1;
+    return utils::status(-1, "FP DAC");
   if (!digital_analog_converter.set_channel(DAC_SQUARE_LOW_CH, _map_dac_levelshift(_square_low_voltage)))
-    return -2;
+    return utils::status(-2, "FP DSLC");
   if (!digital_analog_converter.set_channel(DAC_SQUARE_HIGH_CH, _map_dac_levelshift(_square_high_voltage)))
-    return -3;
+    return utils::status(-3, "FP DSHC");
   if (!digital_analog_converter.set_channel(DAC_OFFSET_CH, _map_dac_levelshift(_offset)))
-    return -4;
+    return utils::status(-4, "FP DOC");
   if (!digital_analog_converter.set_channel(DAC_OUT0_CH, _map_dac_levelshift(_dac_out0)))
-    return -5;
+    return utils::status(-5, "FP DO0C");
   if (!digital_analog_converter.set_channel(DAC_OUT1_CH, _map_dac_levelshift(_dac_out1)))
-    return -6;
+    return utils::status(-6, "FP DO1C");
 
   delay(50);
-  return true;
+  return utils::status::success();
 }
 
 FLASHMEM 

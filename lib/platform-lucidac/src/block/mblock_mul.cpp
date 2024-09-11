@@ -98,7 +98,7 @@ FLASHMEM void blocks::MMulBlock::reset(bool keep_calibration) {
   }
 }
 
-FLASHMEM bool blocks::MMulBlock::write_to_hardware() { return true; }
+FLASHMEM utils::status blocks::MMulBlock::write_to_hardware() { return utils::status::success(); }
 
 FLASHMEM bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, platform::Cluster *cluster) {
   LOG(ANABRID_DEBUG_CALIBRATION, __PRETTY_FUNCTION__);

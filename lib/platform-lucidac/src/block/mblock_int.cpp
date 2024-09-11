@@ -91,12 +91,12 @@ FLASHMEM void blocks::MIntBlock::reset_time_factors() {
   std::fill(std::begin(time_factors), std::end(time_factors), default_);
 }
 
-FLASHMEM bool blocks::MIntBlock::write_to_hardware() {
+FLASHMEM utils::status blocks::MIntBlock::write_to_hardware() {
   // Write IC values one channel at a time
   for (decltype(ic_values.size()) i = 0; i < ic_values.size(); i++) {
     if (!hardware->write_ic(i, ic_values[i])) {
       LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
-      return false;
+      return utils::status::failure();
     }
   }
   // Write time factor switches by converting to bitset
@@ -105,8 +105,8 @@ FLASHMEM bool blocks::MIntBlock::write_to_hardware() {
     if (time_factors[idx] != DEFAULT_TIME_FACTOR)
       time_factor_switches.set(idx);
   if (!hardware->write_time_factor_switches(time_factor_switches))
-    return false;
-  return true;
+    return utils::status::failure();
+  return utils::status::success();
 }
 
 FLASHMEM void blocks::MIntBlock::reset(bool keep_calibration) {

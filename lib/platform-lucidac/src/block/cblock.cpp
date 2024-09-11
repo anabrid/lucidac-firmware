@@ -31,12 +31,12 @@ FLASHMEM bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
 
 FLASHMEM void blocks::CBlock::set_factors(const std::array<float, NUM_COEFF> &factors) { factors_ = factors; }
 
-FLASHMEM bool blocks::CBlock::write_to_hardware() {
+FLASHMEM utils::status blocks::CBlock::write_to_hardware() {
   if (!write_factors_to_hardware()) {
     LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
-    return false;
+    return utils::status::failure();
   }
-  return true;
+  return utils::status::success();
 }
 
 FLASHMEM bool blocks::CBlock::write_factors_to_hardware() {

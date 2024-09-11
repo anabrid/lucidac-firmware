@@ -134,7 +134,7 @@ FLASHMEM void setup() {
     // For a quick fix, reset machine here because calibration routines exit
     // early which *do* result in a machine in an unusable state.
     carrier_.reset(true);
-    carrier_.write_to_hardware();
+    (void)carrier_.write_to_hardware();
   }
 
   // Done.

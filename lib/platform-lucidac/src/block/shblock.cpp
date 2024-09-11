@@ -15,7 +15,7 @@ FLASHMEM blocks::SHBlock::State blocks::SHBlock::get_state() const { return stat
 
 FLASHMEM void blocks::SHBlock::reset(const bool keep_offsets) { state = State::TRACK; }
 
-FLASHMEM bool blocks::SHBlock::write_to_hardware() {
+FLASHMEM utils::status blocks::SHBlock::write_to_hardware() {
   if (state == State::TRACK)
     set_track.trigger();
   else if (state == State::INJECT)
@@ -28,7 +28,7 @@ FLASHMEM bool blocks::SHBlock::write_to_hardware() {
     set_gain_channels_eight_to_fifteen.trigger();
   }
 
-  return true;
+  return utils::status::success();
 }
 
 FLASHMEM void blocks::SHBlock::compensate_hardware_offsets(uint32_t track_time, uint32_t inject_time) {

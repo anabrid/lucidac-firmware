@@ -49,12 +49,12 @@ FLASHMEM entities::EntityClass blocks::CTRLBlock::get_entity_class() const { ret
 
 FLASHMEM utils::status blocks::CTRLBlock::config_self_from_json(JsonObjectConst cfg) { return utils::status::success(); }
 
-FLASHMEM bool blocks::CTRLBlock::write_to_hardware() { return hardware->write_adc_bus_muxers(adc_bus); }
+FLASHMEM utils::status blocks::CTRLBlock::write_to_hardware() { return utils::status(hardware->write_adc_bus_muxers(adc_bus)); }
 
 FLASHMEM bool blocks::CTRLBlock::init() {
   // Hardware defaults are not very good, e.g. adc bus is by default on CL0_GAIN.
   // That's why we write more sane defaults on init.
-  return FunctionBlock::init() and write_to_hardware();
+  return utils::status(FunctionBlock::init() and write_to_hardware());
 }
 
 blocks::CTRLBlock::ADCBus blocks::CTRLBlock::get_adc_bus() const { return adc_bus; }

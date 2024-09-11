@@ -6,7 +6,7 @@
 
 #include <array>
 
-#include "base.h"
+#include "entity/base.h"
 
 #include "bus/bus.h"
 #include "metadata/metadata.h"

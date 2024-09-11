@@ -18,8 +18,8 @@ uint8_t functions::ICommandRegisterFunction::chip_cmd_word(uint8_t chip_input_id
   return (connect ? 0b1'000'0000 : 0b0'000'0000) | ((chip_output_idx & 0x7) << 4) | (chip_input_idx & 0xF);
 }
 
-FLASHMEM bool blocks::IBlock::write_to_hardware() {
-  return hardware->write_upscaling(scaling_factors) and hardware->write_outputs(outputs);
+FLASHMEM utils::status blocks::IBlock::write_to_hardware() {
+  return utils::status(hardware->write_upscaling(scaling_factors) and hardware->write_outputs(outputs));
 }
 
 FLASHMEM bool blocks::IBlock::init() {

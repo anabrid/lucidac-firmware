@@ -155,7 +155,7 @@ public:
 
   void reset_gain_corrections();
 
-  [[nodiscard]] bool write_to_hardware() override;
+  [[nodiscard]] utils::status write_to_hardware() override;
   void reset(bool keep_calibration) override;
 
   utils::status config_self_from_json(JsonObjectConst cfg) override;
