@@ -19,6 +19,8 @@
 using namespace platform;
 using namespace blocks;
 
+const float target_precision = 0.1f; // Replace with something from test_common.h
+
 // TODO: Make this independent on underlying hardware by dynamically detecting carrier board
 LUCIDAC carrier_;
 daq::OneshotDAQ DAQ;
@@ -111,10 +113,11 @@ void test_function(float x, float y) {
 
       auto data = DAQ.sample();
       for (auto mul_idx : MMulBlock::MULTIPLIERS_OUTPUT_RANGE()) {
-        if (fabs(data[mul_idx] - x * y) > fabs(0.1 * x * y)) {
+        if (fabs(data[mul_idx] - x * y) > target_precision) {
           error = true;
-          printf("ERROR cluster=%d mblock-slot=%d mul_idx=%d output=%f outside acceptable range!\n",
-                 cluster.cluster_idx, static_cast<uint8_t>(mblock->slot), mul_idx, data[mul_idx]);
+          printf(
+              "ERROR cluster=%d mblock-slot=%d mul_idx=%d output=%f outside acceptable range! Expected=%f\n",
+              cluster.cluster_idx, static_cast<uint8_t>(mblock->slot), mul_idx, data[mul_idx], x * y);
         }
       }
     }
