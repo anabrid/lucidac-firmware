@@ -57,8 +57,12 @@ void test_init_and_blocks() {
   TEST_ASSERT(carrier_.write_to_hardware());
 }
 
-void test_summation(const std::array<float, 32> &factors, const std::array<I, 16> &connections,
-                    bool full_calibration) {
+// Workaround for RUN_TEST
+std::array<float, 32> factors;
+std::array<I, 16> connections;
+bool full_calibration;
+
+void test_summation() {
   if (print_details)
     std::cout << "factor = " << factors[0] << std::endl; // All factors are the same
   if (print_details)
@@ -119,11 +123,10 @@ void test_summation(const std::array<float, 32> &factors, const std::array<I, 16
 
 void test_n_summations() {
   for (auto N : {1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u, 9u, 10u}) {
-    std::array<float, 32> factors{};
     std::fill(factors.begin(), factors.end(), 1.0f / static_cast<float>(N));
     for (auto i_out_idx : IBlock::OUTPUT_IDX_RANGE()) {
       for (auto i_in_shift = 0u; i_in_shift <= 32u - N; i_in_shift += N) {
-        std::array<I, 16> connections;
+        std::for_each(connections.begin(), connections.end(), [](I &i) { i.clear(); });
         for (auto i_in_idx = 0u; i_in_idx < N; i_in_idx++)
           connections[i_out_idx].emplace_back(i_in_idx + i_in_shift);
         // Run test on this configuration
@@ -131,7 +134,9 @@ void test_n_summations() {
         std::cout << "Testing " << N << " connections" << std::endl;
         std::cout << "connections = " << connections << std::endl;
         carrier_.reset(false);
-        test_summation(factors, connections, true); // Since we allways change the signal path,
+        full_calibration = true; // Since we allways change the signal path,
+
+        RUN_TEST(test_summation);
       }
     }
 
