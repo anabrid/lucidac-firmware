@@ -91,14 +91,7 @@ public:
   utils::status config_self_from_json(JsonObjectConst cfg) override;
   void config_self_to_json(JsonObject &cfg) override;
 
-  // TODO TODO THIS CANNOT WORK. this is NOT a proper override!
-  // Error codes:
-  // -1 Cluster write failed
-  // -2 CTRL Block write failed
-  // -3 ADC Bus write failed
-  // -4 Front Panel write failed
-  // -5 Write ACL failed
-  [[nodiscard]] int write_to_hardware() override;
+  [[nodiscard]] utils::status write_to_hardware() override;
 
   [[nodiscard]] const std::array<ACL, 8> &get_acl_select() const;
   void set_acl_select(const std::array<ACL, 8> &acl_select_);

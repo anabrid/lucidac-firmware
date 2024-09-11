@@ -103,15 +103,17 @@ FLASHMEM entities::Entity *LUCIDAC::get_child_entity(const std::string &child_id
   return this->carrier::Carrier::get_child_entity(child_id);
 }
 
-FLASHMEM int LUCIDAC::write_to_hardware() {
-  int carrier_return = Carrier::write_to_hardware();
-  if (carrier_return != 1)
-    return carrier_return;
-  if (front_panel and !front_panel->write_to_hardware())
-    return -4;
-  if (!hardware->write_acl(acl_select))
-    return -5;
-  return true;
+FLASHMEM utils::status LUCIDAC::write_to_hardware() {
+  utils::status error = Carrier::write_to_hardware();
+  if (front_panel and !front_panel->write_to_hardware()) {
+    error.code |= 1<<4;
+    error.msg += "Front Panel write failed.";
+  }
+  if (!hardware->write_acl(acl_select)) {
+    error.code |= 1<<5;
+    error.msg += "Write ACL failed.";
+  }
+  return error;
 }
 
 FLASHMEM const std::array<LUCIDAC::ACL, 8> &LUCIDAC::get_acl_select() const { return acl_select; }

@@ -130,6 +130,11 @@ FLASHMEM void setup() {
   if (!carrier_.calibrate_m_blocks(&daq)){
     LOG_ERROR("Error during self-calibration. Machine will continue with reduced accuracy.");
     indicate_led_error();
+
+    // For a quick fix, reset machine here because calibration routines exit
+    // early which *do* result in a machine in an unusable state.
+    carrier_.reset(true);
+    carrier_.write_to_hardware();
   }
 
   // Done.

@@ -72,11 +72,7 @@ public:
 
   utils::status config_self_from_json(JsonObjectConst cfg) override;
 
-  // Error codes:
-  // -1 Cluster write failed
-  // -2 CTRL Block write failed
-  // -3 ADC Bus write failed
-  [[nodiscard]] virtual int write_to_hardware();
+  [[nodiscard]] virtual utils::status write_to_hardware();
 
   [[nodiscard]] const std::array<int8_t, 8> &get_adc_channels() const;
   [[nodiscard]] bool set_adc_channels(const std::array<int8_t, 8> &channels);

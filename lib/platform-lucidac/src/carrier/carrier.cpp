@@ -44,6 +44,8 @@ FLASHMEM std::vector<entities::Entity *> carrier::Carrier::get_child_entities() 
   for (auto &cluster : clusters) {
     children.push_back(&cluster);
   }
+  if(ctrl_block)
+    children.push_back(ctrl_block);
   return children;
 }
 
@@ -62,18 +64,26 @@ FLASHMEM utils::status carrier::Carrier::config_self_from_json(JsonObjectConst c
   return utils::status::success();
 }
 
-FLASHMEM int carrier::Carrier::write_to_hardware() {
+FLASHMEM utils::status carrier::Carrier::write_to_hardware() {
+  utils::status error;
+  size_t cluster_index = 0;
   for (auto &cluster : clusters) {
     if (!cluster.write_to_hardware()) {
       LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
-      return -1;
+      error.code += cluster_index; // maxes to 3 = 0b11
+      error.msg += "Cluster write failed.";
     }
+    cluster_index++;
   }
-  if (ctrl_block && !ctrl_block->write_to_hardware())
-    return -2;
-  if (!hardware->write_adc_bus_mux(adc_channels))
-    return -3;
-  return true;
+  if (ctrl_block && !ctrl_block->write_to_hardware()) {
+    error.code |= 0x4;
+    error.msg += "CTRL Block write failed.";
+  }
+  if (!hardware->write_adc_bus_mux(adc_channels)) {
+    error.code |= 0x8;
+    error.msg += "ADC Bus write failed.";
+  }
+  return error;
 }
 
 FLASHMEM bool carrier::Carrier::calibrate_offset() {
@@ -143,7 +153,9 @@ FLASHMEM bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBloc
     return false;
 
   // Clean up
+  // reset(true);
   cluster.reset(true);
+  ctrl_block->reset(true);
   reset_adc_channels();
 
   // Write final clean-up to hardware
@@ -280,30 +292,12 @@ FLASHMEM int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &ms
   }
 
   // Actually write to hardware
-  int hw_res = write_to_hardware();
-  switch (hw_res) {
-  case -1:
-    msg_out["error"] = "Cluster write failed";
-    return error(6);
-  case -2:
-    msg_out["error"] = "CTRL Block write failed";
-    return error(7);
-  case -3:
-    msg_out["error"] = "ADC Bus write failed";
-    return error(8);
-
-  // This weird case captures the illegal code fact that write_to_hardware() per-interface
-  // has a boolean return value but for a few classes an integer return value. This needs
-  // to be fixed.
-  case false:
-    msg_out["error"] = "Generic write to hardware error";
-    return error(9);
-
-  case true: /* boolean success */
-  default:
-    return success;
+  utils::status hw_res = write_to_hardware();
+  if(!hw_res) {
+    msg_out["error"] = hw_res.msg;
+    return error(hw_res.code);
   }
-
+  
   if (msg_in.containsKey("calibrate_offset") && !calibrate_offset()) {
     msg_out["error"] = "Calibrate-offset failed";
     return error(10);
@@ -313,6 +307,8 @@ FLASHMEM int carrier::Carrier::set_config(JsonObjectConst msg_in, JsonObject &ms
     msg_out["error"] = "Calibrate-Routes failed";
     return error(10);
   }
+
+  return success;
 }
 
 FLASHMEM int carrier::Carrier::get_config(JsonObjectConst msg_in, JsonObject &msg_out) {
@@ -376,7 +372,11 @@ FLASHMEM int carrier::Carrier::reset(JsonObjectConst msg_in, JsonObject &msg_out
     cluster.reset(msg_in["keep_calibration"] | true);
   }
   if (msg_in["sync"] | true) {
-    write_to_hardware();
+    auto status = write_to_hardware();
+    if(!status) {
+      msg_out["error"] = status.msg;
+      error(status.code);
+    }
   }
   return success;
 }
