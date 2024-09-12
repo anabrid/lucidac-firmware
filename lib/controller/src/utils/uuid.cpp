@@ -2,6 +2,7 @@
 #include "uuid.h"
 
 // TODO: Should unit test whether this is correct
+FLASHMEM
 void utils::UUID::toCharArray(char *_buffer) const {
     //  process 16 bytes build up the char array.
     for (uint8_t i = 0, j = 0; i < 16; i++)
@@ -37,12 +38,14 @@ void utils::UUID::toCharArray(char *_buffer) const {
     _buffer[36] = 0;
 }
 
+FLASHMEM
 String utils::UUID::toString() const {
   char _buffer[37];
   toCharArray(_buffer);
   return String(_buffer);
 }
 
+FLASHMEM
 size_t utils::UUID::printTo(Print &p) const {
     //  UUID in string format
     char  _buffer[37];
@@ -50,6 +53,7 @@ size_t utils::UUID::printTo(Print &p) const {
     return p.print(_buffer);
 }
 
+FLASHMEM
 uint8_t chartoi(char X) {
     if('0' <= X && X <= '9') return X - '0';
     if('a' <= X && X <= 'f') return X - 'a' + 10;
@@ -58,6 +62,7 @@ uint8_t chartoi(char X) {
 }
 
 // TODO: Should unit test whether this is correct
+FLASHMEM
 utils::UUID utils::UUID::fromString(const char *str) {
     UUID data; // all zero by default
 

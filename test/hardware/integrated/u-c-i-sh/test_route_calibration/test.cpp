@@ -4,8 +4,8 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include <Arduino.h>
-#include <unity.h>
 #include <iostream>
+#include <unity.h>
 
 #include "daq/daq.h"
 #include "io/io.h"

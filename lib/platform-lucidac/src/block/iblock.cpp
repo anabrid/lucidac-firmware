@@ -18,11 +18,11 @@ uint8_t functions::ICommandRegisterFunction::chip_cmd_word(uint8_t chip_input_id
   return (connect ? 0b1'000'0000 : 0b0'000'0000) | ((chip_output_idx & 0x7) << 4) | (chip_input_idx & 0xF);
 }
 
-bool blocks::IBlock::write_to_hardware() {
-  return hardware->write_upscaling(scaling_factors) and hardware->write_outputs(outputs);
+FLASHMEM utils::status blocks::IBlock::write_to_hardware() {
+  return utils::status(hardware->write_upscaling(scaling_factors) and hardware->write_outputs(outputs));
 }
 
-bool blocks::IBlock::init() {
+FLASHMEM bool blocks::IBlock::init() {
   LOG(ANABRID_DEBUG_INIT, __PRETTY_FUNCTION__);
   if (!FunctionBlock::init()) {
     return false;
@@ -33,26 +33,26 @@ bool blocks::IBlock::init() {
   return true;
 }
 
-bool blocks::IBlock::_is_connected(uint8_t input, uint8_t output) const {
+FLASHMEM bool blocks::IBlock::_is_connected(uint8_t input, uint8_t output) const {
   return outputs[output] & INPUT_BITMASK(input);
 }
 
-bool blocks::IBlock::_is_output_connected(uint8_t output) const { return outputs[output]; }
+FLASHMEM bool blocks::IBlock::_is_output_connected(uint8_t output) const { return outputs[output]; }
 
-bool blocks::IBlock::is_connected(uint8_t input, uint8_t output) const {
+FLASHMEM bool blocks::IBlock::is_connected(uint8_t input, uint8_t output) const {
   if (output >= NUM_OUTPUTS or input >= NUM_INPUTS)
     return false;
   return _is_connected(input, output);
 }
 
-bool blocks::IBlock::is_anything_connected() const {
+FLASHMEM bool blocks::IBlock::is_anything_connected() const {
   for (auto &output : outputs)
     if (_is_output_connected(output))
       return true;
   return false;
 }
 
-bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool allow_input_splitting) {
+FLASHMEM bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool allow_input_splitting) {
   if (output >= NUM_OUTPUTS or input >= NUM_INPUTS)
     return false;
 
@@ -74,19 +74,19 @@ bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool
   return true;
 }
 
-void blocks::IBlock::reset_outputs() {
+FLASHMEM void blocks::IBlock::reset_outputs() {
   for (auto &output : outputs) {
     output = 0;
   }
 }
 
-void blocks::IBlock::reset(bool keep_calibration) {
+FLASHMEM void blocks::IBlock::reset(bool keep_calibration) {
   FunctionBlock::reset(keep_calibration);
   reset_outputs();
   reset_upscaling();
 }
 
-utils::status blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
+FLASHMEM utils::status blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
@@ -95,7 +95,7 @@ utils::status blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
       auto res = _config_outputs_from_json(cfgItr->value());
       if(!res) return res;
     } else if (cfgItr->key() == "upscaling") {
-      auto res = !_config_upscaling_from_json(cfgItr->value());
+      auto res = _config_upscaling_from_json(cfgItr->value());
       if(!res) return res;
     } else {
       return utils::status("IBlock: Unknown configuration key");
@@ -104,7 +104,7 @@ utils::status blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
   return utils::status::success();
 }
 
-utils::status blocks::IBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
+FLASHMEM utils::status blocks::IBlock::_config_outputs_from_json(const JsonVariantConst &cfg) {
   // Handle a mapping of output to list of inputs
   // This only overrides outputs that are specifically mentioned
   if (cfg.is<JsonObjectConst>()) {
@@ -144,7 +144,7 @@ utils::status blocks::IBlock::_config_outputs_from_json(const JsonVariantConst &
   return utils::status("IBlock: Expected either array or object as configuration");
 }
 
-utils::status blocks::IBlock::_config_upscaling_from_json(const JsonVariantConst &cfg) {
+FLASHMEM utils::status blocks::IBlock::_config_upscaling_from_json(const JsonVariantConst &cfg) {
   if (cfg.is<JsonObjectConst>()) {
     for (JsonPairConst keyval : cfg.as<JsonObjectConst>()) {
       if (!keyval.value().is<bool>())
@@ -172,7 +172,7 @@ utils::status blocks::IBlock::_config_upscaling_from_json(const JsonVariantConst
   return utils::status("IBlock upscaling: Either provide list or object");
 }
 
-utils::status blocks::IBlock::_connect_from_json(const JsonVariantConst &input_spec, uint8_t output) {
+FLASHMEM utils::status blocks::IBlock::_connect_from_json(const JsonVariantConst &input_spec, uint8_t output) {
   if (input_spec.isNull()) {
     // Output is already disconnected from outer code
   } else if (input_spec.is<JsonArrayConst>()) {
@@ -191,7 +191,7 @@ utils::status blocks::IBlock::_connect_from_json(const JsonVariantConst &input_s
   return utils::status::success();
 }
 
-bool blocks::IBlock::disconnect(uint8_t input, uint8_t output) {
+FLASHMEM bool blocks::IBlock::disconnect(uint8_t input, uint8_t output) {
   // Fail if input was not connected
   if (!is_connected(input, output))
     return false;
@@ -199,32 +199,32 @@ bool blocks::IBlock::disconnect(uint8_t input, uint8_t output) {
   return true;
 }
 
-bool blocks::IBlock::disconnect(uint8_t output) {
+FLASHMEM bool blocks::IBlock::disconnect(uint8_t output) {
   if (output >= NUM_OUTPUTS)
     return false;
   outputs[output] = 0;
   return true;
 }
 
-bool blocks::IBlock::set_upscaling(uint8_t input, bool upscale) {
+FLASHMEM bool blocks::IBlock::set_upscaling(uint8_t input, bool upscale) {
   if (input >= NUM_INPUTS)
     return false;
   scaling_factors[input] = upscale;
   return true;
 }
 
-void blocks::IBlock::set_upscaling(std::bitset<NUM_INPUTS> scales) { scaling_factors = scales; }
+FLASHMEM void blocks::IBlock::set_upscaling(std::bitset<NUM_INPUTS> scales) { scaling_factors = scales; }
 
-void blocks::IBlock::reset_upscaling() { scaling_factors.reset(); }
+FLASHMEM void blocks::IBlock::reset_upscaling() { scaling_factors.reset(); }
 
-bool blocks::IBlock::get_upscaling(uint8_t output) const {
+FLASHMEM bool blocks::IBlock::get_upscaling(uint8_t output) const {
   if (output > 32)
     return false;
   else
     return scaling_factors[output];
 }
 
-void blocks::IBlock::config_self_to_json(JsonObject &cfg) {
+FLASHMEM void blocks::IBlock::config_self_to_json(JsonObject &cfg) {
   Entity::config_self_to_json(cfg);
   // Save outputs into cfg
   auto outputs_cfg = cfg.createNestedArray("outputs");
@@ -248,7 +248,7 @@ void blocks::IBlock::config_self_to_json(JsonObject &cfg) {
   }
 }
 
-blocks::IBlock *blocks::IBlock::from_entity_classifier(entities::EntityClassifier classifier,
+FLASHMEM blocks::IBlock *blocks::IBlock::from_entity_classifier(entities::EntityClassifier classifier,
                                                        bus::addr_t block_address) {
   if (!classifier or classifier.class_enum != CLASS_)
     return nullptr;
@@ -264,20 +264,20 @@ blocks::IBlock *blocks::IBlock::from_entity_classifier(entities::EntityClassifie
   return nullptr;
 }
 
-const std::array<uint32_t, blocks::IBlock::NUM_OUTPUTS> &blocks::IBlock::get_outputs() const {
+FLASHMEM const std::array<uint32_t, blocks::IBlock::NUM_OUTPUTS> &blocks::IBlock::get_outputs() const {
   return outputs;
 }
 
-void blocks::IBlock::set_outputs(const std::array<uint32_t, NUM_OUTPUTS> &outputs_) { outputs = outputs_; }
+FLASHMEM void blocks::IBlock::set_outputs(const std::array<uint32_t, NUM_OUTPUTS> &outputs_) { outputs = outputs_; }
 
-blocks::IBlockHAL_V_1_2_X::IBlockHAL_V_1_2_X(bus::addr_t block_address)
+FLASHMEM blocks::IBlockHAL_V_1_2_X::IBlockHAL_V_1_2_X(bus::addr_t block_address)
     : f_cmd{bus::replace_function_idx(block_address, 2)},
       f_imatrix_reset{bus::replace_function_idx(block_address, 4)}, f_imatrix_sync{bus::replace_function_idx(
                                                                         block_address, 3)},
       scaling_register{bus::replace_function_idx(block_address, 5), true},
       scaling_register_sync{bus::replace_function_idx(block_address, 6)} {}
 
-bool blocks::IBlockHAL_V_1_2_X::write_outputs(const std::array<uint32_t, 16> &outputs) {
+FLASHMEM bool blocks::IBlockHAL_V_1_2_X::write_outputs(const std::array<uint32_t, 16> &outputs) {
   f_imatrix_reset.trigger();
   delayNanoseconds(420);
 
@@ -347,7 +347,7 @@ bool blocks::IBlockHAL_V_1_2_X::write_outputs(const std::array<uint32_t, 16> &ou
   return true;
 }
 
-bool blocks::IBlockHAL_V_1_2_X::write_upscaling(std::bitset<32> upscaling) {
+FLASHMEM bool blocks::IBlockHAL_V_1_2_X::write_upscaling(std::bitset<32> upscaling) {
   if (!scaling_register.transfer32(upscaling.to_ulong()))
     return false;
   scaling_register_sync.trigger();

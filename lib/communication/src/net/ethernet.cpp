@@ -16,7 +16,7 @@
 
 using namespace utils;
 
-void net::StartupConfig::reset_defaults() {
+FLASHMEM void net::StartupConfig::reset_defaults() {
 #ifdef ANABRID_SKIP_ETHERNET
   enable_ethernet = false;
   LOG_ALWAYS("Skipping Ethernet due to build flag ANABRID_ETHERNET");
@@ -58,7 +58,7 @@ void net::StartupConfig::reset_defaults() {
   max_connections = 20;
 }
 
-void net::StartupConfig::fromJson(JsonObjectConst src, nvmconfig::Context c) {
+FLASHMEM void net::StartupConfig::fromJson(JsonObjectConst src, nvmconfig::Context c) {
   JSON_GET(src, enable_ethernet);
   JSON_GET(src, enable_dhcp);
   JSON_GET(src, enable_jsonl);
@@ -80,7 +80,7 @@ void net::StartupConfig::fromJson(JsonObjectConst src, nvmconfig::Context c) {
     hostname = hostname.substr(0, 250);
 }
 
-void net::StartupConfig::toJson(JsonObject target, nvmconfig::Context c) const {
+FLASHMEM void net::StartupConfig::toJson(JsonObject target, nvmconfig::Context c) const {
   JSON_SET(target, enable_ethernet);
   JSON_SET(target, enable_dhcp);
   JSON_SET(target, enable_jsonl);
@@ -97,7 +97,7 @@ void net::StartupConfig::toJson(JsonObject target, nvmconfig::Context c) const {
   JSON_SET(target, static_dns);
 }
 
-int net::StartupConfig::begin_ip() {
+FLASHMEM int net::StartupConfig::begin_ip() {
   if (!enable_ethernet) {
     LOG_ALWAYS("Ethernet disabled by user setting");
   }
@@ -153,7 +153,7 @@ int net::StartupConfig::begin_ip() {
   return 0;
 }
 
-void net::StartupConfig::begin_mdns() {
+FLASHMEM void net::StartupConfig::begin_mdns() {
   MDNS.begin(hostname.c_str());
   if (enable_jsonl)
     MDNS.addService("_lucijsonl", "_tcp", jsonl_port);
@@ -166,7 +166,7 @@ void net::StartupConfig::begin_mdns() {
   begin_ip();
 }*/
 
-void net::status(JsonObject &msg_out) {
+FLASHMEM void net::status(JsonObject &msg_out) {
   msg_out["interfaceStatus"] = net::Ethernet.interfaceStatus();
 
   // TODO: Move to net_get

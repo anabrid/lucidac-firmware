@@ -15,6 +15,7 @@
 #include "protocol/handler.h"
 #include "utils/durations.h"
 #include "utils/print-multiplexer.h"
+#include "utils/singleton.h"
 
 namespace carrier {
 class Carrier;
@@ -32,7 +33,7 @@ namespace msg {
  *
  * TODO: Probably rename this class to sth like "JsonLinesResponder"
  **/
-class JsonLinesProtocol {
+class JsonLinesProtocol : public utils::HeapSingleton<JsonLinesProtocol> {
 public:
   DynamicJsonDocument *envelope_in, *envelope_out;
   utils::PrintMultiplexer broadcast;
@@ -40,7 +41,6 @@ public:
   JsonLinesProtocol() { broadcast.add_Serial(); }
 
   void init(size_t envelope_size); ///< Allocates storage
-  static JsonLinesProtocol &get(); ///< Singleton
 
   /**
    * Handles the JSON document currently stored in `envelope_in` and

@@ -6,20 +6,20 @@
 
 #include "utils/logging.h"
 
-blocks::CBlock::CBlock(const bus::addr_t block_address, CBlockHAL *hardware)
+FLASHMEM blocks::CBlock::CBlock(const bus::addr_t block_address, CBlockHAL *hardware)
     : FunctionBlock("C", block_address), hardware(hardware) {}
 
-blocks::CBlock::CBlock() : CBlock(bus::NULL_ADDRESS, new CBlockHALDummy()) {}
+FLASHMEM blocks::CBlock::CBlock() : CBlock(bus::NULL_ADDRESS, new CBlockHALDummy()) {}
 
-float blocks::CBlock::get_factor(uint8_t idx) {
+FLASHMEM float blocks::CBlock::get_factor(uint8_t idx) {
   if (idx >= NUM_COEFF)
     return 0.0f;
   return factors_[idx];
 }
 
-const std::array<float, blocks::CBlock::NUM_COEFF> &blocks::CBlock::get_factors() const { return factors_; }
+FLASHMEM const std::array<float, blocks::CBlock::NUM_COEFF> &blocks::CBlock::get_factors() const { return factors_; }
 
-bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
+FLASHMEM bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   if (idx >= NUM_COEFF)
     return false;
   if (factor > MAX_FACTOR or factor < MIN_FACTOR)
@@ -29,17 +29,17 @@ bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   return true;
 }
 
-void blocks::CBlock::set_factors(const std::array<float, NUM_COEFF> &factors) { factors_ = factors; }
+FLASHMEM void blocks::CBlock::set_factors(const std::array<float, NUM_COEFF> &factors) { factors_ = factors; }
 
-bool blocks::CBlock::write_to_hardware() {
+FLASHMEM utils::status blocks::CBlock::write_to_hardware() {
   if (!write_factors_to_hardware()) {
     LOG(ANABRID_PEDANTIC, __PRETTY_FUNCTION__);
-    return false;
+    return utils::status::failure();
   }
-  return true;
+  return utils::status::success();
 }
 
-bool blocks::CBlock::write_factors_to_hardware() {
+FLASHMEM bool blocks::CBlock::write_factors_to_hardware() {
   for (size_t i = 0; i < factors_.size(); i++) {
     if (!hardware->write_factor(i, factors_[i] * gain_corrections_[i]))
       return false;
@@ -47,7 +47,7 @@ bool blocks::CBlock::write_factors_to_hardware() {
   return true;
 }
 
-void blocks::CBlock::reset(bool keep_calibration) {
+FLASHMEM void blocks::CBlock::reset(bool keep_calibration) {
   FunctionBlock::reset(keep_calibration);
   for (size_t i = 0; i < NUM_COEFF; i++) {
     (void)set_factor(i, 1.0f);
@@ -56,25 +56,25 @@ void blocks::CBlock::reset(bool keep_calibration) {
     reset_gain_corrections();
 }
 
-float blocks::CBlock::get_gain_correction(uint8_t idx) const {
+FLASHMEM float blocks::CBlock::get_gain_correction(uint8_t idx) const {
   if (idx > NUM_COEFF)
     return -2.0f;
   return gain_corrections_[idx];
 }
 
-const std::array<float, blocks::CBlock::NUM_COEFF> &blocks::CBlock::get_gain_corrections() const {
+FLASHMEM const std::array<float, blocks::CBlock::NUM_COEFF> &blocks::CBlock::get_gain_corrections() const {
   return gain_corrections_;
 }
 
-void blocks::CBlock::reset_gain_corrections() {
+FLASHMEM void blocks::CBlock::reset_gain_corrections() {
   std::fill(gain_corrections_.begin(), gain_corrections_.end(), 1.0f);
 }
 
-void blocks::CBlock::set_gain_corrections(const std::array<float, NUM_COEFF> &corrections) {
+FLASHMEM void blocks::CBlock::set_gain_corrections(const std::array<float, NUM_COEFF> &corrections) {
   gain_corrections_ = corrections;
 };
 
-bool blocks::CBlock::set_gain_correction(const uint8_t coeff_idx, const float correction) {
+FLASHMEM bool blocks::CBlock::set_gain_correction(const uint8_t coeff_idx, const float correction) {
   if (coeff_idx > NUM_COEFF)
     return false;
   // Gain correction must be positive and close to 1
@@ -84,7 +84,7 @@ bool blocks::CBlock::set_gain_correction(const uint8_t coeff_idx, const float co
   return true;
 };
 
-utils::status blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
+FLASHMEM utils::status blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
 #ifdef ANABRID_DEBUG_ENTITY_CONFIG
   Serial.println(__PRETTY_FUNCTION__);
 #endif
@@ -99,7 +99,7 @@ utils::status blocks::CBlock::config_self_from_json(JsonObjectConst cfg) {
   return utils::status::success();
 }
 
-utils::status blocks::CBlock::_config_elements_form_json(const JsonVariantConst &cfg) {
+FLASHMEM utils::status blocks::CBlock::_config_elements_form_json(const JsonVariantConst &cfg) {
   // Handle an array of factors
   if (cfg.is<JsonArrayConst>()) {
     auto factors = cfg.as<JsonArrayConst>();
@@ -138,7 +138,7 @@ utils::status blocks::CBlock::_config_elements_form_json(const JsonVariantConst 
   return utils::status("CBlock configuration must be an object or array.");
 }
 
-void blocks::CBlock::config_self_to_json(JsonObject &cfg) {
+FLASHMEM void blocks::CBlock::config_self_to_json(JsonObject &cfg) {
   Entity::config_self_to_json(cfg);
   auto factors_cfg = cfg.createNestedArray("elements");
   for (auto idx = 0u; idx < factors_.size(); idx++) {
@@ -146,7 +146,7 @@ void blocks::CBlock::config_self_to_json(JsonObject &cfg) {
   }
 }
 
-blocks::CBlock *blocks::CBlock::from_entity_classifier(entities::EntityClassifier classifier,
+FLASHMEM blocks::CBlock *blocks::CBlock::from_entity_classifier(entities::EntityClassifier classifier,
                                                        const bus::addr_t block_address) {
   if (!classifier or classifier.class_enum != CLASS_ or classifier.type != TYPE)
     return nullptr;
@@ -163,7 +163,7 @@ blocks::CBlock *blocks::CBlock::from_entity_classifier(entities::EntityClassifie
 }
 
 std::array<const functions::AD5452, 32>
-blocks::CBlockHAL_Common::make_f_coeffs(bus::addr_t block_address, std::array<const uint8_t, 32> f_coeffs_cs) {
+FLASHMEM blocks::CBlockHAL_Common::make_f_coeffs(bus::addr_t block_address, std::array<const uint8_t, 32> f_coeffs_cs) {
   return {functions::AD5452(bus::replace_function_idx(block_address, f_coeffs_cs[0])),
           functions::AD5452(bus::replace_function_idx(block_address, f_coeffs_cs[1])),
           functions::AD5452(bus::replace_function_idx(block_address, f_coeffs_cs[2])),
@@ -198,11 +198,11 @@ blocks::CBlockHAL_Common::make_f_coeffs(bus::addr_t block_address, std::array<co
           functions::AD5452(bus::replace_function_idx(block_address, f_coeffs_cs[31]))};
 }
 
-blocks::CBlockHAL_Common::CBlockHAL_Common(bus::addr_t block_address,
+FLASHMEM blocks::CBlockHAL_Common::CBlockHAL_Common(bus::addr_t block_address,
                                            std::array<const uint8_t, 32> f_coeffs_cs)
     : f_coeffs(make_f_coeffs(block_address, f_coeffs_cs)) {}
 
-bool blocks::CBlockHAL_Common::write_factor(uint8_t idx, float value) {
+FLASHMEM bool blocks::CBlockHAL_Common::write_factor(uint8_t idx, float value) {
   if (idx >= 32)
     return false;
   // NOTE: The current hardware does not allow any error detection here.
@@ -210,11 +210,11 @@ bool blocks::CBlockHAL_Common::write_factor(uint8_t idx, float value) {
   return true;
 }
 
-blocks::CBlockHAL_V_1_1_X::CBlockHAL_V_1_1_X(bus::addr_t block_address)
+FLASHMEM blocks::CBlockHAL_V_1_1_X::CBlockHAL_V_1_1_X(bus::addr_t block_address)
     : CBlockHAL_Common(block_address, {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16,
                                        17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}) {}
 
-blocks::CBlockHAL_V_1_0_X::CBlockHAL_V_1_0_X(bus::addr_t block_address)
+FLASHMEM blocks::CBlockHAL_V_1_0_X::CBlockHAL_V_1_0_X(bus::addr_t block_address)
     : CBlockHAL_Common(block_address, {1,      2,       3,       4,       5,       6,       7,       8,
                                        9,      10,      11,      12,      13,      14,      15,      32 + 0,
                                        32 + 1, 32 + 2,  32 + 3,  32 + 4,  32 + 5,  32 + 6,  32 + 7,  32 + 8,

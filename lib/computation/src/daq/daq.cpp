@@ -10,6 +10,7 @@
 #include "utils/logging.h"
 #include "utils/running_avg.h"
 
+FLASHMEM
 bool daq::OneshotDAQ::init(__attribute__((unused)) unsigned int sample_rate_unused) {
   pinMode(PIN_CNVST, OUTPUT);
   digitalWriteFast(PIN_CNVST, LOW);
@@ -30,6 +31,11 @@ float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
          1.25f;
 }
 
+namespace helpers {
+  // declaration of global variable within serializer.cpp
+  const std::array<char[7], 2501> normalized_to_float_str_arr;
+}
+
 const char *daq::BaseDAQ::raw_to_str(uint16_t raw) {
   size_t idx = raw_to_normalized(raw);
   if (idx > helpers::normalized_to_float_str_arr.size())
@@ -37,6 +43,7 @@ const char *daq::BaseDAQ::raw_to_str(uint16_t raw) {
   return helpers::normalized_to_float_str_arr[idx];
 }
 
+FLASHMEM
 std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, unsigned int delay_us) {
   utils::RunningAverageVec<NUM_CHANNELS> avg;
   for (size_t i = 0; i < samples; i++) {
@@ -57,6 +64,7 @@ std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {
   return data;
 }
 
+// NOT FLASHMEM
 void daq::OneshotDAQ::sample_raw(uint16_t* data) {
   // Trigger CNVST
   digitalWriteFast(PIN_CNVST, HIGH);
@@ -82,6 +90,7 @@ void daq::OneshotDAQ::sample_raw(uint16_t* data) {
   }
 }
 
+FLASHMEM
 std::array<float, daq::NUM_CHANNELS> daq::OneshotDAQ::sample() {
   auto data_raw = sample_raw();
   std::array<float, daq::NUM_CHANNELS> data{};
@@ -125,6 +134,7 @@ volatile bool first_data = false;
 volatile bool last_data = false;
 volatile bool overflow_data = false;
 
+// NOT FLASHMEM
 void interrupt() {
   // Serial.println(__PRETTY_FUNCTION__);
   auto is_half = (channel.TCD->CITER != channel.TCD->BITER);
@@ -157,6 +167,7 @@ unsigned int ContinuousDAQ::get_number_of_data_vectors_in_buffer() {
   return dma::channel.TCD->BITER - dma::channel.TCD->CITER;
 }
 
+// NOT FLASHMEM
 bool ContinuousDAQ::stream(bool partial) {
   // Pointer to the part of the buffer which (may) contain partial data at end of acquisition time
   static auto partial_buffer_part = dma::buffer.data();
@@ -208,6 +219,7 @@ bool ContinuousDAQ::stream(bool partial) {
 
 } // namespace daq
 
+FLASHMEM
 daq::FlexIODAQ::FlexIODAQ(run::Run &run, DAQConfig &daq_config, run::RunDataHandler *run_data_handler)
     : ContinuousDAQ(run, daq_config, run_data_handler),
       flexio(FlexIOHandler::mapIOPinToFlexIOHandler(PIN_CNVST, _flexio_pin_cnvst)),
@@ -217,6 +229,7 @@ daq::FlexIODAQ::FlexIODAQ(run::Run &run, DAQConfig &daq_config, run::RunDataHand
                  [&](auto pin) { return flexio->mapIOPinToFlexPin(pin); });
 }
 
+// NOT FLASHMEM
 bool daq::FlexIODAQ::init(unsigned int) {
   LOG_ANABRID_DEBUG_DAQ(__PRETTY_FUNCTION__);
   if (!daq_config.is_valid()) {
@@ -470,7 +483,7 @@ bool daq::FlexIODAQ::finalize() {
 
 #endif
 
-int daq::OneshotDAQ::sample(JsonObjectConst msg_in, JsonObject &msg_out) {
+FLASHMEM int daq::OneshotDAQ::sample(JsonObjectConst msg_in, JsonObject &msg_out) {
   std::array<float, daq::NUM_CHANNELS> data{};
 
   auto do_sample_avg = msg_in["sample_avg"];

@@ -223,7 +223,7 @@ public:
 
   bool is_anything_connected() const;
 
-  [[nodiscard]] bool write_to_hardware() override;
+  [[nodiscard]] utils::status write_to_hardware() override;
 
   utils::status config_self_from_json(JsonObjectConst cfg) override;
 

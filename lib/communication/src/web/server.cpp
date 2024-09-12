@@ -41,7 +41,7 @@ awot::Application webapp;
  * but instead only seved when previously storage was allocated. Therefore this function
  * serves as a global registry for interesting client-side headers.
  **/
-void allocate_interesting_headers(awot::Application &app) {
+FLASHMEM void allocate_interesting_headers(awot::Application &app) {
   constexpr int max_allocated_headers = 10;
   constexpr int maxval = 80; // maximum string length
 
@@ -62,12 +62,7 @@ void allocate_interesting_headers(awot::Application &app) {
   // programmer, please ensure at this line i < max_allocated_headers.
 }
 
-LucidacWebServer &web::LucidacWebServer::get() {
-  static LucidacWebServer obj;
-  return obj;
-}
-
-void notfound(awot::Request &req, awot::Response &res) {
+FLASHMEM void notfound(awot::Request &req, awot::Response &res) {
   res.status(404);
   res.set("Server", SERVER_VERSION);
   res.set("Content-Type", "text/html");
@@ -77,7 +72,7 @@ void notfound(awot::Request &req, awot::Response &res) {
   res.println("<hr><p><i>" SERVER_VERSION "</i>");
 }
 
-void serve_static(const web::StaticFile &file, awot::Response &res) {
+FLASHMEM void serve_static(const web::StaticFile &file, awot::Response &res) {
   LOGMEV("Serving static file %s with %d bytes\n", file.filename, file.size);
   res.status(200);
   // copying the headers (dumb!)
@@ -102,7 +97,7 @@ void serve_static(const web::StaticFile &file, awot::Response &res) {
   res.flush();
 }
 
-void serve_static(awot::Request &req, awot::Response &res) {
+FLASHMEM void serve_static(awot::Request &req, awot::Response &res) {
   // as a little workaround for aWOT, determine whether this runs *after*
   // some successful route by inspecting whether something has been sent out or not.
   // Handle only if nothing has been sent so far, i.e. no previous middleware/endpoint
@@ -122,7 +117,7 @@ void serve_static(awot::Request &req, awot::Response &res) {
   }
 }
 
-void index(awot::Request &req, awot::Response &res) {
+FLASHMEM void index(awot::Request &req, awot::Response &res) {
   const StaticFile *file = StaticAttic().get_by_filename("index.html");
   if (file) {
     res.status(200);
@@ -142,6 +137,7 @@ void index(awot::Request &req, awot::Response &res) {
 }
 
 namespace web {
+FLASHMEM 
 void convertToJson(const StaticFile &file, JsonVariant serialized) {
   auto j = serialized.to<JsonObject>();
   j["filename"] = file.filename;
@@ -154,7 +150,7 @@ void convertToJson(const StaticFile &file, JsonVariant serialized) {
 // Provide some information about the built in assets
 // TODO: Should actually integrate information about webserver status
 // in the general {'type':'status'} query.
-void about_static(awot::Request &req, awot::Response &res) {
+FLASHMEM void about_static(awot::Request &req, awot::Response &res) {
   res.set("Server", SERVER_VERSION);
   res.set("Content-Type", "application/json");
 
@@ -177,7 +173,7 @@ void about_static(awot::Request &req, awot::Response &res) {
   serializeJson(j, res);
 }
 
-void set_cors(awot::Request &req, awot::Response &res) {
+FLASHMEM void set_cors(awot::Request &req, awot::Response &res) {
   res.set("Server", SERVER_VERSION);
   res.set("Content-Type", "application/json");
   // Disable CORS for the time being
@@ -188,12 +184,12 @@ void set_cors(awot::Request &req, awot::Response &res) {
   res.set("Access-Control-Allow-Headers", "Origin, Cookie, Set-Cookie, Content-Type, Server");
 }
 
-void api_preflight(awot::Request &req, awot::Response &res) {
+FLASHMEM void api_preflight(awot::Request &req, awot::Response &res) {
   res.status(200);
   set_cors(req, res);
 }
 
-void api(awot::Request &req, awot::Response &res) {
+FLASHMEM void api(awot::Request &req, awot::Response &res) {
   set_cors(req, res);
 
   // the following mimics the function
@@ -228,7 +224,7 @@ void api(awot::Request &req, awot::Response &res) {
     res.println("Error: " msg);                                                                               \
   }
 
-void websocket_upgrade(awot::Request &req, awot::Response &res) {
+FLASHMEM void websocket_upgrade(awot::Request &req, awot::Response &res) {
   res.set("Server", SERVER_VERSION);
   auto ctx = (HTTPContext *)req.context;
 
@@ -277,7 +273,7 @@ void websocket_upgrade(awot::Request &req, awot::Response &res) {
   // Control to WebsocketsClient is passed at further LucidacWebServer::loop iterations.
 }
 
-void web::LucidacWebServer::begin() {
+FLASHMEM void web::LucidacWebServer::begin() {
   ethserver.begin(net::StartupConfig::get().webserver_port);
 
   allocate_interesting_headers(webapp);
@@ -312,7 +308,7 @@ void web::LucidacWebServer::begin() {
 // It comes with its own Socket-handling logic. There, there is a TcpClient which holds a pointer
 // to our QNEthernet client. However, the TcpClient itself is a shared pointer for whatever reason.
 // So for letting websocket clients lookup client context informations, we have this link-loop
-web::LucidacWebsocketsClient::LucidacWebsocketsClient(const net::EthernetClient &other)
+FLASHMEM web::LucidacWebsocketsClient::LucidacWebsocketsClient(const net::EthernetClient &other)
     : socket(other),
       ws(std::shared_ptr<websockets::network::TcpClient>(new websockets::network::TcpClient(this))) {
   user_context.set_remote_identifier(net::auth::RemoteIdentifier{socket.remoteIP()});
@@ -327,7 +323,7 @@ web::LucidacWebsocketsClient::LucidacWebsocketsClient(const net::EthernetClient 
   Potential caveat: Users sending really large messages. Check if there is some safety net for that in
       our websockets library.
 */
-void onWebsocketMessageCallback(websockets::WebsocketsClient &wsclient, websockets::WebsocketsMessage msg) {
+FLASHMEM void onWebsocketMessageCallback(websockets::WebsocketsClient &wsclient, websockets::WebsocketsMessage msg) {
   LOGMEV("ws Role=%d, data=%s", msg.role(), msg.data().c_str());
   if (!msg.isComplete()) {
     LOG_ALWAYS("webSockets: Ignoring incomplete message");
@@ -344,7 +340,7 @@ void onWebsocketMessageCallback(websockets::WebsocketsClient &wsclient, websocke
   wsclient.send(envelope_out_str);
 }
 
-void web::LucidacWebServer::loop() {
+FLASHMEM void web::LucidacWebServer::loop() {
   net::EthernetClient client_socket = ethserver.accept();
 
   // Warning: This probably allows also to deadlock the device by opening a connection

@@ -4,4 +4,4 @@
 
 #include "error.h"
 
-char utils::buf[utils::bufsize];
+//char utils::buf[utils::bufsize];

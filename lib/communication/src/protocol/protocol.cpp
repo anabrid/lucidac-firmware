@@ -27,7 +27,7 @@
 #include <cctype>
 #include <locale>
 
-void trim(char *str) {
+FLASHMEM void trim(char *str) {
   unsigned int start = 0, end = strlen(str) - 1;
 
   // Remove leading whitespace
@@ -47,17 +47,12 @@ void trim(char *str) {
   }
 }
 
-void msg::JsonLinesProtocol::init(size_t envelope_size) {
+FLASHMEM void msg::JsonLinesProtocol::init(size_t envelope_size) {
   envelope_in = new DynamicJsonDocument(envelope_size);
   envelope_out = new DynamicJsonDocument(envelope_size);
 }
 
-msg::JsonLinesProtocol &msg::JsonLinesProtocol::get() {
-  static JsonLinesProtocol obj;
-  return obj;
-}
-
-void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &user_context, Print &output) {
+FLASHMEM void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &user_context, Print &output) {
   auto envelope_out = this->envelope_out->to<JsonObject>();
   auto envelope_in = this->envelope_in->as<JsonObjectConst>();
 
@@ -72,8 +67,8 @@ void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &u
   auto msg_out = envelope_out.createNestedObject("msg");
 
   // Select message handler
-  auto msg_handler = msg::handlers::Registry.get(msg_type);
-  auto requiredClearance = msg::handlers::Registry.requiredClearance(msg_type);
+  auto msg_handler = msg::handlers::Registry::get().lookup(msg_type);
+  auto requiredClearance = msg::handlers::Registry::get().requiredClearance(msg_type);
   int return_code = 0;
   if (!msg_handler) {
     return_code = -10; // No handler for message known
@@ -121,7 +116,7 @@ void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationContext &u
 
 utils::SerialLineReader serial_line_reader;
 
-void msg::JsonLinesProtocol::process_serial_input(net::auth::AuthentificationContext &user_context) {
+FLASHMEM void msg::JsonLinesProtocol::process_serial_input(net::auth::AuthentificationContext &user_context) {
   char *line = serial_line_reader.line_available();
   if (!line)
     return;
@@ -139,7 +134,7 @@ void msg::JsonLinesProtocol::process_serial_input(net::auth::AuthentificationCon
   }
 }
 
-bool msg::JsonLinesProtocol::process_tcp_input(net::EthernetClient &connection,
+FLASHMEM bool msg::JsonLinesProtocol::process_tcp_input(net::EthernetClient &connection,
                                                net::auth::AuthentificationContext &user_context) {
   auto error = deserializeJson(*envelope_in, connection);
   if (error == DeserializationError::Code::EmptyInput) {
@@ -157,7 +152,7 @@ bool msg::JsonLinesProtocol::process_tcp_input(net::EthernetClient &connection,
   return false;
 }
 
-void msg::JsonLinesProtocol::process_string_input(const std::string &envelope_in_str,
+FLASHMEM void msg::JsonLinesProtocol::process_string_input(const std::string &envelope_in_str,
                                                   std::string &envelope_out_str,
                                                   net::auth::AuthentificationContext &user_context) {
   auto error = deserializeJson(*envelope_in, envelope_in_str);
@@ -176,7 +171,7 @@ void msg::JsonLinesProtocol::process_string_input(const std::string &envelope_in
   }
 }
 
-void msg::JsonLinesProtocol::process_out_of_band_handlers(carrier::Carrier &carrier_) {
+FLASHMEM void msg::JsonLinesProtocol::process_out_of_band_handlers(carrier::Carrier &carrier_) {
   if (!run::RunManager::get().queue.empty()) {
     // Currently, the following prints to all connected clients.
     client::RunStateChangeNotificationHandler run_state_change_handler{broadcast, *envelope_out};
@@ -186,7 +181,8 @@ void msg::JsonLinesProtocol::process_out_of_band_handlers(carrier::Carrier &carr
     // TODO: Remove after debugging
     // LOGMEV("Protocol OOB RunManager now broadcasting to %d targets\n", broadcast.size());
     // broadcast.println("{'TEST':'TEST'}");
-    run::RunManager::get().run_next(&run_state_change_handler, &run_data_handler, &alternative_run_data_handler);
+    run::RunManager::get().run_next(carrier_, &run_state_change_handler, &run_data_handler,
+                                    &alternative_run_data_handler);
   }
 }
 

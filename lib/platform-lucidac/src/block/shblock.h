@@ -30,7 +30,7 @@ public:
   void reset(const bool keep_offsets) override;
 
   //! Applies current class state to actually hardware
-  [[nodiscard]] bool write_to_hardware() override;
+  [[nodiscard]] utils::status write_to_hardware() override;
 
   // Automatically does an track and inject sequence. This directly writes to hardware. Delays for track time
   // and inject time can be set optionally in microseconds. Block will be left in inject mode afterwards

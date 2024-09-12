@@ -10,6 +10,7 @@
 #include "net/auth.h"
 #include "net/ethernet.h"
 #include "utils/durations.h"
+#include "utils/singleton.h"
 #include <list>
 
 namespace msg {
@@ -18,7 +19,7 @@ namespace msg {
  * Formerly known as MulticlientServer, this implements a "multi-threading"
  * version of the simple TCP/IP "raw" server implementing the JSONL protocol.
  */
-struct JsonlServer {
+struct JsonlServer : public utils::HeapSingleton<JsonlServer> {
   struct Client {
     /// Application level timeout, not to be confused with TCP-Level
     /// timout realized by QNEthernet. TCP Keepalive packages can keep
@@ -42,11 +43,6 @@ struct JsonlServer {
   net::EthernetServer server;
   void loop();
   void begin();
-
-  static JsonlServer &get() {
-    static JsonlServer server;
-    return server;
-  }
 };
 
 } // namespace msg

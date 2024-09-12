@@ -4,12 +4,12 @@
 
 #include "daq/base.h"
 
-daq::DAQConfig::DAQConfig(uint8_t num_channels, unsigned int sample_rate)
+FLASHMEM daq::DAQConfig::DAQConfig(uint8_t num_channels, unsigned int sample_rate)
     : num_channels(num_channels), sample_rate(sample_rate) {
   // CARE: num_channels must be power-of-two and the object should be checked with is_valid() afterwards
 }
 
-daq::DAQConfig daq::DAQConfig::from_json(JsonObjectConst &&json) {
+FLASHMEM daq::DAQConfig daq::DAQConfig::from_json(JsonObjectConst &&json) {
   DAQConfig daq_config;
   // Return default if no options are given
   if (json.isNull())
@@ -38,7 +38,7 @@ bool daq::DAQConfig::should_sample_op() const { return sample_op; }
 
 bool daq::DAQConfig::should_sample_op_end() const { return sample_op_end; }
 
-bool daq::DAQConfig::is_valid() const {
+FLASHMEM bool daq::DAQConfig::is_valid() const {
   // Total effective samples per seconds is limited due to streaming speed
   if (sample_rate * num_channels > 1'000'000 or sample_rate < 32)
     return false;
