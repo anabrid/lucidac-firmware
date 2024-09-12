@@ -31,12 +31,6 @@ public:
   FunctionBlock(std::string entity_id, const bus::addr_t block_address)
       : entities::Entity(std::move(entity_id)), block_address(block_address) {}
 
-  virtual bool init() { return true; }
-
-  virtual void reset(bool keep_calibration) {}
-
-  [[nodiscard]] virtual bool write_to_hardware() = 0;
-
   virtual std::array<uint8_t, 8> get_entity_eui() const override {
     return metadata::MetadataEditor(block_address).read_eui();
   }

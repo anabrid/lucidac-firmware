@@ -51,6 +51,7 @@ void prepare_mpu() {
   asm("isb");
 }
 
+FLASHMEM
 GlobalPluginLoader::GlobalPluginLoader() {
 #ifdef ANABRID_ENABLE_GLOBAL_PLUGIN_LOADER
   prepare_mpu();
@@ -62,6 +63,7 @@ GlobalPluginLoader::GlobalPluginLoader() {
 #endif
 }
 
+FLASHMEM
 void loader::convertFromJson(JsonVariantConst src, Function &f) {
   if (src.is<int>()) {
     f.addr = src;
@@ -82,6 +84,7 @@ void loader::convertFromJson(JsonVariantConst src, Function &f) {
   }
 }
 
+FLASHMEM
 std::string shortened_hexdump(uint8_t *mem, size_t size) {
   constexpr size_t inspect_bytes = 3;
   char ret[2 * inspect_bytes + 3]; // AABBCC...DDEEFF
@@ -92,6 +95,7 @@ std::string shortened_hexdump(uint8_t *mem, size_t size) {
   return std::string(ret);
 }
 
+FLASHMEM
 void loader::convertToJson(const GlobalPluginLoader &src, JsonVariant dst) {
   dst["type"] = "GlobalPluginLoader";
 #ifndef ANABRID_ENABLE_GLOBAL_PLUGIN_LOADER
@@ -115,6 +119,7 @@ void loader::convertToJson(const GlobalPluginLoader &src, JsonVariant dst) {
 #endif
 }
 
+FLASHMEM
 void dispatch(uint8_t *callee, Function::Returns ret_type, JsonVariant ret) {
   switch (ret_type) {
   case Function::Returns::None: {
@@ -141,6 +146,7 @@ void dispatch(uint8_t *callee, Function::Returns ret_type, JsonVariant ret) {
     return code;                                                                                              \
   }
 
+FLASHMEM
 int loader::SinglePluginLoader::load_and_execute(JsonObjectConst msg_in, JsonObject &msg_out) {
   if (plugin)
     return_err(1, "Already have plugin loaded, can only load one plugin at a time. Call unload before.");
@@ -197,6 +203,7 @@ int loader::SinglePluginLoader::load_and_execute(JsonObjectConst msg_in, JsonObj
   return 0;
 }
 
+FLASHMEM
 int loader::SinglePluginLoader::unload(JsonObjectConst msg_in, JsonObject &msg_out) {
   if (!plugin) {
     return_err(9, "Cannot unload, nothing loaded");
@@ -213,7 +220,7 @@ int loader::SinglePluginLoader::unload(JsonObjectConst msg_in, JsonObject &msg_o
   unload();
   return 0;
 }
-
+FLASHMEM
 int loader::SinglePluginLoader::load(const Plugin &new_plugin) {
   if (plugin)
     return 1; // call unload() first.

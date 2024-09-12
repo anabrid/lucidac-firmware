@@ -20,10 +20,7 @@
 #include "handlers/run_manager.h"
 #include "handlers/sys.h"
 
-// allocate singleton storage
-msg::handlers::DynamicRegistry msg::handlers::Registry;
-
-void msg::handlers::DynamicRegistry::init(carrier::Carrier &c) {
+FLASHMEM void msg::handlers::DynamicRegistry::init(carrier::Carrier &c) {
   using namespace net::auth;
   using namespace msg::handlers;
 
@@ -67,7 +64,8 @@ void msg::handlers::DynamicRegistry::init(carrier::Carrier &c) {
   set("ota_update_complete", 5300, new FlasherCompleteHandler(), SecurityLevel::RequiresAdmin);
 }
 
-msg::handlers::MessageHandler *msg::handlers::DynamicRegistry::get(const std::string &msg_type) {
+FLASHMEM
+msg::handlers::MessageHandler *msg::handlers::DynamicRegistry::lookup(const std::string &msg_type) {
   auto found = entries.find(msg_type);
   if (found != entries.end()) {
     return found->second.handler;
@@ -76,6 +74,7 @@ msg::handlers::MessageHandler *msg::handlers::DynamicRegistry::get(const std::st
   }
 }
 
+FLASHMEM
 net::auth::SecurityLevel msg::handlers::DynamicRegistry::requiredClearance(const std::string &msg_type) {
   auto found = entries.find(msg_type);
   if (found != entries.end()) {
@@ -85,11 +84,13 @@ net::auth::SecurityLevel msg::handlers::DynamicRegistry::requiredClearance(const
   }
 }
 
+FLASHMEM
 bool msg::handlers::DynamicRegistry::set(const std::string &msg_type, msg::handlers::MessageHandler *handler,
                                          net::auth::SecurityLevel minimumClearance) {
   return set(msg_type, result_code_counter, handler, minimumClearance);
 }
 
+FLASHMEM
 bool msg::handlers::DynamicRegistry::set(const std::string &msg_type, int result_code_prefix,
                                          msg::handlers::MessageHandler *handler,
                                          net::auth::SecurityLevel minimumClearance) {
@@ -104,7 +105,7 @@ bool msg::handlers::DynamicRegistry::set(const std::string &msg_type, int result
   }
 }
 
-void msg::handlers::DynamicRegistry::dump() {
+FLASHMEM void msg::handlers::DynamicRegistry::dump() {
   Serial.print("Registered message handlers (msg::handlers::DynamicRegistry): ");
   for (auto const &kv : entries) {
     Serial.print(kv.first.c_str());
@@ -123,7 +124,7 @@ void msg::handlers::DynamicRegistry::dump() {
   Serial.println();
 }
 
-void msg::handlers::DynamicRegistry::write_handler_names_to(JsonArray &target) {
+FLASHMEM void msg::handlers::DynamicRegistry::write_handler_names_to(JsonArray &target) {
   for (auto const &kv : entries) {
     if (kv.second.handler)
       target.add(kv.first);

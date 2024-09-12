@@ -39,6 +39,7 @@ public:
   bool streaming = true;                ///< Request either streaming RunManager (FlexIO/DMA) or traditional inexact non-streaming run
   bool repetitive = false;              ///< "Rep-Mode": Start run after it has finished.
   bool write_run_state_changes = true;  ///< Whether client is interested in run state change messages
+  bool calibrate = true;                ///< Whether to calibrate before the run starts
 
   static RunConfig from_json(JsonObjectConst &json);
 };

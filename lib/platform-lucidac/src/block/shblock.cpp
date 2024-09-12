@@ -5,17 +5,17 @@
 
 #include "shblock.h"
 
-blocks::SHBlock::SHBlock(const bus::addr_t block_address) : FunctionBlock("SH", block_address) {}
+FLASHMEM blocks::SHBlock::SHBlock(const bus::addr_t block_address) : FunctionBlock("SH", block_address) {}
 
-blocks::SHBlock::SHBlock() : SHBlock(bus::BLOCK_BADDR(0, bus::SH_BLOCK_IDX)) {}
+FLASHMEM blocks::SHBlock::SHBlock() : SHBlock(bus::BLOCK_BADDR(0, bus::SH_BLOCK_IDX)) {}
 
-void blocks::SHBlock::set_state(State state_) { state = state_; }
+FLASHMEM void blocks::SHBlock::set_state(State state_) { state = state_; }
 
-blocks::SHBlock::State blocks::SHBlock::get_state() const { return state; }
+FLASHMEM blocks::SHBlock::State blocks::SHBlock::get_state() const { return state; }
 
-void blocks::SHBlock::reset(const bool keep_offsets) { state = State::TRACK; }
+FLASHMEM void blocks::SHBlock::reset(const bool keep_offsets) { state = State::TRACK; }
 
-bool blocks::SHBlock::write_to_hardware() {
+FLASHMEM utils::status blocks::SHBlock::write_to_hardware() {
   if (state == State::TRACK)
     set_track.trigger();
   else if (state == State::INJECT)
@@ -28,10 +28,10 @@ bool blocks::SHBlock::write_to_hardware() {
     set_gain_channels_eight_to_fifteen.trigger();
   }
 
-  return true;
+  return utils::status::success();
 }
 
-void blocks::SHBlock::compensate_hardware_offsets(uint32_t track_time, uint32_t inject_time) {
+FLASHMEM void blocks::SHBlock::compensate_hardware_offsets(uint32_t track_time, uint32_t inject_time) {
   set_track.trigger();
   delayMicroseconds(track_time);
   set_inject.trigger();
@@ -39,10 +39,22 @@ void blocks::SHBlock::compensate_hardware_offsets(uint32_t track_time, uint32_t 
   state = State::INJECT;
 }
 
-utils::status blocks::SHBlock::config_self_from_json(JsonObjectConst cfg) {
-  return utils::status("SHBlock does not accept configuration");
+FLASHMEM utils::status blocks::SHBlock::config_self_from_json(JsonObjectConst cfg) {
+  //return utils::status("SHBlock does not accept configuration");
+
+  // FOR TESTING
+  if(cfg.containsKey("state")) {
+    if(cfg["state"] == "TRACK") set_state(blocks::SHBlock::State::TRACK);
+    else if(cfg["state"] == "INJECT") set_state(blocks::SHBlock::State::INJECT);
+    else if(cfg["state"] == "GAIN_ZERO_TO_SEVEN") set_state(blocks::SHBlock::State::GAIN_ZERO_TO_SEVEN);
+    else if(cfg["state"] == "GAIN_EIGHT_TO_FIFTEEN") set_state(blocks::SHBlock::State::GAIN_EIGHT_TO_FIFTEEN);
+    else return utils::status("Unknown target state for SH Block");
+  }
+  return utils::status(0);
+
 }
 
+FLASHMEM
 blocks::SHBlock *blocks::SHBlock::from_entity_classifier(entities::EntityClassifier classifier,
                                                          bus::addr_t block_address) {
   if (!classifier or classifier.class_enum != CLASS_)

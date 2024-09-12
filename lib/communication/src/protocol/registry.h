@@ -13,6 +13,7 @@
 #include "carrier/carrier.h"
 #include "handler.h"
 #include "net/auth.h"
+#include "utils/singleton.h"
 
 namespace msg {
 
@@ -26,7 +27,7 @@ namespace handlers {
  *
  * \ingroup Singletons
  **/
-class DynamicRegistry {
+class DynamicRegistry : public utils::HeapSingleton<DynamicRegistry> {
   struct RegistryEntry { // "named tuple"
     MessageHandler *handler;
     net::auth::SecurityLevel clearance;
@@ -37,7 +38,7 @@ class DynamicRegistry {
   int result_code_counter = 1, result_code_increment = 100;
 
 public:
-  MessageHandler *get(const std::string &msg_type);
+  MessageHandler *lookup(const std::string &msg_type); ///< Returns nullptr if not found
   net::auth::SecurityLevel requiredClearance(const std::string &msg_type);
 
   bool set(const std::string &msg_type, MessageHandler *handler, net::auth::SecurityLevel minimumClearance);
@@ -50,8 +51,7 @@ public:
   void init(carrier::Carrier &c); ///< Actual registration of all handlers in code.
 };
 
-// the singleton instance
-extern DynamicRegistry Registry;
+using Registry = DynamicRegistry;
 
 } // namespace handlers
 

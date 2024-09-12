@@ -9,11 +9,11 @@
 const SPISettings platform::LUCIDAC_HAL::F_ADC_SWITCHER_PRG_SPI_SETTINGS{
     4'000'000, MSBFIRST, SPI_MODE2 /* chip expects SPI MODE0, but CLK is inverted on the way */};
 
-LUCIDAC::LUCIDAC(LUCIDAC_HAL *hardware) : Carrier({Cluster(0)}, hardware), hardware(hardware) {}
+FLASHMEM LUCIDAC::LUCIDAC(LUCIDAC_HAL *hardware) : Carrier({Cluster(0)}, hardware), hardware(hardware) {}
 
-LUCIDAC::LUCIDAC() : LUCIDAC(new LUCIDAC_HAL()) {}
+FLASHMEM LUCIDAC::LUCIDAC() : LUCIDAC(new LUCIDAC_HAL()) {}
 
-LUCIDAC_HAL::LUCIDAC_HAL()
+FLASHMEM LUCIDAC_HAL::LUCIDAC_HAL()
     : f_acl_prg(bus::address_from_tuple(CARRIER_MADDR, ACL_PRG_FADDR), true),
       f_acl_upd(bus::address_from_tuple(CARRIER_MADDR, ACL_UPD_FADDR)),
       f_acl_clr(bus::address_from_tuple(CARRIER_MADDR, ACL_CRL_FADDR)),
@@ -24,7 +24,7 @@ LUCIDAC_HAL::LUCIDAC_HAL()
       f_adc_switcher_matrix_reset(bus::address_from_tuple(CARRIER_MADDR, ADC_RESET_8816_FADDR)),
       f_temperature(bus::address_from_tuple(CARRIER_MADDR, TEMPERATURE_FADDR)) {}
 
-bool LUCIDAC_HAL::write_acl(std::array<LUCIDAC_HAL::ACL, 8> acl) {
+FLASHMEM bool LUCIDAC_HAL::write_acl(std::array<LUCIDAC_HAL::ACL, 8> acl) {
   uint8_t sr = 0;
   for (size_t idx = 0; idx < acl.size(); idx++) {
     if (acl[idx] == ACL::EXTERNAL_) {
@@ -37,12 +37,12 @@ bool LUCIDAC_HAL::write_acl(std::array<LUCIDAC_HAL::ACL, 8> acl) {
   return true;
 }
 
-void LUCIDAC_HAL::reset_acl() {
+FLASHMEM void LUCIDAC_HAL::reset_acl() {
   f_acl_clr.trigger();
   f_acl_upd.trigger();
 }
 
-bool LUCIDAC_HAL::write_adc_bus_mux(std::array<int8_t, 8> channels) {
+FLASHMEM bool LUCIDAC_HAL::write_adc_bus_mux(std::array<int8_t, 8> channels) {
   // Reset previous connections
   // It's easier to do a full reset then to remember all previous connections
   reset_adc_bus_mux();
@@ -60,9 +60,9 @@ bool LUCIDAC_HAL::write_adc_bus_mux(std::array<int8_t, 8> channels) {
   return true;
 }
 
-void LUCIDAC_HAL::reset_adc_bus_mux() { f_adc_switcher_matrix_reset.trigger(); }
+FLASHMEM void LUCIDAC_HAL::reset_adc_bus_mux() { f_adc_switcher_matrix_reset.trigger(); }
 
-bool LUCIDAC::init() {
+FLASHMEM bool LUCIDAC::init() {
   if (!Carrier::init())
     return false;
 
@@ -82,7 +82,7 @@ bool LUCIDAC::init() {
   return true;
 }
 
-void LUCIDAC::reset(bool keep_calibration) {
+FLASHMEM void LUCIDAC::reset(bool keep_calibration) {
   Carrier::reset(keep_calibration);
   if (front_panel)
     front_panel->reset();
@@ -90,44 +90,42 @@ void LUCIDAC::reset(bool keep_calibration) {
   reset_adc_channels();
 }
 
-std::vector<entities::Entity *> LUCIDAC::get_child_entities() {
+FLASHMEM std::vector<entities::Entity *> LUCIDAC::get_child_entities() {
   auto entities = this->carrier::Carrier::get_child_entities();
   if (front_panel)
     entities.push_back(front_panel);
   return entities;
 }
 
-entities::Entity *LUCIDAC::get_child_entity(const std::string &child_id) {
+FLASHMEM entities::Entity *LUCIDAC::get_child_entity(const std::string &child_id) {
   if (child_id == "FP")
     return front_panel;
   return this->carrier::Carrier::get_child_entity(child_id);
 }
 
-int LUCIDAC::write_to_hardware() {
-  int carrier_return = Carrier::write_to_hardware();
-  if (carrier_return != 1)
-    return carrier_return;
-  if (front_panel and !front_panel->write_to_hardware())
-    return -4;
-  if (!hardware->write_acl(acl_select))
-    return -5;
-  return true;
+FLASHMEM utils::status LUCIDAC::write_to_hardware() {
+  utils::status error = Carrier::write_to_hardware();
+  if (front_panel)
+    front_panel->write_to_hardware().attach_to(error, "Front Panel write failed.");
+  if(!hardware->write_acl(acl_select))
+    error.attach(1<<5, "Write ACL failed");
+  return error;
 }
 
-const std::array<LUCIDAC::ACL, 8> &LUCIDAC::get_acl_select() const { return acl_select; }
+FLASHMEM const std::array<LUCIDAC::ACL, 8> &LUCIDAC::get_acl_select() const { return acl_select; }
 
-void LUCIDAC::set_acl_select(const std::array<ACL, 8> &acl_select_) { acl_select = acl_select_; }
+FLASHMEM void LUCIDAC::set_acl_select(const std::array<ACL, 8> &acl_select_) { acl_select = acl_select_; }
 
-bool LUCIDAC::set_acl_select(uint8_t idx, LUCIDAC::ACL acl) {
+FLASHMEM bool LUCIDAC::set_acl_select(uint8_t idx, LUCIDAC::ACL acl) {
   if (idx >= acl_select.size())
     return false;
   acl_select[idx] = acl;
   return true;
 }
 
-void LUCIDAC::reset_acl_select() { std::fill(acl_select.begin(), acl_select.end(), ACL::INTERNAL_); }
+FLASHMEM void LUCIDAC::reset_acl_select() { std::fill(acl_select.begin(), acl_select.end(), ACL::INTERNAL_); }
 
-bool LUCIDAC::calibrate_routes(daq::BaseDAQ *daq_) {
+FLASHMEM bool LUCIDAC::calibrate_routes(daq::BaseDAQ *daq_) {
   auto old_acl_selection = get_acl_select();
   reset_acl_select();
   if (!hardware->write_acl(acl_select))
@@ -140,18 +138,7 @@ bool LUCIDAC::calibrate_routes(daq::BaseDAQ *daq_) {
   return hardware->write_acl(acl_select);
 }
 
-int LUCIDAC::get_entities(JsonObjectConst msg_in, JsonObject &msg_out) {
-  auto carrier_res = this->carrier::Carrier::get_entities(msg_in, msg_out);
-  if (carrier_res != 0)
-    return carrier_res;
-  if (front_panel) {
-    auto fp_obj = msg_out["entities"]["/FP"] = front_panel->get_entity_classifier();
-    fp_obj["eui"] = utils::toString(front_panel->get_entity_eui());
-  }
-  return 0;
-}
-
-utils::status platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
+FLASHMEM utils::status platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
   auto res = this->carrier::Carrier::config_self_from_json(cfg);
   if (!res)
     return res;
@@ -160,23 +147,23 @@ utils::status platform::LUCIDAC::config_self_from_json(JsonObjectConst cfg) {
     if (cfgItr->key() == "adc_channels") {
       auto res = _config_adc_from_json(cfgItr->value());
       if (!res)
-        return utils::status("Could not configure ADCs from configuration.");
+        return utils::status(530, "Could not configure ADCs from configuration.");
     } else if (cfgItr->key() == "acl_select") {
       auto res = _config_acl_from_json(cfgItr->value());
       if (!res)
-        return utils::status("Could not configure ACLs from configuration.");
+        return utils::status(531, "Could not configure ACLs from configuration.");
     } else if (strlen(cfgItr->key().c_str()) >= 1 && cfgItr->key().c_str()[0] == '/') {
       // An sub-entity is refered to. This is already handled by
       // config_from_json() towards the children so it is ignored here.
     } else {
-      return utils::status("LUCIDAC: Unknown configuration key");
+      return utils::status(532, "LUCIDAC: Unknown configuration key");
     }
   }
 
   return utils::status::success();
 }
 
-bool platform::LUCIDAC::_config_adc_from_json(const JsonVariantConst &cfg) {
+FLASHMEM bool platform::LUCIDAC::_config_adc_from_json(const JsonVariantConst &cfg) {
   if (!cfg.is<JsonArrayConst>())
     return false;
 
@@ -187,7 +174,7 @@ bool platform::LUCIDAC::_config_adc_from_json(const JsonVariantConst &cfg) {
   return hardware->write_adc_bus_mux(adc_channels);
 }
 
-bool platform::LUCIDAC::_config_acl_from_json(const JsonVariantConst &cfg) {
+FLASHMEM bool platform::LUCIDAC::_config_acl_from_json(const JsonVariantConst &cfg) {
   if (!cfg.is<JsonArrayConst>())
     return false;
 
@@ -206,7 +193,7 @@ bool platform::LUCIDAC::_config_acl_from_json(const JsonVariantConst &cfg) {
   return hardware->write_acl(acl_select);
 }
 
-void platform::LUCIDAC::config_self_to_json(JsonObject &cfg) {
+FLASHMEM void platform::LUCIDAC::config_self_to_json(JsonObject &cfg) {
   // TODO: This code is very quick and dirty. Use JSON custom converters to make nicer.
 
   auto cfg_adc_channels = cfg.createNestedArray("adc_channels");

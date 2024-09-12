@@ -15,7 +15,6 @@
 
 #include "daq/base.h"
 #include "run/run.h"
-#include "daq/serializer.h"
 
 /// @brief Routines for Data Aquisition (DAQ) / Analog2Digital converters (ADCs)
 namespace daq {

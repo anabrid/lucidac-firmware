@@ -201,7 +201,7 @@ RAMFUNC void flash_move(uint32_t dst, uint32_t src, uint32_t size) {
 //******************************************************************************
 // flash_erase_block()	erase sectors from (start) to (start + size)
 //******************************************************************************
-int flash_erase_block(uint32_t start, uint32_t size) {
+FLASHMEM int flash_erase_block(uint32_t start, uint32_t size) {
   int error = 0;
   uint32_t address = start;
   while (address < (start + size) && error == 0) {
@@ -222,7 +222,7 @@ int flash_erase_block(uint32_t start, uint32_t size) {
 //******************************************************************************
 // take a 32-bit aligned array of 32-bit values and write it to erased flash
 //******************************************************************************
-int flash_write_block(uint32_t addr, uint8_t *data, uint32_t count) {
+FLASHMEM int flash_write_block(uint32_t addr, uint8_t *data, uint32_t count) {
   if (!IN_FLASH(addr))
     return 4; // sanity check
 // static (aligned) variables to guarantee 32-bit or 64-bit-aligned writes
@@ -308,7 +308,7 @@ constexpr size_t static bin_chunk_size = base64_chunk_size * 3 / 4;
 #define RETURN_IF_FLASHING_NOT_ENABLED return_err(0, "OTA Flashing is disabled in this firmware build")
 #endif
 
-int loader::FirmwareFlasher::init(JsonObjectConst msg_in, JsonObject &msg_out) {
+FLASHMEM int loader::FirmwareFlasher::init(JsonObjectConst msg_in, JsonObject &msg_out) {
   RETURN_IF_FLASHING_NOT_ENABLED;
   if (upgrade)
     return_err(1, "Firmware upgrade already running. Cancel it before doing another one");
@@ -334,7 +334,7 @@ int loader::FirmwareFlasher::init(JsonObjectConst msg_in, JsonObject &msg_out) {
   return success;
 }
 
-int loader::FirmwareFlasher::stream(JsonObjectConst msg_in, JsonObject &msg_out) {
+FLASHMEM int loader::FirmwareFlasher::stream(JsonObjectConst msg_in, JsonObject &msg_out) {
   RETURN_IF_FLASHING_NOT_ENABLED;
   if (!upgrade)
     return_err(1, "No firmware upgrade running.");
@@ -377,7 +377,7 @@ int loader::FirmwareFlasher::stream(JsonObjectConst msg_in, JsonObject &msg_out)
   return success;
 }
 
-void loader::FirmwareFlasher::status(JsonObject &msg_out) {
+FLASHMEM void loader::FirmwareFlasher::status(JsonObject &msg_out) {
 #ifndef ANABRID_ENABLE_OTA_FLASHING
   msg_out["disabled"] =
       "OTA flashing is disabled due to absence of firmware build flag ANABRID_ENABLE_OTA_FLASHING";
@@ -411,7 +411,7 @@ void loader::FirmwareFlasher::status(JsonObject &msg_out) {
   }
 }
 
-int loader::FirmwareFlasher::abort(JsonObjectConst msg_in, JsonObject &msg_out) {
+FLASHMEM int loader::FirmwareFlasher::abort(JsonObjectConst msg_in, JsonObject &msg_out) {
   RETURN_IF_FLASHING_NOT_ENABLED;
   if (!upgrade)
     return_err(1, "No upgrade running which I could abort");
@@ -419,7 +419,7 @@ int loader::FirmwareFlasher::abort(JsonObjectConst msg_in, JsonObject &msg_out) 
   return true;
 }
 
-int loader::FirmwareFlasher::complete(JsonObjectConst msg_in, JsonObject &msg_out) {
+FLASHMEM int loader::FirmwareFlasher::complete(JsonObjectConst msg_in, JsonObject &msg_out) {
   RETURN_IF_FLASHING_NOT_ENABLED;
   if (!upgrade->transfer_completed())
     return_err(1, "Require transfer to be completed");

@@ -245,13 +245,13 @@ typedef struct {
 
 #define DCP ((DCP_Type *)0x402FC000)
 
-static void dcp_reverse_and_copy(uint8_t *src, uint8_t *dest, size_t src_len) {
+FLASHMEM static void dcp_reverse_and_copy(uint8_t *src, uint8_t *dest, size_t src_len) {
   for (unsigned int i = 0; i < src_len; i++) {
     dest[i] = src[src_len - 1 - i];
   }
 }
 
-static uint32_t dcp_get_channel_status(dcp_channel_t channel) {
+FLASHMEM static uint32_t dcp_get_channel_status(dcp_channel_t channel) {
   uint32_t statReg = 0;
   uint32_t semaReg = 0;
   uint32_t status = kStatus_Fail;
@@ -288,12 +288,12 @@ static uint32_t dcp_get_channel_status(dcp_channel_t channel) {
   return status;
 }
 
-static void dcp_clear_status() {
+FLASHMEM static void dcp_clear_status() {
   volatile uint32_t *dcpStatClrPtr = &DCP->STAT + 2u;
   *dcpStatClrPtr = 0xFFu;
 }
 
-static void dcp_clear_channel_status(uint32_t mask) {
+FLASHMEM static void dcp_clear_channel_status(uint32_t mask) {
   volatile uint32_t *chStatClrPtr;
 
   if (mask & kDCP_Channel0) {
@@ -328,7 +328,7 @@ uint32_t DCP_WaitForChannelComplete(dcp_handle_t *handle) {
   return kStatus_Success;
 }
 
-static uint32_t dcp_schedule_work(dcp_handle_t *handle, dcp_work_packet_t *dcpPacket) {
+FLASHMEM static uint32_t dcp_schedule_work(dcp_handle_t *handle, dcp_work_packet_t *dcpPacket) {
   uint32_t status;
 
   /* check if our channel is active */
@@ -388,7 +388,7 @@ static uint32_t dcp_schedule_work(dcp_handle_t *handle, dcp_work_packet_t *dcpPa
   return status;
 }
 
-static uint32_t dcp_hash_update_non_blocking(dcp_hash_ctx_internal_t *ctxInternal,
+FLASHMEM static uint32_t dcp_hash_update_non_blocking(dcp_hash_ctx_internal_t *ctxInternal,
                                              dcp_work_packet_t *dcpPacket, const uint8_t *msg, size_t size) {
   dcpPacket->control0 = ctxInternal->ctrl0 | (ctxInternal->handle->swapConfig & 0xFC0000u) |
                         kDCP_CONTROL0_ENABLE_HASH | kDCP_CONTROL0_DECR_SEMAPHOR;
@@ -423,7 +423,7 @@ void dcp_hash_update(dcp_hash_ctx_internal_t *ctxInternal, const uint8_t *msg, s
   return;                 // (completionStatus);
 }
 
-void dcp_hash_process_message_data(dcp_hash_ctx_internal_t *ctxInternal, const uint8_t *message,
+FLASHMEM void dcp_hash_process_message_data(dcp_hash_ctx_internal_t *ctxInternal, const uint8_t *message,
                                    size_t messageSize) {
   /* if there is partially filled internal buffer, fill it to full block */
   if (ctxInternal->blksz > 0) {
@@ -449,7 +449,7 @@ void dcp_hash_process_message_data(dcp_hash_ctx_internal_t *ctxInternal, const u
   ctxInternal->blksz = messageSize;
 }
 
-void DCP_HASH_Init(dcp_handle_t *handle, dcp_hash_ctx_t *ctx, dcp_hash_algo_t algo) {
+FLASHMEM void DCP_HASH_Init(dcp_handle_t *handle, dcp_hash_ctx_t *ctx, dcp_hash_algo_t algo) {
   dcp_hash_ctx_internal_t *ctxInternal;
   ctxInternal = (dcp_hash_ctx_internal_t *)ctx;
   ctxInternal->algo = algo;
@@ -462,7 +462,7 @@ void DCP_HASH_Init(dcp_handle_t *handle, dcp_hash_ctx_t *ctx, dcp_hash_algo_t al
   ctxInternal->handle = handle;
 }
 
-void DCP_HASH_Update(dcp_hash_ctx_t *ctx, const uint8_t *input, size_t inputSize) {
+FLASHMEM void DCP_HASH_Update(dcp_hash_ctx_t *ctx, const uint8_t *input, size_t inputSize) {
   bool isUpdateState;
   dcp_hash_ctx_internal_t *ctxInternal;
   size_t blockSize = DCP_HASH_BLOCK_SIZE;
@@ -490,7 +490,7 @@ void DCP_HASH_Update(dcp_hash_ctx_t *ctx, const uint8_t *input, size_t inputSize
   //  dcp_hash_save_running_hash(ctxInternal);  // context
 }
 
-void DCP_HASH_Finish(dcp_hash_ctx_t *ctx, uint8_t *output) {
+FLASHMEM void DCP_HASH_Finish(dcp_hash_ctx_t *ctx, uint8_t *output) {
   size_t algOutSize = 0;
   dcp_hash_ctx_internal_t *ctxInternal;
 
@@ -532,7 +532,7 @@ void DCP_HASH_Finish(dcp_hash_ctx_t *ctx, uint8_t *output) {
   memset(ctx, 0, sizeof(dcp_hash_ctx_t));
 }
 
-void dcp_init() {
+FLASHMEM void dcp_init() {
   // volatile uint32_t *p;
   CCM_CCGR0 |= CCM_CCGR0_DCP(CCM_CCGR_ON); // DCP on
 
@@ -547,7 +547,7 @@ void dcp_init() {
   DCP->CHANNELCTRL = kDCP_ch0Enable;
 }
 
-void prhash(unsigned char *h, int n) {
+FLASHMEM void prhash(unsigned char *h, int n) {
   int i;
 
   for (i = 0; i < n; i++) {
@@ -558,7 +558,7 @@ void prhash(unsigned char *h, int n) {
   Serial.printf("\n");
 }
 
-void demo_sha256() {
+FLASHMEM void demo_sha256() {
   dcp_handle_t m_handle;
   dcp_hash_ctx_t hashCtx;
   uint8_t msg[16 * 1024], hash[32];         // msg is actually big kind-of-random
@@ -582,7 +582,7 @@ void demo_sha256() {
   prhash(hash, 32);
 }
 
-void demo_crc32() {
+FLASHMEM void demo_crc32() {
   dcp_handle_t m_handle;
   dcp_hash_ctx_t hashCtx;
   uint8_t msg[16 * 1024], hash[4];
@@ -608,7 +608,7 @@ void demo_crc32() {
   prhash(hash, 4);
 }
 
-void hash(const uint8_t *msg, size_t msg_len, uint8_t *out_hash, dcp_hash_algo_t algo) {
+FLASHMEM void hash(const uint8_t *msg, size_t msg_len, uint8_t *out_hash, dcp_hash_algo_t algo) {
   dcp_init();
 
   dcp_handle_t m_handle;
@@ -628,11 +628,11 @@ void hash(const uint8_t *msg, size_t msg_len, uint8_t *out_hash, dcp_hash_algo_t
  * Outputs an uint8_t[32]. Use for instance prhash(out_hash, 32) for a string
  * representation.
  **/
-void hash_sha256(const uint8_t *msg, size_t msg_len, uint8_t *out_hash) {
+FLASHMEM void hash_sha256(const uint8_t *msg, size_t msg_len, uint8_t *out_hash) {
   hash(msg, msg_len, out_hash, kDCP_Sha256);
 }
 
-void hash_sha1(const uint8_t *msg, size_t msg_len, uint8_t *out_hash) {
+FLASHMEM void hash_sha1(const uint8_t *msg, size_t msg_len, uint8_t *out_hash) {
   hash(msg, msg_len, out_hash, kDCP_Sha1);
 }
 

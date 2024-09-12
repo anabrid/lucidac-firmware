@@ -77,7 +77,7 @@ public:
   // -4 Signal generator offset chanel
   // -5 Signal generator dac0 chanel
   // -6 Signal generator dac1 chanel
-  int write_to_hardware();
+  utils::status write_to_hardware() override;
 
   class LEDs {
   public:
@@ -93,7 +93,7 @@ public:
     //! Returns the current state of the front leds.
     uint8_t get_all() const;
 
-    bool write_to_hardware() const;
+    utils::status write_to_hardware() const;
 
   private:
     const functions::SR74HCT595 led_register;
@@ -163,7 +163,7 @@ public:
     //! Writes the DACout1 constant voltage output. Possible values are: [-2V, 2V].
     bool set_dac_out1(float value);
 
-    int write_to_hardware();
+    utils::status write_to_hardware();
 
   private:
     const functions::DAC60508 digital_analog_converter;

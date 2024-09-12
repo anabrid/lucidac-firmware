@@ -16,20 +16,23 @@
 
 run::RunManager run::RunManager::_instance{};
 
+FLASHMEM
 void run::RunManager::run_next(carrier::Carrier &carrier_, run::RunStateChangeHandler *state_change_handler,
                                run::RunDataHandler *run_data_handler,
                                client::StreamingRunDataNotificationHandler *alt_run_data_handler) {
-  // Run calibration
-  // TODO: In principle, we could do this slightly more efficient when we initialize the DAQ
-  //       for the runs anyway, but the FlexIODAQ currently does not support a simple sample().
-  LOG_ALWAYS("Calibrating routes for run...")
-  daq::OneshotDAQ daq_;
-  daq_.init(0);
-  if (!carrier_.calibrate_routes(&daq_))
-    LOG_ERROR("Error during self-calibration. Machine will continue with reduced accuracy.");
-
   // TODO: Improve handling of queue, especially the queue.pop() later.
   auto run = queue.front();
+
+  if(run.config.calibrate) {
+    // TODO: In principle, we could do this slightly more efficient when we initialize the DAQ
+    //       for the runs anyway, but the FlexIODAQ currently does not support a simple sample().
+    LOG_ALWAYS("Calibrating routes for run...")
+    daq::OneshotDAQ daq_;
+    daq_.init(0);
+    if (!carrier_.calibrate_routes(&daq_))
+      LOG_ERROR("Error during self-calibration. Machine will continue with reduced accuracy.");
+  }
+
   if(run.config.streaming)
     run_next_flexio(run, state_change_handler, run_data_handler);
   else
@@ -39,6 +42,7 @@ void run::RunManager::run_next(carrier::Carrier &carrier_, run::RunStateChangeHa
     queue.pop();
 }
 
+// NOT FLASHMEM
 void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler, client::StreamingRunDataNotificationHandler *alt_run_data_handler) {
   //run_data_handler->prepare(run);
 
@@ -170,6 +174,7 @@ void run::RunManager::run_next_traditional(run::Run &run, RunStateChangeHandler 
     state_change_handler->handle(result, run);
 }
 
+// NOT FLASHMEM
 void run::RunManager::run_next_flexio(run::Run &run, RunStateChangeHandler *state_change_handler, RunDataHandler *run_data_handler) {
   run_data_handler->prepare(run);
   bool daq_error = false;
@@ -237,9 +242,12 @@ int run::RunManager::start_run(JsonObjectConst msg_in, JsonObject &msg_out) {
   if (!msg_in.containsKey("id") or !msg_in["id"].is<std::string>())
     return 1;
 
-  // Cancel any runs if instruction is given
   if(msg_in.containsKey("end_repetitive") && msg_in["end_repetitive"].as<bool>()) {
     end_repetitive_runs();
+  }
+
+  if(msg_in.containsKey("clear_queue") && msg_in["clear_queue"].as<bool>()) {
+    clear_queue();
   }
 
   // Create run and put it into queue

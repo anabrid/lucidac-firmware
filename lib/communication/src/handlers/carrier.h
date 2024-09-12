@@ -29,7 +29,11 @@ public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
 
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
-    return error(carrier.set_config(msg_in, msg_out));
+    utils::status result = carrier.user_set_config(msg_in, msg_out);
+    if(!result)
+      msg_out["error"] = result.msg;
+    return error(result.code);
+    // TODO TODO also expose carrier.user_set_calibrated_config !! 
   }
 };
 
@@ -39,7 +43,10 @@ public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
 
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
-    return error(carrier.get_config(msg_in, msg_out));
+    utils::status result = carrier.user_get_config(msg_in, msg_out);
+    if(!result)
+      msg_out["error"] = result.msg;
+    return error(result.code);
   }
 };
 
@@ -49,7 +56,9 @@ public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
 
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
-    return error(carrier.get_entities(msg_in, msg_out));
+    auto entities_obj = msg_out.createNestedObject("entities");
+    carrier.classifier_to_json(entities_obj);
+    return success;
   }
 };
 
@@ -59,7 +68,10 @@ public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
 
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
-    return error(carrier.reset(msg_in, msg_out));
+    utils::status result = carrier.user_reset_config(msg_in, msg_out);
+    if(!result)
+      msg_out["error"] = result.msg;
+    return error(result.code);
   }
 };
 
