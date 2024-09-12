@@ -187,7 +187,7 @@ public:
 
   entities::EntityClass get_entity_class() const final { return entities::EntityClass::U_BLOCK; }
 
-  void reset(const bool keep_offsets) override;
+  void reset(entities::ResetAction action) override;
 
   void reset_connections();
 

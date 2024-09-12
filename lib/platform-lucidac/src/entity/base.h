@@ -82,6 +82,21 @@ struct __attribute__((packed)) EntityClassifier {
 
 static_assert(sizeof(EntityClassifier) == 6, "EntityClassifier has unexpected number of bytes.");
 
+/// Help me, I would like to be a proper enum but C++ does not like me ;-)
+struct ResetAction {
+  uint8_t val;
+
+  constexpr static uint8_t
+    CIRCUIT_RESET = 1,
+    CALIBRATION_RESET = 2,
+    OVERLOAD_RESET = 4,
+    ALL = 0xFF;
+  
+  ResetAction(uint8_t val) : val(val) {}
+
+  bool has(uint8_t other) { return other & val; }
+};
+
 class Entity {
 protected:
   std::string entity_id;
@@ -135,7 +150,7 @@ public:
   /// returns true in case of success
   virtual bool init() { return true; }
 
-  virtual void reset(bool keep_calibration) {}
+  virtual void reset(ResetAction action) {}
 
   /// returns true in case of success
   [[nodiscard]] virtual utils::status write_to_hardware() { return utils::status::success(); }

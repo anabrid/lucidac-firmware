@@ -80,8 +80,8 @@ FLASHMEM void blocks::IBlock::reset_outputs() {
   }
 }
 
-FLASHMEM void blocks::IBlock::reset(bool keep_calibration) {
-  FunctionBlock::reset(keep_calibration);
+FLASHMEM void blocks::IBlock::reset(entities::ResetAction action) {
+  FunctionBlock::reset(action);
   reset_outputs();
   reset_upscaling();
 }

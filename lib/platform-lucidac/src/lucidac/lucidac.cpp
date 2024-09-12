@@ -82,8 +82,8 @@ FLASHMEM bool LUCIDAC::init() {
   return true;
 }
 
-FLASHMEM void LUCIDAC::reset(bool keep_calibration) {
-  Carrier::reset(keep_calibration);
+FLASHMEM void LUCIDAC::reset(entities::ResetAction action) {
+  Carrier::reset(action);
   if (front_panel)
     front_panel->reset();
   reset_acl_select();

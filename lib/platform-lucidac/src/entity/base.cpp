@@ -198,7 +198,29 @@ FLASHMEM utils::status entities::Entity::user_get_config(JsonObjectConst msg_in,
 }
 
 FLASHMEM utils::status entities::Entity::user_reset_config(JsonObjectConst msg_in, JsonObject &msg_out) {
-  reset(msg_in["keep_calibration"] | true);
+  entities::ResetAction reset_request(0);
+
+  // msg_in["foo"] | default_value
+  //    is a short way to write
+  // msg_in.contains("foo") ? msg_in["foo"].as<bool>() : default_value
+
+  bool keep_calibration = msg_in["keep_calibration"] | true;
+  
+  if(!keep_calibration)
+    reset_request.val |= entities::ResetAction::CALIBRATION_RESET;
+
+  bool overload_reset = msg_in["overload_reset"] | true;
+
+  if(overload_reset)
+    reset_request.val |= entities::ResetAction::OVERLOAD_RESET;
+    // attention: Overload request always immediately writes to hardware
+  
+  bool circuit_reset = msg_in["circuit_reset"] | true;
+
+  if(circuit_reset)
+    reset_request.val |= entities::ResetAction::CIRCUIT_RESET;
+
+  reset(reset_request);
 
   if (msg_in["sync"] | true) {
     auto status = write_to_hardware();

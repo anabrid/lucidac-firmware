@@ -88,13 +88,16 @@ FLASHMEM bool blocks::MMulBlock::init() {
   return FunctionBlock::init() and hardware->init();
 }
 
-FLASHMEM void blocks::MMulBlock::reset(bool keep_calibration) {
-  if (!keep_calibration) {
+FLASHMEM void blocks::MMulBlock::reset(entities::ResetAction action) {
+  if (action.has(entities::ResetAction::CALIBRATION_RESET)) {
     for (auto idx = 0u; idx < NUM_MULTIPLIERS; idx++) {
       calibration[idx].offset_x = 0;
       calibration[idx].offset_y = 0;
       calibration[idx].offset_z = 0;
     }
+  }
+  if (action.has(entities::ResetAction::OVERLOAD_RESET)) {
+    hardware->reset_overload();
   }
 }
 
@@ -107,7 +110,7 @@ FLASHMEM bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, platform::Cluster
   if (!MBlock::calibrate(daq_, cluster))
     return false;
 
-  reset(false); // We can't iterativly calibrate, so we need to delete the old calibration values.
+  reset(entities::ResetAction::CIRCUIT_RESET | entities::ResetAction::CALIBRATION_RESET); // We can't iterativly calibrate, so we need to delete the old calibration values.
 
   // Our first simple calibration process has been developed empirically and goes
   // 1. Set all inputs to zero
@@ -124,7 +127,7 @@ FLASHMEM bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, platform::Cluster
   LOG(ANABRID_DEBUG_CALIBRATION, "Calibrating output offsets...");
 
   // TODO: keep old circuits alive
-  cluster->reset(true);
+  cluster->reset(entities::ResetAction::CIRCUIT_RESET);
 
   for (auto idx : SLOT_INPUT_IDX_RANGE())
     if (!cluster->add_constant(UBlock::Transmission_Mode::GROUND, slot_to_global_io_index(idx), 0.0f,
@@ -228,14 +231,26 @@ FLASHMEM bool blocks::MMulBlockHAL::init() {
 }
 
 FLASHMEM bool blocks::MMulBlockHAL_V_1_0_X::init() {
-  return f_calibration_dac_0.init() and f_calibration_dac_0.set_external_reference() and
-         f_calibration_dac_0.set_double_gain() and f_calibration_dac_1.init() and
-         f_calibration_dac_1.set_external_reference() and f_calibration_dac_1.set_double_gain() and
-         MMulBlockHAL::init();
+  bool error = true;
+  reset_overload();
+  error &= f_calibration_dac_0.init();
+  error &= f_calibration_dac_0.set_external_reference();
+  error &= f_calibration_dac_0.set_double_gain();
+  error &= f_calibration_dac_1.init();
+  error &= f_calibration_dac_1.set_external_reference();
+  error &= f_calibration_dac_1.set_double_gain();
+  error &= MMulBlockHAL::init();
+  return error;
 }
 
+FLASHMEM void blocks::MMulBlockHAL_V_1_0_X::reset_overload() {
+  f_reset_overload.trigger();
+}
+
+
 FLASHMEM blocks::MMulBlockHAL_V_1_0_X::MMulBlockHAL_V_1_0_X(bus::addr_t block_address)
-    : f_calibration_dac_0(bus::address_from_tuple(block_address, 4)),
+    : f_reset_overload   (bus::address_from_tuple(block_address, 3)),
+      f_calibration_dac_0(bus::address_from_tuple(block_address, 4)),
       f_calibration_dac_1(bus::address_from_tuple(block_address, 5)) {}
 
 FLASHMEM bool blocks::MMulBlockHAL_V_1_0_X::write_calibration_input_offsets(uint8_t idx, float offset_x,

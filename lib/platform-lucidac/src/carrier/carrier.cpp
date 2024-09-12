@@ -179,12 +179,12 @@ FLASHMEM bool carrier::Carrier::calibrate_m_blocks(daq::BaseDAQ *daq_) {
   return success;
 }
 
-FLASHMEM void carrier::Carrier::reset(bool keep_calibration) {
+FLASHMEM void carrier::Carrier::reset(entities::ResetAction action) {
   for (auto &cluster : clusters) {
-    cluster.reset(keep_calibration);
+    cluster.reset(action);
   }
   if (ctrl_block)
-    ctrl_block->reset(keep_calibration);
+    ctrl_block->reset(action);
   reset_adc_channels();
 }
 

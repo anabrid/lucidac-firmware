@@ -205,7 +205,7 @@ public:
   uint8_t get_entity_type() const final { return static_cast<uint8_t>(TYPE); }
 
   bool init() override;
-  void reset(bool keep_calibration) override;
+  void reset(entities::ResetAction action) override;
 
   [[nodiscard]] const std::array<float, 8> &get_ic_values() const;
   [[nodiscard]] float get_ic_value(uint8_t idx) const;
@@ -246,10 +246,13 @@ public:
   virtual bool reset_calibration_output_offsets() = 0;
 
   bool init() override;
+
+  virtual void reset_overload() {}
 };
 
 class MMulBlockHAL_V_1_0_X : public MMulBlockHAL {
 protected:
+  const functions::TriggerFunction f_reset_overload;
   const functions::DAC60508 f_calibration_dac_0;
   const functions::DAC60508 f_calibration_dac_1;
 
@@ -264,6 +267,8 @@ public:
 
   bool write_calibration_output_offset(uint8_t idx, float offset_z) override;
   bool reset_calibration_output_offsets() override;
+
+  virtual void reset_overload() override;
 };
 
 /**
@@ -315,7 +320,7 @@ public:
 
   bool calibrate(daq::BaseDAQ *daq_, platform::Cluster *cluster) override;
 
-  void reset(bool keep_calibration);
+  void reset(entities::ResetAction action);
 
   [[nodiscard]] const std::array<MultiplierCalibration, NUM_MULTIPLIERS> &get_calibration() const;
   [[nodiscard]] blocks::MultiplierCalibration get_calibration(uint8_t mul_idx) const;

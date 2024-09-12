@@ -145,7 +145,7 @@ public:
 
   void reset_outputs();
 
-  void reset(bool keep_calibration) override;
+  void reset(entities::ResetAction action) override;
 
   const std::array<uint32_t, NUM_OUTPUTS> &get_outputs() const;
 
