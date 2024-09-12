@@ -6,7 +6,7 @@
 
 #ifdef ARDUINO
 
-size_t msg::StreamLogger::write(uint8_t b) {
+FLASHMEM size_t msg::StreamLogger::write(uint8_t b) {
   // size_t write(const uint8_t *buffer, size_t size) override {
   if (new_line) {
     target.begin_dict();
@@ -30,6 +30,19 @@ size_t msg::StreamLogger::write(uint8_t b) {
     return target.output.write(b);
   }
 }
+
+FLASHMEM void msg::StartupLog::stream_to_json(utils::StreamingJson &s) {
+    s.begin_dict();
+    s.kv("is_active", is_active());
+    s.kv("max_size", buf.max_size);
+    s.key("entries");
+    s.begin_list();
+    for (auto const &line : buf.data()) {
+      s.json(line.c_str());
+    }
+    s.end_list();
+    s.end_dict();
+  }
 
 void msg::activate_serial_log() { msg::Log::get().sinks.add_Serial(); }
 

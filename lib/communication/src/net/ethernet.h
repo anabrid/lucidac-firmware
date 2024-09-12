@@ -13,6 +13,7 @@
 #include "nvmconfig/persistent.h"
 #include "utils/durations.h"
 #include "utils/mac.h"
+#include "utils/singleton.h"
 
 #include "net/auth.h"
 
@@ -36,7 +37,7 @@ void status(JsonObject &msg_out);
  *
  * \ingroup Singletons
  **/
-class StartupConfig : public nvmconfig::PersistentSettings {
+class StartupConfig : public nvmconfig::PersistentSettings, public utils::HeapSingleton<StartupConfig> {
 public:
   void reset_defaults();
 
@@ -75,11 +76,6 @@ public:
 
   void fromJson(JsonObjectConst src, nvmconfig::Context c = nvmconfig::Context::Flash) override;
   void toJson(JsonObject target, nvmconfig::Context c = nvmconfig::Context::Flash) const override;
-
-  static StartupConfig &get() {
-    static StartupConfig instance;
-    return instance;
-  }
 };
 
 JSON_CONVERT_SUGAR(StartupConfig);

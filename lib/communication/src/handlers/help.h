@@ -20,7 +20,7 @@ public:
         "This is a JSON-Lines protocol described at https://anabrid.dev/docs/hybrid-controller/";
 
     auto types_list = msg_out.createNestedArray("available_types");
-    msg::handlers::Registry.write_handler_names_to(types_list);
+    msg::handlers::Registry::get().write_handler_names_to(types_list);
 
     return success;
   }

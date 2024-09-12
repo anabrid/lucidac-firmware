@@ -14,7 +14,7 @@
 #include "utils/streaming_json.h"
 #include "protocol_oob.h"
 
-void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange change, const run::Run &run) {
+FLASHMEM void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange change, const run::Run &run) {
   envelope_out.clear();
   envelope_out["type"] = "run_state_change";
   auto msg = envelope_out.createNestedObject("msg");
@@ -27,10 +27,10 @@ void client::RunStateChangeNotificationHandler::handle(const run::RunStateChange
   target.flush();
 }
 
-client::RunDataNotificationHandler::RunDataNotificationHandler(carrier::Carrier &carrier, Print &target)
+FLASHMEM client::RunDataNotificationHandler::RunDataNotificationHandler(carrier::Carrier &carrier, Print &target)
     : carrier(carrier), target(target) {}
 
-void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t outer_count,
+FLASHMEM void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t outer_count,
                                                 size_t inner_count, const run::Run &run) {
   // Streaming happens in equal-sized chunk, except possibly for the last one.
   // For the last one, we may have to move the MESSAGE_END and send out less data.
@@ -81,11 +81,11 @@ void client::RunDataNotificationHandler::handle(volatile uint32_t *data, size_t 
   // digitalWriteFast(18, LOW);
 }
 
-void client::RunDataNotificationHandler::stream(volatile uint32_t *buffer, run::Run &run) {
+FLASHMEM void client::RunDataNotificationHandler::stream(volatile uint32_t *buffer, run::Run &run) {
   // TODO: Remove
 }
 
-void client::RunDataNotificationHandler::prepare(run::Run &run) {
+FLASHMEM void client::RunDataNotificationHandler::prepare(run::Run &run) {
   memcpy(str_buffer, MESSAGE_START, strlen(MESSAGE_START));
   memcpy(str_buffer + BUFFER_IDX_ENTITY_ID, carrier.get_entity_id().c_str(), BUFFER_LENGTH_ENTITY_ID);
 
@@ -111,19 +111,19 @@ void client::RunDataNotificationHandler::prepare(run::Run &run) {
   str_buffer[actual_buffer_length - 1] = '\n';
 }
 
-size_t client::RunDataNotificationHandler::calculate_inner_buffer_length(size_t inner_count) {
+FLASHMEM size_t client::RunDataNotificationHandler::calculate_inner_buffer_length(size_t inner_count) {
   // For each inner array, we need '[],', inner_count*6 for 'sD.FFF' and (inner_count-1) bytes for all ','.
   return 3 + inner_count * 7 - 1;
 }
 
-size_t client::RunDataNotificationHandler::calculate_outer_buffer_position(size_t outer_count,
+FLASHMEM size_t client::RunDataNotificationHandler::calculate_outer_buffer_position(size_t outer_count,
                                                                            size_t inner_count) {
   // Returns the position of the N-th outer data package
   auto inner_length = calculate_inner_buffer_length(inner_count);
   return BUFFER_LENGTH_STATIC + outer_count * inner_length;
 }
 
-size_t client::RunDataNotificationHandler::calculate_total_buffer_length(size_t outer_count,
+FLASHMEM size_t client::RunDataNotificationHandler::calculate_total_buffer_length(size_t outer_count,
                                                                          size_t inner_count) {
   auto inner_length = calculate_inner_buffer_length(inner_count);
   // For message end, we need a few more bytes.
@@ -131,7 +131,7 @@ size_t client::RunDataNotificationHandler::calculate_total_buffer_length(size_t 
          sizeof(MESSAGE_END) - sizeof('\0' /* null byte in MESSAGE_END */) + sizeof('\n' /* newline */);
 }
 
-void client::StreamingRunDataNotificationHandler::handle(uint16_t *data, size_t outer_count,
+FLASHMEM void client::StreamingRunDataNotificationHandler::handle(uint16_t *data, size_t outer_count,
                                                          size_t inner_count, const run::Run &run) {
   utils::StreamingJson doc(target);
   doc.begin_dict(); // envelope

@@ -9,7 +9,7 @@
 #include "net/auth.h"
 #include "nvmconfig/vendor.h"
 
-void net::auth::Gatekeeper::reset_defaults() {
+FLASHMEM void net::auth::Gatekeeper::reset_defaults() {
 #ifdef ANABRID_UNSAFE_INTERNET
   enable_auth = false;
 #else
@@ -25,7 +25,7 @@ void net::auth::Gatekeeper::reset_defaults() {
   whitelist.list.clear();
 }
 
-void net::auth::UserPasswordAuthentification::reset_defaults() {
+FLASHMEM void net::auth::UserPasswordAuthentification::reset_defaults() {
   db.clear();
 
   auto default_admin_password = nvmconfig::VendorOTP().default_admin_password;
@@ -34,20 +34,20 @@ void net::auth::UserPasswordAuthentification::reset_defaults() {
     db[admin] = default_admin_password;
 }
 
-void net::auth::UserPasswordAuthentification::fromJson(JsonObjectConst serialized_conf) {
+FLASHMEM void net::auth::UserPasswordAuthentification::fromJson(JsonObjectConst serialized_conf) {
   db.clear();
   for (JsonPairConst kv : serialized_conf) {
     db[kv.key().c_str()] = kv.value().as<std::string>();
   }
 }
 
-void net::auth::UserPasswordAuthentification::toJson(JsonObject target) const {
+FLASHMEM void net::auth::UserPasswordAuthentification::toJson(JsonObject target) const {
   for (auto const &kv : db) {
     target[kv.first] = kv.second;
   }
 }
 
-void net::auth::UserPasswordAuthentification::status(JsonObject target) {
+FLASHMEM void net::auth::UserPasswordAuthentification::status(JsonObject target) {
   target["enabled"] = !is_disabled();
   auto users = target.createNestedArray("users");
   for (auto const &kv : db)
@@ -55,7 +55,7 @@ void net::auth::UserPasswordAuthentification::status(JsonObject target) {
   // don't tell the passwords!
 }
 
-int net::auth::Gatekeeper::login(JsonObjectConst msg_in, JsonObject &msg_out,
+FLASHMEM int net::auth::Gatekeeper::login(JsonObjectConst msg_in, JsonObject &msg_out,
                                  net::auth::AuthentificationContext &user_context) {
   if (!enable_auth && !enable_users) {
     msg_out["error"] = "No authentification neccessary. Auth system is disabled in this firmware build.";
@@ -100,7 +100,7 @@ int net::auth::Gatekeeper::login(JsonObjectConst msg_in, JsonObject &msg_out,
   }
 }
 
-int net::auth::Gatekeeper::lock_acquire(JsonObjectConst msg_in, JsonObject &msg_out,
+FLASHMEM int net::auth::Gatekeeper::lock_acquire(JsonObjectConst msg_in, JsonObject &msg_out,
                                         AuthentificationContext &user_context) {
   // Registry asserts that user is logged in, i.e. user_context.can_do(SecurityLevel::RequiresLogin)
   if (lock.is_locked()) {
@@ -112,7 +112,7 @@ int net::auth::Gatekeeper::lock_acquire(JsonObjectConst msg_in, JsonObject &msg_
   }
 }
 
-int net::auth::Gatekeeper::lock_release(JsonObjectConst msg_in, JsonObject &msg_out,
+FLASHMEM int net::auth::Gatekeeper::lock_release(JsonObjectConst msg_in, JsonObject &msg_out,
                                         AuthentificationContext &user_context) {
   if (!enable_users || user_context.user() == lock.holder ||
       user_context.can_do(SecurityLevel::RequiresAdmin)) {

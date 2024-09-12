@@ -139,7 +139,7 @@ public:
 
   IBlock() : IBlock(bus::NULL_ADDRESS, new IBlockHALDummy(bus::NULL_ADDRESS)) {}
 
-  [[nodiscard]] bool write_to_hardware() override;
+  [[nodiscard]] utils::status write_to_hardware() override;
 
   bool init() override;
 

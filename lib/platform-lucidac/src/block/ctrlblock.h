@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "base.h"
+#include "block/base.h"
 #include "chips/SR74HCT595.h"
 
 namespace functions {
@@ -75,7 +75,7 @@ public:
 
   void reset(bool keep_calibration) override;
 
-  [[nodiscard]] bool write_to_hardware() override;
+  [[nodiscard]] utils::status write_to_hardware() override;
 
   ADCBus get_adc_bus() const;
   void set_adc_bus(ADCBus adc_bus_);

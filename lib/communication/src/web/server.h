@@ -14,6 +14,7 @@
 #include "net/ethernet.h"
 #include "utils/durations.h"
 #include "websockets/client.h"
+#include "utils/singleton.h"
 
 namespace web {
 /**
@@ -43,11 +44,10 @@ struct LucidacWebsocketsClient {
  * (also refered to as "assets"). For the firmware, this acts just as a regular client.
  *
  **/
-struct LucidacWebServer {
+struct LucidacWebServer : public utils::HeapSingleton<LucidacWebServer> {
   std::list<LucidacWebsocketsClient> clients;
   net::EthernetServer ethserver;
 
-  static LucidacWebServer &get();
   void begin();
   void loop();
 };

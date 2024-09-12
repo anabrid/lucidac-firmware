@@ -8,6 +8,7 @@
 #include <list>
 
 #include "nvmconfig/persistent.h"
+#include "utils/singleton.h"
 
 namespace nvmconfig {
 
@@ -22,7 +23,7 @@ namespace nvmconfig {
      * Please don't store too much information, @see nvmconfig::PersistentSettingsWriter
      * for maximum storage sizes (around 4kB).
      */
-    struct PermanentUserDefinedStuff : nvmconfig::PersistentSettings {
+    struct PermanentUserDefinedStuff : nvmconfig::PersistentSettings, utils::HeapSingleton<PermanentUserDefinedStuff> {
         int max_doc_bytes = 600;
         DynamicJsonDocument *doc;
 
@@ -36,11 +37,6 @@ namespace nvmconfig {
         }
         void toJson(JsonObject target, Context c = Context::Flash) const override {
             if(doc) target = doc->as<JsonObject>();
-        }
-
-        static PermanentUserDefinedStuff& get() {
-            static PermanentUserDefinedStuff instance;
-            return instance;
         }
     };
 

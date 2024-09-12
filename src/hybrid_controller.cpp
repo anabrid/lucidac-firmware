@@ -36,14 +36,14 @@ platform::LUCIDAC carrier_;
 auto& netconf = net::StartupConfig::get();
 bool network_working;
 
-void leds(uint8_t val) {
+FLASHMEM void leds(uint8_t val) {
   if(carrier_.front_panel) {
     carrier_.front_panel->leds.set_all(val);
     carrier_.front_panel->write_to_hardware();
   }
 }
 
-void indicate_led_error() {
+FLASHMEM void indicate_led_error() {
   size_t num_blinks = 10;
   for(size_t i=0; i<num_blinks; i++) {
     leds(0x55);
@@ -60,7 +60,7 @@ void indicate_led_error() {
   msg::Log::get().sinks.add(&client);
 }*/
 
-void setup() {
+FLASHMEM void setup() {
   // Initialize serial communication
   Serial.begin(0);
   //while (!Serial && millis() < 4000) {
@@ -113,7 +113,7 @@ void setup() {
     indicate_led_error();
   }
 
-  msg::handlers::Registry.init(carrier_); // registers all commonly known messages
+  msg::handlers::Registry::get().init(carrier_); // registers all commonly known messages
 
   //LOG("msg::handlers::DynamicRegistry set up with handlers")
   //msg::handlers::DynamicRegistry::dump();
@@ -130,6 +130,11 @@ void setup() {
   if (!carrier_.calibrate_m_blocks(&daq)){
     LOG_ERROR("Error during self-calibration. Machine will continue with reduced accuracy.");
     indicate_led_error();
+
+    // For a quick fix, reset machine here because calibration routines exit
+    // early which *do* result in a machine in an unusable state.
+    carrier_.reset(true);
+    (void)carrier_.write_to_hardware();
   }
 
   // Done.
@@ -142,7 +147,7 @@ void setup() {
   }
 }
 
-void loop() {
+FLASHMEM void loop() {
   if(netconf.enable_jsonl)
     msg::JsonlServer::get().loop();
 

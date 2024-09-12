@@ -46,7 +46,7 @@ public:
   bool calibrate_routes(daq::BaseDAQ *daq);
   bool calibrate_m_blocks(daq::BaseDAQ *daq);
 
-  [[nodiscard]] bool write_to_hardware();
+  [[nodiscard]] utils::status write_to_hardware() override;
 
   uint8_t get_cluster_idx() const;
 

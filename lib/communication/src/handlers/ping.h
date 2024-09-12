@@ -6,6 +6,7 @@
 #pragma once
 
 #include "protocol/handler.h"
+#include "utils/error.h"
 
 namespace msg {
 namespace handlers {
@@ -18,6 +19,12 @@ public:
     // Note, with some initial NTP call we could get micro-second time resolution if we need it
     // for whatever reason.
     msg_out["micros"] = micros();
+
+    if(msg_in.containsKey("test_ret")) {
+      utils::status test("Formatted %s with %d", "string", 123);
+      msg_out["error"] = test.msg;
+      return test.code;
+    }
     return success;
   }
 };

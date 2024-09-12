@@ -6,7 +6,9 @@
 #include "factorize.h"
 
 #include <math.h>
+#include <Arduino.h> // FLASHMEM
 
+FLASHMEM
 std::pair<unsigned long long, unsigned long long> utils::factorize(unsigned long long input,
                                                                    unsigned int acceptable_delta) {
   unsigned long long root = sqrt(input);

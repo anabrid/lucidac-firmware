@@ -15,6 +15,7 @@
 #include "utils/durations.h"
 #include "utils/json.h"
 #include "utils/mac.h"
+#include "utils/singleton.h"
 
 #include "nvmconfig/persistent.h"
 
@@ -172,7 +173,7 @@ public:
  *
  * \ingroup Singleton
  */
-struct Gatekeeper : nvmconfig::PersistentSettings {
+struct Gatekeeper : public nvmconfig::PersistentSettings, public utils::HeapSingleton<Gatekeeper> {
   bool enable_auth,     ///< Overall switch to enable/disable security hardness
       enable_users,     ///< Enable/disable login at all, i.e. the user-password authentification
       enable_whitelist; ///< Enable/disable the IP Whitelist lookup
@@ -191,10 +192,6 @@ struct Gatekeeper : nvmconfig::PersistentSettings {
   int lock_acquire(JsonObjectConst msg_in, JsonObject &msg_out, AuthentificationContext &user_context);
   int lock_release(JsonObjectConst msg_in, JsonObject &msg_out, AuthentificationContext &user_context);
 
-  static Gatekeeper &get() {
-    static Gatekeeper instance;
-    return instance;
-  }
 
   std::string name() const { return "auth"; }
 

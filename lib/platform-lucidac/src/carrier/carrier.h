@@ -72,28 +72,21 @@ public:
 
   utils::status config_self_from_json(JsonObjectConst cfg) override;
 
-  // Error codes:
-  // -1 Cluster write failed
-  // -2 CTRL Block write failed
-  // -3 ADC Bus write failed
-  [[nodiscard]] virtual int write_to_hardware();
+  [[nodiscard]] utils::status write_to_hardware() override;
 
   [[nodiscard]] const std::array<int8_t, 8> &get_adc_channels() const;
   [[nodiscard]] bool set_adc_channels(const std::array<int8_t, 8> &channels);
   [[nodiscard]] bool set_adc_channel(uint8_t idx, int8_t adc_channel);
   void reset_adc_channels();
 
+  ///@addtogroup User-Functions
+  ///@{
+  utils::status user_set_calibrated_config(JsonObjectConst msg_in, JsonObject &msg_out);
+  ///@}
+
 public:
   // Module addresses
   static constexpr uint8_t CARRIER_MADDR = 5;
-
-  ///@addtogroup User-Functions
-  ///@{
-  int set_config(JsonObjectConst msg_in, JsonObject &msg_out);
-  int get_config(JsonObjectConst msg_in, JsonObject &msg_out);
-  virtual int get_entities(JsonObjectConst msg_in, JsonObject &msg_out);
-  int reset(JsonObjectConst msg_in, JsonObject &msg_out);
-  ///@}
 };
 
 } // namespace carrier

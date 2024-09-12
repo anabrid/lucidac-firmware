@@ -7,7 +7,7 @@
 
 #include "carrier/cluster.h"
 
-utils::status blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
+FLASHMEM utils::status blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
   // MMulBlock does not expect any configuration currently.
   // But due to automation, some may still be sent.
   // Thus we accept any configuration containing only empty values or similar.
@@ -17,13 +17,13 @@ utils::status blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
       if (!res)
         return res;
     } else {
-      return utils::status("MMulBlock: Unknown configuration key");
+      return utils::status(771, "MMulBlock: Unknown configuration key");
     }
   }
   return utils::status::success();
 }
 
-utils::status blocks::MMulBlock::_config_elements_from_json(const JsonVariantConst &cfg) {
+FLASHMEM utils::status blocks::MMulBlock::_config_elements_from_json(const JsonVariantConst &cfg) {
   //return utils::status("MMulBlock currently does not accept configuration");
 
   // Note: The following is a hack.
@@ -31,26 +31,26 @@ utils::status blocks::MMulBlock::_config_elements_from_json(const JsonVariantCon
 
   auto map = cfg.as<JsonObjectConst>();
   if(!map.containsKey("offset_x") || map["offset_x"].size() != MMulBlock::NUM_MULTIPLIERS)
-    return utils::status("Missing offset_x (need 4 entries)");
+    return utils::status(772, "Missing offset_x (need 4 entries)");
   if(!map.containsKey("offset_y") || map["offset_y"].size() != MMulBlock::NUM_MULTIPLIERS)
-    return utils::status("Missing offset_y (need 4 entries)");
+    return utils::status(773, "Missing offset_y (need 4 entries)");
   if(!map.containsKey("offset_z") || map["offset_z"].size() != MMulBlock::NUM_MULTIPLIERS)
-    return utils::status("Missing offset_z (need 4 entries)");
+    return utils::status(774, "Missing offset_z (need 4 entries)");
   for(int i=0; i<MMulBlock::NUM_MULTIPLIERS; i++) {
     calibration[i].offset_x = map["offset_x"][i];
     calibration[i].offset_y = map["offset_y"][i];
     calibration[i].offset_z = map["offset_z"][i];
 
     if(!hardware->write_calibration_input_offsets(i, calibration[i].offset_x, calibration[i].offset_y))
-      return utils::status("MMulBlock::calibration from json for multiplier %d values offset_x, offset_y not accepted", i);
+      return utils::status(775, "MMulBlock::calibration from json for multiplier %d values offset_x, offset_y not accepted", i);
     if(!hardware->write_calibration_output_offset(i, calibration[i].offset_z))
-      return utils::status("MMulBlock::calibration from json for multiplier %d values offset_z not accepted", i);
+      return utils::status(776, "MMulBlock::calibration from json for multiplier %d values offset_z not accepted", i);
   }
 
-  return 0;
+  return utils::status::success();
 }
 
-void blocks::MMulBlock::config_self_to_json(JsonObject &cfg) {
+FLASHMEM void blocks::MMulBlock::config_self_to_json(JsonObject &cfg) {
   auto json_calibration = cfg.createNestedObject("calibration");
   auto offset_x = json_calibration.createNestedArray("offset_x");
   auto offset_y = json_calibration.createNestedArray("offset_y");
@@ -63,7 +63,7 @@ void blocks::MMulBlock::config_self_to_json(JsonObject &cfg) {
   }
 }
 
-blocks::MMulBlock *blocks::MMulBlock::from_entity_classifier(entities::EntityClassifier classifier,
+FLASHMEM blocks::MMulBlock *blocks::MMulBlock::from_entity_classifier(entities::EntityClassifier classifier,
                                                              const bus::addr_t block_address) {
   if (!classifier or classifier.class_enum != CLASS_ or classifier.type != static_cast<uint8_t>(TYPE))
     return nullptr;
@@ -80,15 +80,15 @@ blocks::MMulBlock *blocks::MMulBlock::from_entity_classifier(entities::EntityCla
   return nullptr;
 }
 
-blocks::MMulBlock::MMulBlock(bus::addr_t block_address, MMulBlockHAL *hardware)
+FLASHMEM blocks::MMulBlock::MMulBlock(bus::addr_t block_address, MMulBlockHAL *hardware)
     : MBlock(block_address), hardware(hardware) {}
 
-bool blocks::MMulBlock::init() {
+FLASHMEM bool blocks::MMulBlock::init() {
   // TODO: Remove once hardware pointer is part of FunctionBlock base class
   return FunctionBlock::init() and hardware->init();
 }
 
-void blocks::MMulBlock::reset(bool keep_calibration) {
+FLASHMEM void blocks::MMulBlock::reset(bool keep_calibration) {
   if (!keep_calibration) {
     for (auto idx = 0u; idx < NUM_MULTIPLIERS; idx++) {
       calibration[idx].offset_x = 0;
@@ -98,9 +98,9 @@ void blocks::MMulBlock::reset(bool keep_calibration) {
   }
 }
 
-bool blocks::MMulBlock::write_to_hardware() { return true; }
+FLASHMEM utils::status blocks::MMulBlock::write_to_hardware() { return utils::status::success(); }
 
-bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, platform::Cluster *cluster) {
+FLASHMEM bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, platform::Cluster *cluster) {
   LOG(ANABRID_DEBUG_CALIBRATION, __PRETTY_FUNCTION__);
   bool success = true;
 
@@ -207,12 +207,13 @@ bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, platform::Cluster *cluster
   return success;
 }
 
+FLASHMEM
 const std::array<blocks::MultiplierCalibration, blocks::MMulBlock::NUM_MULTIPLIERS> &
 blocks::MMulBlock::get_calibration() const {
   return calibration;
 }
 
-blocks::MultiplierCalibration blocks::MMulBlock::get_calibration(uint8_t mul_idx) const {
+FLASHMEM blocks::MultiplierCalibration blocks::MMulBlock::get_calibration(uint8_t mul_idx) const {
   if (mul_idx >= NUM_MULTIPLIERS)
     return {};
   return calibration[mul_idx];
@@ -220,24 +221,24 @@ blocks::MultiplierCalibration blocks::MMulBlock::get_calibration(uint8_t mul_idx
 
 // Hardware abstraction layer
 
-bool blocks::MMulBlockHAL::init() {
+FLASHMEM bool blocks::MMulBlockHAL::init() {
   if (!FunctionBlockHAL::init())
     return false;
   return reset_calibration_input_offsets() and reset_calibration_output_offsets();
 }
 
-bool blocks::MMulBlockHAL_V_1_0_X::init() {
+FLASHMEM bool blocks::MMulBlockHAL_V_1_0_X::init() {
   return f_calibration_dac_0.init() and f_calibration_dac_0.set_external_reference() and
          f_calibration_dac_0.set_double_gain() and f_calibration_dac_1.init() and
          f_calibration_dac_1.set_external_reference() and f_calibration_dac_1.set_double_gain() and
          MMulBlockHAL::init();
 }
 
-blocks::MMulBlockHAL_V_1_0_X::MMulBlockHAL_V_1_0_X(bus::addr_t block_address)
+FLASHMEM blocks::MMulBlockHAL_V_1_0_X::MMulBlockHAL_V_1_0_X(bus::addr_t block_address)
     : f_calibration_dac_0(bus::address_from_tuple(block_address, 4)),
       f_calibration_dac_1(bus::address_from_tuple(block_address, 5)) {}
 
-bool blocks::MMulBlockHAL_V_1_0_X::write_calibration_input_offsets(uint8_t idx, float offset_x,
+FLASHMEM bool blocks::MMulBlockHAL_V_1_0_X::write_calibration_input_offsets(uint8_t idx, float offset_x,
                                                                    float offset_y) {
   // Supported offset range is [-0.1V, +0.1V], which corresponds to [-0.1, 0.1] machine units,
   // since the multiplier's working range is [-1V, +1V].
@@ -253,21 +254,21 @@ bool blocks::MMulBlockHAL_V_1_0_X::write_calibration_input_offsets(uint8_t idx, 
          f_calibration_dac_0.set_channel(idx * 2, (offset_y - 0.1f) * -12.5f);
 }
 
-bool blocks::MMulBlockHAL_V_1_0_X::reset_calibration_input_offsets() {
+FLASHMEM bool blocks::MMulBlockHAL_V_1_0_X::reset_calibration_input_offsets() {
   for (auto idx = 0u; idx < MMulBlock::NUM_MULTIPLIERS; idx++)
     if (!write_calibration_input_offsets(idx, 0, 0))
       return false;
   return true;
 }
 
-bool blocks::MMulBlockHAL_V_1_0_X::reset_calibration_output_offsets() {
+FLASHMEM bool blocks::MMulBlockHAL_V_1_0_X::reset_calibration_output_offsets() {
   for (auto idx = 0u; idx < MMulBlock::NUM_MULTIPLIERS; idx++)
     if (!write_calibration_output_offset(idx, 0))
       return false;
   return true;
 }
 
-bool blocks::MMulBlockHAL_V_1_0_X::write_calibration_output_offset(uint8_t idx, float offset_z) {
+FLASHMEM bool blocks::MMulBlockHAL_V_1_0_X::write_calibration_output_offset(uint8_t idx, float offset_z) {
   // See write_calibration_input_offsets for some explanations.
   if (fabs(offset_z) > 0.1f)
     return false;

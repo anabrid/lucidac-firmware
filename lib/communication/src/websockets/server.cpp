@@ -14,6 +14,7 @@ bool WebsocketsServer::available() { return this->_server->available(); }
 
 void WebsocketsServer::listen(uint16_t port) { this->_server->listen(port); }
 
+FLASHMEM
 bool WebsocketsServer::poll() { return this->_server->poll(); }
 
 struct ParsedHandshakeParams {
@@ -21,6 +22,7 @@ struct ParsedHandshakeParams {
   std::map<std::string, std::string> headers;
 };
 
+FLASHMEM
 ParsedHandshakeParams recvHandshakeRequest(network::TcpClient &client) {
   ParsedHandshakeParams result;
 
@@ -57,6 +59,7 @@ ParsedHandshakeParams recvHandshakeRequest(network::TcpClient &client) {
   return result;
 }
 
+FLASHMEM
 WebsocketsClient WebsocketsServer::accept() {
   std::shared_ptr<network::TcpClient> tcpClient(_server->accept());
   if (tcpClient->available() == false)

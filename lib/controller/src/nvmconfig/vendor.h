@@ -9,6 +9,7 @@
 
 #include "nvmconfig/persistent.h"
 #include "utils/uuid.h"
+#include "utils/singleton.h"
 
 namespace nvmconfig {
 
@@ -20,7 +21,7 @@ namespace nvmconfig {
      * This kind of information was previously stored in @file(../build/distrubutor.h).
      * 
      */
-    struct VendorOTP : nvmconfig::PersistentSettings {
+    struct VendorOTP : nvmconfig::PersistentSettings, utils::HeapSingleton<VendorOTP> {
         constexpr static uint16_t invalid_serial_number = 0;
         uint16_t serial_number = invalid_serial_number;
         utils::UUID serial_uuid;
@@ -31,22 +32,8 @@ namespace nvmconfig {
         bool is_valid() const { return serial_number != invalid_serial_number; }
 
         void reset_defaults() { /* No-OP by definition */ }
-        void fromJson(JsonObjectConst src, Context c = Context::Flash) override {
-            if(c == Context::User) return;
-            JSON_GET(src, serial_number);
-            JSON_GET(src, serial_uuid);
-            JSON_GET_AS(src, default_admin_password, std::string);
-        }
-        void toJson(JsonObject target, Context c = Context::Flash) const override {
-            if(c == Context::User) return;
-            JSON_SET(target, serial_number);
-            JSON_SET(target, serial_uuid);
-            JSON_SET(target, default_admin_password);
-        }
-        static VendorOTP& get() {
-            static VendorOTP instance;
-            return instance;
-        }
+        void fromJson(JsonObjectConst src, Context c = Context::Flash) override;
+        void toJson(JsonObject target, Context c = Context::Flash) const override;
     };
 
     JSON_CONVERT_SUGAR(VendorOTP);
