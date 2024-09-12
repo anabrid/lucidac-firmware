@@ -288,10 +288,10 @@ FLASHMEM bool platform::Cluster::route_out_external(uint8_t u_in, uint8_t out, f
   return cblock->set_factor(out + 24, c_factor);
 }
 
-FLASHMEM void platform::Cluster::reset(bool keep_calibration) {
+FLASHMEM void platform::Cluster::reset(entities::ResetAction action) {
   for (auto block : get_blocks()) {
     if (block)
-      block->reset(keep_calibration);
+      block->reset(action);
   }
 }
 

@@ -125,6 +125,12 @@ FLASHMEM void setup() {
   daq::OneshotDAQ daq;
   daq.init(0);
 
+  // Reset overload line
+  carrier_.reset(entities::ResetAction::OVERLOAD_RESET);
+
+  // Set computer into IC mode at startup
+  mode::RealManualControl::to_ic();
+
   // Run calibration
   LOG(ANABRID_DEBUG_INIT, "Executing self-calibration, this may take a few moments...");
   if (!carrier_.calibrate_m_blocks(&daq)){
@@ -133,7 +139,7 @@ FLASHMEM void setup() {
 
     // For a quick fix, reset machine here because calibration routines exit
     // early which *do* result in a machine in an unusable state.
-    carrier_.reset(true);
+    carrier_.reset(entities::ResetAction::ALL);
     (void)carrier_.write_to_hardware();
   }
 

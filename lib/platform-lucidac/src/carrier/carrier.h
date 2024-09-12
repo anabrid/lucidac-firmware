@@ -64,7 +64,7 @@ public:
   virtual bool calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock, daq::BaseDAQ *daq_);
   virtual bool calibrate_m_blocks(daq::BaseDAQ *daq_);
 
-  virtual void reset(bool keep_calibration);
+  virtual void reset(entities::ResetAction action);
 
   std::vector<Entity *> get_child_entities() override;
 

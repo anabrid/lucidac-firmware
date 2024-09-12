@@ -81,7 +81,8 @@ public:
   //! - 7. C block scales to 0.5 on default, to ensure the output signals are in the default -1V to 1V range.
   bool route_out_external(uint8_t u_in, uint8_t output, float c_factor = 0.5f);
 
-  void reset(bool keep_calibration);
+  void reset(entities::ResetAction action);
+
 
   std::vector<Entity *> get_child_entities() override;
 

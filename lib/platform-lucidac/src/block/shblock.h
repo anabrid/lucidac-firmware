@@ -16,7 +16,7 @@ public:
   static constexpr auto CLASS_ = entities::EntityClass::SH_BLOCK;
   static constexpr uint8_t BLOCK_IDX = bus::SH_BLOCK_IDX;
 
-  enum class State { TRACK, INJECT, GAIN_ZERO_TO_SEVEN, GAIN_EIGHT_TO_FIFTEEN };
+  enum class State { TRACK, TRACK_AT_IC, INJECT, GAIN_ZERO_TO_SEVEN, GAIN_EIGHT_TO_FIFTEEN };
 
   SHBlock();
   explicit SHBlock(bus::addr_t block_address);
@@ -27,7 +27,7 @@ public:
   State get_state() const;
 
   //! Resets all internal states. Block is left in track mode afterwards. Requires write_to_hardware()
-  void reset(const bool keep_offsets) override;
+  void reset(entities::ResetAction action) override;
 
   //! Applies current class state to actually hardware
   [[nodiscard]] utils::status write_to_hardware() override;

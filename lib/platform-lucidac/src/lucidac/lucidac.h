@@ -80,7 +80,7 @@ public:
 
   bool init() override;
 
-  void reset(bool keep_calibration) override;
+  void reset(entities::ResetAction action) override;
 
   std::vector<Entity *> get_child_entities() override;
 

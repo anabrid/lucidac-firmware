@@ -6,6 +6,7 @@
 #include "utils/logging.h"
 
 #include "carrier/cluster.h"
+#include "mode/mode.h"
 
 FLASHMEM blocks::MIntBlock::MIntBlock(bus::addr_t block_address, MIntBlockHAL *hardware)
     : blocks::MBlock{block_address}, hardware(hardware), ic_values{}, time_factors{} {
@@ -109,10 +110,17 @@ FLASHMEM utils::status blocks::MIntBlock::write_to_hardware() {
   return utils::status::success();
 }
 
-FLASHMEM void blocks::MIntBlock::reset(bool keep_calibration) {
-  FunctionBlock::reset(keep_calibration);
+FLASHMEM void blocks::MIntBlock::reset(entities::ResetAction action) {
+  FunctionBlock::reset(action);
   reset_ic_values();
   reset_time_factors();
+
+  if (action.has(entities::ResetAction::OVERLOAD_RESET)) {
+    // !!ATTENTION!! This breaks a lot of things but is neccessary and the ONLY
+    // way to reset overloads on the MIntBlock.
+    mode::RealManualControl::enable();
+    mode::RealManualControl::to_ic();
+  }
 }
 
 FLASHMEM utils::status blocks::MIntBlock::config_self_from_json(JsonObjectConst cfg) {

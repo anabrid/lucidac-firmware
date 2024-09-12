@@ -116,8 +116,6 @@ FLASHMEM bool carrier::Carrier::calibrate_routes(daq::BaseDAQ *daq_) {
 }
 
 FLASHMEM bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock, daq::BaseDAQ *daq_) {
-  bool success = true;
-
   // CARE: This function does not preserve the currently configured routes
   LOG(ANABRID_DEBUG_CALIBRATION, __PRETTY_FUNCTION__);
 
@@ -131,30 +129,30 @@ FLASHMEM bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBloc
   for (auto input_idx : blocks::MBlock::SLOT_INPUT_IDX_RANGE()) {
     auto lane_idx = mblock.slot_to_global_io_index(input_idx);
     if (!cluster.add_constant(blocks::UBlock::Transmission_Mode::POS_REF, lane_idx, 1.0f, lane_idx))
-      return false; // Fatal error
+      return false;
   }
 
   LOG(ANABRID_DEBUG_CALIBRATION, "Connecting outputs to ADC...");
   for (auto output_idx : blocks::MBlock::SLOT_OUTPUT_IDX_RANGE()) {
     auto lane_idx = mblock.slot_to_global_io_index(output_idx);
     if (!set_adc_channel(output_idx, lane_idx))
-      return false; // Fatal error
+      return false;
   }
 
   // Write to hardware
   // TODO: could be improved to not write every cluster
   if (!write_to_hardware())
-    return false; // Fatal error
+    return false;
 
   // Run calibration on the reference signals
   LOG(ANABRID_DEBUG_CALIBRATION, "Calibrating calibration signals...");
   if (!calibrate_routes_in_cluster(cluster, daq_))
-    return false; // Fatal error
+    return false;
 
   // Pass to calibration function
   LOG(ANABRID_DEBUG_CALIBRATION, "Passing control to M-block...");
   if (!mblock.calibrate(daq_, &cluster))
-    success = false;
+    return false;
 
   // Clean up
   // reset(true);
@@ -165,14 +163,14 @@ FLASHMEM bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBloc
   // Write final clean-up to hardware
   // TODO: could be improved to not write every cluster
   if (!write_to_hardware())
-    return false; // Fatal error
+    return false;
 
-  return success;
+  return true;
 }
 
 FLASHMEM bool carrier::Carrier::calibrate_m_blocks(daq::BaseDAQ *daq_) {
   bool success = true;
-  for (auto &cluster : clusters)
+  for (auto & cluster: clusters)
     for (auto mblock : {cluster.m0block, cluster.m1block}) {
       if (mblock)
         if (!calibrate_mblock(cluster, *mblock, daq_))
@@ -181,12 +179,12 @@ FLASHMEM bool carrier::Carrier::calibrate_m_blocks(daq::BaseDAQ *daq_) {
   return success;
 }
 
-FLASHMEM void carrier::Carrier::reset(bool keep_calibration) {
+FLASHMEM void carrier::Carrier::reset(entities::ResetAction action) {
   for (auto &cluster : clusters) {
-    cluster.reset(keep_calibration);
+    cluster.reset(action);
   }
   if (ctrl_block)
-    ctrl_block->reset(keep_calibration);
+    ctrl_block->reset(action);
   reset_adc_channels();
 }
 

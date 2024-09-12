@@ -37,6 +37,8 @@ enum class OnExtHalt {
 
 enum class Sync { NONE, MASTER, SLAVE };
 
+enum class Mode { IC, OP, HALT };
+
 /**
  * Note that the ManualControl does not work any more once FlexIOControl::init()
  * was called, even if FlexIOControl::disable() is used. This is because the relevant GPIOs

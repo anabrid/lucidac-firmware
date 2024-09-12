@@ -70,7 +70,7 @@ FLASHMEM bool blocks::CTRLBlock::set_adc_bus_to_cluster_gain(uint8_t cluster_idx
   return true;
 }
 
-FLASHMEM void blocks::CTRLBlock::reset(bool keep_calibration) {
-  FunctionBlock::reset(keep_calibration);
+FLASHMEM void blocks::CTRLBlock::reset(entities::ResetAction action) {
+  FunctionBlock::reset(action);
   reset_adc_bus();
 }

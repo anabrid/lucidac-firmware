@@ -224,8 +224,8 @@ FLASHMEM utils::status blocks::UBlock::write_to_hardware() {
 
 FLASHMEM void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), end(output_input_map), -1); }
 
-FLASHMEM void blocks::UBlock::reset(const bool keep_offsets) {
-  FunctionBlock::reset(keep_offsets);
+FLASHMEM void blocks::UBlock::reset(entities::ResetAction action) {
+  FunctionBlock::reset(action);
   change_all_transmission_modes(blocks::UBlock::Transmission_Mode::ANALOG_INPUT);
   reset_connections();
   reset_reference_magnitude();

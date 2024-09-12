@@ -82,6 +82,28 @@ struct __attribute__((packed)) EntityClassifier {
 
 static_assert(sizeof(EntityClassifier) == 6, "EntityClassifier has unexpected number of bytes.");
 
+/// Help me, I would like to be a proper enum but C++ does not like me ;-)
+struct ResetAction {
+  uint8_t val;
+
+  // Note on the enum/constants:
+  // The ResetAction class   replaces the previous "bool reset_calibration".
+  // That means that previously a 1 == CALIBRATION_RESET.
+  // In contrast, a "reset_calibration=0" should result in a CIRCUIT_RESET.
+
+  constexpr static uint8_t
+    CIRCUIT_RESET = 0,
+    CALIBRATION_RESET = 1,
+    OVERLOAD_RESET = 2,
+    ALL = 0xFF;
+
+  // this is not explicit because we want to deal with ints and booleans,
+  // see comment above.
+  ResetAction(uint8_t val) : val(val) {}
+
+  bool has(uint8_t other) { return other & val; }
+};
+
 class Entity {
 protected:
   std::string entity_id;
@@ -135,7 +157,7 @@ public:
   /// returns true in case of success
   virtual bool init() { return true; }
 
-  virtual void reset(bool keep_calibration) {}
+  virtual void reset(ResetAction action) {}
 
   /// returns true in case of success
   [[nodiscard]] virtual utils::status write_to_hardware() { return utils::status::success(); }

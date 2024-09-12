@@ -73,7 +73,7 @@ public:
 
   bool init() override;
 
-  void reset(bool keep_calibration) override;
+  void reset(entities::ResetAction action) override;
 
   [[nodiscard]] utils::status write_to_hardware() override;
 

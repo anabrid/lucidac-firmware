@@ -47,12 +47,12 @@ FLASHMEM bool blocks::CBlock::write_factors_to_hardware() {
   return true;
 }
 
-FLASHMEM void blocks::CBlock::reset(bool keep_calibration) {
-  FunctionBlock::reset(keep_calibration);
+FLASHMEM void blocks::CBlock::reset(entities::ResetAction action) {
+  FunctionBlock::reset(action);
   for (size_t i = 0; i < NUM_COEFF; i++) {
     (void)set_factor(i, 1.0f);
   }
-  if (!keep_calibration)
+  if (action.has(entities::ResetAction::CALIBRATION_RESET))
     reset_gain_corrections();
 }
 
