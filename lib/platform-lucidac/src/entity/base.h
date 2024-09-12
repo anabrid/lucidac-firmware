@@ -159,6 +159,11 @@ public:
 
   virtual void reset(ResetAction action) {}
 
+  /// @deprecated Backward-compatibility shim for ResetAction replacement
+  void reset(bool keep_calibration) {
+    reset(ResetAction::CIRCUIT_RESET + keep_calibration ? 0 : ResetAction::CALIBRATION_RESET);
+  }
+
   /// returns true in case of success
   [[nodiscard]] virtual utils::status write_to_hardware() { return utils::status::success(); }
 
