@@ -234,10 +234,29 @@ FLASHMEM void carrier::Carrier::reset_adc_channels() {
   std::fill(adc_channels.begin(), adc_channels.end(), ADC_CHANNEL_DISABLED);
 }
 
-FLASHMEM utils::status carrier::Carrier::user_set_calibrated_config(JsonObjectConst msg_in, JsonObject &msg_out) {
+FLASHMEM utils::status carrier::Carrier::user_set_extended_config(JsonObjectConst msg_in, JsonObject &msg_out) {
 #ifdef ANABRID_DEBUG_COMMS
   Serial.println(__PRETTY_FUNCTION__);
 #endif
+
+  if(msg_in["reset_before"]|false) {
+    reset(entities::ResetAction::CIRCUIT_RESET |
+          entities::ResetAction::OVERLOAD_RESET |
+          entities::ResetAction::CALIBRATION_RESET);
+    write_to_hardware();
+  }
+
+  if(msg_in["sh_kludge"]|false) {
+    for(auto& cluster : clusters) {
+      if(cluster.shblock) {
+        cluster.shblock->set_state(blocks::SHBlock::State::TRACK);
+        /*cluster.shblock->*/write_to_hardware();
+        delayMicroseconds(1000);
+        cluster.shblock->set_state(blocks::SHBlock::State::INJECT);
+        /*cluster.shblock->*/write_to_hardware();
+      }
+    }
+  }
   
   daq::OneshotDAQ daq;
   if ((msg_in["calibrate_mblock"]|true) && !calibrate_m_blocks(&daq))

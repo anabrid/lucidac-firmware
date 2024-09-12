@@ -81,7 +81,7 @@ public:
 
   ///@addtogroup User-Functions
   ///@{
-  utils::status user_set_calibrated_config(JsonObjectConst msg_in, JsonObject &msg_out);
+  utils::status user_set_extended_config(JsonObjectConst msg_in, JsonObject &msg_out);
   ///@}
 
 public:

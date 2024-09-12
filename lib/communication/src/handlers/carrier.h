@@ -29,11 +29,12 @@ public:
   using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
 
   int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
-    utils::status result = carrier.user_set_config(msg_in, msg_out);
+    // Attention: We do not use carrier.user_set_config (which is actually Entity::user_set_config)
+    //     because we want to expose a few "goodies" at Carrier level
+    utils::status result = carrier.user_set_extended_config(msg_in, msg_out);
     if(!result)
       msg_out["error"] = result.msg;
     return error(result.code);
-    // TODO TODO also expose carrier.user_set_calibrated_config !! 
   }
 };
 
