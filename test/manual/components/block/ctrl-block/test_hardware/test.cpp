@@ -26,16 +26,13 @@ void tearDown() {
 
 void test_adc_mux() {
   TEST_ASSERT(hal.write_adc_bus_muxers(CTRLBlock::ADCBus::CL0_GAIN));
-  io::block_until_button_press();
-  delay(500);
+  io::block_until_button_press_and_release();
   //TEST_ASSERT(hal.write_adc_bus_muxers(CTRLBlock::ADCBusSelect::CL1_GAIN));
-  //io::block_until_button_press();
-  //delay(500);
+  //io::block_until_button_press_and_release();
   TEST_ASSERT(hal.write_adc_bus_muxers(CTRLBlock::ADCBus::CL2_GAIN));
-  io::block_until_button_press();
-  delay(500);
+  io::block_until_button_press_and_release();
   TEST_ASSERT(hal.write_adc_bus_muxers(CTRLBlock::ADCBus::ADC));
-  io::block_until_button_press();
+  io::block_until_button_press_and_release();
 }
 
 void setup() {

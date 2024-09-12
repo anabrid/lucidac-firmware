@@ -44,7 +44,7 @@ void setup() {
 
 void loop() {
   // Re-run tests or do an action once the button is pressed
-  io::block_until_button_press();
+  io::block_until_button_press_and_release();
   test_adc_bus_matrix_reset();
   delay(500);
 }
