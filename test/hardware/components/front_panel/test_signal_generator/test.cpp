@@ -53,7 +53,7 @@ void setup() {
 }
 
 void loop() {
-  TEST_ASSERT(front->signal_generator.set_amplitude(
-      2.5f / 2.0f * (sin((float)millis() * 0.25f) + 1.0f))); // DIY amplitude modulation
+  TEST_ASSERT(
+      front->signal_generator.set_amplitude(0.5f * sin((float)millis()) + 0.5f)); // DIY amplitude modulation
   TEST_ASSERT_EQUAL(true, front->write_to_hardware());
 }
