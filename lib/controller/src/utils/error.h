@@ -4,14 +4,15 @@
 
 #pragma once
 
+#include "utils/logging.h"
 #include <Arduino.h>
 #include <cstdarg>
 #include <string>
-#include "utils/logging.h"
 
 namespace utils {
 constexpr unsigned int bufsize = 1000;
-//extern char buf[bufsize];
+
+// extern char buf[bufsize];
 
 template <typename... Args> FLASHMEM std::string small_sprintf(const char *format, Args... args) {
   char buf[bufsize];
@@ -30,13 +31,13 @@ template <typename... Args> FLASHMEM std::string small_sprintf(const char *forma
  **/
 class status {
 public:
-  int code;         ///< Status code. 0 means success.
-  std::string msg;  ///< Human readable error string.
+  int code;        ///< Status code. 0 means success.
+  std::string msg; ///< Human readable error string.
 
   status(int code, std::string msg) : code(code), msg(msg) {
-    if(code!=0) {
+    if (code != 0) {
       LOG4("utils::status error code=", code, " message=", msg.c_str());
-      if(msg.length() == 0) {
+      if (msg.length() == 0) {
         LOG_ALWAYS("Misuse of utils::status! Probably a casting problem.");
       }
     }
@@ -59,17 +60,14 @@ public:
 
   /// Usage like status("Foo %d bar %s baz", 3, "bling");
   template <typename... Args>
-  status(const char *format, Args... args) : status(small_sprintf(format, args...)) {
-  }
+  status(const char *format, Args... args) : status(small_sprintf(format, args...)) {}
 
   template <typename... Args>
-  status(int code, const char *format, Args... args) : status(code,  small_sprintf(format, args...)) {
-    LOG3("utils::status with code ", code, format);
-  }
+  status(int code, const char *format, Args... args) : status(code, small_sprintf(format, args...)) {}
 
   /// Attach another error message to this one. Is chainable, returns self.
-  status& attach(const status& other, const char* description="") {
-    if(!other.is_ok() || !is_ok()) {
+  status &attach(const status &other, const char *description = "") {
+    if (!other.is_ok() || !is_ok()) {
       code += other.code * 128;
       msg += other.msg + description;
     }
@@ -77,19 +75,19 @@ public:
   }
 
   /// Attach this error message to another one. Is chainable, returns self.
-  status& attach_to(status& other, const char* description="") {
+  status &attach_to(status &other, const char *description = "") {
     other.attach(*this, description);
     return *this;
   }
 
   /// Attach a "raw" message to this one.
-  status& attach(int _code, const char* _msg) {
+  status &attach(int _code, const char *_msg) {
     code += _code * 128;
     msg += _msg;
     return *this;
   }
 
-  status& attach(const char* _msg) {
+  status &attach(const char *_msg) {
     msg += _msg;
     return *this;
   }
