@@ -64,15 +64,20 @@ FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::init() {
   return digital_analog_converter.init() && function_generator.init();
 }
 
-FLASHMEM void platform::LUCIDACFrontPanel::SignalGenerator::set_frequency(float frequency) { _frequency = frequency; }
+FLASHMEM void platform::LUCIDACFrontPanel::SignalGenerator::set_frequency(float frequency) {
+  _frequency = frequency;
+}
 
 FLASHMEM void platform::LUCIDACFrontPanel::SignalGenerator::set_phase(float phase) { _phase = phase; }
 
-FLASHMEM void platform::LUCIDACFrontPanel::SignalGenerator::set_wave_form(functions::AD9834::WaveForm wave_form) {
+FLASHMEM void
+platform::LUCIDACFrontPanel::SignalGenerator::set_wave_form(functions::AD9834::WaveForm wave_form) {
   _wave_form = wave_form;
 }
 
 FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::set_amplitude(float amplitude) {
+  if (amplitude < 0.0f || amplitude > 1.0f)
+    return false;
   _amplitude = amplitude;
   return true;
 }
@@ -82,21 +87,21 @@ FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::set_square_voltage_l
 }
 
 FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::set_square_voltage_low(float low) {
-  if (fabs(low) > 2.0f)
+  if (fabs(low) > 1.0f)
     return false;
   _square_low_voltage = low;
   return true;
 }
 
 FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::set_square_voltage_high(float high) {
-  if (fabs(high) > 2.0f)
+  if (fabs(high) > 1.0f)
     return false;
   _square_high_voltage = high;
   return true;
 }
 
 FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::set_offset(float offset) {
-  if (fabs(offset) > 2.0f)
+  if (fabs(offset) > 1.0f)
     return false;
   _offset = offset;
   return true;
@@ -141,14 +146,14 @@ FLASHMEM void platform::LUCIDACFrontPanel::SignalGenerator::sleep() { _sleep = t
 FLASHMEM void platform::LUCIDACFrontPanel::SignalGenerator::awake() { _sleep = false; }
 
 FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::set_dac_out0(float value) {
-  if (fabs(value) > 2.0f)
+  if (fabs(value) > 1.0f)
     return false;
   _dac_out0 = value;
   return true;
 }
 
 FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::set_dac_out1(float value) {
-  if (fabs(value) > 2.0f)
+  if (fabs(value) > 1.0f)
     return false;
   _dac_out1 = value;
   return true;
@@ -165,24 +170,26 @@ FLASHMEM utils::status platform::LUCIDACFrontPanel::SignalGenerator::write_to_ha
   function_generator.write_phase(_phase);
   function_generator.write_wave_form(_wave_form);
 
-  if (!digital_analog_converter.set_channel(DAC_AMPLITUDE_CH, _amplitude))
+  if (!digital_analog_converter.set_channel(DAC_AMPLITUDE_CH, (1.0f - _amplitude) * 2.5f))
     return utils::status(-1, "FP DAC");
-  if (!digital_analog_converter.set_channel(DAC_SQUARE_LOW_CH, _map_dac_levelshift(_square_low_voltage)))
+  if (!digital_analog_converter.set_channel(DAC_SQUARE_LOW_CH,
+                                            _map_dac_levelshift(_square_low_voltage * 2.0f)))
     return utils::status(-2, "FP DSLC");
-  if (!digital_analog_converter.set_channel(DAC_SQUARE_HIGH_CH, _map_dac_levelshift(_square_high_voltage)))
+  if (!digital_analog_converter.set_channel(DAC_SQUARE_HIGH_CH,
+                                            _map_dac_levelshift(_square_high_voltage * 2.0f)))
     return utils::status(-3, "FP DSHC");
-  if (!digital_analog_converter.set_channel(DAC_OFFSET_CH, _map_dac_levelshift(_offset)))
+  if (!digital_analog_converter.set_channel(DAC_OFFSET_CH, _map_dac_levelshift(_offset * 2.0f)))
     return utils::status(-4, "FP DOC");
-  if (!digital_analog_converter.set_channel(DAC_OUT0_CH, _map_dac_levelshift(_dac_out0)))
+  if (!digital_analog_converter.set_channel(DAC_OUT0_CH, _map_dac_levelshift(_dac_out0 * 2.0f)))
     return utils::status(-5, "FP DO0C");
-  if (!digital_analog_converter.set_channel(DAC_OUT1_CH, _map_dac_levelshift(_dac_out1)))
+  if (!digital_analog_converter.set_channel(DAC_OUT1_CH, _map_dac_levelshift(_dac_out1 * 2.0f)))
     return utils::status(-6, "FP DO1C");
 
   delay(50);
   return utils::status::success();
 }
 
-FLASHMEM 
+FLASHMEM
 platform::LUCIDACFrontPanel *
 platform::LUCIDACFrontPanel::from_entity_classifier(entities::EntityClassifier classifier,
                                                     __attribute__((__unused__)) bus::addr_t block_address) {
@@ -229,7 +236,8 @@ FLASHMEM utils::status platform::LUCIDACFrontPanel::_config_leds_from_json(const
   return utils::status::success();
 }
 
-FLASHMEM utils::status platform::LUCIDACFrontPanel::_config_signal_generator_from_json(const JsonVariantConst &cfg) {
+FLASHMEM utils::status
+platform::LUCIDACFrontPanel::_config_signal_generator_from_json(const JsonVariantConst &cfg) {
   if (!cfg.is<JsonObjectConst>())
     return utils::status("LUCIDACFrontPanel signal generator configuration must be object");
 

@@ -24,12 +24,12 @@ void test_init() {
 
   TEST_ASSERT(front->init());
 
-  TEST_ASSERT(front->signal_generator.set_amplitude(2.5f));
-  TEST_ASSERT(front->signal_generator.set_square_voltage_levels(-2.0f, 2.0f));
+  TEST_ASSERT(front->signal_generator.set_amplitude(0.25f));
+  TEST_ASSERT(front->signal_generator.set_square_voltage_levels(-1.0f, 1.0f));
   TEST_ASSERT(front->signal_generator.set_offset(0.0f));
 
   TEST_ASSERT(front->signal_generator.set_dac_out0(1.0f));
-  TEST_ASSERT(front->signal_generator.set_dac_out1(-1.5f));
+  TEST_ASSERT(front->signal_generator.set_dac_out1(-0.5f));
 
   front->signal_generator.set_wave_form(functions::AD9834::WaveForm::SINE_AND_SQUARE);
   front->signal_generator.set_frequency(1000.0f);
@@ -54,6 +54,6 @@ void setup() {
 
 void loop() {
   TEST_ASSERT(front->signal_generator.set_amplitude(
-      2.5f / 2.0f * (sin((float)millis() * 0.25f) + 1.0f))); // DIY ampplitude modulation
+      2.5f / 2.0f * (sin((float)millis() * 0.25f) + 1.0f))); // DIY amplitude modulation
   TEST_ASSERT_EQUAL(true, front->write_to_hardware());
 }

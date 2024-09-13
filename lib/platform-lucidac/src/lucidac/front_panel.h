@@ -117,20 +117,20 @@ public:
     void set_phase(float phase);
     //! Sets the wave form of the function generator output.
     void set_wave_form(functions::AD9834::WaveForm wave_form);
-    //! Sets the amplitude of the sine or triangle wave. Possible values are: [?, ?]. The amplitude of the
-    //! square output is not affected by this function.
+    //! Sets the amplitude of the sine or triangle wave in machine units. Possible values are: [0, 1]. The
+    //! amplitude of the square output is not affected by this function.
     bool set_amplitude(float amplitude);
-    //! Sets the lower and upper voltage of the square output. Possible values are: [-2V, 2V]. The amplitude of
-    //! the sine / triangle output is not affected by this function.
+    //! Sets the lower and upper value of the square output in machine units. Possible values are: [-1, 1]. The
+    //! amplitude of the sine / triangle output is not affected by this function.
     bool set_square_voltage_levels(float low, float high);
-    //! Sets the lower voltage of the square output. Possible values are: [-2V, 2V]. The amplitude of
-    //! the sine / triangle output is not affected by this function.
+    //! Sets the lower value of the square output in machine units. Possible values are: [-1, 1]. The amplitude
+    //! of the sine / triangle output is not affected by this function.
     bool set_square_voltage_low(float low);
-    //! Sets the upper voltage of the square output. Possible values are: [-2V, 2V]. The amplitude of
-    //! the sine / triangle output is not affected by this function.
+    //! Sets the upper value of the square output in machine units. Possible values are: [-1, 1]. The amplitude
+    //! of the sine / triangle output is not affected by this function.
     bool set_square_voltage_high(float high);
-    //! Sets the constant voltage offset of the sine or triangle outpu. The levels of the square output are not
-    //! affected by this function.
+    //! Sets the constant offset of the sine or triangle output in machine units. The levels of the square
+    //! output are not affected by this function.
     bool set_offset(float offset);
 
     //! Returns the actually set frequency of the function generator, containing rounding errors.
