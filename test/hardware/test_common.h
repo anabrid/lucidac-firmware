@@ -14,8 +14,8 @@
 constexpr float ANABRID_TESTS_TARGET_PRECISION = 0.05f;
 constexpr bool ANABRID_TESTS_USE_ACL_OUT = true;
 
-std::array<float, 16> measure_sh_gain(platform::Cluster &cluster, daq::BaseDAQ *DAQ,
-                                      unsigned int averages = 42, unsigned int averages_delay = 100) {
+std::array<float, 16> measure_sh_gain(platform::Cluster &cluster, daq::BaseDAQ *DAQ, unsigned int averages = 4,
+                                      unsigned int averages_delay = 10) {
   // CARE: This assumes ADC bus is set to cluster gain
   // CARE: The SH-Block adds its offset corrections on gain measurements (as is expected),
   //       but starts with a random offset, so without calibration may give random signals.
