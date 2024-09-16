@@ -9,7 +9,7 @@
 #include "mode/mode.h"
 
 FLASHMEM blocks::MIntBlock::MIntBlock(bus::addr_t block_address, MIntBlockHAL *hardware)
-    : blocks::MBlock{block_address}, hardware(hardware), ic_values{}, time_factors{} {
+    : blocks::MBlock{block_address, hardware}, hardware(hardware), ic_values{}, time_factors{} {
   reset_ic_values();
   reset_time_factors();
 }
@@ -220,7 +220,10 @@ FLASHMEM blocks::MIntBlockHAL_V_1_0_X::MIntBlockHAL_V_1_0_X(bus::addr_t block_ad
     : f_ic_dac(bus::replace_function_idx(block_address, 4)),
       f_time_factor(bus::replace_function_idx(block_address, 5), true),
       f_time_factor_sync(bus::replace_function_idx(block_address, 6)),
-      f_time_factor_reset(bus::replace_function_idx(block_address, 7)) {}
+      f_time_factor_reset(bus::replace_function_idx(block_address, 7)),
+      f_overload_flags(bus::replace_function_idx(block_address, 2)),
+      f_overload_flags_reset(bus::replace_function_idx(block_address, 3))
+{}
 
 FLASHMEM bool blocks::MIntBlockHAL_V_1_0_X::init() {
   if (!MIntBlockHAL::init())
@@ -245,4 +248,11 @@ FLASHMEM bool blocks::MIntBlockHAL_V_1_0_X::write_time_factor_switches(std::bits
     return false;
   f_time_factor_sync.trigger();
   return true;
+}
+
+std::bitset<8> blocks::MIntBlockHAL_V_1_0_X::read_overload_flags() {
+  return f_overload_flags.read8();
+}
+
+void blocks::MIntBlockHAL_V_1_0_X::reset_overload_flags() { f_overload_flags_reset.trigger();
 }

@@ -10,6 +10,7 @@
 #include "block/base.h"
 #include "chips/DAC60508.h"
 #include "chips/SR74HCT595.h"
+#include "chips/SR74HC16X.h"
 #include "daq/base.h"
 
 namespace platform {
@@ -27,6 +28,14 @@ namespace blocks {
 // ██████  ███████ ███████ █████       ██      ██      ███████ ███████ ███████
 // ██   ██ ██   ██      ██ ██          ██      ██      ██   ██      ██      ██
 // ██████  ██   ██ ███████ ███████      ██████ ███████ ██   ██ ███████ ███████
+
+class MBlockHAL : public FunctionBlockHAL {
+public:
+  virtual std::bitset<8> read_overload_flags() = 0;
+  virtual void reset_overload_flags() = 0;
+
+  bool init() override;
+};
 
 /**
  * A Lucidac Math block (M-Block) is represented by this class.
@@ -96,12 +105,13 @@ public:
 
 public:
   const SLOT slot;
+  MBlockHAL* hardware;
 
 public:
-  explicit MBlock(bus::addr_t block_address);
+  explicit MBlock(bus::addr_t block_address, MBlockHAL* hardware);
 
-  explicit MBlock(SLOT slot)
-      : MBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M0_BLOCK_IDX : bus::M1_BLOCK_IDX, 0)) {}
+  explicit MBlock(SLOT slot, MBlockHAL *hardware)
+      : MBlock(bus::idx_to_addr(0, slot == SLOT::M0 ? bus::M0_BLOCK_IDX : bus::M1_BLOCK_IDX, 0), hardware) {}
 
   entities::EntityClass get_entity_class() const final { return entities::EntityClass::M_BLOCK; }
 
@@ -131,7 +141,7 @@ protected:
 // ██ ██  ██ ██    ██    ██   ██     ██      ██      ██   ██      ██      ██
 // ██ ██   ████    ██     █████       ██████ ███████ ██   ██ ███████ ███████
 
-class MIntBlockHAL : public FunctionBlockHAL {
+class MIntBlockHAL : public MBlockHAL {
 public:
   virtual bool write_ic(uint8_t idx, float ic) = 0;
   virtual bool write_time_factor_switches(std::bitset<8> switches) = 0;
@@ -143,6 +153,9 @@ public:
 
   bool write_time_factor_switches(std::bitset<8> switches) override { return true; }
 
+  std::bitset<8> read_overload_flags() override { return {0}; }
+  void reset_overload_flags() override {}
+
   explicit MIntBlockHAL_Dummy(bus::addr_t) {}
 };
 
@@ -152,6 +165,8 @@ protected:
   const functions::SR74HCT595 f_time_factor;
   const functions::TriggerFunction f_time_factor_sync;
   const functions::TriggerFunction f_time_factor_reset;
+  const functions::SR74HC16X f_overload_flags;
+  const functions::TriggerFunction f_overload_flags_reset;
 
 public:
   explicit MIntBlockHAL_V_1_0_X(bus::addr_t block_address);
@@ -160,6 +175,9 @@ public:
 
   bool write_ic(uint8_t idx, float ic) override;
   bool write_time_factor_switches(std::bitset<8> switches) override;
+
+  std::bitset<8> read_overload_flags() override;
+  void reset_overload_flags() override;
 };
 
 // HINT: Consider renaming this MBlockInt
@@ -237,7 +255,7 @@ protected:
 // ██  ██  ██ ██    ██ ██      ██   ██     ██      ██      ██   ██      ██      ██
 // ██      ██  ██████  ███████  █████       ██████ ███████ ██   ██ ███████ ███████
 
-class MMulBlockHAL : public FunctionBlockHAL {
+class MMulBlockHAL : public MBlockHAL {
 public:
   virtual bool write_calibration_input_offsets(uint8_t idx, float offset_x, float offset_y) = 0;
   virtual bool reset_calibration_input_offsets() = 0;
@@ -246,13 +264,12 @@ public:
   virtual bool reset_calibration_output_offsets() = 0;
 
   bool init() override;
-
-  virtual void reset_overload() {}
 };
 
 class MMulBlockHAL_V_1_0_X : public MMulBlockHAL {
 protected:
-  const functions::TriggerFunction f_reset_overload;
+  const functions::TriggerFunction f_overload_flags_reset;
+  const functions::SR74HC16X f_overload_flags;
   const functions::DAC60508 f_calibration_dac_0;
   const functions::DAC60508 f_calibration_dac_1;
 
@@ -268,7 +285,8 @@ public:
   bool write_calibration_output_offset(uint8_t idx, float offset_z) override;
   bool reset_calibration_output_offsets() override;
 
-  virtual void reset_overload() override;
+  std::bitset<8> read_overload_flags() override;
+  void reset_overload_flags() override;
 };
 
 /**

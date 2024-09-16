@@ -81,7 +81,7 @@ FLASHMEM blocks::MMulBlock *blocks::MMulBlock::from_entity_classifier(entities::
 }
 
 FLASHMEM blocks::MMulBlock::MMulBlock(bus::addr_t block_address, MMulBlockHAL *hardware)
-    : MBlock(block_address), hardware(hardware) {}
+    : MBlock(block_address, hardware), hardware(hardware) {}
 
 FLASHMEM bool blocks::MMulBlock::init() {
   // TODO: Remove once hardware pointer is part of FunctionBlock base class
@@ -97,7 +97,7 @@ FLASHMEM void blocks::MMulBlock::reset(entities::ResetAction action) {
     }
   }
   if (action.has(entities::ResetAction::OVERLOAD_RESET)) {
-    hardware->reset_overload();
+    hardware->reset_overload_flags();
   }
 }
 
@@ -225,14 +225,13 @@ FLASHMEM blocks::MultiplierCalibration blocks::MMulBlock::get_calibration(uint8_
 // Hardware abstraction layer
 
 FLASHMEM bool blocks::MMulBlockHAL::init() {
-  if (!FunctionBlockHAL::init())
+  if (!MBlockHAL::init())
     return false;
   return reset_calibration_input_offsets() and reset_calibration_output_offsets();
 }
 
 FLASHMEM bool blocks::MMulBlockHAL_V_1_0_X::init() {
   bool error = true;
-  reset_overload();
   error &= f_calibration_dac_0.init();
   error &= f_calibration_dac_0.set_external_reference();
   error &= f_calibration_dac_0.set_double_gain();
@@ -243,13 +242,12 @@ FLASHMEM bool blocks::MMulBlockHAL_V_1_0_X::init() {
   return error;
 }
 
-FLASHMEM void blocks::MMulBlockHAL_V_1_0_X::reset_overload() {
-  f_reset_overload.trigger();
+FLASHMEM void blocks::MMulBlockHAL_V_1_0_X::reset_overload_flags() { f_overload_flags_reset.trigger();
 }
 
-
 FLASHMEM blocks::MMulBlockHAL_V_1_0_X::MMulBlockHAL_V_1_0_X(bus::addr_t block_address)
-    : f_reset_overload   (bus::address_from_tuple(block_address, 3)),
+    : f_overload_flags_reset(bus::address_from_tuple(block_address, 3)),
+      f_overload_flags(bus::replace_function_idx(block_address, 2)),
       f_calibration_dac_0(bus::address_from_tuple(block_address, 4)),
       f_calibration_dac_1(bus::address_from_tuple(block_address, 5)) {}
 
@@ -289,3 +287,5 @@ FLASHMEM bool blocks::MMulBlockHAL_V_1_0_X::write_calibration_output_offset(uint
     return false;
   return f_calibration_dac_1.set_channel(idx, (offset_z - 0.1f) * -12.5f);
 }
+
+std::bitset<8> blocks::MMulBlockHAL_V_1_0_X::read_overload_flags() { return f_overload_flags.read8(); }
