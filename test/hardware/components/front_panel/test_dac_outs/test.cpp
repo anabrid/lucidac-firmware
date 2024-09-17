@@ -51,11 +51,8 @@ void test_init_and_blocks() {
 }
 
 void test_dac_adc(float val0, float val1) {
-  // The current implementation of the front plane outputs the value as voltage,
-  // not in machine units (scaled by two), so we do it here for now.
-  // TODO: Fix in front plane
-  TEST_ASSERT(lucidac.front_panel->signal_generator.set_dac_out0(2 * val0));
-  TEST_ASSERT(lucidac.front_panel->signal_generator.set_dac_out1(2 * val1));
+  TEST_ASSERT(lucidac.front_panel->signal_generator.set_dac_out0(val0));
+  TEST_ASSERT(lucidac.front_panel->signal_generator.set_dac_out1(val1));
 
   uint8_t acl0_lane = 0;
   uint8_t acl1_lane = 1;
