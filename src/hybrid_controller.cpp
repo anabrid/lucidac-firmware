@@ -16,6 +16,7 @@
 #include <list>
 
 #include "lucidac/lucidac.h"
+#include "lucidac/front_panel_signaling.h"
 #include "build/distributor.h"
 #include "utils/logging.h"
 #include "protocol/registry.h"
@@ -32,26 +33,10 @@
 #include "mode/mode.h"
 #include "daq/daq.h"
 
-platform::LUCIDAC carrier_;
-auto& netconf = net::StartupConfig::get();
+auto& carrier_ = platform::LUCIDAC::get();
+auto& netconf  = net::StartupConfig::get();
 bool network_working;
 
-FLASHMEM void leds(uint8_t val) {
-  if(carrier_.front_panel) {
-    carrier_.front_panel->leds.set_all(val);
-    carrier_.front_panel->write_to_hardware();
-  }
-}
-
-FLASHMEM void indicate_led_error() {
-  size_t num_blinks = 10;
-  for(size_t i=0; i<num_blinks; i++) {
-    leds(0x55);
-    delay(100);
-    leds(0xaa);
-    delay(100);
-  }
-}
 
 /*void setup_remote_log() {
   IPAddress remote{192,168,68,96};
@@ -66,6 +51,7 @@ FLASHMEM void setup() {
   //while (!Serial && millis() < 4000) {
     // Wait for Serial, but not forever
   //}
+
 
   msg::Log::get().sinks.add_Serial();
   msg::Log::get().sinks.add(&msg::StartupLog::get());
@@ -86,11 +72,11 @@ FLASHMEM void setup() {
   LOG(ANABRID_DEBUG_INIT, "Initializing carrier board...");
   if (!carrier_.init()) {
     LOG_ERROR("Error initializing carrier board.");
-    indicate_led_error();
+    leds::indicate_error();
   }
 
   // all LEDs on: Both visual self-test and showing that now ethernet search takes place.
-  leds(0xFF);
+  leds::set(0xFF);
 
   LOG(ANABRID_DEBUG_INIT, "Starting up Ethernet...");
   int net_error = netconf.begin_ip();
@@ -110,7 +96,7 @@ FLASHMEM void setup() {
   // TODO, _ERROR_OUT_ shall not be used, see #116
   if (!mode::FlexIOControl::init(mode::DEFAULT_IC_TIME, mode::DEFAULT_OP_TIME)) {
     LOG_ERROR("Error initializing FlexIO mode control.");
-    indicate_led_error();
+    leds::indicate_error();
   }
 
   msg::handlers::Registry::get().init(carrier_); // registers all commonly known messages
@@ -135,7 +121,7 @@ FLASHMEM void setup() {
   LOG(ANABRID_DEBUG_INIT, "Executing self-calibration, this may take a few moments...");
   if (!carrier_.calibrate_m_blocks(&daq)){
     LOG_ERROR("Error during self-calibration. Machine will continue with reduced accuracy.");
-    indicate_led_error();
+    leds::indicate_error();
 
     // For a quick fix, reset machine here because calibration routines exit
     // early which *do* result in a machine in an unusable state.
@@ -147,10 +133,7 @@ FLASHMEM void setup() {
   LOG(ANABRID_DEBUG_INIT, "Initialization done.");
 
   // visual effect to show that booting has been done
-  int val = 0xFF;
-  for(uint8_t i=0; i<8; i++) {
-    val /= 2; leds(val); delay(100);
-  }
+  leds::ease_out();
 }
 
 FLASHMEM void loop() {
