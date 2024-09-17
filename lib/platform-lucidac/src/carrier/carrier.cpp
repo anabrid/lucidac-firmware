@@ -257,6 +257,22 @@ FLASHMEM utils::status carrier::Carrier::user_set_extended_config(JsonObjectCons
       }
     }
   }
+
+  if(msg_in["mul_calib_kludge"]|false) {
+    blocks::MMulBlock* mulblock;
+    for(auto& cluster : clusters) {
+      if(cluster.m0block->is_entity_type(blocks::MMulBlock::TYPE))
+        mulblock = (blocks::MMulBlock*)cluster.m0block;
+      if(cluster.m1block->is_entity_type(blocks::MMulBlock::TYPE))
+        mulblock = (blocks::MMulBlock*)cluster.m1block;
+    }
+    auto res = mulblock->read_calibration_from_eeprom();
+    if(!res)
+      return res.attach("(mul_calib_kludge)");
+    res = mulblock->write_calibration_to_hardware();
+    if(!res)
+      return res.attach("(mul_calib_kludge)");
+  }
   
   daq::OneshotDAQ daq;
   if ((msg_in["calibrate_mblock"]|true) && !calibrate_m_blocks(&daq))

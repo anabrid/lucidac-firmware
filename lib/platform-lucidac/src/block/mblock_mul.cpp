@@ -5,6 +5,9 @@
 #include "block/mblock.h"
 #include "utils/logging.h"
 
+#include "entity/entity.h"
+#include "etl/crc.h"
+
 #include "carrier/cluster.h"
 
 FLASHMEM utils::status blocks::MMulBlock::config_self_from_json(JsonObjectConst cfg) {
@@ -14,6 +17,13 @@ FLASHMEM utils::status blocks::MMulBlock::config_self_from_json(JsonObjectConst 
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "calibration") {
       auto res = _config_elements_from_json(cfgItr->value());
+      if (!res)
+        return res;
+    } else if(cfgItr->key() == "read_calibration_from_eeprom") {
+      auto res = read_calibration_from_eeprom();
+      if (!res)
+        return res;
+      res = write_calibration_to_hardware();
       if (!res)
         return res;
     } else {
@@ -26,8 +36,8 @@ FLASHMEM utils::status blocks::MMulBlock::config_self_from_json(JsonObjectConst 
 FLASHMEM utils::status blocks::MMulBlock::_config_elements_from_json(const JsonVariantConst &cfg) {
   //return utils::status("MMulBlock currently does not accept configuration");
 
-  // Note: The following is a hack.
-  //       We generally don't want clients to take over calibration.
+  // Note: The following is a workaround to get manual calibration data
+  //       into the system, for release v1.0.
 
   auto map = cfg.as<JsonObjectConst>();
   if(!map.containsKey("offset_x") || map["offset_x"].size() != MMulBlock::NUM_MULTIPLIERS)
@@ -36,17 +46,33 @@ FLASHMEM utils::status blocks::MMulBlock::_config_elements_from_json(const JsonV
     return utils::status(773, "Missing offset_y (need 4 entries)");
   if(!map.containsKey("offset_z") || map["offset_z"].size() != MMulBlock::NUM_MULTIPLIERS)
     return utils::status(774, "Missing offset_z (need 4 entries)");
-  for(int i=0; i<MMulBlock::NUM_MULTIPLIERS; i++) {
+  for(size_t i=0; i<MMulBlock::NUM_MULTIPLIERS; i++) {
     calibration[i].offset_x = map["offset_x"][i];
     calibration[i].offset_y = map["offset_y"][i];
     calibration[i].offset_z = map["offset_z"][i];
+  }
 
+  auto res = write_calibration_to_hardware();
+  if(!res) {
+    return res.attach("via MMUlBlock::config_elements_from_json");
+  }
+
+  if(map.containsKey("write_eeprom")) {
+    auto res = write_calibration_to_eeprom();
+    if(!res)
+      return res.attach("via MMUlBlock::config_elements_from_json");
+  }
+
+  return utils::status::success();
+}
+
+FLASHMEM utils::status blocks::MMulBlock::write_calibration_to_hardware() {
+  for(size_t i=0; i<MMulBlock::NUM_MULTIPLIERS; i++) {
     if(!hardware->write_calibration_input_offsets(i, calibration[i].offset_x, calibration[i].offset_y))
       return utils::status(775, "MMulBlock::calibration from json for multiplier %d values offset_x, offset_y not accepted", i);
     if(!hardware->write_calibration_output_offset(i, calibration[i].offset_z))
       return utils::status(776, "MMulBlock::calibration from json for multiplier %d values offset_z not accepted", i);
   }
-
   return utils::status::success();
 }
 
@@ -107,10 +133,20 @@ FLASHMEM bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, platform::Cluster
   LOG(ANABRID_DEBUG_CALIBRATION, __PRETTY_FUNCTION__);
   bool success = true;
 
+  /******* Workaround for Version 1.0 Firmware ***********/
+  /***/ auto res = read_calibration_from_eeprom();    /***/ 
+  /***/ if (!res)                                     /***/ 
+  /***/   return false;                               /***/ 
+  /***/ res = write_calibration_to_hardware();        /***/ 
+  /***/ if (!res)                                     /***/ 
+  /***/   return false;                               /***/ 
+  /******* End of Workaround for Version 1.0 Firmware ****/
+
   if (!MBlock::calibrate(daq_, cluster))
     return false;
 
-  reset(entities::ResetAction::CIRCUIT_RESET | entities::ResetAction::CALIBRATION_RESET); // We can't iterativly calibrate, so we need to delete the old calibration values.
+  // We can't iterativly calibrate, so we need to delete the old calibration values.
+  reset(entities::ResetAction::CIRCUIT_RESET | entities::ResetAction::CALIBRATION_RESET);
 
   // Our first simple calibration process has been developed empirically and goes
   // 1. Set all inputs to zero
@@ -208,6 +244,57 @@ FLASHMEM bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, platform::Cluster
   }
 
   return success;
+}
+
+FLASHMEM
+uint8_t blocks::ManualMultiplierCalibrationMetadata::compute_checksum() const {
+  etl::crc1 calculator;
+  auto struct_as_bytearray = (uint8_t*) cal;
+  // loop only over the 4*MultiplierCalibration part
+  for(size_t i=0; i<4*sizeof(blocks::MultiplierCalibration); i++) {
+    calculator.add(struct_as_bytearray[i]);
+  }
+  return calculator.value();
+}
+
+FLASHMEM
+utils::status blocks::MMulBlock::read_calibration_from_eeprom() {
+  ManualMultiplierCalibrationMetadata target;
+
+  auto bytes_read = metadata::MetadataEditor(block_address).read(
+    offsetof(metadata::MetadataMemoryLayoutV1, entity_data),
+    sizeof(ManualMultiplierCalibrationMetadata),
+    (unsigned char*)&target
+  );
+  if(bytes_read != sizeof(ManualMultiplierCalibrationMetadata)) {
+    return utils::status(1, "MMulBlock::read_calibration_from_eeprom: Did not read all data");
+  }
+  if(target.compute_checksum() != target.checksum) {
+    return utils::status(2, "MMulBlock::read_calibration_from_eeprom: Checksum mismatch");
+  }
+
+  memcpy(calibration.data(), target.cal, 4*sizeof(blocks::MultiplierCalibration));
+
+  return utils::status::success();
+}
+
+FLASHMEM
+utils::status blocks::MMulBlock::write_calibration_to_eeprom() {
+  ManualMultiplierCalibrationMetadata target;
+  memcpy(target.cal, calibration.data(), 4*sizeof(blocks::MultiplierCalibration));
+  target.checksum = target.compute_checksum();
+
+  auto bytes_written = metadata::MetadataEditor(block_address).write(
+    offsetof(metadata::MetadataMemoryLayoutV1, entity_data),
+    sizeof(ManualMultiplierCalibrationMetadata),
+    (unsigned char*)&target
+  );
+
+  if(bytes_written != sizeof(ManualMultiplierCalibrationMetadata)) {
+    return utils::status(1, "MMulBlock::write_calibration_to_eeprom: Did not write all bytes");
+  }
+
+  return utils::status::success();
 }
 
 FLASHMEM

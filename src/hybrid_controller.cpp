@@ -125,7 +125,7 @@ FLASHMEM void setup() {
 
     // For a quick fix, reset machine here because calibration routines exit
     // early which *do* result in a machine in an unusable state.
-    carrier_.reset(entities::ResetAction::ALL);
+    carrier_.reset(entities::ResetAction::CIRCUIT_RESET | entities::ResetAction::OVERLOAD_RESET);
     (void)carrier_.write_to_hardware();
   }
 

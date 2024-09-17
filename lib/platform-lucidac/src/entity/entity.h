@@ -21,11 +21,12 @@ namespace metadata {
 enum class LayoutVersion : uint8_t { V1 = 1 };
 
 struct __attribute__((packed)) MetadataMemoryLayoutV1 {
+  constexpr static size_t data_size = 256 - 17; ///< FIXME, should be derived from sizeof(...)
   const LayoutVersion version;
   const uint16_t size;
   const entities::EntityClassifier classifier;
-  const uint8_t entity_data[256 - 17];
-  const uint8_t uuid[8];
+  const uint8_t entity_data[data_size];
+  const uint8_t uuid[8]; ///< FIXME, I am a EUI-64 and not a UUID
 };
 
 class MetadataEditor : public functions::EEPROM25AA02 {
@@ -49,14 +50,7 @@ public:
                                reinterpret_cast<const uint8_t *>(std::addressof(classifier)));
   }
 
-  size_t read(size_t address, size_t length, uint8_t *buffer) const = delete;
-  bool read8(size_t address, uint8_t *data_out) const = delete;
-  bool read16(size_t address, uint16_t *data_out) const = delete;
-  bool read32(size_t address, uint32_t *data_out) const = delete;
-  size_t write(size_t address, size_t length, const uint8_t *buffer) const = delete;
-  bool write8(size_t address, uint8_t data) const = delete;
-  bool write16(size_t address, uint16_t data) const = delete;
-  bool write32(size_t address, uint32_t data) const = delete;
+  // we don't delete functions -- where is the point?
 };
 } // namespace metadata
 

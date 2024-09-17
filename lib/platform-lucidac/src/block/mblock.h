@@ -292,8 +292,14 @@ public:
 /**
  * Calibration data per each multiplier. There are NUM_MULTIPLIERS on an MMulBlock.
  **/
-struct MultiplierCalibration {
+struct __attribute__((packed)) MultiplierCalibration {
   float offset_x = 0.0f, offset_y = 0.0f, offset_z = 0.0f;
+};
+
+struct __attribute__((packed)) ManualMultiplierCalibrationMetadata {
+  MultiplierCalibration cal[4];
+  uint8_t checksum;
+  uint8_t compute_checksum() const;
 };
 
 /**
@@ -334,14 +340,20 @@ public:
 
   bool init() override;
 
+  /// Attention, this does nothing!
+  /// @see write_calibration_to_hardware() for actual code.
   [[nodiscard]] utils::status write_to_hardware() override;
 
   bool calibrate(daq::BaseDAQ *daq_, platform::Cluster *cluster) override;
+
+  utils::status read_calibration_from_eeprom(); ///< does not write_to_hardware
+  utils::status write_calibration_to_eeprom();
 
   void reset(entities::ResetAction action);
 
   [[nodiscard]] const std::array<MultiplierCalibration, NUM_MULTIPLIERS> &get_calibration() const;
   [[nodiscard]] blocks::MultiplierCalibration get_calibration(uint8_t mul_idx) const;
+  utils::status write_calibration_to_hardware();
 
 protected:
   utils::status config_self_from_json(JsonObjectConst cfg) override;
