@@ -91,6 +91,14 @@ FLASHMEM void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationC
         // it is now the job of the handler to wrap his content into
         // begin_dict() / end_dict() or begin_list() / end_list()
         return_code = msg_handler->handle(msg_in, envelope_and_msg_out);
+        // Attention:  If the msg_handler does not return anything here,
+        //             we will get malformatted message of the kind
+        //             ..."type":"foo","msg":"code":123}
+        if(return_code == msg::handlers::MessageHandler::not_implemented) {
+          // *assume* that no message has been given: Provide an empty one.
+          envelope_and_msg_out.begin_dict();
+          envelope_and_msg_out.end_dict();
+        }
         if (return_code != 0) {
           LOG_ALWAYS("Error while handling streaming message.")
         }
@@ -187,3 +195,4 @@ FLASHMEM void msg::JsonLinesProtocol::process_out_of_band_handlers(carrier::Carr
 }
 
 #endif // ARDUINO
+

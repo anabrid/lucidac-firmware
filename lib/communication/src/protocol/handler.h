@@ -44,9 +44,9 @@ public:
   }
 
   /**
-   * A handler variant that 
+   * A handler variant that allows access to the authentification context of the client
    **/
-  int handle(JsonObjectConst msg_in, JsonObject &msg_out, net::auth::AuthentificationContext& user_context) {
+  virtual int handle(JsonObjectConst msg_in, JsonObject &msg_out, net::auth::AuthentificationContext& user_context) {
     return not_implemented;
   }
 

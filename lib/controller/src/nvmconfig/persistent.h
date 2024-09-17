@@ -7,6 +7,7 @@
 #ifdef ARDUINO
 
 #include "utils/json.h"
+#include "utils/singleton.h"
 #include <list>
 
 namespace nvmconfig {
@@ -44,7 +45,7 @@ static constexpr int eeprom_address = 0, eeprom_size = 2'000;
 // does not store a number >= this constant, it is resetted.
 // Must not start from 0 in order to distinguish from "value not found" errors,
 // thus the arbitrary nonzero 0xAA prefix.
-static constexpr uint64_t required_magic = 0xAA02;
+static constexpr uint32_t required_magic = 0xAA03;
 
 /**
  * Persistent user-changable configuration of the Teensy Microcontroller.
@@ -59,16 +60,11 @@ static constexpr uint64_t required_magic = 0xAA02;
  *
  * \ingroup Singletons
  **/
-class PersistentSettingsWriter {
-  uint64_t version;                             ///< Version identifier on EEPROM to check validity
-  static constexpr bool use_messagepack = true; ///< Use Messagepack instead of JSON on EEPROM
+class PersistentSettingsWriter : public utils::HeapSingleton<PersistentSettingsWriter> {
+  uint32_t version; ///< Version identifier on EEPROM to check validity, must be bigger then required_magic
+  static constexpr bool use_messagepack = false; ///< Use Messagepack instead of JSON on EEPROM
 
 public:
-  static PersistentSettingsWriter &get() {
-    static PersistentSettingsWriter instance;
-    return instance;
-  }
-
   std::list<PersistentSettings *> subsystems;
 
   size_t write_to_eeprom(); ///< serialize configuration to eeprom, @returns consumed bytes in eeprom

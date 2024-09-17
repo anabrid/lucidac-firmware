@@ -54,7 +54,11 @@ class UserPasswordAuthentification {
   std::map<User, std::string> db;
 
 public:
+  /// The admin user is singular and has all permissions
   static constexpr const char *admin = "admin";
+
+  /// This is the default non-admin user.
+  static constexpr const char *user = "user";
 
   void reset_defaults(); ///< reset to distributor defaults
 
@@ -174,9 +178,9 @@ public:
  * \ingroup Singleton
  */
 struct Gatekeeper : public nvmconfig::PersistentSettings, public utils::HeapSingleton<Gatekeeper> {
-  bool enable_auth,     ///< Overall switch to enable/disable security hardness
-      enable_users,     ///< Enable/disable login at all, i.e. the user-password authentification
-      enable_whitelist; ///< Enable/disable the IP Whitelist lookup
+  bool enable_auth,      ///< Overall switch to enable/disable security hardness
+       enable_users,     ///< Enable/disable login at all, i.e. the user-password authentification
+       enable_whitelist; ///< Enable/disable the IP Whitelist lookup
 
   UserPasswordAuthentification users;
   utils::IPMaskList whitelist;

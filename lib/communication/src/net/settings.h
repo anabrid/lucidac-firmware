@@ -21,6 +21,7 @@
 // server:    net::RuntimeConfig  <- no more, deleted
 // auth:      net::auth::UserPasswordAuthentification
 // user:      user-defined space irrelevant for the firmware
+//            do not confuse this with the users dictionary in the auth!
 
 namespace net {
 /**
@@ -30,11 +31,14 @@ namespace net {
  * self-owned Singletons.
  **/
 inline void register_settings() {
-  auto &subsystems = nvmconfig::PersistentSettingsWriter::get().subsystems;
+  auto& persistent_settings = nvmconfig::PersistentSettingsWriter::get();
+  auto &subsystems = persistent_settings.subsystems;
   subsystems.push_back(&nvmconfig::VendorOTP::get());
   subsystems.push_back(&nvmconfig::PermanentUserDefinedStuff::get());
   subsystems.push_back(&net::StartupConfig::get());
   subsystems.push_back(&net::auth::Gatekeeper::get());
+
+  persistent_settings.read_from_eeprom();
 }
 } // namespace net
 

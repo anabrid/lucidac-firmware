@@ -18,8 +18,13 @@ namespace handlers {
 /// @ingroup MessageHandlers
 class GetSystemIdent : public MessageHandler {
 public:
-  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out, net::auth::AuthentificationContext &user_context) override {
     msg_out["serial"] = nvmconfig::VendorOTP::get().serial_number;
+
+    // the UUID shall be kept secret and only admins can see it
+    //if(user_context.can_do(net::auth::SecurityLevel::RequiresAdmin)) {
+    //  msg_out["serial_uuid"] = nvmconfig::VendorOTP::get().serial_uuid;
+    //}
 
     dist::write_to_json(msg_out.createNestedObject("fw_build"));
     loader::flashimage::toJson(msg_out.createNestedObject("fw_image"));
@@ -32,25 +37,49 @@ public:
 /// @ingroup MessageHandlers
 class WriteSystemIdent : public MessageHandler {
 public:
-  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
-    auto& persistent = nvmconfig::PersistentSettingsWriter::get();
-    auto& vendor = nvmconfig::VendorOTP::get();
-    persistent.read_from_eeprom(); // at first run, this will result in default values
-    vendor.fromJson(msg_in, nvmconfig::Context::User);
-    bool valid = vendor.is_valid();
-    if(valid)
-      persistent.write_to_eeprom();
-    persistent.read_from_eeprom();
-    msg_out["valid"] = valid;
+    int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
+      auto& persistent = nvmconfig::PersistentSettingsWriter::get();
+      auto& vendor = nvmconfig::VendorOTP::get();
+      persistent.read_from_eeprom(); // at first run, this will result in default values
+      if(msg_in.containsKey("vendor"))
+        vendor.fromJson(msg_in["vendor"], nvmconfig::Context::User);
+      bool valid = vendor.is_valid();
+      if(valid)
+        persistent.write_to_eeprom();
 
-    // dump infos about all subsystems
-    auto subsystems = msg_out.createNestedObject("subsystems");
-    for(auto const& sys : nvmconfig::PersistentSettingsWriter::get().subsystems) {
-      auto sysout = subsystems.createNestedObject(sys->name());
-      sys->toJson(sysout, nvmconfig::Context::User);
-    }
-    
-    return success;
+      msg_out["valid"] = valid;
+      return success;
+  }
+};
+
+/// @ingroup MessageHandlers
+class ResetSystemIdent : public MessageHandler {
+public:
+    int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
+      bool write_to_hardware = msg_in["write_to_hardware"];
+      auto& persistent = nvmconfig::PersistentSettingsWriter::get();
+      persistent.reset_defaults(write_to_hardware);
+      return success;
+  }
+};
+
+/// @ingroup MessageHandlers
+
+class ReadSystemIdent : public MessageHandler {
+public:
+    int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
+      auto& persistent = nvmconfig::PersistentSettingsWriter::get();
+      if(msg_in.containsKey("read_from_eeprom"))
+        persistent.read_from_eeprom();
+
+      // dump infos about all subsystems, including passwords, etc
+      auto subsystems = msg_out.createNestedObject("subsystems");
+      for(auto const& sys : nvmconfig::PersistentSettingsWriter::get().subsystems) {
+        auto sysout = subsystems.createNestedObject(sys->name());
+        sys->toJson(sysout, nvmconfig::Context::User);
+      }
+      
+      return success;
   }
 };
 #endif

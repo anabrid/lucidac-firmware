@@ -85,7 +85,7 @@ void activate_serial_log();
  * Should be probably improved.
  **/
 struct StartupLog : public Print {
-  constexpr static size_t max_buf_size = 30;
+  constexpr static size_t max_buf_size = 60;
   msg::ring_buffer<std::string> buf{max_buf_size};
   std::string linebuf = "";
 

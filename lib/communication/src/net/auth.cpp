@@ -6,6 +6,7 @@
 
 #ifdef ARDUINO
 
+#include "utils/logging.h"
 #include "net/auth.h"
 #include "nvmconfig/vendor.h"
 
@@ -28,10 +29,18 @@ FLASHMEM void net::auth::Gatekeeper::reset_defaults() {
 FLASHMEM void net::auth::UserPasswordAuthentification::reset_defaults() {
   db.clear();
 
-  auto default_admin_password = nvmconfig::VendorOTP().default_admin_password;
+  auto default_admin_password = nvmconfig::VendorOTP::get().default_admin_password;
+
+  // "user" is just a non-admin default user which new ... users ... are supposed to
+  // work with.
+  auto default_user_password  = nvmconfig::VendorOTP::get().default_admin_password;
 
   if (!default_admin_password.empty())
     db[admin] = default_admin_password;
+  if (!default_user_password.empty())
+    db[user] = default_user_password;
+
+  LOG_ALWAYS("UserPasswordAuthentification::reset_defaults() resetting admin and default user.");
 }
 
 FLASHMEM void net::auth::UserPasswordAuthentification::fromJson(JsonObjectConst serialized_conf) {
@@ -58,7 +67,7 @@ FLASHMEM void net::auth::UserPasswordAuthentification::status(JsonObject target)
 FLASHMEM int net::auth::Gatekeeper::login(JsonObjectConst msg_in, JsonObject &msg_out,
                                  net::auth::AuthentificationContext &user_context) {
   if (!enable_auth && !enable_users) {
-    msg_out["error"] = "No authentification neccessary. Auth system is disabled in this firmware build.";
+    msg_out["error"] = "No authentification neccessary. Auth system is currently disabled (either by firmware build or user settings).";
     return 10;
   } else {
     std::string new_user = msg_in["user"];
