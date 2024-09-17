@@ -9,7 +9,8 @@ platform::LUCIDACFrontPanel::LUCIDACFrontPanel() : entities::Entity("FP") {}
 
 FLASHMEM bool platform::LUCIDACFrontPanel::init() {
   leds.reset();
-  return signal_generator.init();
+  signal_generator.init();
+  return true;
 }
 
 FLASHMEM void platform::LUCIDACFrontPanel::reset() {
@@ -20,7 +21,8 @@ FLASHMEM void platform::LUCIDACFrontPanel::reset() {
 FLASHMEM utils::status platform::LUCIDACFrontPanel::write_to_hardware() {
   utils::status ret;
   ret.attach(leds.write_to_hardware(), "FP LED failure");
-  ret.attach(signal_generator.write_to_hardware(), "Signal generator failure");
+  if (signal_generator.is_installed())
+    ret.attach(signal_generator.write_to_hardware(), "Signal generator failure");
   return ret;
 }
 
@@ -61,7 +63,8 @@ FLASHMEM platform::LUCIDACFrontPanel::SignalGenerator::SignalGenerator()
       function_generator(bus::address_from_tuple(2, FUNCTION_GENERATOR_IDX)) {}
 
 FLASHMEM bool platform::LUCIDACFrontPanel::SignalGenerator::init() {
-  return digital_analog_converter.init() && function_generator.init();
+  installed = digital_analog_converter.init() && function_generator.init();
+  return installed;
 }
 
 FLASHMEM void platform::LUCIDACFrontPanel::SignalGenerator::set_frequency(float frequency) {

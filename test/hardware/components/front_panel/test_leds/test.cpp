@@ -21,6 +21,8 @@ void init() {
   if (!front)
     TEST_FAIL_MESSAGE("Front plane could not be detected!"); // Avoid nullptr deref
 
+  TEST_ASSERT(front->init());
+
   front->leds.reset(); // Init just triggeres this function for the LEDs, as we don't want to assume having a
                        // signal generator installed here
 }

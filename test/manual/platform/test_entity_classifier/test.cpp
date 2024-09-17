@@ -40,30 +40,30 @@ Version m1_version(1, 0, 0);
 Version ctrl_version(1, 0, 2);
 Version fp_version(1, 1, 2);
 
-void write_eeproms() {
-  test_write_classifier(EntityClassifier(EntityClass::U_BLOCK, EntityClassifier::DEFAULT_, u_version),
-                        bus::idx_to_addr(0, UBlock::BLOCK_IDX, 0));
+void write_eeproms() { /*
+   test_write_classifier(EntityClassifier(EntityClass::U_BLOCK, EntityClassifier::DEFAULT_, u_version),
+                         bus::idx_to_addr(0, UBlock::BLOCK_IDX, 0));
 
-  test_write_classifier(EntityClassifier(EntityClass::C_BLOCK, EntityClassifier::DEFAULT_, c_version),
-                        bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0));
+   test_write_classifier(EntityClassifier(EntityClass::C_BLOCK, EntityClassifier::DEFAULT_, c_version),
+                         bus::idx_to_addr(0, CBlock::BLOCK_IDX, 0));
 
-  test_write_classifier(EntityClassifier(EntityClass::I_BLOCK, EntityClassifier::DEFAULT_, i_version),
-                        bus::idx_to_addr(0, IBlock::BLOCK_IDX, 0));
+   test_write_classifier(EntityClassifier(EntityClass::I_BLOCK, EntityClassifier::DEFAULT_, i_version),
+                         bus::idx_to_addr(0, IBlock::BLOCK_IDX, 0));
 
-  test_write_classifier(EntityClassifier(EntityClass::SH_BLOCK, EntityClassifier::DEFAULT_, sh_version),
-                        bus::idx_to_addr(0, SHBlock::BLOCK_IDX, 0));
+   test_write_classifier(EntityClassifier(EntityClass::SH_BLOCK, EntityClassifier::DEFAULT_, sh_version),
+                         bus::idx_to_addr(0, SHBlock::BLOCK_IDX, 0));
 
-  test_write_classifier(
-      EntityClassifier(EntityClass::M_BLOCK, static_cast<uint8_t>(MBlock::TYPES::M_INT8_BLOCK), m0_version),
-      bus::idx_to_addr(0, MBlock::M0_IDX, 0));
+   test_write_classifier(
+       EntityClassifier(EntityClass::M_BLOCK, static_cast<uint8_t>(MBlock::TYPES::M_INT8_BLOCK), m0_version),
+       bus::idx_to_addr(0, MBlock::M0_IDX, 0));
 
-  test_write_classifier(
-      EntityClassifier(EntityClass::M_BLOCK, static_cast<uint8_t>(MBlock::TYPES::M_MUL4_BLOCK), m1_version),
-      bus::idx_to_addr(0, MBlock::M1_IDX, 0));
+   test_write_classifier(
+       EntityClassifier(EntityClass::M_BLOCK, static_cast<uint8_t>(MBlock::TYPES::M_MUL4_BLOCK), m1_version),
+       bus::idx_to_addr(0, MBlock::M1_IDX, 0));
 
-  test_write_classifier(EntityClassifier(EntityClass::CTRL_BLOCK, EntityClassifier::DEFAULT_, ctrl_version),
-                        bus::address_from_tuple(1, 0));
-
+   test_write_classifier(EntityClassifier(EntityClass::CTRL_BLOCK, EntityClassifier::DEFAULT_, ctrl_version),
+                         bus::address_from_tuple(1, 0));
+ */
   test_write_classifier(EntityClassifier(EntityClass::FRONT_PANEL, EntityClassifier::DEFAULT_, fp_version),
                         bus::address_from_tuple(2, 0));
 }

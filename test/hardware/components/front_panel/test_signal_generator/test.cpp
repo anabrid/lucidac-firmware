@@ -23,6 +23,7 @@ void test_init() {
     TEST_FAIL_MESSAGE("Front plane could not be detected!"); // Avoid nullptr deref
 
   TEST_ASSERT(front->init());
+  TEST_ASSERT(front->signal_generator.is_installed());
 
   TEST_ASSERT(front->signal_generator.set_amplitude(0.25f));
   TEST_ASSERT(front->signal_generator.set_square_voltage_levels(-1.0f, 1.0f));
