@@ -47,8 +47,8 @@ FLASHMEM void net::StartupConfig::reset_defaults() {
   static_dns = IPAddress(8, 8, 8, 8);
 
   enable_jsonl = true;
-  enable_webserver = true;
-  enable_websockets = true;
+  enable_webserver = false;  ///< In Firmware version 1.0, this feature is by default deactivated
+  enable_websockets = false; ///< In Firmware version 1.0, this feature is by default deactivated
   enable_mdns = true;
 
   jsonl_port = 5732;
