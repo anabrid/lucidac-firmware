@@ -18,6 +18,13 @@ void tearDown() {
   // clean stuff up here
 }
 
+void test_init() {
+  TEST_ASSERT(lucidac.init());
+  lucidac.reset(entities::ResetAction::ALL);
+  TEST_ASSERT(lucidac.write_to_hardware());
+  TEST_ASSERT(DAQ.init(0));
+}
+
 void test_raw_to_float() {
   TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.0f, OneshotDAQ::raw_to_float(4094));
   TEST_ASSERT_FLOAT_WITHIN(0.01f, +1.25f, OneshotDAQ::raw_to_float(OneshotDAQ::RAW_PLUS_ONE_POINT_TWO_FIVE));
@@ -56,16 +63,11 @@ void test_sample_raw() {
 }
 
 void setup() {
-  UNITY_BEGIN();
-
+  msg::activate_serial_log();
   bus::init();
-  TEST_ASSERT(lucidac.init());
-  TEST_ASSERT(DAQ.init(0));
 
-  // important, because sets Carrier::reset_adc_channels and CtrlBlock::reset_adc_bus,
-  // thus we read from ADCBus not Gain and we read from the *empty* MT8816 adc_channel matrix
-  lucidac.reset(false);
-
+  UNITY_BEGIN();
+  RUN_TEST(test_init);
   // RUN_TEST(test_sample);
   RUN_TEST(test_sample_raw);
   // RUN_TEST(test_raw_to_float);
