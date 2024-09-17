@@ -199,7 +199,7 @@ struct Gatekeeper : public nvmconfig::PersistentSettings, public utils::HeapSing
 
   std::string name() const { return "auth"; }
 
-  void reset_defaults();
+  void reset_defaults() override;
 
   void fromJson(JsonObjectConst src, nvmconfig::Context c = nvmconfig::Context::Flash) override {
     JSON_GET(src, enable_auth);
@@ -243,7 +243,11 @@ public:
 
   bool can_do(SecurityLevel task) const {
     // TODO Also implement IP-based access here
+    #ifdef ANABRID_UNSAFE_INTERNET
+    return true;
+    #else
     return !Gatekeeper::get().enable_auth || !Gatekeeper::get().enable_users || auth().can_do(_user, task);
+    #endif
   }
 
   bool hasBetterClearenceThen(const User &other) const {

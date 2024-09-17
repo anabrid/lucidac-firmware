@@ -18,7 +18,7 @@ FLASHMEM void net::auth::Gatekeeper::reset_defaults() {
 #endif
 
   enable_users = true;
-  enable_whitelist = true;
+  enable_whitelist = false; // Feature does not ship in v1.0
 
   access_control_allow_origin = "*";
 

@@ -20,12 +20,18 @@ namespace nvmconfig {
      * 
      * This kind of information was previously stored in @file(../build/distrubutor.h).
      * 
+     * Attention:
+     *   fromJson and toJson will do NOTHING if either Context::User or
+     *   undefined ANABRID_WRITE_EEPROM! This is by attention in order to avoid
+     *   accidental overwrites of the EEPROM.
+     * 
      */
     struct VendorOTP : nvmconfig::PersistentSettings, utils::HeapSingleton<VendorOTP> {
         constexpr static uint16_t invalid_serial_number = 0;
         uint16_t serial_number = invalid_serial_number;
         utils::UUID serial_uuid;
-        std::string default_admin_password;
+
+        std::string default_admin_password, default_user_password;
 
         std::string name() const { return "immutable"; }
 
