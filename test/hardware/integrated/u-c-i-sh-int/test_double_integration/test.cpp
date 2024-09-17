@@ -58,6 +58,8 @@ void test_init_and_blocks() {
     TEST_ASSERT(cluster.m1block->is_entity_type(MBlock::TYPES::M_MUL4_BLOCK));
   }
   TEST_ASSERT_NOT_NULL(lucidac.ctrl_block);
+  TEST_ASSERT_NOT_NULL(lucidac.front_panel);
+  TEST_ASSERT(lucidac.front_panel->signal_generator.is_installed());
 
   lucidac.reset(false);
   TEST_ASSERT(lucidac.write_to_hardware());

@@ -109,6 +109,10 @@ public:
     //! Initializes the signal generator and puts it to sleep.
     bool init();
 
+    //! Returns wether an signal generator module is actually installed and active.
+    //! Writing to an uninstalled generator will result in fauilure
+    bool is_installed() const { return installed; }
+
     //! Sets the frequency of the sine / triangle output in Hz. Note that the square output will always operate
     //! on half of the specified frequency. Returns the actually set frequency.
     void set_frequency(float frequency);
@@ -185,6 +189,10 @@ public:
     float _dac_out1;
 
     bool _sleep = true;
+
+    bool installed = false;
+
+    friend LUCIDACFrontPanel;
 
   } signal_generator;
 };
