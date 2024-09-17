@@ -8,6 +8,7 @@
 #include "block/blocks.h"
 #include "carrier/carrier.h"
 #include "lucidac/front_panel.h"
+#include "utils/singleton.h"
 
 namespace platform {
 
@@ -59,7 +60,7 @@ public:
   void reset_adc_bus_mux() override;
 };
 
-class LUCIDAC : public carrier::Carrier {
+class LUCIDAC : public carrier::Carrier, public utils::HeapSingleton<LUCIDAC> {
 public:
   using ACL = LUCIDAC_HAL::ACL;
 
