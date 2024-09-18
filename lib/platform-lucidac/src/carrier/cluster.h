@@ -77,12 +77,11 @@ public:
 
   //! Allows to route in an external signal from the lucidac front panel. input can be between 0 - 7
   bool route_in_external(uint8_t input, uint8_t i_out);
-  //! Allows to route an signal to the external outputs on the lucidac front panel. output can be between 0
-  //! - 7. C block scales to 0.5 on default, to ensure the output signals are in the default -1V to 1V range.
-  bool route_out_external(uint8_t u_in, uint8_t output, float c_factor = 0.5f);
+  //! Allows to route an signal to the external outputs on the lucidac front panel.
+  //! Output can be between 0 - 7.
+  bool route_out_external(uint8_t u_in, uint8_t output, float c_factor);
 
   void reset(entities::ResetAction action);
-
 
   std::vector<Entity *> get_child_entities() override;
 
