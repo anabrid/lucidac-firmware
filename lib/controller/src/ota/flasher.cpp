@@ -286,10 +286,6 @@ constexpr static int success = 0;
     return code;                                                                                              \
   }
 
-loader::FirmwareFlasher _flasher;
-
-loader::FirmwareFlasher &loader::FirmwareFlasher::get() { return _flasher; }
-
 // no of base64 symbols to transfer in a single chunk. Note that this unit is limited by the
 // maximum JSON Documentsize anyway, which is currently 4096 bytes.
 // Note: number_of_bytes = max_chunk_size * 3/4 and we require number_of_bytes%4 == 0.

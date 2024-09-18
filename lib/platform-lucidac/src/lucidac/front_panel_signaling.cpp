@@ -12,13 +12,14 @@ FLASHMEM void leds::set(uint8_t val) {
 }
 
 FLASHMEM void leds::indicate_error() {
-  size_t num_blinks = 10;
+  size_t num_blinks = 6;
   for(size_t i=0; i<num_blinks; i++) {
     leds::set(0x55);
     delay(100);
     leds::set(0xaa);
     delay(100);
   }
+  leds::set(0);
 }
 
 FLASHMEM void leds::ease_out() {

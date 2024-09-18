@@ -58,9 +58,13 @@ FLASHMEM utils::status blocks::MMulBlock::_config_elements_from_json(const JsonV
   }
 
   if(map.containsKey("write_eeprom")) {
+    #ifdef ANABRID_WRITE_EEPROM
     auto res = write_calibration_to_eeprom();
     if(!res)
       return res.attach("via MMUlBlock::config_elements_from_json");
+    #else
+    return utils::status(775, "MMulBlock::config_elements MUST NOT write to eeprom given the missing ANABRID_WRITE_EEPROM build flag");
+    #endif
   }
 
   return utils::status::success();

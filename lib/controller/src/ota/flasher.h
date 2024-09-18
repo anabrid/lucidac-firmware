@@ -2,6 +2,7 @@
 #define FLASHERX_H
 
 #include "utils/hashflash.h"
+#include "utils/singleton.h"
 
 namespace loader {
 
@@ -42,10 +43,17 @@ namespace loader {
   };
 
   /**
-   * Actual "frontend" for flashing
+   * Actual "frontend" for flashing.
+   * 
+   * This code is proof-of-concept like: It works but it is horribly slow due to the protocol
+   * overhead.
+   * 
+   * TODO: Transfer firmware image with direct stream access (API is now present here) or
+   *       via side channel such as a HTTP (not https) URL where this teensy downloads it.
+   * 
    * \ingroup Singletons
    **/
-  class FirmwareFlasher {
+  class FirmwareFlasher : public utils::HeapSingleton<FirmwareFlasher> {
     FirmwareBuffer *upgrade;
     void delete_upgrade() { delete upgrade; upgrade = nullptr; } ///< Abort an running upgrade
   public:
@@ -57,8 +65,6 @@ namespace loader {
     int complete(JsonObjectConst msg_in, JsonObject &msg_out);
     void status(JsonObject& msg_out);
     ///@}
-
-    static FirmwareFlasher& get();
   };
 
 } // ns loader
