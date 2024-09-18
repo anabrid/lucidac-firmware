@@ -239,14 +239,22 @@ FLASHMEM utils::status carrier::Carrier::user_set_extended_config(JsonObjectCons
   Serial.println(__PRETTY_FUNCTION__);
 #endif
 
-  if(msg_in["reset_before"]|false) {
+  bool
+     default_reset_before     = true,
+     default_sh_kludge        = true,
+     default_mul_calib_kludge = true,
+     default_calibrate_mblock = false,
+     default_calibrate_offset = false,
+     default_calibrate_routes = false;
+
+  if(msg_in["reset_before"]|default_reset_before) {
     reset(entities::ResetAction::CIRCUIT_RESET |
           entities::ResetAction::OVERLOAD_RESET |
           entities::ResetAction::CALIBRATION_RESET);
     write_to_hardware();
   }
 
-  if(msg_in["sh_kludge"]|false) {
+  if(msg_in["sh_kludge"]|default_sh_kludge) {
     for(auto& cluster : clusters) {
       if(cluster.shblock) {
         cluster.shblock->set_state(blocks::SHBlock::State::TRACK);
@@ -258,7 +266,7 @@ FLASHMEM utils::status carrier::Carrier::user_set_extended_config(JsonObjectCons
     }
   }
 
-  if(msg_in["mul_calib_kludge"]|false) {
+  if(msg_in["mul_calib_kludge"]|default_mul_calib_kludge) {
     blocks::MMulBlock* mulblock;
     for(auto& cluster : clusters) {
       if(cluster.m0block->is_entity_type(blocks::MMulBlock::TYPE))
@@ -275,7 +283,7 @@ FLASHMEM utils::status carrier::Carrier::user_set_extended_config(JsonObjectCons
   }
   
   daq::OneshotDAQ daq;
-  if ((msg_in["calibrate_mblock"]|true) && !calibrate_m_blocks(&daq))
+  if ((msg_in["calibrate_mblock"]|default_calibrate_mblock) && !calibrate_m_blocks(&daq))
     return utils::status(10, "Calibrate MBlocks failed");
 
   auto res = user_set_config(msg_in, msg_out);
@@ -283,10 +291,10 @@ FLASHMEM utils::status carrier::Carrier::user_set_extended_config(JsonObjectCons
   if(!res)
     return res;
   
-  if ((msg_in["calibrate_offset"]|true) && !calibrate_offset())
+  if ((msg_in["calibrate_offset"]|default_calibrate_offset) && !calibrate_offset())
     return utils::status(10, "Calibrate-offset failed");
 
-  if ((msg_in["calibrate_routes"]|true) && !calibrate_routes(&daq))
+  if ((msg_in["calibrate_routes"]|default_calibrate_routes) && !calibrate_routes(&daq))
     return utils::status(10, "Calibrate-Routes failed");
 
   return utils::status::success();

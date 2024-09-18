@@ -33,7 +33,7 @@ FLASHMEM void net::auth::UserPasswordAuthentification::reset_defaults() {
 
   // "user" is just a non-admin default user which new ... users ... are supposed to
   // work with.
-  auto default_user_password  = nvmconfig::VendorOTP::get().default_admin_password;
+  auto default_user_password  = nvmconfig::VendorOTP::get().default_user_password;
 
   if (!default_admin_password.empty())
     db[admin] = default_admin_password;

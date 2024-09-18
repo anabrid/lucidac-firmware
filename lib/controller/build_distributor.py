@@ -22,7 +22,7 @@ try:
   # the following code demonstrates how to access build system variables.
   Import("env")
   #print(env.Dump())
-  interesting_fields = ["BOARD", "BUILD_TYPE", "UPLOAD_PROTOCOL"]
+  interesting_fields = ["BOARD", "BUILD_TYPE"]#, "UPLOAD_PROTOCOL"]
   build_system = { k: env.Dictionary(k) for k in interesting_fields }
   build_flags = env.Dictionary('BUILD_FLAGS') # is a list
 except (NameError, KeyError):
@@ -54,7 +54,7 @@ warn = lambda msg: print("controller/build_distributor.py: WARN ", msg)
 # https://setuptools-git-versioning.readthedocs.io/en/stable/differences.html for a list, but
 # in the end they all call external git and parse the output.
 firmware_version = subprocess.getoutput("which git >/dev/null && git describe --tags || echo no-git-avail").strip()
-firmware_version_useful = bool(re.match(r"\d+\.\d+-\d+.*", firmware_version)) # a proper string is for instance "0.2-80-g302f016"
+firmware_version_useful = bool(re.match(r"v\d+\.\d+(-\d+.*)?", firmware_version)) # a proper string is for instance "0.2-80-g302f016"
 not_available = "N/A" # placeholder string used instead
 if not firmware_version_useful: firmware_version = not_available # instead of subprocess garbage
 
@@ -86,8 +86,8 @@ distdb = dict(
     FIRMWARE_VERSION = firmware_version,
     FIRMWARE_DATE = firmware_version_date,
 
-    PROTOCOL_VERSION = "0.0.2", # FIXME
-    PROTOCOL_DATE = firmware_version_date, # FIXME
+    #PROTOCOL_VERSION = "0.0.2", # FIXME
+    #PROTOCOL_DATE = firmware_version_date, # FIXME
 )
 
 # uncomment this line to inspect the full data

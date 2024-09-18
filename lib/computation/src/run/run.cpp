@@ -33,6 +33,9 @@ FLASHMEM run::RunConfig run::RunConfig::from_json(JsonObjectConst &json) {
 
   //LOG_MEV("ic_time_ns = %lld, op_time_ns=%lld", run.ic_time, run.op_time);
 
+  // default values for the following keys are given
+  // in the RunConfig class definition.
+
   if(json.containsKey("halt_on_overload"))
     run.halt_on_overload = json["halt_on_overload"];
 

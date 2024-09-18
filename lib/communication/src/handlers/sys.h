@@ -11,6 +11,7 @@
 #include "protocol/handler.h"
 #include "protocol/jsonl_logging.h"
 #include "utils/hashflash.h"
+#include "lucidac/front_panel_signaling.h"
 
 namespace msg {
 namespace handlers {
@@ -20,11 +21,12 @@ class GetSystemIdent : public MessageHandler {
 public:
   int handle(JsonObjectConst msg_in, JsonObject &msg_out, net::auth::AuthentificationContext &user_context) override {
     msg_out["serial"] = nvmconfig::VendorOTP::get().serial_number;
+    msg_out["mac"] = net::StartupConfig::get().mac;
 
-    // the UUID shall be kept secret and only admins can see it
-    //if(user_context.can_do(net::auth::SecurityLevel::RequiresAdmin)) {
-    //  msg_out["serial_uuid"] = nvmconfig::VendorOTP::get().serial_uuid;
-    //}
+    if(msg_in.containsKey("blink")) {
+      leds::indicate_error();// this is just blocking blinking for a few seconds
+    }
+
 
     dist::write_to_json(msg_out.createNestedObject("fw_build"));
     loader::flashimage::toJson(msg_out.createNestedObject("fw_image"));

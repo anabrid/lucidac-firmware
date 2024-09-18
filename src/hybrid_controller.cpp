@@ -107,7 +107,6 @@ FLASHMEM void setup() {
   msg::JsonLinesProtocol::get().init(4096); // Envelope size
 
   // This should be called sometime at startup
-  // TODO: Find a better place.
   daq::OneshotDAQ daq;
   daq.init(0);
 
@@ -120,8 +119,16 @@ FLASHMEM void setup() {
   // Run calibration
   LOG(ANABRID_DEBUG_INIT, "Executing self-calibration, this may take a few moments...");
   if (!carrier_.calibrate_m_blocks(&daq)){
-    LOG_ERROR("Error during self-calibration. Machine will continue with reduced accuracy.");
-    leds::indicate_error();
+    // Right now, self-calibration is still not well tested and the error handling
+    // suggest it fails despite it most likely does not. Therefore, do not make
+    // the output so harsh.
+    // 
+    // LOG_ERROR("Error during self-calibration. Machine will continue with reduced accuracy.");
+    // leds::indicate_error();
+    //
+    // instead, do this:
+
+    LOG_ALWAYS("Info: Startup self-calibration apparently did not succeed. The calibration scheme is by default not used in this build anyway.");
 
     // For a quick fix, reset machine here because calibration routines exit
     // early which *do* result in a machine in an unusable state.
