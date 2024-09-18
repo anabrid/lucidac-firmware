@@ -19,7 +19,7 @@
 
 #include "utils/running_avg.h"
 
-bool extra_logs = false;
+bool extra_logs = true;
 const float target_precision = 0.01f; // Replace with something from test_common.h
 
 // This test case is doing some double integration of a constant, which yields a parabola. Currently there
@@ -64,47 +64,32 @@ void test_init_and_blocks() {
 
 void setup_and_measure() {
   // Setup paths
-  carrier_.ctrl_block->set_adc_bus_to_cluster_gain(cluster.get_cluster_idx());
-  cluster.reset(false);
-
   auto int_block = static_cast<MIntBlock *>(cluster.m0block);
+
+  std::cout << carrier_.calibrate_m_blocks(&DAQ) << std::endl;
 
   TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, 0, 0.5f, 0)); // This creates y = -1/2*x
   TEST_ASSERT(cluster.route(0, 24, 1.0f, 2));
-  TEST_ASSERT(cluster.route(2, 25, 1.0f, 1)); // just for measurement of int block
+  TEST_ASSERT(cluster.route_out_external(2, 1, 1.0f)); // measurement of int parabola
 
   TEST_ASSERT(cluster.route(0, 26, 1.0f, 8)); // Mul x0
   TEST_ASSERT(cluster.route(0, 27, 1.0f, 9)); // Mul y0
 
-  TEST_ASSERT(cluster.route(8, 28, 1.0f, 3)); // just for measurement of mul block
+  TEST_ASSERT(cluster.route_out_external(8, 4, 1.0f)); // measurement of mul parabola
 
   TEST_ASSERT(int_block->set_time_factors(10000));
   TEST_ASSERT(int_block->set_ic_value(0, -1.0f));
   TEST_ASSERT(int_block->set_ic_value(2, -1.0f));
 
   TEST_ASSERT(carrier_.write_to_hardware());
-
-  TEST_ASSERT(cluster.calibrate_routes(&DAQ));
-
-  carrier_.ctrl_block->set_adc_bus(CTRLBlock::ADCBus::ADC);
-
-  auto adc_channels = carrier_.get_adc_channels();
-  for (unsigned int i = 0; i < adc_channels.size(); i++)
-    adc_channels[i] = i; // identity connection only works for m0
-
-  TEST_ASSERT(carrier_.set_adc_channels(adc_channels));
-
-  TEST_ASSERT(carrier_.write_to_hardware());
+  TEST_ASSERT(carrier_.calibrate_routes(&DAQ));
 
   // Measure end value
   TEST_ASSERT(
-      FlexIOControl::init(mode::DEFAULT_IC_TIME, 4'00'000, mode::OnOverload::IGNORE, mode::OnExtHalt::IGNORE));
+      FlexIOControl::init(mode::DEFAULT_IC_TIME, 400'000, mode::OnOverload::IGNORE, mode::OnExtHalt::IGNORE));
   FlexIOControl::force_start();
   while (!FlexIOControl::is_done()) {
   }
-
-  auto readings = DAQ.sample_avg(4, 10);
-  std::cout << readings << std::endl;
 }
 
 void setup() {
