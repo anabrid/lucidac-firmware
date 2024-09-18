@@ -18,7 +18,7 @@ std::ostream &operator<<(std::ostream &os, const std::pair<long long, long long>
 }
 
 long max_duration = 0;
-utils::RunningAverageNew<uint_fast64_t> runtime;
+utils::RunningAverage<uint_fast64_t> runtime;
 
 std::pair<long long, long long> find_factors(long long input) {
   std::cout << "Searching for " << input << std::endl;

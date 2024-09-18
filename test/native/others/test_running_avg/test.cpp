@@ -25,7 +25,7 @@ std::array<int, 4> a3 = {2, 1, 3, 5};
 std::array<int, 4> a4 = {-2, 1, 4, -8};
 
 void test() {
-  utils::RunningAverageNew<std::array<float, 4>> avg;
+  utils::RunningAverage<std::array<float, 4>> avg;
   avg.add(a1);
   avg.add(a2);
   print_array(avg.get_average());
@@ -35,14 +35,14 @@ void test2() {
   int a = 2;
   int b = 5;
 
-  utils::RunningAverageNew<int> avg;
+  utils::RunningAverage<int> avg;
   avg.add(a);
   avg.add(b);
   std::cout << avg.get_average() << std::endl;
 }
 
 void test3() {
-  utils::RunningAverageNew<std::array<int, 4>> avg;
+  utils::RunningAverage<std::array<int, 4>> avg;
   avg.add(a3);
   avg.add(a4);
   print_array(avg.get_average());

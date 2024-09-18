@@ -9,6 +9,7 @@
 
 namespace utils {
 
+// Some helping functions for array conversions
 template <class T, std::size_t N>
 std::array<T, N> operator+(const std::array<T, N> &l, const std::array<T, N> &r) {
   std::array<T, N> result;
@@ -28,27 +29,25 @@ template <class T, std::size_t N> std::array<T, N> operator*(const float &l, con
   return r * l;
 }
 
-template <unsigned int N> class RunningAverageVec {
-public:
-  typedef std::array<float, N> data_t;
+template <typename Type, typename OtherType, std::size_t Size, typename... Types,
+          class = typename std::enable_if<sizeof...(Types) != Size>::type>
+constexpr std::array<Type, Size> convert(const std::array<OtherType, Size> source, const Types... data);
 
-private:
-  size_t n = 0;
-  std::array<float, N> average{{0}};
+template <typename Type, typename OtherType, std::size_t Size, typename... Types,
+          class = typename std::enable_if<sizeof...(Types) == Size>::type, class = void>
+constexpr std::array<Type, Size> convert(const std::array<OtherType, Size> source, const Types... data);
 
-public:
-  data_t add(data_t data) {
-    n += 1;
-    for (size_t i = 0; i < N; i++) {
-      average[i] = (average[i] * static_cast<float>(n - 1) + data[i]) / static_cast<float>(n);
-    }
-    return average;
-  };
+template <typename Type, typename OtherType, std::size_t Size, typename... Types, class>
+constexpr std::array<Type, Size> convert(const std::array<OtherType, Size> source, const Types... data) {
+  return convert<Type>(source, data..., static_cast<const Type>(source[sizeof...(data)]));
+}
 
-  const data_t &get_average() const { return average; }
-};
+template <typename Type, typename OtherType, std::size_t Size, typename... Types, class, class>
+constexpr std::array<Type, Size> convert(const std::array<OtherType, Size> source, const Types... data) {
+  return std::array<Type, Size>{{data...}};
+}
 
-template <class T> class RunningAverageNew {
+template <class T> class RunningAverage {
 private:
   std::size_t n = 0;
   T sum{};

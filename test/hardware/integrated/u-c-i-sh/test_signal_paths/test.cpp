@@ -30,7 +30,7 @@ daq::OneshotDAQ DAQ;
 
 typedef std::vector<uint8_t> I;
 
-utils::RunningAverageNew<float> avg_devations;
+utils::RunningAverage<float> avg_devations;
 
 void setUp() {
   // This is called before *each* test.

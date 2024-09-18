@@ -55,7 +55,7 @@ void test_init_and_blocks() {
   TEST_ASSERT(carrier_.write_to_hardware());
 }
 
-utils::RunningAverageNew<float> avg_devations;
+utils::RunningAverage<float> avg_devations;
 
 void test_finished_summation(float x, float y) {
   cluster.reset(true);

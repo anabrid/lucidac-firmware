@@ -64,7 +64,7 @@ void loop() {
   cluster.cblock->write_to_hardware();
 
   // std::cout << millis() << "," << coeff << "," << DAQ.sample_raw(0) << std::endl;
-  std::cout << millis() << "," << coeff << "," << DAQ.sample_avg_raw(5, 100)[0] << std::endl;
+  std::cout << millis() << "," << coeff << "," << DAQ.sample_avg_raw(4, 10)[0] << std::endl;
 
   delay(50);
 

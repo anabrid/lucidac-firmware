@@ -32,9 +32,9 @@ float daq::BaseDAQ::raw_to_float(const uint16_t raw) {
 }
 
 namespace helpers {
-  // declaration of global variable within serializer.cpp
-  const std::array<char[7], 2501> normalized_to_float_str_arr;
-}
+// declaration of global variable within serializer.cpp
+const std::array<char[7], 2501> normalized_to_float_str_arr;
+} // namespace helpers
 
 const char *daq::BaseDAQ::raw_to_str(uint16_t raw) {
   size_t idx = raw_to_normalized(raw);
@@ -45,7 +45,7 @@ const char *daq::BaseDAQ::raw_to_str(uint16_t raw) {
 
 FLASHMEM
 std::array<float, daq::NUM_CHANNELS> daq::BaseDAQ::sample_avg(size_t samples, unsigned int delay_us) {
-  utils::RunningAverageVec<NUM_CHANNELS> avg;
+  utils::RunningAverage<std::array<float, daq::NUM_CHANNELS>> avg;
   for (size_t i = 0; i < samples; i++) {
     avg.add(sample());
     delayMicroseconds(delay_us);
@@ -65,7 +65,7 @@ std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_raw() {
 }
 
 // NOT FLASHMEM
-void daq::OneshotDAQ::sample_raw(uint16_t* data) {
+void daq::OneshotDAQ::sample_raw(uint16_t *data) {
   // Trigger CNVST
   digitalWriteFast(PIN_CNVST, HIGH);
   delayNanoseconds(1500);
@@ -73,7 +73,7 @@ void daq::OneshotDAQ::sample_raw(uint16_t* data) {
 
   delayNanoseconds(1000);
 
-  for(auto i = 0U; i < NUM_CHANNELS; i++)
+  for (auto i = 0U; i < NUM_CHANNELS; i++)
     data[i] = 0;
   for (auto clk_i = 0; clk_i < 14; clk_i++) {
     digitalWriteFast(PIN_CLK, HIGH);
@@ -104,12 +104,13 @@ uint16_t daq::OneshotDAQ::sample_raw(uint8_t index) { return sample_raw()[index]
 
 std::array<uint16_t, daq::NUM_CHANNELS> daq::OneshotDAQ::sample_avg_raw(size_t samples,
                                                                         unsigned int delay_us) {
-  utils::RunningAverageNew<std::array<uint16_t, daq::NUM_CHANNELS>> avg;
+  utils::RunningAverage<std::array<uint32_t, daq::NUM_CHANNELS>>
+      avg; // Use larger variables to avoid overflows
   for (size_t i = 0; i < samples; i++) {
-    avg.add(sample_raw());
+    avg.add(utils::convert<uint32_t>(sample_raw()));
     delayMicroseconds(delay_us);
   }
-  return avg.get_average();
+  return utils::convert<uint16_t>(avg.get_average());
 }
 
 #ifdef ARDUINO

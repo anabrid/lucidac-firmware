@@ -76,7 +76,7 @@ public:
   /// Extracts a single number of a full word capture.
   /// This takes about 15usec at the time of writing.
   /// @arg data Pointer to storage with at least NUM_CHANNELS size
-  void sample_raw(uint16_t* data);
+  void sample_raw(uint16_t *data);
 
   std::array<uint16_t, NUM_CHANNELS> sample_raw() override;
   std::array<float, NUM_CHANNELS> sample() override;
