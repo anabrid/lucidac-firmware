@@ -7,7 +7,9 @@
 #include "net/settings.h"
 #include "utils/is_number.h"
 
-FLASHMEM entities::EntityClass carrier::Carrier::get_entity_class() const { return entities::EntityClass::CARRIER; }
+FLASHMEM entities::EntityClass carrier::Carrier::get_entity_class() const {
+  return entities::EntityClass::CARRIER;
+}
 
 // Carrier lacks EEPROM
 FLASHMEM std::array<uint8_t, 8> carrier::Carrier::get_entity_eui() const { return {0}; }
@@ -44,7 +46,7 @@ FLASHMEM std::vector<entities::Entity *> carrier::Carrier::get_child_entities() 
   for (auto &cluster : clusters) {
     children.push_back(&cluster);
   }
-  if(ctrl_block)
+  if (ctrl_block)
     children.push_back(ctrl_block);
   return children;
 }
@@ -56,7 +58,7 @@ FLASHMEM entities::Entity *carrier::Carrier::get_child_entity(const std::string 
       return nullptr;
     return &clusters[cluster_idx];
   }
-  if(child_id == "CTRL")
+  if (child_id == "CTRL")
     return ctrl_block;
   return nullptr;
 }
@@ -115,9 +117,12 @@ FLASHMEM bool carrier::Carrier::calibrate_routes(daq::BaseDAQ *daq_) {
   return true;
 }
 
-FLASHMEM bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock, daq::BaseDAQ *daq_) {
+FLASHMEM bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBlock &mblock,
+                                                 daq::BaseDAQ *daq_) {
   // CARE: This function does not preserve the currently configured routes
   LOG(ANABRID_DEBUG_CALIBRATION, __PRETTY_FUNCTION__);
+
+  bool success = true;
 
   // The calibration for each M-Block is prepared by connecting calibrated signals
   // to all eight of its input. Afterwards, the control is passed to the specific
@@ -151,8 +156,7 @@ FLASHMEM bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBloc
 
   // Pass to calibration function
   LOG(ANABRID_DEBUG_CALIBRATION, "Passing control to M-block...");
-  if (!mblock.calibrate(daq_, &cluster))
-    return false;
+  success &= mblock.calibrate(daq_, &cluster);
 
   // Clean up
   // reset(true);
@@ -165,12 +169,12 @@ FLASHMEM bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBloc
   if (!write_to_hardware())
     return false;
 
-  return true;
+  return success;
 }
 
 FLASHMEM bool carrier::Carrier::calibrate_m_blocks(daq::BaseDAQ *daq_) {
   bool success = true;
-  for (auto & cluster: clusters)
+  for (auto &cluster : clusters)
     for (auto mblock : {cluster.m0block, cluster.m1block}) {
       if (mblock)
         if (!calibrate_mblock(cluster, *mblock, daq_))
@@ -234,67 +238,62 @@ FLASHMEM void carrier::Carrier::reset_adc_channels() {
   std::fill(adc_channels.begin(), adc_channels.end(), ADC_CHANNEL_DISABLED);
 }
 
-FLASHMEM utils::status carrier::Carrier::user_set_extended_config(JsonObjectConst msg_in, JsonObject &msg_out) {
+FLASHMEM utils::status carrier::Carrier::user_set_extended_config(JsonObjectConst msg_in,
+                                                                  JsonObject &msg_out) {
 #ifdef ANABRID_DEBUG_COMMS
   Serial.println(__PRETTY_FUNCTION__);
 #endif
 
-  bool
-     default_reset_before     = true,
-     default_sh_kludge        = true,
-     default_mul_calib_kludge = true,
-     default_calibrate_mblock = false,
-     default_calibrate_offset = false,
-     default_calibrate_routes = false;
+  bool default_reset_before = true, default_sh_kludge = true, default_mul_calib_kludge = true,
+       default_calibrate_mblock = false, default_calibrate_offset = false, default_calibrate_routes = false;
 
-  if(msg_in["reset_before"]|default_reset_before) {
-    reset(entities::ResetAction::CIRCUIT_RESET |
-          entities::ResetAction::OVERLOAD_RESET |
+  if (msg_in["reset_before"] | default_reset_before) {
+    reset(entities::ResetAction::CIRCUIT_RESET | entities::ResetAction::OVERLOAD_RESET |
           entities::ResetAction::CALIBRATION_RESET);
     write_to_hardware();
   }
 
-  if(msg_in["sh_kludge"]|default_sh_kludge) {
-    for(auto& cluster : clusters) {
-      if(cluster.shblock) {
+  if (msg_in["sh_kludge"] | default_sh_kludge) {
+    for (auto &cluster : clusters) {
+      if (cluster.shblock) {
         cluster.shblock->set_state(blocks::SHBlock::State::TRACK);
-        /*cluster.shblock->*/write_to_hardware();
+        /*cluster.shblock->*/ write_to_hardware();
         delayMicroseconds(1000);
         cluster.shblock->set_state(blocks::SHBlock::State::INJECT);
-        /*cluster.shblock->*/write_to_hardware();
+        /*cluster.shblock->*/ write_to_hardware();
       }
     }
   }
 
-  if(msg_in["mul_calib_kludge"]|default_mul_calib_kludge) {
-    blocks::MMulBlock* mulblock;
-    for(auto& cluster : clusters) {
-      if(cluster.m0block->is_entity_type(blocks::MMulBlock::TYPE))
-        mulblock = (blocks::MMulBlock*)cluster.m0block;
-      if(cluster.m1block->is_entity_type(blocks::MMulBlock::TYPE))
-        mulblock = (blocks::MMulBlock*)cluster.m1block;
+  if (msg_in["mul_calib_kludge"] | default_mul_calib_kludge) {
+    blocks::MMulBlock *mulblock;
+    for (auto &cluster : clusters) {
+      if (cluster.m0block->is_entity_type(blocks::MMulBlock::TYPE))
+        mulblock = (blocks::MMulBlock *)cluster.m0block;
+      if (cluster.m1block->is_entity_type(blocks::MMulBlock::TYPE))
+        mulblock = (blocks::MMulBlock *)cluster.m1block;
     }
     auto res = mulblock->read_calibration_from_eeprom();
-    if(!res)
+    if (!res)
       return res.attach("(mul_calib_kludge)");
     res = mulblock->write_calibration_to_hardware();
-    if(!res)
+    if (!res)
       return res.attach("(mul_calib_kludge)");
   }
-  
+
   daq::OneshotDAQ daq;
-  if ((msg_in["calibrate_mblock"]|default_calibrate_mblock) && !calibrate_m_blocks(&daq))
+  if ((msg_in["calibrate_mblock"] | default_calibrate_mblock) && !calibrate_m_blocks(&daq))
     return utils::status(10, "Calibrate MBlocks failed");
 
   auto res = user_set_config(msg_in, msg_out);
 
-  if(!res)
+  if (!res)
     return res;
-  
-  if ((msg_in["calibrate_offset"]|default_calibrate_offset) && !calibrate_offset())
+
+  if ((msg_in["calibrate_offset"] | default_calibrate_offset) && !calibrate_offset())
     return utils::status(10, "Calibrate-offset failed");
 
-  if ((msg_in["calibrate_routes"]|default_calibrate_routes) && !calibrate_routes(&daq))
+  if ((msg_in["calibrate_routes"] | default_calibrate_routes) && !calibrate_routes(&daq))
     return utils::status(10, "Calibrate-Routes failed");
 
   return utils::status::success();
