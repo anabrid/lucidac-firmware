@@ -113,7 +113,7 @@ void test_exthalt() {
   TEST_ASSERT_FALSE(FlexIOControl::is_overloaded());
 }
 
-void test_approximate_run_time(mode::time_ns_t ic_time_ns, mode::time_ns_t op_time_ns) {
+void test_approximate_run_time(unsigned long long ic_time_ns, unsigned long long op_time_ns) {
   FlexIOControl::reset();
   TEST_ASSERT(FlexIOControl::init(ic_time_ns, op_time_ns, mode::OnOverload::HALT, mode::OnExtHalt::IGNORE,
                                   Sync::MASTER));
