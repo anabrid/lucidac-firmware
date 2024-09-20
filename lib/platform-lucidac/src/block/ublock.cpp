@@ -36,7 +36,9 @@ FLASHMEM bool blocks::UBlock::_io_sanity_check(const uint8_t input, const uint8_
   return _i_sanity_check(input) && _o_sanity_check(output);
 }
 
-FLASHMEM void blocks::UBlock::_connect(const uint8_t input, const uint8_t output) { output_input_map[output] = input; }
+FLASHMEM void blocks::UBlock::_connect(const uint8_t input, const uint8_t output) {
+  output_input_map[output] = input;
+}
 
 FLASHMEM bool blocks::UBlock::connect(const uint8_t input, const uint8_t output, bool force) {
   if (!_io_sanity_check(input, output))
@@ -68,8 +70,8 @@ FLASHMEM bool blocks::UBlock::connect(const uint8_t input, const uint8_t output,
   return true;
 }
 
-FLASHMEM bool blocks::UBlock::connect_alternative(Transmission_Mode signal_mode, const uint8_t output, bool force,
-                                         bool use_a_side) {
+FLASHMEM bool blocks::UBlock::connect_alternative(Transmission_Mode signal_mode, const uint8_t output,
+                                                  bool force, bool use_a_side) {
   if (!_o_sanity_check(output))
     return false;
 
@@ -158,7 +160,9 @@ FLASHMEM bool blocks::UBlock::is_connected(const uint8_t input, const uint8_t ou
   return _is_connected(input, output);
 }
 
-FLASHMEM bool blocks::UBlock::_is_output_connected(const uint8_t output) const { return output_input_map[output] >= 0; }
+FLASHMEM bool blocks::UBlock::_is_output_connected(const uint8_t output) const {
+  return output_input_map[output] >= 0;
+}
 
 FLASHMEM bool blocks::UBlock::is_output_connected(const uint8_t output) const {
   if (!_o_sanity_check(output))
@@ -187,17 +191,21 @@ FLASHMEM bool blocks::UBlock::is_anything_connected() const {
   return false;
 }
 
-FLASHMEM void blocks::UBlock::change_a_side_transmission_mode(const Transmission_Mode mode) { a_side_mode = mode; }
+FLASHMEM void blocks::UBlock::change_a_side_transmission_mode(const Transmission_Mode mode) {
+  a_side_mode = mode;
+}
 
-FLASHMEM void blocks::UBlock::change_b_side_transmission_mode(const Transmission_Mode mode) { b_side_mode = mode; }
+FLASHMEM void blocks::UBlock::change_b_side_transmission_mode(const Transmission_Mode mode) {
+  b_side_mode = mode;
+}
 
 FLASHMEM void blocks::UBlock::change_all_transmission_modes(const Transmission_Mode mode) {
   change_a_side_transmission_mode(mode);
   change_b_side_transmission_mode(mode);
 }
 
-FLASHMEM void blocks::UBlock::change_all_transmission_modes(
-    const std::pair<Transmission_Mode, Transmission_Mode> modes) {
+FLASHMEM void
+blocks::UBlock::change_all_transmission_modes(const std::pair<Transmission_Mode, Transmission_Mode> modes) {
   change_a_side_transmission_mode(modes.first);
   change_b_side_transmission_mode(modes.second);
 }
@@ -207,7 +215,9 @@ blocks::UBlock::get_all_transmission_modes() const {
   return std::make_pair(a_side_mode, b_side_mode);
 }
 
-FLASHMEM blocks::UBlock::Reference_Magnitude blocks::UBlock::get_reference_magnitude() { return ref_magnitude; }
+FLASHMEM blocks::UBlock::Reference_Magnitude blocks::UBlock::get_reference_magnitude() {
+  return ref_magnitude;
+}
 
 FLASHMEM void blocks::UBlock::change_reference_magnitude(blocks::UBlock::Reference_Magnitude ref) {
   ref_magnitude = ref;
@@ -222,13 +232,18 @@ FLASHMEM utils::status blocks::UBlock::write_to_hardware() {
   return utils::status::success();
 }
 
-FLASHMEM void blocks::UBlock::reset_connections() { std::fill(begin(output_input_map), end(output_input_map), -1); }
+FLASHMEM void blocks::UBlock::reset_connections() {
+  std::fill(begin(output_input_map), end(output_input_map), -1);
+}
 
 FLASHMEM void blocks::UBlock::reset(entities::ResetAction action) {
   FunctionBlock::reset(action);
-  change_all_transmission_modes(blocks::UBlock::Transmission_Mode::ANALOG_INPUT);
-  reset_connections();
-  reset_reference_magnitude();
+
+  if (action.has(entities::ResetAction::CIRCUIT_RESET)) {
+    change_all_transmission_modes(blocks::UBlock::Transmission_Mode::ANALOG_INPUT);
+    reset_connections();
+    reset_reference_magnitude();
+  }
 }
 
 FLASHMEM
@@ -394,10 +409,10 @@ FLASHMEM bool blocks::UBlockHAL_Dummy::write_transmission_modes_and_ref(
 FLASHMEM void blocks::UBlockHAL_Dummy::reset_transmission_modes_and_ref() {}
 
 FLASHMEM blocks::UBlockHAL_Common::UBlockHAL_Common(bus::addr_t block_address, const uint8_t f_umatrix_cs,
-                                           const uint8_t f_umatrix_sync_cs,
-                                           const uint8_t f_transmission_mode_register_cs,
-                                           const uint8_t f_transmission_mode_sync_cs,
-                                           const uint8_t f_transmission_mode_reset_cs)
+                                                    const uint8_t f_umatrix_sync_cs,
+                                                    const uint8_t f_transmission_mode_register_cs,
+                                                    const uint8_t f_transmission_mode_sync_cs,
+                                                    const uint8_t f_transmission_mode_reset_cs)
     : f_umatrix(bus::replace_function_idx(block_address, f_umatrix_cs)),
       f_umatrix_sync(bus::replace_function_idx(block_address, f_umatrix_sync_cs)),
       f_transmission_mode_register(bus::replace_function_idx(block_address, f_transmission_mode_register_cs),
@@ -429,4 +444,6 @@ FLASHMEM bool blocks::UBlockHAL_Common::write_transmission_modes_and_ref(
   return true;
 }
 
-FLASHMEM void blocks::UBlockHAL_Common::reset_transmission_modes_and_ref() { f_transmission_mode_reset.trigger(); }
+FLASHMEM void blocks::UBlockHAL_Common::reset_transmission_modes_and_ref() {
+  f_transmission_mode_reset.trigger();
+}

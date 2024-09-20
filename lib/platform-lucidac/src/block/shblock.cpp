@@ -13,7 +13,10 @@ FLASHMEM void blocks::SHBlock::set_state(State state_) { state = state_; }
 
 FLASHMEM blocks::SHBlock::State blocks::SHBlock::get_state() const { return state; }
 
-FLASHMEM void blocks::SHBlock::reset(entities::ResetAction action) { state = State::TRACK; }
+FLASHMEM void blocks::SHBlock::reset(entities::ResetAction action) {
+  if (action.has(entities::ResetAction::CIRCUIT_RESET))
+    state = State::INJECT;
+}
 
 FLASHMEM utils::status blocks::SHBlock::write_to_hardware() {
   if (state == State::TRACK)
@@ -42,19 +45,24 @@ FLASHMEM void blocks::SHBlock::compensate_hardware_offsets(uint32_t track_time, 
 }
 
 FLASHMEM utils::status blocks::SHBlock::config_self_from_json(JsonObjectConst cfg) {
-  //return utils::status("SHBlock does not accept configuration");
+  // return utils::status("SHBlock does not accept configuration");
 
   // FOR TESTING
-  if(cfg.containsKey("state")) {
-    if(cfg["state"] == "TRACK") set_state(blocks::SHBlock::State::TRACK);
-    else if(cfg["state"] == "TRACK_AT_IC") set_state(blocks::SHBlock::State::TRACK_AT_IC);
-    else if(cfg["state"] == "INJECT") set_state(blocks::SHBlock::State::INJECT);
-    else if(cfg["state"] == "GAIN_ZERO_TO_SEVEN") set_state(blocks::SHBlock::State::GAIN_ZERO_TO_SEVEN);
-    else if(cfg["state"] == "GAIN_EIGHT_TO_FIFTEEN") set_state(blocks::SHBlock::State::GAIN_EIGHT_TO_FIFTEEN);
-    else return utils::status("Unknown target state for SH Block");
+  if (cfg.containsKey("state")) {
+    if (cfg["state"] == "TRACK")
+      set_state(blocks::SHBlock::State::TRACK);
+    else if (cfg["state"] == "TRACK_AT_IC")
+      set_state(blocks::SHBlock::State::TRACK_AT_IC);
+    else if (cfg["state"] == "INJECT")
+      set_state(blocks::SHBlock::State::INJECT);
+    else if (cfg["state"] == "GAIN_ZERO_TO_SEVEN")
+      set_state(blocks::SHBlock::State::GAIN_ZERO_TO_SEVEN);
+    else if (cfg["state"] == "GAIN_EIGHT_TO_FIFTEEN")
+      set_state(blocks::SHBlock::State::GAIN_EIGHT_TO_FIFTEEN);
+    else
+      return utils::status("Unknown target state for SH Block");
   }
   return utils::status(0);
-
 }
 
 FLASHMEM

@@ -66,7 +66,7 @@ public:
   bool init();
 
   //! Resets the front panel to default state e.g. all LEDs off and signal generator sleeping
-  void reset();
+  void reset(entities::ResetAction action);
 
   //! Writes the hardware state of the LEDs and the signal generator
   // Error codes:

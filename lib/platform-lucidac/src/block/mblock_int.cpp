@@ -55,7 +55,9 @@ FLASHMEM bool blocks::MIntBlock::set_ic_value(uint8_t idx, float value) {
 
 FLASHMEM void blocks::MIntBlock::reset_ic_values() { std::fill(ic_values.begin(), ic_values.end(), 0.0f); }
 
-FLASHMEM const std::array<unsigned int, 8> &blocks::MIntBlock::get_time_factors() const { return time_factors; }
+FLASHMEM const std::array<unsigned int, 8> &blocks::MIntBlock::get_time_factors() const {
+  return time_factors;
+}
 
 FLASHMEM unsigned int blocks::MIntBlock::get_time_factor(uint8_t idx) const {
   if (idx >= time_factors.size())
@@ -112,8 +114,11 @@ FLASHMEM utils::status blocks::MIntBlock::write_to_hardware() {
 
 FLASHMEM void blocks::MIntBlock::reset(entities::ResetAction action) {
   FunctionBlock::reset(action);
-  reset_ic_values();
-  reset_time_factors();
+
+  if (action.has(entities::ResetAction::CIRCUIT_RESET)) {
+    reset_ic_values();
+    reset_time_factors();
+  }
 
   if (action.has(entities::ResetAction::OVERLOAD_RESET)) {
     // !!ATTENTION!! This breaks a lot of things but is neccessary and the ONLY
@@ -199,7 +204,7 @@ FLASHMEM void blocks::MIntBlock::config_self_to_json(JsonObject &cfg) {
 }
 
 FLASHMEM blocks::MIntBlock *blocks::MIntBlock::from_entity_classifier(entities::EntityClassifier classifier,
-                                                             const bus::addr_t block_address) {
+                                                                      const bus::addr_t block_address) {
   if (!classifier or classifier.class_enum != CLASS_ or classifier.type != static_cast<uint8_t>(TYPE))
     return nullptr;
 
@@ -222,8 +227,7 @@ FLASHMEM blocks::MIntBlockHAL_V_1_0_X::MIntBlockHAL_V_1_0_X(bus::addr_t block_ad
       f_time_factor_sync(bus::replace_function_idx(block_address, 6)),
       f_time_factor_reset(bus::replace_function_idx(block_address, 7)),
       f_overload_flags(bus::replace_function_idx(block_address, 2)),
-      f_overload_flags_reset(bus::replace_function_idx(block_address, 3))
-{}
+      f_overload_flags_reset(bus::replace_function_idx(block_address, 3)) {}
 
 FLASHMEM bool blocks::MIntBlockHAL_V_1_0_X::init() {
   if (!MIntBlockHAL::init())
@@ -250,9 +254,6 @@ FLASHMEM bool blocks::MIntBlockHAL_V_1_0_X::write_time_factor_switches(std::bits
   return true;
 }
 
-std::bitset<8> blocks::MIntBlockHAL_V_1_0_X::read_overload_flags() {
-  return f_overload_flags.read8();
-}
+std::bitset<8> blocks::MIntBlockHAL_V_1_0_X::read_overload_flags() { return f_overload_flags.read8(); }
 
-void blocks::MIntBlockHAL_V_1_0_X::reset_overload_flags() { f_overload_flags_reset.trigger();
-}
+void blocks::MIntBlockHAL_V_1_0_X::reset_overload_flags() { f_overload_flags_reset.trigger(); }

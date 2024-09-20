@@ -48,7 +48,6 @@ void test_init_and_blocks() {
   }
   TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
   // Reset
-  carrier_.reset(false);
   TEST_ASSERT(carrier_.write_to_hardware());
 
   // Route constants over all lanes

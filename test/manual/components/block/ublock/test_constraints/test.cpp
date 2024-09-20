@@ -14,7 +14,7 @@ UBlock ublock;
 
 void setUp() {
   // This is called before *each* test.
-  ublock.reset(false);
+  ublock.reset(entities::ResetAction::CIRCUIT_RESET);
 }
 
 void tearDown() {

@@ -44,7 +44,6 @@ void test_init_and_blocks() {
   }
   TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
 
-  carrier_.reset(false);
   TEST_ASSERT(carrier_.write_to_hardware());
 }
 
@@ -56,7 +55,7 @@ void setup_and_measure(bool use_slow_integration) {
   const int num_ic_values = sizeof(ic_values) / sizeof(float);
 
   // Static setup
-  carrier_.reset(false);
+  carrier_.reset(entities::ResetAction::CIRCUIT_RESET);
   TEST_ASSERT(int_block->set_time_factors(use_slow_integration ? 100 : 10000));
 
   auto adc_channels = carrier_.get_adc_channels();

@@ -85,9 +85,12 @@ FLASHMEM bool LUCIDAC::init() {
 FLASHMEM void LUCIDAC::reset(entities::ResetAction action) {
   Carrier::reset(action);
   if (front_panel)
-    front_panel->reset();
-  reset_acl_select();
-  reset_adc_channels();
+    front_panel->reset(action);
+
+  if (action.has(entities::ResetAction::CIRCUIT_RESET)) {
+    reset_acl_select();
+    reset_adc_channels();
+  }
 }
 
 FLASHMEM std::vector<entities::Entity *> LUCIDAC::get_child_entities() {
@@ -107,8 +110,8 @@ FLASHMEM utils::status LUCIDAC::write_to_hardware() {
   utils::status error = Carrier::write_to_hardware();
   if (front_panel)
     front_panel->write_to_hardware().attach_to(error, "Front Panel write failed.");
-  if(!hardware->write_acl(acl_select))
-    error.attach(1<<5, "Write ACL failed");
+  if (!hardware->write_acl(acl_select))
+    error.attach(1 << 5, "Write ACL failed");
   return error;
 }
 

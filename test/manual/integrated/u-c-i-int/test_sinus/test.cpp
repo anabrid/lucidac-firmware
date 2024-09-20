@@ -55,7 +55,6 @@ void test_init_and_blocks() {
   TEST_ASSERT(lucidac.init());
   delayMicroseconds(50);
 
-  lucidac.reset(false);
   // We do need certain blocks
   for (auto &cluster : lucidac.clusters) {
     TEST_ASSERT_NOT_NULL(cluster.ublock);

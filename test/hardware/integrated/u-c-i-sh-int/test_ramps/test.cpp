@@ -44,7 +44,6 @@ void test_init_and_blocks() {
   }
   TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
 
-  carrier_.reset(false);
   TEST_ASSERT(carrier_.write_to_hardware());
 }
 
@@ -54,7 +53,7 @@ MIntBlock *int_block;
 
 void setup_and_measure(bool use_slow_integration) {
   // Setup paths
-  carrier_.reset(false);
+  carrier_.reset(entities::ResetAction::CIRCUIT_RESET);
   for (uint8_t int_channel : MIntBlock::INTEGRATORS_INPUT_RANGE())
     TEST_ASSERT(cluster->add_constant(UBlock::Transmission_Mode::POS_REF,
                                       int_block->slot_to_global_io_index(int_channel), 1.0f,

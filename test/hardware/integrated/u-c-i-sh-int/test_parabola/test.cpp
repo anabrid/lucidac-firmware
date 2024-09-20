@@ -37,7 +37,6 @@ auto &cluster = carrier_.clusters[0];
 
 void setUp() {
   // This is called before *each* test.
-  carrier_.reset(true);
 }
 
 void tearDown() {
@@ -58,7 +57,6 @@ void test_init_and_blocks() {
   }
   TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
 
-  carrier_.reset(false);
   TEST_ASSERT(carrier_.write_to_hardware());
 }
 

@@ -16,7 +16,6 @@
 using namespace platform;
 using ACL = LUCIDAC_HAL::ACL;
 
-
 LUCIDAC lucidac;
 
 void setUp() {
@@ -28,20 +27,20 @@ void tearDown() {
 }
 
 void test_acl_prg() {
-  TEST_ASSERT(  lucidac.init() );
-  lucidac.reset(false);
+  TEST_ASSERT(lucidac.init());
+  lucidac.reset(entities::ResetAction::CIRCUIT_RESET);
 
   // M0 = M-Block ID, instead of INT
   // M1 = M-Block MUL, as in normal LUCIDAC
 
-  for(int i=0; i<32; i++)
-    TEST_ASSERT(lucidac.clusters[0].cblock->set_factor(i, 1.0)); 
+  for (int i = 0; i < 32; i++)
+    TEST_ASSERT(lucidac.clusters[0].cblock->set_factor(i, 1.0));
   TEST_ASSERT(lucidac.clusters[0].cblock->write_to_hardware());
 
-  for(int i=0; i<8; i++) {
-    TEST_ASSERT(lucidac.clusters[0].route(8+i, 24+i, 0.5, 8+i));
+  for (int i = 0; i < 8; i++) {
+    TEST_ASSERT(lucidac.clusters[0].route(8 + i, 24 + i, 0.5, 8 + i));
 
-    //TEST_ASSERT(lucidac.clusters[0].add_constant(blocks::UBlock::Transmission_Mode::POS_REF, 24+i, 0.1, i));
+    // TEST_ASSERT(lucidac.clusters[0].add_constant(blocks::UBlock::Transmission_Mode::POS_REF, 24+i, 0.1, i));
 
     TEST_ASSERT(lucidac.set_acl_select(i, ACL::EXTERNAL_));
   }

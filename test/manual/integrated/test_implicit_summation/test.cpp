@@ -32,7 +32,6 @@ auto &cluster = carrier_.clusters[0];
 
 void setUp() {
   // This is called before *each* test.
-  carrier_.reset(true);
 }
 
 void tearDown() {
@@ -51,14 +50,13 @@ void test_init_and_blocks() {
   }
   TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
 
-  carrier_.reset(false);
   TEST_ASSERT(carrier_.write_to_hardware());
 }
 
 utils::RunningAverage<float> avg_devations;
 
 void test_finished_summation(float x, float y) {
-  cluster.reset(true);
+  cluster.reset(entities::ResetAction::CIRCUIT_RESET);
   TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, 0, x, 0));
   TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, 1, y, 0));
 
@@ -118,7 +116,7 @@ void test_summation() {
   // Delete first route
   // Calibrate Input 1
 
-  cluster.reset(true);
+  cluster.reset(entities::ResetAction::CIRCUIT_RESET);
   TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, 0, 0.0f, 0));
   TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, 1, 1.0f, 0));
 

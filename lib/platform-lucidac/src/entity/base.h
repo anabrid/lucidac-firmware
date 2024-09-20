@@ -12,8 +12,8 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-#include "version.h"
 #include "utils/error.h"
+#include "version.h"
 
 namespace entities {
 
@@ -82,26 +82,17 @@ struct __attribute__((packed)) EntityClassifier {
 
 static_assert(sizeof(EntityClassifier) == 6, "EntityClassifier has unexpected number of bytes.");
 
-/// Help me, I would like to be a proper enum but C++ does not like me ;-)
 struct ResetAction {
+  constexpr static uint8_t CIRCUIT_RESET = 1 << 1;
+  constexpr static uint8_t CALIBRATION_RESET = 1 << 2;
+  constexpr static uint8_t OVERLOAD_RESET = 1 << 3;
+  constexpr static uint8_t EVERYTHING = 0xFF;
+
   uint8_t val;
 
-  // Note on the enum/constants:
-  // The ResetAction class   replaces the previous "bool reset_calibration".
-  // That means that previously a 1 == CALIBRATION_RESET.
-  // In contrast, a "reset_calibration=0" should result in a CIRCUIT_RESET.
-
-  constexpr static uint8_t
-    CIRCUIT_RESET = 0,
-    CALIBRATION_RESET = 1,
-    OVERLOAD_RESET = 2,
-    ALL = 0xFF;
-
-  // this is not explicit because we want to deal with ints and booleans,
-  // see comment above.
   ResetAction(uint8_t val) : val(val) {}
 
-  bool has(uint8_t other) { return other & val; }
+  inline bool has(uint8_t other) { return other & val; }
 };
 
 class Entity {
@@ -159,11 +150,6 @@ public:
 
   virtual void reset(ResetAction action) {}
 
-  /// @deprecated Backward-compatibility shim for ResetAction replacement
-  void reset(bool keep_calibration) {
-    reset(ResetAction::CIRCUIT_RESET + keep_calibration ? 0 : ResetAction::CALIBRATION_RESET);
-  }
-
   /// returns true in case of success
   [[nodiscard]] virtual utils::status write_to_hardware() { return utils::status::success(); }
 
@@ -191,7 +177,7 @@ public:
   ///@}
 
   /** Provide recursive entity information in a tree */
-  void classifier_to_json(JsonObject& out);
+  void classifier_to_json(JsonObject &out);
 
 protected:
   /**

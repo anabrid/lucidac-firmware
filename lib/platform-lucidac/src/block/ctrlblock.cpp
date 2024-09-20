@@ -35,7 +35,7 @@ FLASHMEM blocks::CTRLBlock::CTRLBlock(CTRLBlockHALBase *hardware)
     : FunctionBlock("CTRL", bus::address_from_tuple(1, 0)), hardware(hardware) {}
 
 FLASHMEM blocks::CTRLBlock *blocks::CTRLBlock::from_entity_classifier(entities::EntityClassifier classifier,
-                                                             bus::addr_t block_address) {
+                                                                      bus::addr_t block_address) {
   if (!classifier or classifier.class_enum != CLASS_ or classifier.type != TYPE)
     return nullptr;
 
@@ -47,9 +47,13 @@ FLASHMEM blocks::CTRLBlock *blocks::CTRLBlock::from_entity_classifier(entities::
 
 FLASHMEM entities::EntityClass blocks::CTRLBlock::get_entity_class() const { return CLASS_; }
 
-FLASHMEM utils::status blocks::CTRLBlock::config_self_from_json(JsonObjectConst cfg) { return utils::status::success(); }
+FLASHMEM utils::status blocks::CTRLBlock::config_self_from_json(JsonObjectConst cfg) {
+  return utils::status::success();
+}
 
-FLASHMEM utils::status blocks::CTRLBlock::write_to_hardware() { return utils::status(hardware->write_adc_bus_muxers(adc_bus)); }
+FLASHMEM utils::status blocks::CTRLBlock::write_to_hardware() {
+  return utils::status(hardware->write_adc_bus_muxers(adc_bus));
+}
 
 FLASHMEM bool blocks::CTRLBlock::init() {
   // Hardware defaults are not very good, e.g. adc bus is by default on CL0_GAIN.
@@ -72,5 +76,7 @@ FLASHMEM bool blocks::CTRLBlock::set_adc_bus_to_cluster_gain(uint8_t cluster_idx
 
 FLASHMEM void blocks::CTRLBlock::reset(entities::ResetAction action) {
   FunctionBlock::reset(action);
-  reset_adc_bus();
+
+  if (action.has(entities::ResetAction::CIRCUIT_RESET))
+    reset_adc_bus();
 }

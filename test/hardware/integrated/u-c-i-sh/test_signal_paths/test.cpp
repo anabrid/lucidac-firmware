@@ -34,7 +34,7 @@ utils::RunningAverage<float> avg_devations;
 
 void setUp() {
   // This is called before *each* test.
-  carrier_.reset(true);
+  carrier_.reset(entities::ResetAction::CIRCUIT_RESET);
 }
 
 void tearDown() {
@@ -52,8 +52,7 @@ void test_init_and_blocks() {
     TEST_ASSERT_NOT_NULL(cluster.shblock);
   }
   TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
-  // Reset
-  carrier_.reset(false);
+
   TEST_ASSERT(carrier_.write_to_hardware());
 }
 
@@ -133,7 +132,7 @@ void test_n_summations() {
         TEST_MESSAGE("--------------------------------------");
         std::cout << "Testing " << N << " connections" << std::endl;
         std::cout << "connections = " << connections << std::endl;
-        carrier_.reset(false);
+        carrier_.reset(entities::ResetAction::CIRCUIT_RESET);
         full_calibration = true; // Since we allways change the signal path,
 
         RUN_TEST(test_summation);

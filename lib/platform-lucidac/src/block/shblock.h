@@ -26,7 +26,7 @@ public:
   void set_state(State state_);
   State get_state() const;
 
-  //! Resets all internal states. Block is left in track mode afterwards. Requires write_to_hardware()
+  //! Resets all internal states. Block is left in inject mode afterwards. Requires write_to_hardware()
   void reset(entities::ResetAction action) override;
 
   //! Applies current class state to actually hardware
@@ -41,7 +41,7 @@ public:
   static SHBlock *from_entity_classifier(entities::EntityClassifier classifier, bus::addr_t block_address);
 
 protected:
-  State state = State::TRACK;
+  State state = State::INJECT;
 
   // Default state after reset is inject with a potentially random inject current
   const functions::TriggerFunction set_track{bus::address_from_tuple(bus::SH_BLOCK_BADDR(0), 2)};

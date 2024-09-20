@@ -62,7 +62,7 @@ FLASHMEM bool platform::Cluster::init() {
       return false;
   }
   LOG(ANABRID_DEBUG_INIT, "Cluster initialized.");
-  reset(false);
+  reset(entities::ResetAction::EVERYTHING);
   return true;
 }
 
@@ -256,7 +256,7 @@ FLASHMEM bool platform::Cluster::route(uint8_t u_in, uint8_t u_out, float c_fact
 }
 
 FLASHMEM bool platform::Cluster::add_constant(blocks::UBlock::Transmission_Mode signal_type, uint8_t u_out,
-                                     float c_factor, uint8_t i_out) {
+                                              float c_factor, uint8_t i_out) {
   if (fabs(c_factor) > 1.0f) {
     c_factor = c_factor * 0.1f;
     iblock->set_upscaling(u_out, true);

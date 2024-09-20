@@ -17,7 +17,9 @@ FLASHMEM float blocks::CBlock::get_factor(uint8_t idx) {
   return factors_[idx];
 }
 
-FLASHMEM const std::array<float, blocks::CBlock::NUM_COEFF> &blocks::CBlock::get_factors() const { return factors_; }
+FLASHMEM const std::array<float, blocks::CBlock::NUM_COEFF> &blocks::CBlock::get_factors() const {
+  return factors_;
+}
 
 FLASHMEM bool blocks::CBlock::set_factor(uint8_t idx, float factor) {
   if (idx >= NUM_COEFF)
@@ -49,9 +51,11 @@ FLASHMEM bool blocks::CBlock::write_factors_to_hardware() {
 
 FLASHMEM void blocks::CBlock::reset(entities::ResetAction action) {
   FunctionBlock::reset(action);
-  for (size_t i = 0; i < NUM_COEFF; i++) {
-    (void)set_factor(i, 1.0f);
-  }
+
+  if (action.has(entities::ResetAction::CIRCUIT_RESET))
+    for (size_t i = 0; i < NUM_COEFF; i++)
+      (void)set_factor(i, 1.0f);
+
   if (action.has(entities::ResetAction::CALIBRATION_RESET))
     reset_gain_corrections();
 }
@@ -91,7 +95,8 @@ FLASHMEM utils::status blocks::CBlock::config_self_from_json(JsonObjectConst cfg
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "elements") {
       auto res = _config_elements_form_json(cfgItr->value());
-      if(!res) return res;
+      if (!res)
+        return res;
     } else {
       return utils::status("CBlock: Unknown configuration key");
     }
@@ -108,7 +113,7 @@ FLASHMEM utils::status blocks::CBlock::_config_elements_form_json(const JsonVari
     uint8_t idx = 0;
     for (JsonVariantConst factor : factors) {
       if (!factor.is<float>())
-        return utils::status("CBlock: Cannot convert '%s' to float", factor.as<const char*>());
+        return utils::status("CBlock: Cannot convert '%s' to float", factor.as<const char *>());
       if (!set_factor(idx++, factor.as<float>()))
         return utils::status("CBlock factor %f is out of valid bounds", factor.as<float>());
     }
@@ -147,7 +152,7 @@ FLASHMEM void blocks::CBlock::config_self_to_json(JsonObject &cfg) {
 }
 
 FLASHMEM blocks::CBlock *blocks::CBlock::from_entity_classifier(entities::EntityClassifier classifier,
-                                                       const bus::addr_t block_address) {
+                                                                const bus::addr_t block_address) {
   if (!classifier or classifier.class_enum != CLASS_ or classifier.type != TYPE)
     return nullptr;
 
@@ -162,8 +167,8 @@ FLASHMEM blocks::CBlock *blocks::CBlock::from_entity_classifier(entities::Entity
   return nullptr;
 }
 
-std::array<const functions::AD5452, 32>
-FLASHMEM blocks::CBlockHAL_Common::make_f_coeffs(bus::addr_t block_address, std::array<const uint8_t, 32> f_coeffs_cs) {
+std::array<const functions::AD5452, 32> FLASHMEM
+blocks::CBlockHAL_Common::make_f_coeffs(bus::addr_t block_address, std::array<const uint8_t, 32> f_coeffs_cs) {
   return {functions::AD5452(bus::replace_function_idx(block_address, f_coeffs_cs[0])),
           functions::AD5452(bus::replace_function_idx(block_address, f_coeffs_cs[1])),
           functions::AD5452(bus::replace_function_idx(block_address, f_coeffs_cs[2])),
@@ -199,7 +204,7 @@ FLASHMEM blocks::CBlockHAL_Common::make_f_coeffs(bus::addr_t block_address, std:
 }
 
 FLASHMEM blocks::CBlockHAL_Common::CBlockHAL_Common(bus::addr_t block_address,
-                                           std::array<const uint8_t, 32> f_coeffs_cs)
+                                                    std::array<const uint8_t, 32> f_coeffs_cs)
     : f_coeffs(make_f_coeffs(block_address, f_coeffs_cs)) {}
 
 FLASHMEM bool blocks::CBlockHAL_Common::write_factor(uint8_t idx, float value) {

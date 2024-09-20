@@ -52,7 +52,8 @@ FLASHMEM bool blocks::IBlock::is_anything_connected() const {
   return false;
 }
 
-FLASHMEM bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive, bool allow_input_splitting) {
+FLASHMEM bool blocks::IBlock::connect(uint8_t input, uint8_t output, bool exclusive,
+                                      bool allow_input_splitting) {
   if (output >= NUM_OUTPUTS or input >= NUM_INPUTS)
     return false;
 
@@ -82,8 +83,11 @@ FLASHMEM void blocks::IBlock::reset_outputs() {
 
 FLASHMEM void blocks::IBlock::reset(entities::ResetAction action) {
   FunctionBlock::reset(action);
-  reset_outputs();
-  reset_upscaling();
+
+  if (action.has(entities::ResetAction::CIRCUIT_RESET)) {
+    reset_outputs();
+    reset_upscaling();
+  }
 }
 
 FLASHMEM utils::status blocks::IBlock::config_self_from_json(JsonObjectConst cfg) {
@@ -93,10 +97,12 @@ FLASHMEM utils::status blocks::IBlock::config_self_from_json(JsonObjectConst cfg
   for (auto cfgItr = cfg.begin(); cfgItr != cfg.end(); ++cfgItr) {
     if (cfgItr->key() == "outputs") {
       auto res = _config_outputs_from_json(cfgItr->value());
-      if(!res) return res;
+      if (!res)
+        return res;
     } else if (cfgItr->key() == "upscaling") {
       auto res = _config_upscaling_from_json(cfgItr->value());
-      if(!res) return res;
+      if (!res)
+        return res;
     } else {
       return utils::status("IBlock: Unknown configuration key");
     }
@@ -122,7 +128,8 @@ FLASHMEM utils::status blocks::IBlock::_config_outputs_from_json(const JsonVaria
         return utils::status("IBlock: Could not disconnect output '%d', probably out of range", output);
       // Input may be given as list or as a single number
       auto res = _connect_from_json(keyval.value(), output);
-      if(!res) return res;
+      if (!res)
+        return res;
     }
     return utils::status::success();
   }
@@ -131,13 +138,15 @@ FLASHMEM utils::status blocks::IBlock::_config_outputs_from_json(const JsonVaria
   else if (cfg.is<JsonArrayConst>()) {
     auto outputs_json = cfg.as<JsonArrayConst>();
     if (outputs_json.size() != NUM_OUTPUTS)
-      return utils::status("IBlock: Given array size %d does not meet expected %d", outputs_json.size(), NUM_OUTPUTS);
+      return utils::status("IBlock: Given array size %d does not meet expected %d", outputs_json.size(),
+                           NUM_OUTPUTS);
     reset_outputs();
     uint8_t idx = 0;
     for (JsonVariantConst input_spec : outputs_json) {
       // Input may be given as list or as a single number
       auto res = _connect_from_json(input_spec, idx++);
-      if(!res) return res;
+      if (!res)
+        return res;
     }
     return utils::status::success();
   }
@@ -249,7 +258,7 @@ FLASHMEM void blocks::IBlock::config_self_to_json(JsonObject &cfg) {
 }
 
 FLASHMEM blocks::IBlock *blocks::IBlock::from_entity_classifier(entities::EntityClassifier classifier,
-                                                       bus::addr_t block_address) {
+                                                                bus::addr_t block_address) {
   if (!classifier or classifier.class_enum != CLASS_)
     return nullptr;
 
@@ -268,7 +277,9 @@ FLASHMEM const std::array<uint32_t, blocks::IBlock::NUM_OUTPUTS> &blocks::IBlock
   return outputs;
 }
 
-FLASHMEM void blocks::IBlock::set_outputs(const std::array<uint32_t, NUM_OUTPUTS> &outputs_) { outputs = outputs_; }
+FLASHMEM void blocks::IBlock::set_outputs(const std::array<uint32_t, NUM_OUTPUTS> &outputs_) {
+  outputs = outputs_;
+}
 
 FLASHMEM blocks::IBlockHAL_V_1_2_X::IBlockHAL_V_1_2_X(bus::addr_t block_address)
     : f_cmd{bus::replace_function_idx(block_address, 2)},

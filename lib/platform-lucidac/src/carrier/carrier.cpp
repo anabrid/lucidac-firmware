@@ -38,6 +38,9 @@ FLASHMEM bool carrier::Carrier::init() {
     if (!cluster.init())
       return false;
   }
+
+  reset(entities::ResetAction::EVERYTHING);
+
   return true;
 }
 
@@ -158,10 +161,9 @@ FLASHMEM bool carrier::Carrier::calibrate_mblock(Cluster &cluster, blocks::MBloc
   LOG(ANABRID_DEBUG_CALIBRATION, "Passing control to M-block...");
   success &= mblock.calibrate(daq_, &cluster);
 
-  // Clean up
-  // reset(true);
-  cluster.reset(true);
-  ctrl_block->reset(true);
+  LOG(ANABRID_DEBUG_CALIBRATION, "Cleanup ADC connections...");
+  cluster.reset(entities::ResetAction::CIRCUIT_RESET);
+  ctrl_block->reset(entities::ResetAction::CIRCUIT_RESET);
   reset_adc_channels();
 
   // Write final clean-up to hardware

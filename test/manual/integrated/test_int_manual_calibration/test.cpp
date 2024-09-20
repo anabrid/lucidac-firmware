@@ -47,7 +47,6 @@ void test_init_and_blocks() {
   }
   TEST_ASSERT_NOT_NULL(carrier_.ctrl_block);
 
-  carrier_.reset(false);
   TEST_ASSERT(carrier_.write_to_hardware());
 }
 
@@ -55,7 +54,7 @@ Cluster *cluster; // Workaround for unitys inability to have parametrised tests.
 MIntBlock *int_block;
 
 void setup_and_measure(uint8_t channel, bool use_slow_integration) {
-  carrier_.reset(false);
+  carrier_.reset(entities::ResetAction::CIRCUIT_RESET);
 
   TEST_ASSERT(cluster->add_constant(UBlock::Transmission_Mode::POS_REF,
                                     int_block->slot_to_global_io_index(channel), 1.0f,

@@ -55,7 +55,6 @@ void test_init_and_blocks() {
 
   TEST_ASSERT(the_daq.init(0));
 
-  lucidac.reset(false);
   // We do need certain blocks
   for (auto &cluster : lucidac.clusters) {
     TEST_ASSERT_NOT_NULL(cluster.ublock);
@@ -68,7 +67,7 @@ void test_init_and_blocks() {
 
 void configure() {
   std::cout << "A\n" << std::endl;
-  lucidac.reset(false);
+  lucidac.reset(entities::ResetAction::CIRCUIT_RESET);
   std::cout << "B\n" << std::endl;
   auto cluster = lucidac.clusters[0];
 

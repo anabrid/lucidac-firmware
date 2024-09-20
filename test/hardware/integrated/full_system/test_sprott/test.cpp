@@ -218,7 +218,6 @@ auto config =
 
 void setUp() {
   // This is called before *each* test.
-  lucidac.reset(true);
 }
 
 void tearDown() {
@@ -240,8 +239,6 @@ void test_init_and_blocks() {
     TEST_ASSERT(cluster.m1block->is_entity_type(MBlock::TYPES::M_MUL4_BLOCK));
   }
   TEST_ASSERT_NOT_NULL(lucidac.ctrl_block);
-
-  lucidac.reset(false);
   TEST_ASSERT(lucidac.write_to_hardware());
 }
 

@@ -13,9 +13,11 @@ FLASHMEM bool platform::LUCIDACFrontPanel::init() {
   return true;
 }
 
-FLASHMEM void platform::LUCIDACFrontPanel::reset() {
-  leds.reset();
-  signal_generator.sleep();
+FLASHMEM void platform::LUCIDACFrontPanel::reset(entities::ResetAction action) {
+  if (action.has(entities::ResetAction::CIRCUIT_RESET)) {
+    leds.reset();
+    signal_generator.sleep();
+  }
 }
 
 FLASHMEM utils::status platform::LUCIDACFrontPanel::write_to_hardware() {

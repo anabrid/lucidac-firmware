@@ -45,8 +45,7 @@ void test_init_and_blocks() {
   TEST_ASSERT_NOT_NULL(lucidac.ctrl_block);
   TEST_ASSERT_NOT_NULL(lucidac.front_panel);
   TEST_ASSERT(lucidac.front_panel->signal_generator.is_installed());
-  // Reset
-  lucidac.reset(false);
+
   TEST_ASSERT(lucidac.write_to_hardware());
 }
 

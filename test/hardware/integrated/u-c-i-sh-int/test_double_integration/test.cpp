@@ -36,7 +36,6 @@ auto &cluster = lucidac.clusters[0];
 
 void setUp() {
   // This is called before *each* test.
-  lucidac.reset(true);
 }
 
 void tearDown() {
@@ -61,13 +60,10 @@ void test_init_and_blocks() {
   TEST_ASSERT_NOT_NULL(lucidac.front_panel);
   TEST_ASSERT(lucidac.front_panel->signal_generator.is_installed());
 
-  lucidac.reset(false);
   TEST_ASSERT(lucidac.write_to_hardware());
 }
 
 void test() {
-  cluster.reset(false);
-
   auto int_block = static_cast<MIntBlock *>(cluster.m0block);
 
   auto &signal_generator = lucidac.front_panel->signal_generator;

@@ -20,7 +20,6 @@ LUCIDAC lucidac;
 
 void setUp() {
   // This is called before *each* test.
-  lucidac.reset(false);
 }
 
 void tearDown() {

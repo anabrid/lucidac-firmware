@@ -128,7 +128,7 @@ void test_function() {
     for (uint8_t i0 = 0; i0 < 8; i0++) {
       float ic = -1;
       uint8_t one = MBlock::M1_OUTPUT(5);
-      cluster.reset(true); // keep calibration
+      cluster.reset(entities::ResetAction::CIRCUIT_RESET); // keep calibration
       TEST_ASSERT(cluster.route(one, 16, +1.0f, MBlock::M0_INPUT(i0)));
       TEST_ASSERT(cluster.ublock->connect(MBlock::M0_OUTPUT(i0), 8)); // ACL_OUT0
       TEST_ASSERT(cluster.ublock->connect(MBlock::M0_OUTPUT(i0), 0)); // ADC0
