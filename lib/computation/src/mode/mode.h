@@ -39,6 +39,13 @@ enum class Sync { NONE, MASTER, SLAVE };
 
 enum class Mode { IC, OP, HALT };
 
+/// Provides access to the global overload line, if it is properly configured as input.
+/// Compare this to the overload localization provided by the carrier or MathBlocks
+inline bool is_global_overload_active() {
+  // TODO: This is probably inverted.
+  return digitalReadFast(PIN_MODE_OVERLOAD);
+}
+
 /**
  * Note that the ManualControl does not work any more once FlexIOControl::init()
  * was called, even if FlexIOControl::disable() is used. This is because the relevant GPIOs

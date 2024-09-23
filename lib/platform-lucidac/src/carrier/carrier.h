@@ -82,6 +82,7 @@ public:
   ///@addtogroup User-Functions
   ///@{
   utils::status user_set_extended_config(JsonObjectConst msg_in, JsonObject &msg_out);
+  utils::status user_get_overload_status(JsonObjectConst msg_in, JsonObject &msg_out);
   ///@}
 
 public:

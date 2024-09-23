@@ -300,3 +300,21 @@ FLASHMEM utils::status carrier::Carrier::user_set_extended_config(JsonObjectCons
 
   return utils::status::success();
 }
+
+FLASHMEM utils::status carrier::Carrier::user_get_overload_status(JsonObjectConst msg_in, JsonObject &msg_out) {
+  msg_out["global_overload"] = mode::is_global_overload_active();
+
+  auto flags = msg_out.createNestedObject("entity_overload");
+  for(auto& cluster : clusters) {
+    auto cluster_obj = flags.createNestedObject("/" + cluster.get_entity_id());
+    for(auto& block : cluster.get_blocks()) {
+      if(block && block->is_entity_class(blocks::MBlock::CLASS_)) {
+        auto *mblock = static_cast<blocks::MBlock*>(block);
+        auto block_obj = cluster_obj.createNestedArray("/" + block->get_entity_id());
+        mblock->overload_flags_to_json(block_obj);
+      }
+    }
+  }
+
+  return utils::status::success();
+}

@@ -76,5 +76,17 @@ public:
   }
 };
 
+class GetOverloadStatusHandler : public CarrierMessageHandlerBase {
+public:
+  using CarrierMessageHandlerBase::CarrierMessageHandlerBase;
+
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
+    utils::status result = carrier.user_get_overload_status(msg_in, msg_out);
+    if(!result)
+      msg_out["error"] = result.msg;
+    return error(result.code);
+  }
+};
+
 } // namespace handlers
 } // namespace msg

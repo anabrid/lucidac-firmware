@@ -58,9 +58,18 @@ FLASHMEM utils::status blocks::EmptyMBlock::config_self_from_json(JsonObjectCons
 
 FLASHMEM uint8_t blocks::EmptyMBlock::get_entity_type() const { return static_cast<uint8_t>(MBlock::TYPES::UNKNOWN); }
 
-bool blocks::MBlockHAL::init() {
+FLASHMEM bool blocks::MBlockHAL::init() {
   if (!FunctionBlockHAL::init())
     return false;
   reset_overload_flags();
   return true;
+}
+
+FLASHMEM void blocks::MBlock::overload_flags_to_json(JsonArray msg_out) {
+  msg_out.clear();
+  if(!hardware) return;
+  auto flags = hardware->read_overload_flags();
+  for(size_t i=0; i<flags.size(); i++) {
+    msg_out.add((bool)flags[i]);
+  }
 }

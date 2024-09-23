@@ -122,6 +122,8 @@ public:
 
   // M Blocks generaly can't calibrate themselfs on their own, so they need the cluster they are installed in.
   virtual bool calibrate(daq::BaseDAQ *daq_, platform::Cluster *cluster) { return true; }
+
+  void overload_flags_to_json(JsonArray msg_out);
 };
 
 class EmptyMBlock : public MBlock {

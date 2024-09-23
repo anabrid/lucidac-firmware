@@ -39,6 +39,7 @@ FLASHMEM void msg::handlers::DynamicRegistry::init(carrier::Carrier &c) {
   // manual hardware access
   set("one_shot_daq", 800, new OneshotDAQHandler(), SecurityLevel::RequiresNothing);
   set("manual_mode", 900, new ManualControlHandler(), SecurityLevel::RequiresNothing);
+  set("overload_status", 1000, new GetOverloadStatusHandler(c), SecurityLevel::RequiresLogin);
 
   set("net_get", 6000, new GetNetworkSettingsHandler(), SecurityLevel::RequiresAdmin);
   set("net_set", 6100, new SetNetworkSettingsHandler(), SecurityLevel::RequiresAdmin);
