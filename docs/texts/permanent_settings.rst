@@ -1,4 +1,7 @@
-\page nvmconf Permanent Settings
+.. _nvmconf:
+
+Permanent Settings
+==================
 
 The Teensy supports persistent, permanent settings which are stored on an virtualized
 EEPROM realized on the Flash memory. In the LUCIDAC, this is used to store primarily

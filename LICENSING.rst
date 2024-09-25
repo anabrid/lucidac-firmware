@@ -15,7 +15,7 @@ all dependencies and used code snippets are listed.
 External libraries
 ------------------
 
-The following external libraries are used (explicitely included via `platformio.ini`):
+The following external libraries are used (explicitely included via ``platformio.ini``):
 
 * https://github.com/bblanchon/ArduinoJson (MIT licensed)
 * https://github.com/ssilverman/QNEthernet (APGL-3.0 licensed)
@@ -36,5 +36,5 @@ These packages depend on even more libraries such as https://github.com/SCons/sc
 External code snippets distributed with this code
 -------------------------------------------------
 
-* `/lib/controller/src/ota/flasher.cpp` is public domain (references therein)
-* `/lib/controller/src/utils/dcp.cpp` is BSD-3 licensed, see https://github.com/nxp-mcuxpresso/mcux-sdk
+* ``/lib/controller/src/ota/flasher.cpp`` is public domain (references therein)
+* ``/lib/controller/src/utils/dcp.cpp`` is BSD-3 licensed, see https://github.com/nxp-mcuxpresso/mcux-sdk

@@ -1,0 +1,19 @@
+# This requirements file is *ONLY* for sphinx in order to be able
+# to reproducably build the docs.
+
+# the version constraint is probably only relevant for github CI
+sphinx>=7.3.7
+# the following is most likely only relevant for github CI
+markupsafe==2.0.1
+
+sphinx-rtd-theme
+pydata_sphinx_theme
+#sphinxcontrib-programoutput
+#recommonmark
+#nbsphinx
+#scipy
+#ipython
+#sphinxcontrib-svg2pdfconverter
+
+# important for doxygen-interconnect
+breathe

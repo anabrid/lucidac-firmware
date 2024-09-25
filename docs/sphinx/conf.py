@@ -24,7 +24,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 
 ###### OPTIONS FOR BREATHE
-breathe_projects = {"hybrid-controller": "../docs/xml/"}
+breathe_projects = {"hybrid-controller": "../doxygen/xml/"}
 breathe_default_project = "hybrid-controller"
 
 #breathe_projects_source = {
@@ -38,6 +38,7 @@ breathe_default_project = "hybrid-controller"
 
 #html_theme = 'alabaster' # = default
 html_theme = 'sphinx_rtd_theme' # Read the docs theme, nicer.
+#html_theme = "pydata_sphinx_theme" # even nicer!
 
 
 html_static_path = ['_static']

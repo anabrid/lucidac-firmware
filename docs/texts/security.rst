@@ -1,4 +1,7 @@
-\page security IT Security aspects
+.. _security:
+
+IT Security aspects
+===================
 
 Please extend and say on:
 
