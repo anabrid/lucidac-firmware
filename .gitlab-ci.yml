@@ -37,7 +37,7 @@ build_docs:
     GIT_SUBMODULE_STRATEGY: normal
   image: alpine # suggested in https://gitlab.com/pages/doxygen but shitty
   script:
-    - apk update && apk add doxygen py3-pip # TODO: this is slow, use proper image
+    - apk update && apk add doxygen py3-pip make # TODO: this is slow, use proper image
     - cd docs/sphinx && pip install --break-system-packages -r requirements.txt # TODO: Again, this shall be cached
     - make docs
   artifacts:
