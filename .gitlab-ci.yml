@@ -39,7 +39,6 @@ build_docs:
   script:
     - apk update && apk add doxygen py3-pip make # TODO: this is slow, use proper image
     - pip install --break-system-packages -r docs/sphinx/requirements.txt # TODO: Again, this shall be cached
-    - cat Makefile
     - make docs
   artifacts:
     paths:
