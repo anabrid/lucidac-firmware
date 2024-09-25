@@ -30,9 +30,12 @@ _deps
 .vscode/
 
 # Doxygen output
-docs/html
-docs/latex
-docs/xml
+docs/doxygen/html
+docs/doxygen/latex
+docs/doxygen/xml
+
+# Sphinx output
+docs/sphinx/_*
 
 # Any kind of local patches
 *.elf

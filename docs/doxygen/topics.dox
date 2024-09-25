@@ -1,0 +1,40 @@
+/**
+
+\defgroup Singletons Singleton classes
+
+Microcontroller codes (generally refered to as firmware) typically have much more
+global state (and Singletons) as desktop code. This is not only due to the limited
+memory but also because it deals a lot with representing physical objects such as
+accessible discrete electronical components which shall be controlled.
+
+## Idioms
+The idiomatic way of Arduino is to define and access singletons as global static
+variables, i.e. in some header file
+
+```
+class Foo_ { ... };
+extern Foo_ Foo;
+```
+
+Furthermore, Singletons in Arduino are typically initialized with `Foo.begin(...)`
+methods.
+
+In contrast, this code has different ways of defining singletons, for instance
+`static Foo& Foo::get()` and `Foo::get().init(...)`. It is an ongoing attempt to
+refactor them.
+
+\defgroup User-Functions
+
+These methods have the signature `int func(JsonObjectConst msg_in, JsonObject& msg_out)`
+and are called via msg::handlers::MessageHandler instances.
+
+
+
+\defgroup MessageHandlers Protocol/Communication Message Handlers
+
+This groups lists all msg::handlers::MessageHandler instances.
+You can also just look up the inheritance diagram of MessageHandlers, thought.
+
+
+
+**/
