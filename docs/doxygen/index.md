@@ -10,6 +10,6 @@ That is, doxygen builds an in-depth crossreference
 for the actual code which can be browsed either by [Namespace](namespace.html), by
 [Class name](annotated.html) or by [Folder structure](files.html). Next to this extracted
 documentation, the documentation is supplemented with various introductive and overview
-documents which you read in the *Sphinx* part. TODO: Link the web build here.
+documents [which you read in the *Sphinx* part](https://anabrid.dev/docs/lucidac-firmware/sphinx/)
 
 ![LUCIDAC Breakdown picture](LUCI-Isometric.png)

@@ -19,15 +19,11 @@ documentations. See the documentation portal for details... (\todo fixme). For t
 https://github.com/anabrid can be a good starting point.
 
 This documentation is generated with *Doxygen* and *Sphinx*. You are currently viewing the
-main entry page of the documentation.
-
-.. 
-
-   This tool builds primarily an in-depth crossreference
-   for the actual code which can be browsed either by [Namespace](namespace.html), by
-   [Class name](annotated.html) or by [Folder structure](files.html). Next to this extracted
-   documentation, the documentation is supplemented with various introductive and overview
-   documents:
+main entry page of the documentation. In the Doxygen part of the documentation you
+can browse the actual code
+`by namespace <https://anabrid.dev/docs/lucidac-firmware/doxygen/namespaces.html>`_,
+`by class name <https://anabrid.dev/docs/lucidac-firmware/doxygen/annotated.html>`_ or
+`by file/folder <https://anabrid.dev/docs/lucidac-firmware/doxygen/files.html>`_.
 
 
 .. toctree::

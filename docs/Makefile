@@ -7,6 +7,6 @@ doxygen:
 	cd doxygen && make docs
 
 sphinx:
-	cd sphinx && make html
+	cd sphinx && make html dirhtml
 
 .PHONY: doxygen sphinx

@@ -1,12 +1,12 @@
-Firmware documentation
-======================
+Documentation
+=============
 
 The firmware documentation is currently a mix of
 `Sphinx <https://www.sphinx-doc.org/>`_ and `Doxygen <https://www.doxygen.nl/>`_.
 
 This means:
 
-* Regular Javadoc-style in-code comments
+* Regular Javadoc-style in-code comments.
 * a number of restructured text (RST) files in the ``/docs/texts`` directory
 * Doxygen API docs built at ``/docs/doxygen``
 * Sphinx docs built at ``/docs/sphinx`` using `Breathe <https://breathe.readthedocs.io/>`_ to
@@ -28,7 +28,8 @@ The guiding idea is as following:
 Hosted output
 -------------
 
-The docs are build as a CI job to https://anabrid.dev/docs/hybrid-controller/
+The docs are build as a CI job to https://anabrid.dev/docs/lucidac-firmware/. This directory
+holds both the sphinx and doxygen output.
 
 How to build the doxygen locally
 -----------------------------
