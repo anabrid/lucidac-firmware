@@ -38,7 +38,8 @@ build_docs:
   image: alpine # suggested in https://gitlab.com/pages/doxygen but shitty
   script:
     - apk update && apk add doxygen py3-pip make # TODO: this is slow, use proper image
-    - cd docs/sphinx && pip install --break-system-packages -r requirements.txt # TODO: Again, this shall be cached
+    - pip install --break-system-packages -r docs/sphinx/requirements.txt # TODO: Again, this shall be cached
+    - cat Makefile
     - make docs
   artifacts:
     paths:
