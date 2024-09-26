@@ -99,10 +99,7 @@ FLASHMEM int net::auth::Gatekeeper::login(JsonObjectConst msg_in, JsonObject &ms
     } else {
       user_context.login(new_user);
 
-      // TODO: Somehow this line doesn't show up.
-      Serial.print("New authentification: ");
-      user_context.printTo(Serial);
-      Serial.println();
+      LOG_ALWAYS("New authentification"); // TODO: user_context must be Printable or so.
 
       return 0;
     }
