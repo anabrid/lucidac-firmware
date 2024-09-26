@@ -20,7 +20,7 @@ void tearDown() {
 
 void test_init() {
   TEST_ASSERT(lucidac.init());
-  lucidac.reset(entities::ResetAction::ALL);
+  lucidac.reset(entities::ResetAction::EVERYTHING);
   TEST_ASSERT(lucidac.write_to_hardware());
   TEST_ASSERT(DAQ.init(0));
 }
