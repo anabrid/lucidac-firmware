@@ -83,8 +83,6 @@ void test_finished_summation(float x, float y) {
 void calibrate_summation_factors() {}
 
 void test_summation() {
-  carrier_.ctrl_block->set_adc_bus_to_cluster_gain(0);
-
   // Calibrate Input 0
   TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, 0, 1.0f, 0));
   TEST_ASSERT(cluster.add_constant(UBlock::Transmission_Mode::POS_REF, 1, 0.0f, 0));
