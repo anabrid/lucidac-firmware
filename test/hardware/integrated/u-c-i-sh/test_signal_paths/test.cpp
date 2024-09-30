@@ -95,10 +95,13 @@ void test_summation() {
     TEST_ASSERT(cluster.write_to_hardware());
 
     // As soon as we use a new route, the cluster should be calibrated completly
-    if (full_calibration)
+    if (full_calibration) {
+      carrier_.ctrl_block->set_adc_bus_to_cluster_gain(cluster.get_cluster_idx());
+      TEST_ASSERT(carrier_.ctrl_block->write_to_hardware());
       TEST_ASSERT(cluster.calibrate_routes(&DAQ));
-    else
+    } else {
       TEST_ASSERT(cluster.calibrate_offsets());
+    }
 
     // Measure by using SH gain outputs
     auto data = measure_sh_gain(carrier_.ctrl_block, cluster, &DAQ);
