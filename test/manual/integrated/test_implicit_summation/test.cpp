@@ -71,7 +71,7 @@ void test_finished_summation(float x, float y) {
 
   // std::cout << cluster << std::endl;
 
-  auto data = measure_sh_gain(cluster, &DAQ, 4, 10);
+  auto data = measure_sh_gain(carrier_.ctrl_block, cluster, &DAQ, 4, 10);
   std::cout << std::fixed << std::setprecision(4) << x << " + " << y << ": \t\t read in = " << data[0]
             << " \t\t expected result: " << x + y
             << " \t\t full scale deviation in per mille: " << (data[0] - (x + y)) * 1000.0f << std::endl;
@@ -100,7 +100,7 @@ void test_summation() {
 
   delay(10);
 
-  auto data = measure_sh_gain(cluster, &DAQ, 4, 10);
+  auto data = measure_sh_gain(carrier_.ctrl_block, cluster, &DAQ, 4, 10);
   std::cout << "Read In = " << data << std::endl;
 
   // calulate and test correction
@@ -110,7 +110,7 @@ void test_summation() {
 
   delay(10);
 
-  data = measure_sh_gain(cluster, &DAQ, 4, 10);
+  data = measure_sh_gain(carrier_.ctrl_block, cluster, &DAQ, 4, 10);
   std::cout << "Corrected first Coefficient = " << data[0] << std::endl;
 
   // Delete first route
@@ -132,7 +132,7 @@ void test_summation() {
 
   delay(10);
 
-  data = measure_sh_gain(cluster, &DAQ, 4, 10);
+  data = measure_sh_gain(carrier_.ctrl_block, cluster, &DAQ, 4, 10);
   std::cout << "Read In = " << data << std::endl;
 
   // calulate and test correction
@@ -142,7 +142,7 @@ void test_summation() {
 
   delay(10);
 
-  data = measure_sh_gain(cluster, &DAQ, 4, 10);
+  data = measure_sh_gain(carrier_.ctrl_block, cluster, &DAQ, 4, 10);
   std::cout << "Corrected second Coefficient = " << data[0] << std::endl;
 
   // Restore summation route
@@ -202,7 +202,7 @@ void loop() {
   io::block_until_button_press();
   delay(100);
 
-  auto data = measure_sh_gain(cluster, &DAQ, 4, 10);
+  auto data = measure_sh_gain(carrier_.ctrl_block, cluster, &DAQ, 4, 10);
   std::cout << "Read In = " << data << std::endl;
 }
 

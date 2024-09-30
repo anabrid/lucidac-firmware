@@ -65,14 +65,11 @@ void test_dac_adc(float val0, float val1) {
   TEST_ASSERT(lucidac.clusters[0].route_in_external(acl0_lane, adc_channel_val0));
   TEST_ASSERT(lucidac.clusters[0].route_in_external(acl1_lane, adc_channel_val1));
 
-  // Prepare measure data via SH-Block
-  TEST_ASSERT(lucidac.ctrl_block->set_adc_bus_to_cluster_gain(0));
-
   // Write configuration to hardware
   TEST_ASSERT_EQUAL(1, lucidac.write_to_hardware());
 
   // Measure data via SH-Block
-  auto data = measure_sh_gain(lucidac.clusters[0], &daq_);
+  auto data = measure_sh_gain(lucidac.ctrl_block, lucidac.clusters[0], &daq_);
 
   float measured_val0 = data[adc_channel_val0];
   float measured_val1 = data[adc_channel_val1];
