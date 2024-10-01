@@ -12,6 +12,7 @@
 #include "protocol/jsonl_logging.h"
 #include "utils/hashflash.h"
 #include "lucidac/front_panel_signaling.h"
+#include "mode/counters.h"
 
 namespace msg {
 namespace handlers {
@@ -100,6 +101,15 @@ class SyslogHandler : public MessageHandler {
 public:
   int handle(JsonObjectConst msg_in, utils::StreamingJson &msg_out) override {
     msg::StartupLog::get().stream_to_json(msg_out);
+    return success;
+  }
+};
+
+class SystemStats : public MessageHandler {
+public:
+  int handle(JsonObjectConst msg_in, JsonObject &msg_out) override {
+    auto perf_counters = msg_out.createNestedObject("perf_counters");
+    mode::PerformanceCounter::get().to_json(perf_counters);
     return success;
   }
 };

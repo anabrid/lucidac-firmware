@@ -2,6 +2,7 @@
 // Contact: https://www.anabrid.com/licensing/
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
+#include "mode/counters.h"
 #include "run/run_manager.h"
 
 #include <cstdlib>
@@ -220,6 +221,11 @@ void run::RunManager::run_next_flexio(run::Run &run, RunStateChangeHandler *stat
   }
 
   auto actual_op_time = mode::FlexIOControl::get_actual_op_time();
+
+  auto& perf = mode::PerformanceCounter::get();
+  perf.add(mode::Mode::IC, run.config.ic_time / 1000);
+  perf.add(mode::Mode::OP, actual_op_time     / 1000);
+  perf.increase_run();
 
   // Finalize data acquisition
   if (!daq_.finalize()) {

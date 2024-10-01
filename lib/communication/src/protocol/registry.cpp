@@ -55,6 +55,7 @@ FLASHMEM void msg::handlers::DynamicRegistry::init(carrier::Carrier &c) {
   set("sys_ident", 3400, new GetSystemIdent(), SecurityLevel::RequiresNothing);
   set("sys_reboot", 3500, new RebootHandler(), SecurityLevel::RequiresAdmin);
   set("sys_log", 3600, new SyslogHandler(), SecurityLevel::RequiresLogin);
+  set("sys_stats", 3700, new SystemStats(), SecurityLevel::RequiresLogin);
 
   #ifdef ANABRID_WRITE_EEPROM
   // these calls allow full client access to the MCU EEPROM (vendor stuff) and entitiy EEPROMs

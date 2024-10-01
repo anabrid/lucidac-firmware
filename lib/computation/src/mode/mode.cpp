@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT OR GPL-2.0-or-later
 
 #include "mode/mode.h"
+#include "mode/counters.h"
 
 #include <Arduino.h>
 
@@ -21,16 +22,19 @@ void mode::ManualControl::init() {
 void mode::ManualControl::to_ic() {
   digitalWriteFast(PIN_MODE_OP, HIGH);
   digitalWriteFast(PIN_MODE_IC, LOW);
+  mode::PerformanceCounter::get().to(mode::Mode::IC);
 }
 
 void mode::ManualControl::to_op() {
   digitalWriteFast(PIN_MODE_IC, HIGH);
   digitalWriteFast(PIN_MODE_OP, LOW);
+  mode::PerformanceCounter::get().to(mode::Mode::OP);
 }
 
 void mode::ManualControl::to_halt() {
   digitalWriteFast(PIN_MODE_IC, HIGH);
   digitalWriteFast(PIN_MODE_OP, HIGH);
+  mode::PerformanceCounter::get().to(mode::Mode::HALT);
 }
 
 void mode::RealManualControl::enable() {
@@ -364,26 +368,31 @@ void mode::FlexIOControl::force_start() { to_ic(); }
 void mode::FlexIOControl::to_idle() {
   auto flexio = FlexIOHandler::flexIOHandler_list[2];
   flexio->port().SHIFTSTATE = s_idle;
+  mode::PerformanceCounter::get().to(mode::Mode::HALT);
 }
 
 void mode::FlexIOControl::to_ic() {
   auto flexio = FlexIOHandler::flexIOHandler_list[2];
   flexio->port().SHIFTSTATE = s_ic;
+  mode::PerformanceCounter::get().to(mode::Mode::IC);
 }
 
 void mode::FlexIOControl::to_op() {
   auto flexio = FlexIOHandler::flexIOHandler_list[2];
   flexio->port().SHIFTSTATE = s_op;
+  mode::PerformanceCounter::get().to(mode::Mode::OP);
 }
 
 void mode::FlexIOControl::to_exthalt() {
   auto flexio = FlexIOHandler::flexIOHandler_list[2];
   flexio->port().SHIFTSTATE = s_exthalt;
+  mode::PerformanceCounter::get().to(mode::Mode::HALT);
 }
 
 void mode::FlexIOControl::to_end() {
   auto flexio = FlexIOHandler::flexIOHandler_list[2];
   flexio->port().SHIFTSTATE = s_end;
+  mode::PerformanceCounter::get().to(mode::Mode::HALT);
 }
 
 void mode::FlexIOControl::reset() {
