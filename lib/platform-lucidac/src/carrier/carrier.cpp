@@ -101,14 +101,21 @@ FLASHMEM bool carrier::Carrier::calibrate_offset() {
 }
 
 FLASHMEM bool carrier::Carrier::calibrate_routes_in_cluster(Cluster &cluster, daq::BaseDAQ *daq_) {
+  // Save and change ADC bus selection
+  auto old_adcbus = ctrl_block->get_adc_bus();
   ctrl_block->set_adc_bus_to_cluster_gain(cluster.get_cluster_idx());
   if (!ctrl_block->write_to_hardware())
     return false;
+
+  // Calibrate routes in cluster
   if (!cluster.calibrate_routes(daq_))
     return false;
-  ctrl_block->reset_adc_bus();
+
+  // Restore ADC bus selection
+  ctrl_block->set_adc_bus(old_adcbus);
   if (!ctrl_block->write_to_hardware())
     return false;
+
   return true;
 }
 
