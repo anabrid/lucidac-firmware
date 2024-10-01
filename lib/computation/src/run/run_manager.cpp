@@ -209,11 +209,11 @@ void run::RunManager::run_next_flexio(run::Run &run, RunStateChangeHandler *stat
   mode::FlexIOControl::to_end();
 
   // When a data sample must be gathered very close to the end of OP duration,
-  // it takes about 1 microseconds for it to end up in the DMA buffer.
+  // it takes a few microseconds for it to end up in the DMA buffer.
   // This is hard to check for, since the DMA active flag is only set once the DMA
-  // is triggered by the last CLK pulse, which is after around 1 microsecond.
+  // is triggered by the last CLK pulse.
   // Easiest solution is to wait for it.
-  delayMicroseconds(1);
+  delayMicroseconds(20);
   // Stream out remaining partially filled buffer
   if (!daq_.stream(true)) {
     LOG_ERROR("Streaming error during final partial stream.");
