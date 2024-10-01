@@ -38,6 +38,8 @@ public:
 
   bool is_valid() const;
 
+  float index_to_time(size_t index) const;
+
   explicit operator bool() const { return num_channels and (sample_op or sample_op_end); };
 
   static DAQConfig from_json(JsonObjectConst &&json);

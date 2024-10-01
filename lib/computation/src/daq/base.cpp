@@ -47,3 +47,7 @@ FLASHMEM bool daq::DAQConfig::is_valid() const {
     return false;
   return true;
 }
+
+float daq::DAQConfig::index_to_time(size_t index) const {
+  return static_cast<float>(index) / static_cast<float>(sample_rate);
+}
