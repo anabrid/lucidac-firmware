@@ -59,6 +59,8 @@ FLASHMEM void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationC
   // Unpack metadata from envelope
   std::string msg_id = envelope_in["id"];
   std::string msg_type = envelope_in["type"];
+  bool perf_trace = envelope_in["perf_trace"] | false;
+  elapsedMicros handle_message_time_us;
 
   // Create return envelope
   envelope_out.clear();
@@ -103,6 +105,8 @@ FLASHMEM void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationC
           LOG_ALWAYS("Error while handling streaming message.")
         }
         envelope_and_msg_out.kv("code", return_code);
+        if(perf_trace)
+          envelope_and_msg_out.kv("perf_handle_message_time_us", handle_message_time_us);
         envelope_and_msg_out.end_dict(); // envelope
         return;
       }
@@ -117,6 +121,8 @@ FLASHMEM void msg::JsonLinesProtocol::handleMessage(net::auth::AuthentificationC
   }
 
   envelope_out["code"] = return_code;
+  if(perf_trace)
+    envelope_out["perf_handle_message_time_us"] = (unsigned long)handle_message_time_us;
 
   serializeJson(envelope_out, output);
   // notice we don't send a NL here, has to be done by the callee!
@@ -134,8 +140,7 @@ FLASHMEM void msg::JsonLinesProtocol::process_serial_input(net::auth::Authentifi
     // do nothing, just ignore empty input.
   } else if (error) {
     trim(line); // for not-destroying the output
-    Serial.printf("### Malformed input. Expecting JSON-Lines. Error: %s. Input was: '%s'\n", error.c_str(),
-                  line);
+    LOG4("Malformed serial line input. Expecting JSON-Lines. Error: ", error.c_str(), ". Input was: ", line);
   } else {
     handleMessage(user_context, Serial);
     Serial.println();
@@ -146,10 +151,9 @@ FLASHMEM bool msg::JsonLinesProtocol::process_tcp_input(net::EthernetClient &con
                                                net::auth::AuthentificationContext &user_context) {
   auto error = deserializeJson(*envelope_in, connection);
   if (error == DeserializationError::Code::EmptyInput) {
-    Serial.print(".");
+    //Serial.print(".");
   } else if (error) {
-    Serial.print("Error while parsing JSON: ");
-    Serial.println(error.c_str());
+    LOG2("Malformed TCP/IP input. Expecting JSON Lines. Error: ", error.c_str());
   } else {
     handleMessage(user_context, connection);
     // serializeJson(envelope_out->as<JsonObject>(), Serial);
@@ -165,7 +169,7 @@ FLASHMEM void msg::JsonLinesProtocol::process_string_input(const std::string &en
                                                   net::auth::AuthentificationContext &user_context) {
   auto error = deserializeJson(*envelope_in, envelope_in_str);
   if (error == DeserializationError::Code::EmptyInput) {
-    Serial.print(".");
+    //Serial.print(".");
   } else if (error) {
     envelope_out_str = "{'error':'Error while parsing JSON, error message: ";
     envelope_out_str += error.c_str();
