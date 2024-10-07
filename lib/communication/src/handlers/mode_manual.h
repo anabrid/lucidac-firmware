@@ -33,7 +33,7 @@ public:
   ///       Returns 0 if can run.
   static int can_manual_control() {
     if (!run::RunManager::get().queue.empty())
-      return 1;
+      return 1; // TODO, should return the meaning of this error
     if (mode::FlexIOControl::is_enabled() && !mode::FlexIOControl::is_done() &&
         !mode::FlexIOControl::is_idle())
       return 3;

@@ -15,8 +15,8 @@ namespace msg {
 namespace handlers {
 
 /**
- * A MessageHandler is a kind of event handler interface that acts like a closure.
- * That is, the class itself is abstract.
+ * A MessageHandler is a functor/closure like event handler.
+ * Different method signatures are "probed" by the registry.
  **/
 class MessageHandler {
 public:
@@ -51,8 +51,7 @@ public:
   }
 
   /**
-   * Handler for streaming responses. Is only called if is_streaming is true.
-   * Otherwise it works as the other handler.
+   * Handler for streaming responses.
    **/
   virtual int handle(JsonObjectConst msg_in, utils::StreamingJson& msg_out) {
     return not_implemented;

@@ -143,14 +143,14 @@ FLASHMEM bool blocks::MMulBlock::calibrate(daq::BaseDAQ *daq_, platform::Cluster
   LOG(ANABRID_DEBUG_CALIBRATION, __PRETTY_FUNCTION__);
   bool success = true;
 
-  /******* Workaround for Version 1.0 Firmware ***********/
-  /***/ auto res = read_calibration_from_eeprom(); /***/
-  /***/ if (!res)                                  /***/
+    /******* Workaround for Version 1.0 Firmware ***********/
+    /***/ auto res = read_calibration_from_eeprom(); /***/
+    /***/ if (!res)                                  /***/
     /***/ return false;                            /***/
-  /***/ res = write_calibration_to_hardware();     /***/
-  /***/ if (!res)                                  /***/
+    /***/ res = write_calibration_to_hardware();     /***/
+    /***/ if (!res)                                  /***/
     /***/ return false;                            /***/
-  /******* End of Workaround for Version 1.0 Firmware ****/
+    /******* End of Workaround for Version 1.0 Firmware ****/
 
   if (!MBlock::calibrate(daq_, cluster))
     return false;
