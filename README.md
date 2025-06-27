@@ -1,5 +1,9 @@
 # LUCIDAC Hybrid Controller
 
+> [!WARNING]
+> Unless you came here to start hacking the firmware - the LUCIDAC is yours to play with! -
+> we recommend downloading a binary _mainline_ firmware version from https://github.com/anabrid/firmware.
+
 This repository holds the firmware for the hybrid controller of the LUCIDAC/REDAC. The
 code is currently living at https://lab.analogparadigm.com/lucidac/firmware/hybrid-controller.
 This project uses [PlatformIO](https://platformio.org/) for the build system (`pio` in
